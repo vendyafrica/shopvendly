@@ -56,15 +56,15 @@ const getApiBaseUrl = async () => {
 
 interface StorefrontPageProps {
   params: Promise<{
-    s: string;
+    handle: string;
   }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export async function generateMetadata({ params }: StorefrontPageProps): Promise<Metadata> {
-  const { s } = await params;
+  const { handle } = await params;
   const baseUrl = await getApiBaseUrl();
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${s}`, { next: { revalidate: 60 } });
+  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
   const store = storeRes.ok ? (await storeRes.json()) as StorefrontStore : null;
   if (!store) {
     return {
@@ -101,26 +101,27 @@ export async function generateMetadata({ params }: StorefrontPageProps): Promise
 }
 
 export default async function StorefrontHomePage({ params, searchParams }: StorefrontPageProps) {
-  const { s } = await params;
+  const { handle } = await params;
 
   const resolvedSearchParams = await searchParams;
   const search = resolvedSearchParams?.q;
   const query = Array.isArray(search) ? search[0] : search;
 
   const baseUrl = await getApiBaseUrl();
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${s}`, { next: { revalidate: 60 } });
+  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
   const store = storeRes.ok ? (await storeRes.json()) as StorefrontStore : null;
 
   if (!store) {
     notFound();
   }
 
-  const productUrl = new URL(`${baseUrl}/api/storefront/${s}/products`);
+  const productUrl = new URL(`${baseUrl}/api/storefront/${handle}/products`);
+
   if (query) productUrl.searchParams.set("q", query);
   const productsRes = await fetch(productUrl.toString(), { next: { revalidate: 30 } });
   const products = productsRes.ok ? (await productsRes.json()) as StorefrontProduct[] : [];
 
-  const inspirationRes = await fetch(`${baseUrl}/api/storefront/${s}/inspiration`, { next: { revalidate: 30 } });
+  const inspirationRes = await fetch(`${baseUrl}/api/storefront/${handle}/inspiration`, { next: { revalidate: 30 } });
   const inspirationPayload = inspirationRes.ok
     ? (await inspirationRes.json()) as { connected?: boolean; videos?: StorefrontTikTokVideo[] }
     : { connected: false, videos: [] };
@@ -129,8 +130,9 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
 
   return (
     <div className="min-h-screen">
-      <StorefrontViewTracker storeSlug={s} />
-      <OneTapLogin storeSlug={s} />
+      <StorefrontViewTracker storeSlug={handle} />
+      <OneTapLogin storeSlug={handle} />
+
       <Hero store={store} />
       <div className="w-full">
         <div className="px-3 sm:px-6 lg:px-8">

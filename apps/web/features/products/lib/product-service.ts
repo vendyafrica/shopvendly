@@ -1,8 +1,10 @@
 import { db } from "@shopvendly/db/db";
 import { products, productMedia, mediaObjects, orderItems, orders } from "@shopvendly/db/schema";
 import { eq, and, isNull, desc, sql, like } from "@shopvendly/db";
-import { mediaService, type UploadFile } from "./media-service";
-import type { CreateProductInput, ProductFilters, ProductWithMedia, UpdateProductInput } from "../models/product-models";
+import { mediaService, type UploadFile } from "../../media/lib/media-service";
+import type { CreateProductInput, ProductFilters, ProductWithMedia, UpdateProductInput } from "./product-models";
+
+type ProductRow = typeof products.$inferSelect;
 
 function slugifyName(name: string) {
     return name
@@ -74,10 +76,10 @@ export const productService = {
         const baseSlug = slugifyName(data.title);
 
         let slug = await generateUniqueSlug({ query: db.query }, data.storeId, baseSlug);
-        let product;
+        let product: ProductRow | null = null;
 
         try {
-            [product] = await db.insert(products).values({
+            const insertedProducts = await db.insert(products).values({
                 tenantId,
                 storeId: data.storeId,
                 productName: data.title,
@@ -90,10 +92,11 @@ export const productService = {
                 sourceUrl: data.sourceUrl,
                 status: data.status,
             }).returning();
+            product = insertedProducts[0] ?? null;
         } catch (error: unknown) {
             if (isSlugConflict(error)) {
                 slug = await generateUniqueSlugWithTimestamp({ query: db.query }, data.storeId, baseSlug);
-                [product] = await db.insert(products).values({
+                const insertedProducts = await db.insert(products).values({
                     tenantId,
                     storeId: data.storeId,
                     productName: data.title,
@@ -106,9 +109,14 @@ export const productService = {
                     sourceUrl: data.sourceUrl,
                     status: data.status,
                 }).returning();
+                product = insertedProducts[0] ?? null;
             } else {
                 throw error;
             }
+        }
+
+        if (!product) {
+            throw new Error("Failed to create product");
         }
 
         let formattedMedia: Array<{ sortOrder: number; isFeatured: boolean } & typeof mediaObjects.$inferSelect> = [];
@@ -284,10 +292,12 @@ export const productService = {
             offset,
         });
 
-        const [{ count }] = await db
+        const countResult = await db
             .select({ count: sql<number>`count(*)::int` })
             .from(products)
             .where(whereClause);
+
+        const count = countResult[0]?.count ?? 0;
 
         const salesRows = productList.length
             ? await db
@@ -390,6 +400,9 @@ export const productService = {
                         contentType: m.contentType || "image/jpeg",
                         source: "upload",
                     }).returning();
+                    if (!newMedia) {
+                        throw new Error("Failed to create media object");
+                    }
                     mediaId = newMedia.id;
                 }
 

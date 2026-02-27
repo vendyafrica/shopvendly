@@ -66,17 +66,17 @@ const getApiBaseUrl = async () => {
 
 interface PageProps {
   params: Promise<{
-    s: string;
+    handle: string;
     productSlug: string;
   }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { s, productSlug } = await params;
+  const { handle, productSlug } = await params;
   const baseUrl = await getApiBaseUrl();
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${s}`, { next: { revalidate: 60 } });
+  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
   const store = storeRes.ok ? (await storeRes.json()) as StorefrontStore : null;
-  const productRes = await fetch(`${baseUrl}/api/storefront/${s}/products/${productSlug}`, { next: { revalidate: 60 } });
+  const productRes = await fetch(`${baseUrl}/api/storefront/${handle}/products/${productSlug}`, { next: { revalidate: 60 } });
   const product = productRes.ok ? (await productRes.json()) as StorefrontProduct : null;
 
   if (!store || !product) {
@@ -116,13 +116,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ProductPage({ params }: PageProps) {
-  const { s, productSlug } = await params;
+  const { handle, productSlug } = await params;
   const baseUrl = await getApiBaseUrl();
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${s}`, { next: { revalidate: 60 } });
+  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
   const store = storeRes.ok ? (await storeRes.json()) as StorefrontStore : null;
-  const productRes = await fetch(`${baseUrl}/api/storefront/${s}/products/${productSlug}`, { next: { revalidate: 60 } });
+  const productRes = await fetch(`${baseUrl}/api/storefront/${handle}/products/${productSlug}`, { next: { revalidate: 60 } });
   const product = productRes.ok ? (await productRes.json()) as StorefrontProduct : null;
-  const productsRes = await fetch(`${baseUrl}/api/storefront/${s}/products`, { next: { revalidate: 30 } });
+  const productsRes = await fetch(`${baseUrl}/api/storefront/${handle}/products`, { next: { revalidate: 30 } });
   const products = productsRes.ok ? (await productsRes.json()) as StorefrontProductListItem[] : [];
 
   if (!store || !product) {

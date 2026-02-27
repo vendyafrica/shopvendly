@@ -28,13 +28,13 @@ const getApiBaseUrl = async () => {
 
 interface LayoutProps {
   children: ReactNode;
-  params: Promise<{ s: string }>;
+  params: Promise<{ handle: string }>;
 }
 
 export default async function StorefrontLayout({ children, params }: LayoutProps) {
-  const { s } = await params;
+  const { handle } = await params;
   const baseUrl = await getApiBaseUrl();
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${s}`, { next: { revalidate: 60 } });
+  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
   const store = storeRes.ok ? await storeRes.json() as StorefrontStore : null;
 
   const initialStore = store
