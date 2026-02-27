@@ -130,7 +130,11 @@ export function AddProduct({ storeId, onProductCreated }: AddProductProps) {
     const removeFile = (index: number) => {
         setFiles((prev) => {
             const updated = [...prev];
-            URL.revokeObjectURL(updated[index].previewUrl);
+            const target = updated[index];
+            if (!target) return prev;
+            if (target.previewUrl) {
+                URL.revokeObjectURL(target.previewUrl);
+            }
             updated.splice(index, 1);
             return updated;
         });

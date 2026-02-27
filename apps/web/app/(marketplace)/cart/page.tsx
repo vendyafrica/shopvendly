@@ -5,11 +5,11 @@ import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete02Icon, MinusSignIcon, PlusSignIcon, ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
-import { useCart } from "../../../contexts/cart-context";
+import { useCart } from "@/features/cart/context/cart-context";
 import { StoreAvatar } from "@/components/store-avatar";
-import Header from "../components/header";
-import Footer from "../components/footer";
-import RecentlyViewed from "../components/recently-viewed";
+import Header from "@/features/marketplace/components/header";
+import Footer from "@/features/marketplace/components/footer";
+import RecentlyViewed from "@/features/marketplace/components/recently-viewed";
 import { Bricolage_Grotesque } from "next/font/google";
 import { getStorefrontUrl } from "@/utils/misc";
 
@@ -87,10 +87,14 @@ export default function CartPage() {
                 </div>
 
                 <div className="space-y-6">
-                    {Object.entries(itemsByStore).map(([storeId, storeItems]) => {
-                        const store = storeItems[0].store;
+                    {Object.entries(itemsByStore).map(([storeId, rawStoreItems]) => {
+                        const storeItems = rawStoreItems ?? [];
+                        const firstItem = storeItems[0];
+                        if (!firstItem) return null;
+
+                        const store = firstItem.store;
                         const storeSubtotal = storeItems.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
-                        const currency = storeItems[0]?.product.currency || "KES";
+                        const currency = firstItem.product.currency || "KES";
 
                         return (
                             <div key={storeId} className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm">

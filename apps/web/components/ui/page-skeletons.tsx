@@ -199,7 +199,7 @@ export function OrdersPageSkeleton() {
 /**
  * Skeleton for a generic data table
  */
-export function data-tableSkeleton({ rows = 5 }: { rows?: number }) {
+export function DataTableSkeleton({ rows = 5 }: { rows?: number }) {
     return (
         <div className="space-y-3">
             {Array.from({ length: rows }).map((_, i) => (

@@ -6,7 +6,15 @@ import { useTenant } from "@/features/dashboard/context/tenant-context";
 import { Button } from "@shopvendly/ui/components/button";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Instagram, CheckCircle2, AlertCircle, Download, Trash2, ChevronDown, Music2 } from "lucide-react";
+import {
+    AlertCircleIcon,
+    ArrowDown01Icon,
+    CheckmarkCircle01Icon,
+    Delete02Icon,
+    Download01Icon,
+    InstagramIcon,
+    MusicNote02Icon,
+} from "@hugeicons/core-free-icons";
 
 export default function IntegrationsPage() {
   const params = useSearchParams();
@@ -15,7 +23,7 @@ export default function IntegrationsPage() {
 
   const { bootstrap, error } = useTenant();
   const storeId = bootstrap?.storeId;
-
+  
   const [isConnecting, setIsConnecting] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
   const [importError, setImportError] = React.useState<string | null>(null);
@@ -210,7 +218,7 @@ export default function IntegrationsPage() {
 
       {error && (
         <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4 shrink-0" />
+          <HugeiconsIcon icon={AlertCircleIcon} className="h-4 w-4 shrink-0" />
           {error}
         </div>
       )}
@@ -220,8 +228,8 @@ export default function IntegrationsPage() {
         {/* Hero Banner */}
         <div className="bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Instagram className="h-5 w-5 text-white" />
+            <div className="mr-3 h-10 w-10 rounded-full bg-pink-100 p-2 text-pink-500">
+              <HugeiconsIcon icon={InstagramIcon} className="h-full w-full" />
             </div>
             <div>
               <p className="font-semibold text-white text-sm">Instagram</p>
@@ -232,7 +240,7 @@ export default function IntegrationsPage() {
           {/* Status badge */}
           {connected ? (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs font-medium text-white">
-              <CheckCircle2 className="h-3.5 w-3.5" />
+              <HugeiconsIcon icon={CheckmarkCircle01Icon} className="h-3.5 w-3.5" />
               Connected
             </span>
           ) : (
@@ -246,7 +254,7 @@ export default function IntegrationsPage() {
         <div className="p-6 space-y-5 bg-card">
           {syncError && (
             <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-              <AlertCircle className="h-4 w-4 shrink-0" />
+              <HugeiconsIcon icon={AlertCircleIcon} className="h-4 w-4 shrink-0" />
               {syncError}
             </div>
           )}
@@ -279,7 +287,7 @@ export default function IntegrationsPage() {
                 "Reconnect"
               ) : (
                 <>
-                  <Instagram className="mr-2 h-3.5 w-3.5" />
+                  <HugeiconsIcon icon={CheckmarkCircle01Icon} className="mr-2 h-3.5 w-3.5" />
                   Connect
                 </>
               )}
@@ -313,12 +321,12 @@ export default function IntegrationsPage() {
                   </>
                 ) : importSuccess ? (
                   <>
-                    <CheckCircle2 className="mr-2 h-3.5 w-3.5 text-emerald-500" />
+                    <HugeiconsIcon icon={CheckmarkCircle01Icon} className="mr-2 h-5 w-5 text-emerald-500" />
                     Imported
                   </>
                 ) : (
                   <>
-                    <Download className="mr-2 h-3.5 w-3.5" />
+                    <HugeiconsIcon icon={Download01Icon} className="h-4 w-4" />
                     Import now
                   </>
                 )}
@@ -328,7 +336,7 @@ export default function IntegrationsPage() {
 
           {importError && (
             <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-              <AlertCircle className="h-4 w-4 shrink-0" />
+              <HugeiconsIcon icon={AlertCircleIcon} className="h-4 w-4 shrink-0" />
               {importError}
             </div>
           )}
@@ -343,9 +351,7 @@ export default function IntegrationsPage() {
               className="w-full flex items-center justify-between px-6 py-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <span className="font-medium uppercase tracking-wider">Danger Zone</span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${showDangerZone ? "rotate-180" : ""}`}
-              />
+              <HugeiconsIcon icon={ArrowDown01Icon} className={`h-4 w-4 transition-transform ${showDangerZone ? "rotate-180" : ""}`} />
             </button>
 
             {showDangerZone && (
@@ -367,7 +373,7 @@ export default function IntegrationsPage() {
                     </>
                   ) : (
                     <>
-                      <Trash2 className="mr-2 h-3.5 w-3.5" />
+                      <HugeiconsIcon icon={Delete02Icon} className="mr-2 h-3.5 w-3.5" />
                       Disconnect &amp; delete data
                     </>
                   )}
@@ -389,7 +395,7 @@ export default function IntegrationsPage() {
         <div className="bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-700 px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Music2 className="h-5 w-5 text-white" />
+              <HugeiconsIcon icon={MusicNote02Icon} className="h-5 w-5 text-white" />
             </div>
             <div>
               <p className="font-semibold text-white text-sm">TikTok</p>
@@ -399,7 +405,7 @@ export default function IntegrationsPage() {
 
           {tiktokConnected ? (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs font-medium text-white">
-              <CheckCircle2 className="h-3.5 w-3.5" />
+              <HugeiconsIcon icon={CheckmarkCircle01Icon} className="h-3.5 w-3.5" />
               Connected
             </span>
           ) : (
@@ -412,7 +418,7 @@ export default function IntegrationsPage() {
         <div className="p-6 space-y-5 bg-card">
           {tiktokSyncError && (
             <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-              <AlertCircle className="h-4 w-4 shrink-0" />
+              <HugeiconsIcon icon={AlertCircleIcon} className="h-4 w-4 shrink-0" />
               {tiktokSyncError}
             </div>
           )}
@@ -444,7 +450,7 @@ export default function IntegrationsPage() {
                 "Reconnect"
               ) : (
                 <>
-                  <Music2 className="mr-2 h-3.5 w-3.5" />
+                  <HugeiconsIcon icon={MusicNote02Icon} className="mr-2 h-3.5 w-3.5" />
                   Connect
                 </>
               )}

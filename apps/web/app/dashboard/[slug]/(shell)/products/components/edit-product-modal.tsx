@@ -184,9 +184,11 @@ export function EditProductModal({
     const removeFile = (index: number) => {
         setFiles((prev) => {
             const updated = [...prev];
+            const target = updated[index];
+            if (!target) return prev;
             // Only revoke created object URLs, not remote ones
-            if (updated[index].isNew) {
-                URL.revokeObjectURL(updated[index].previewUrl);
+            if (target.isNew && target.previewUrl) {
+                URL.revokeObjectURL(target.previewUrl);
             }
             updated.splice(index, 1);
             return updated;
@@ -340,6 +342,7 @@ export function EditProductModal({
                                                         setFiles((prev) => {
                                                             const updated = [...prev];
                                                             const [moved] = updated.splice(i, 1);
+                                                            if (!moved) return prev;
                                                             updated.unshift(moved);
                                                             return updated;
                                                         });
