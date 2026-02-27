@@ -12,12 +12,10 @@ import { useTenant } from "@/features/dashboard/context/tenant-context";
 
 import Image from "next/image";
 import { Button } from "@shopvendly/ui/components/button";
+import { Input } from "@shopvendly/ui/components/input";
+import { Badge } from "@shopvendly/ui/components/badge";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Delete02Icon, Edit02Icon, MoreHorizontalIcon, SparklesIcon } from "@hugeicons/core-free-icons";
-import { UploadModal } from "./components/upload-modal";
-import { EditProductModal } from "./components/edit-product-modal";
-import { Checkbox } from "@shopvendly/ui/components/checkbox";
-
+import { Add01Icon, Delete02Icon, Edit02Icon, MoreHorizontalIcon, SparklesIcon } from "@hugeicons/core-free-icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,15 +23,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@shopvendly/ui/components/dropdown-menu";
+import { UploadModal } from "./components/upload-modal";
+import { EditProductModal } from "./components/edit-product-modal";
+import { Checkbox } from "@shopvendly/ui/components/checkbox";
+
 import {
   useProducts,
   useDeleteProduct,
   useInvalidateProducts,
+  useUpdateProduct,
   type ProductTableRow,
   type ProductApiRow,
 } from "@/features/products/hooks/use-products";
 import { ProductsPageSkeleton } from "@/components/ui/page-skeletons";
 import { isLikelyVideoMedia } from "@/utils/misc";
+
+const STATUS_STYLES: Record<ProductTableRow["status"], { label: string; badgeClass: string }> = {
+  draft: { label: "Draft", badgeClass: "bg-muted text-muted-foreground border-dashed" },
+  ready: { label: "Ready", badgeClass: "bg-amber-50 text-amber-700 border-amber-200" },
+  active: { label: "Active", badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  "sold-out": { label: "Sold out", badgeClass: "bg-rose-50 text-rose-700 border-rose-200" },
+};
+
+type EditableField = "name" | "priceAmount" | "quantity";
+type DraftMap = Record<string, Partial<Record<EditableField, string>>>;
 
 function formatMoney(amount: number, currency: string) {
   return new Intl.NumberFormat("en-KE", {
@@ -117,6 +130,12 @@ export default function ProductsPage() {
     thumbnailUrl?: string;
     media?: { id?: string; blobUrl: string; contentType?: string; blobPathname?: string }[];
   } | null>(null);
+  const [activeCell, setActiveCell] = React.useState<{ id: string; field: EditableField } | null>(null);
+  const [drafts, setDrafts] = React.useState<DraftMap>({});
+  const [savingId, setSavingId] = React.useState<string | null>(null);
+  const [uploadMode, setUploadMode] = React.useState<"single" | "multiple">("single");
+
+  const updateProductMutation = useUpdateProduct(bootstrap?.storeId ?? "");
 
   // Optimistic delete - removes instantly from UI
   const handleDelete = async (id: string) => {
@@ -286,6 +305,131 @@ export default function ProductsPage() {
     }
   };
 
+  const startEditing = React.useCallback((productId: string, field: EditableField) => {
+    setActiveCell({ id: productId, field });
+  }, []);
+
+  const stopEditing = React.useCallback(() => {
+    setActiveCell(null);
+  }, []);
+
+  const getDraftValue = React.useCallback(
+    (product: ProductTableRow, field: EditableField) => {
+      const draftValue = drafts[product.id]?.[field];
+      if (draftValue !== undefined) return draftValue;
+      if (field === "name") return product.name;
+      if (field === "priceAmount") return product.priceAmount.toString();
+      return product.quantity.toString();
+    },
+    [drafts]
+  );
+
+  const handleDraftChange = React.useCallback(
+    (product: ProductTableRow, field: EditableField, value: string) => {
+      setDrafts((prev) => {
+        const next = { ...prev } as DraftMap;
+        const baseline =
+          field === "name"
+            ? product.name
+            : field === "priceAmount"
+              ? product.priceAmount.toString()
+              : product.quantity.toString();
+
+        if (value === baseline) {
+          const productDraft = next[product.id];
+          if (productDraft) {
+            delete productDraft[field];
+            if (Object.keys(productDraft).length === 0) {
+              delete next[product.id];
+            }
+          }
+          return next;
+        }
+
+        next[product.id] = {
+          ...next[product.id],
+          [field]: value,
+        };
+        return next;
+      });
+    },
+    []
+  );
+
+  const hasInvalidDraft = React.useCallback((draft?: Partial<Record<EditableField, string>>) => {
+    if (!draft) return false;
+    if (draft.name !== undefined && draft.name.trim() === "") return true;
+    if (draft.priceAmount !== undefined) {
+      const trimmed = draft.priceAmount.trim();
+      if (trimmed === "" || Number.isNaN(Number(trimmed))) return true;
+    }
+    if (draft.quantity !== undefined) {
+      const trimmed = draft.quantity.trim();
+      if (trimmed === "" || Number.isNaN(Number(trimmed))) return true;
+    }
+    return false;
+  }, []);
+
+  const handleInlineSave = React.useCallback(
+    (productId: string) => {
+      const draft = drafts[productId];
+      if (!draft) return;
+
+      if (hasInvalidDraft(draft)) {
+        alert("Please enter valid values before saving.");
+        return;
+      }
+
+      const payload: Partial<ProductApiRow> = {};
+      if (draft.name !== undefined) {
+        const trimmed = draft.name.trim();
+        if (trimmed) {
+          payload.productName = trimmed;
+        }
+      }
+      if (draft.priceAmount !== undefined) {
+        payload.priceAmount = Number(draft.priceAmount);
+      }
+      if (draft.quantity !== undefined) {
+        payload.quantity = Number(draft.quantity);
+      }
+
+      if (Object.keys(payload).length === 0) {
+        return;
+      }
+
+      setSavingId(productId);
+      updateProductMutation.mutate(
+        { id: productId, data: payload },
+        {
+          onSuccess: (updatedProduct) => {
+            if (bootstrap?.storeId && updatedProduct) {
+              updateProductCache(bootstrap.storeId, updatedProduct);
+            }
+            setDrafts((prev) => {
+              const next = { ...prev };
+              delete next[productId];
+              return next;
+            });
+            setActiveCell(null);
+          },
+          onError: (error) => {
+            alert(error instanceof Error ? error.message : "Failed to save product");
+          },
+          onSettled: () => {
+            setSavingId((prev) => (prev === productId ? null : prev));
+          },
+        }
+      );
+    },
+    [bootstrap?.storeId, drafts, hasInvalidDraft, updateProductMutation, updateProductCache]
+  );
+
+  const handleAddProductSelect = React.useCallback((mode: "single" | "multiple") => {
+    setUploadMode(mode);
+    setUploadModalOpen(true);
+  }, []);
+
   const selectedIds = React.useMemo(() => Object.keys(rowSelection), [rowSelection]);
 
   const handlePublishSelected = React.useCallback(async () => {
@@ -398,44 +542,129 @@ export default function ProductsPage() {
       enableSorting: false,
     },
     {
-      id: "product",
+      accessorKey: "name",
       header: "Product",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="relative size-10 overflow-hidden rounded-md bg-muted shrink-0">
-            <ProductThumbnail
-              url={row.original.thumbnailUrl}
-              name={row.original.name}
-              contentType={row.original.thumbnailType}
-            />
-          </div>
-          <div className="min-w-0 max-w-[220px]">
-            <div className="truncate font-medium" title={row.original.name}>
-              {row.original.name}
+      cell: ({ row }) => {
+        const product = row.original;
+        const field: EditableField = "name";
+        const isEditing = activeCell?.id === product.id && activeCell.field === field;
+        const value = getDraftValue(product, field);
+
+        return (
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="relative size-10 overflow-hidden rounded-md bg-muted shrink-0">
+              <ProductThumbnail
+                url={product.thumbnailUrl}
+                name={product.name}
+                contentType={product.thumbnailType}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              {isEditing ? (
+                <Input
+                  autoFocus
+                  value={value}
+                  onChange={(event) => handleDraftChange(product, field, event.target.value)}
+                  onBlur={stopEditing}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") handleInlineSave(product.id);
+                    if (event.key === "Escape") stopEditing();
+                  }}
+                  className="h-9 border border-border bg-background font-semibold"
+                />
+              ) : (
+                <button
+                  type="button"
+                  className="truncate font-semibold text-left w-full"
+                  onClick={() => startEditing(product.id, field)}
+                  title={product.name}
+                >
+                  {value}
+                </button>
+              )}
             </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       id: "price",
       header: "Price",
-      cell: ({ row }) => (
-        <span className="text-sm whitespace-nowrap">
-          {formatMoney(row.original.priceAmount, row.original.currency)}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const product = row.original;
+        const field: EditableField = "priceAmount";
+        const isEditing = activeCell?.id === product.id && activeCell.field === field;
+        const value = getDraftValue(product, field);
+
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground">{product.currency}</span>
+            {isEditing ? (
+              <Input
+                autoFocus
+                type="number"
+                inputMode="decimal"
+                value={value}
+                onChange={(event) => handleDraftChange(product, field, event.target.value)}
+                onBlur={stopEditing}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") handleInlineSave(product.id);
+                  if (event.key === "Escape") stopEditing();
+                }}
+                className="h-9 w-28 border border-border bg-background text-sm font-medium"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => startEditing(product.id, field)}
+                className="text-sm font-medium whitespace-nowrap"
+              >
+                {formatMoney(product.priceAmount, product.currency)}
+              </button>
+            )}
+          </div>
+        );
+      },
     },
     {
-      accessorKey: "quantity",
+      id: "inventory",
       header: "Inventory",
-      cell: ({ row }) => <span className="text-sm">{row.original.quantity}</span>,
+      cell: ({ row }) => {
+        const product = row.original;
+        const field: EditableField = "quantity";
+        const isEditing = activeCell?.id === product.id && activeCell.field === field;
+        const value = getDraftValue(product, field);
+
+        return isEditing ? (
+          <Input
+            autoFocus
+            type="number"
+            inputMode="numeric"
+            value={value}
+            onChange={(event) => handleDraftChange(product, field, event.target.value)}
+            onBlur={stopEditing}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") handleInlineSave(product.id);
+              if (event.key === "Escape") stopEditing();
+            }}
+            className="h-9 w-20 border border-border bg-background text-sm font-medium"
+          />
+        ) : (
+          <button
+            type="button"
+            className="text-sm font-medium"
+            onClick={() => startEditing(product.id, field)}
+          >
+            {value}
+          </button>
+        );
+      },
     },
     {
       id: "sales",
       header: "Sales",
       cell: ({ row }) => (
-        <span className="text-sm whitespace-nowrap">
+        <span className="text-sm font-semibold whitespace-nowrap">
           {formatMoney(row.original.salesAmount ?? 0, row.original.currency)}
         </span>
       ),
@@ -445,51 +674,45 @@ export default function ProductsPage() {
       header: "Status",
       cell: ({ row }) => {
         const status = row.original.status;
-        const label = status === "active" ? "Active" : status === "ready" ? "Ready" : status === "sold-out" ? "Sold out" : "Draft";
-        const tone = status === "active" ? "text-emerald-600" : status === "ready" ? "text-amber-600" : status === "sold-out" ? "text-rose-600" : "text-muted-foreground";
-        return <span className={`text-sm font-medium ${tone}`}>{label}</span>;
+        const badge = STATUS_STYLES[status];
+        return (
+          <Badge variant="outline" className={`px-3 py-1 text-xs font-medium border ${badge.badgeClass}`}>
+            {badge.label}
+          </Badge>
+        );
       },
     },
     {
       id: "actions",
-      header: "",
-      cell: ({ row }) => (
-        <div className="flex justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              nativeButton={true}
-              render={(props) => (
-                <Button
-                  {...props}
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9"
-                />
-              )}
+      header: "Quick actions",
+      cell: ({ row }) => {
+        const product = row.original;
+        const draft = drafts[product.id];
+        const isDirty = !!(draft && Object.keys(draft).length > 0);
+        const invalid = hasInvalidDraft(draft);
+        const isSaving = savingId === product.id;
+
+        return (
+          <div className="flex items-center gap-2 justify-end">
+            <Button
+              size="sm"
+              onClick={() => handleInlineSave(product.id)}
+              disabled={!isDirty || invalid || isSaving}
             >
-              <HugeiconsIcon icon={MoreHorizontalIcon} className="size-4" />
-              <span className="sr-only">Actions</span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-44">
-              <DropdownMenuItem onClick={() => handleEdit(row.original.id)} className="p-2 cursor-pointer">
-                <HugeiconsIcon icon={Edit02Icon} className="size-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => handleDelete(row.original.id)}
-                disabled={deleteProduct.isPending}
-                className="p-2 cursor-pointer"
-              >
-                <HugeiconsIcon icon={Delete02Icon} className="size-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ),
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-destructive border-destructive/40"
+              onClick={() => handleDelete(product.id)}
+              disabled={deleteProduct.isPending}
+            >
+              Delete
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -559,9 +782,7 @@ export default function ProductsPage() {
             )}
           </Button>
           <AddProductButton
-            onUploadClick={() => {
-              setUploadModalOpen(true);
-            }}
+            onSelect={handleAddProductSelect}
           />
         </div>
       </div>
@@ -604,6 +825,7 @@ export default function ProductsPage() {
         onOpenChange={setUploadModalOpen}
         tenantId={bootstrap?.tenantId || ""}
         onCreate={handleCreateProduct}
+        mode={uploadMode}
       />
 
       <EditProductModal

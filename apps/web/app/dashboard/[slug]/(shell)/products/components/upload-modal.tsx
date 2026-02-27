@@ -23,6 +23,7 @@ interface UploadModalProps {
     onOpenChange: (open: boolean) => void;
     tenantId: string;
     onCreate?: (productData: ProductFormData, media: MediaItem[]) => void;
+    mode?: "single" | "multiple";
 }
 
 export interface MediaItem {
@@ -54,6 +55,7 @@ export function UploadModal({
     onOpenChange,
     tenantId,
     onCreate,
+    mode = "single",
 }: UploadModalProps) {
     const { bootstrap } = useTenant();
     const currency = bootstrap?.defaultCurrency || "UGX";
@@ -227,15 +229,18 @@ export function UploadModal({
 
             onCreate?.(data, media);
 
-            // Clear and close happens in parent or we assume success for optimistic UI
-            // But we should reset local state to be ready for next time
+            const shouldStayOpen = mode === "multiple";
+
             setFiles([]);
             setProductName("");
             setDescription("");
             setPriceAmount("");
             setQuantity("");
             setError(null);
-            onOpenChange(false);
+
+            if (!shouldStayOpen) {
+                onOpenChange(false);
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : "Save failed");
         } finally {
@@ -275,7 +280,9 @@ export function UploadModal({
                 <div className="flex-1 overflow-y-auto p-6">
                     <div className="space-y-4">
                         <p className="text-sm text-muted-foreground">
-                            Upload images or videos for one product. Each file is a variant media item. Finish details before adding another product.
+                            {mode === "single"
+                                ? "Upload images or videos for this product. Each file is a variant media item."
+                                : "Upload media and details for each product. After saving, you'll stay here to add the next product."}
                         </p>
 
                         {error && (
