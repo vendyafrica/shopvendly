@@ -22,7 +22,7 @@
         "../../packages/ui/src/*"
       ],
       "@shopvendly/db": [
-        "../../packages/db/dist/index.js"
+        "../../packages/db/src/index.ts"
       ],
       "@shopvendly/auth": [
         "../../packages/auth/dist/index.js"
@@ -31,10 +31,10 @@
         "../../packages/auth/dist/auth-client.js"
       ],
       "@shopvendly/db/db": [
-        "../../packages/db/dist/db.js"
+        "../../packages/db/src/db.ts"
       ],
       "@shopvendly/db/schema": [
-        "../../packages/db/dist/schema/index.js"
+        "../../packages/db/src/schema/index.ts"
       ],
       "@shopvendly/auth/react": [
         "../../packages/auth/dist/auth-client.js"

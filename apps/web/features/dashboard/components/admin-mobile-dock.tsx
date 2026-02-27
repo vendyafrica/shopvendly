@@ -13,6 +13,7 @@ import {
   ConnectIcon,
   Settings01Icon,
   Store01Icon,
+  Home01Icon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@shopvendly/ui/lib/utils";
 
@@ -53,7 +54,7 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
   if (!mounted) return null;
 
   const items: DockItem[] = [
-    { label: "Home", href: joinPaths(basePath, "/"), icon: DashboardCircleIcon, exact: true },
+    { label: "Home", href: joinPaths(basePath, "/"), icon: Home01Icon, exact: true },
     { label: "Products", href: joinPaths(basePath, "/products"), icon: ShoppingBag01Icon },
     { label: "Transactions", href: joinPaths(basePath, "/transactions"), icon: PackageOpenIcon },
     { label: "Notifications", href: joinPaths(basePath, "/notifications"), icon: Message01Icon },

@@ -2,6 +2,7 @@ import { SellerLoginForm } from "./seller-login-form";
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { getRootUrl } from "@/utils/misc";
 
 export default async function TenantAdminLoginPage({
   params,
@@ -14,13 +15,14 @@ export default async function TenantAdminLoginPage({
   const { next, verified, error } = await searchParams;
 
   const session = await auth.api.getSession({ headers: await headers() });
-  const base = `/a/${slug}`;
+  const dashboardPath = `/dashboard/${slug}`;
+  const base = getRootUrl(dashboardPath);
 
   if (session?.user) {
-    redirect(base);
+    redirect(dashboardPath);
   }
 
-  const redirectTo = next && next.startsWith(base) ? next : base;
+  const redirectTo = next && next.startsWith(dashboardPath) ? getRootUrl(next) : base;
   const title = `Welcome to ${slug} Admin`;
 
   return (

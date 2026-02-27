@@ -2,7 +2,7 @@ import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { storeService } from "@/features/storefront/lib/store-service";
-import { db } from "@shopvendly/db/db";
+import { db } from "@shopvendly/db";
 import { tenants, tenantMemberships } from "@shopvendly/db/schema";
 import { eq } from "@shopvendly/db";
 import { z } from "zod";
@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
 
         const store = await storeService.create({
             tenantId: membership.tenantId,
+            status: true,
             ...input,
         });
 

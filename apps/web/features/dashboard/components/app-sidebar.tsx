@@ -3,7 +3,6 @@
 import * as React from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  DashboardCircleIcon,
   ShoppingBag01Icon,
   Analytics02Icon,
   Message01Icon,
@@ -16,6 +15,7 @@ import {
   Payment02Icon,
   PackageOpenIcon,
   ConnectIcon,
+  Home01Icon,
 } from "@hugeicons/core-free-icons";
 
 import {
@@ -49,15 +49,15 @@ type SidebarNavSubItem = {
 type SidebarNavItem = {
   title: string;
   url: string;
-  icon: typeof DashboardCircleIcon;
+  icon: typeof Home01Icon;
   items?: SidebarNavSubItem[];
 };
 
 const tenantAdminItems: SidebarNavItem[] = [
   {
-    title: "Dashboard",
+    title: "Home",
     url: "/",
-    icon: DashboardCircleIcon,
+    icon: Home01Icon,
   },
   {
     title: "Products",
@@ -97,6 +97,11 @@ const tenantAdminItems: SidebarNavItem[] = [
 ];
 
 const superAdminItems: SidebarNavItem[] = [
+  {
+    title: "Home",
+    url: "/",
+    icon: Home01Icon,
+  },
   {
     title: "Tenants",
     url: "/tenants",
@@ -172,15 +177,15 @@ export function AppSidebar({
   let slug = getSlugFromParams(params);
 
   if (!slug && basePathProp) {
-    // basePath is usually formatted as "/a/store-slug", so we strip the leading segments
-    const match = basePathProp.match(/^\/a\/([^/]+)/) || basePathProp.match(/^\/([^/]+)/);
+    // basePath is usually formatted as "/dashboard/store-slug", so we strip the leading segments
+    const match = basePathProp.match(/^\/dashboard\/([^/]+)/) || basePathProp.match(/^\/([^/]+)/);
     if (match) {
       slug = match[1];
     }
   }
 
   // Ensure basePath is available for other uses
-  const basePath = normalizePath(basePathProp ?? (slug ? `/a/${slug}` : ""));
+  const basePath = normalizePath(basePathProp ?? (slug ? `/dashboard/${slug}` : ""));
 
   // Select items based on whether we are in a store context
   const items = slug || basePathProp ? tenantAdminItems : superAdminItems;

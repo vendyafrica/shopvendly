@@ -24,7 +24,7 @@ export default async function TenantDashboardLayout({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const basePath = `/a/${slug}`;
+  const basePath = `/dashboard/${slug}`;
 
   return (
     <Suspense fallback={<DashboardPageSkeleton />}>
@@ -49,7 +49,7 @@ async function TenantDashboardLayoutInner({
   const session = await auth.api.getSession({ headers: headerList });
 
   if (!session?.user) {
-    redirect(`/a/${slug}/login?next=${encodeURIComponent(basePath)}`);
+    redirect(`/dashboard/${slug}/login?next=${encodeURIComponent(basePath)}`);
   }
 
   const store = await db.query.stores.findFirst({
@@ -79,7 +79,7 @@ async function TenantDashboardLayoutInner({
   const isSuperAdmin = !!superAdmin;
 
   if (!isTenantAdmin && !isSuperAdmin) {
-    redirect(`/a/${slug}/unauthorized`);
+    redirect(`/dashboard/${slug}/unauthorized`);
   }
 
   return (
