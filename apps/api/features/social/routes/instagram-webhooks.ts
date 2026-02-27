@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
-import type { RawBodyRequest } from "../shared/types/raw-body";
+import type { RawBodyRequest } from "../../../shared/types/raw-body";
 import { and, db, eq, instagramAccounts, account, stores, products, mediaObjects, productMedia } from "@shopvendly/db";
 
 export const instagramWebhookRouter: ExpressRouter = Router();
@@ -73,7 +73,7 @@ function pickPreferredAttachment(attachments: unknown[]): AttachmentPick | null 
   if (igPost) return igPost;
   const share = parsed.find((p) => p.type === "share");
   if (share) return share;
-  return parsed[0];
+  return parsed[0] ?? null;
 }
 
 function slugify(text: string) {
@@ -266,6 +266,10 @@ instagramWebhookRouter.post("/webhooks/instagram", async (req, res) => {
       })
       .returning();
 
+    if (!product) {
+      throw new Error("Failed to create product");
+    }
+
     const variantEntries: Array<{ name: string; sourceMediaId: string; mediaObjectId: string; mediaType?: string }> = [];
 
     if (mediaType === "CAROUSEL_ALBUM" && childrenData.length) {
@@ -292,6 +296,10 @@ instagramWebhookRouter.post("/webhooks/instagram", async (req, res) => {
             sourceMediaId: childId,
           })
           .returning();
+
+        if (!mediaRow) {
+          continue;
+        }
 
         await db.insert(productMedia).values({
           tenantId: igAccount.tenantId,
@@ -323,6 +331,10 @@ instagramWebhookRouter.post("/webhooks/instagram", async (req, res) => {
             sourceMediaId: sourceId,
           })
           .returning();
+
+        if (!mediaRow) {
+          return res.sendStatus(200);
+        }
 
         await db.insert(productMedia).values({
           tenantId: igAccount.tenantId,

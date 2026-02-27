@@ -1,1 +1,1 @@
-export { instagramWebhookRouter } from "../../../routes/instagram-webhooks";
+export { instagramWebhookRouter } from "../../routes/instagram-webhooks";

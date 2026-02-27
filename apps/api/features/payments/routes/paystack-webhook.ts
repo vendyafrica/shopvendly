@@ -3,8 +3,8 @@ import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
 import { db, eq } from "@shopvendly/db";
 import { orders } from "@shopvendly/db";
-import type { RawBodyRequest } from "../shared/types/raw-body";
-import { orderService } from "../services/order-service";
+import type { RawBodyRequest } from "../../../shared/types/raw-body";
+import { orderService } from "../../orders/services/order-service";
 import {
   notifyCustomerOrderReceived,
   notifyCustomerPreparing,

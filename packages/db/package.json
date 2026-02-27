@@ -6,12 +6,10 @@
     "scripts": {
         "build": "tsup",
         "dev": "tsup --watch",
-        "db:generate": "drizzle-kit generate",
-        "db:push": "drizzle-kit push",
-        "db:migrate": "drizzle-kit migrate",
-        "db:migrate:vercel-blob": "tsx src/migrate-vercel-blob-to-uploadthing.ts",
-        "db:reset": "npx tsx src/reset.ts && drizzle-kit push && tsx src/seed.ts",
-        "db:seed": "tsx src/seed.ts"
+        "generate": "drizzle-kit generate",
+        "push": "drizzle-kit push",
+        "reset": "npx tsx src/reset.ts && drizzle-kit push && tsx src/seed.ts",
+        "seed": "tsx src/seed.ts"
     },
     "dependencies": {
         "@neondatabase/serverless": "^1.0.2",
