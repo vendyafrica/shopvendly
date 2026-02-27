@@ -3,14 +3,14 @@
 import * as React from "react"
 import { Combobox as ComboboxPrimitive } from "@base-ui/react"
 
-import { cn } from "@/src/lib/utils"
-import { Button } from "@/src/components/button"
+import { cn } from "@shopvendly/ui/lib/utils"
+import { Button } from "@shopvendly/ui/components/button"
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
-} from "@/src/components/input-group"
+} from "@shopvendly/ui/components/input-group"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowDown01Icon, Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons"
 

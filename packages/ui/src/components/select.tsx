@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
 
-import { cn } from "@/src/lib/utils"
+import { cn } from "@shopvendly/ui/lib/utils"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { UnfoldMoreIcon, Tick02Icon, ArrowUp01Icon, ArrowDown01Icon } from "@hugeicons/core-free-icons"
 

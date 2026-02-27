@@ -2,7 +2,17 @@
   "extends": "@shopvendly/typescript-config/react-library.json",
   "compilerOptions": {
     "outDir": "dist",
-    "strictNullChecks": true
+    "rootDir": "src",
+    "strictNullChecks": true,
+    "baseUrl": ".",
+    "paths": {
+      "@components/*": ["src/components/*"],
+      "@hooks/*": ["src/hooks/*"],
+      "@lib/*": ["src/lib/*"],
+      "@ui/*": ["src/components/*"],
+      "@utils": ["src/lib/utils"],
+      "@utils/*": ["src/lib/*"]
+    }
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
