@@ -1,19 +1,57 @@
 {
-  "extends": "@repo/typescript-config/nextjs.json",
+  "extends": "../../packages/typescript-config/nextjs.json",
+  "exclude": [
+    "node_modules"
+  ],
   "compilerOptions": {
+    "jsx": "react-jsx",
+    "outDir": "dist",
     "plugins": [
       {
         "name": "next"
       }
     ],
-    "strictNullChecks": true
+    "paths": {
+      "@shopvendly/ui/globals.css": [
+        "../../packages/ui/src/styles/globals.css"
+      ],
+      "@shopvendly/ui/*": [
+        "../../packages/ui/src/*"
+      ],
+      "@shopvendly/db": [
+        "../../packages/db/src/index.ts"
+      ],
+      "@shopvendly/auth": [
+        "../../packages/auth/src/index.ts"
+      ],
+      "@shopvendly/auth/auth-client": [
+        "../../packages/auth/src/auth-client.ts"
+      ],
+      "@vendly/db/db": [
+        "../../packages/db/src/db.ts"
+      ],
+      "@vendly/db/schema": [
+        "../../packages/db/src/schema/index.ts"
+      ],
+      "@vendly/auth/react": [
+        "../../packages/auth/src/auth-client.ts"
+      ],
+      "@vendly/transactional": [
+        "../../packages/transactional/index.ts"
+      ],
+      "@/*": [
+        "./src/*"
+      ]
+    }
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
+    "src",
+    "../../packages/ui/src",
+    "../../packages/db/src",
+    "../../packages/auth/src",
+    "../../packages/transactional",
+    "next.config.ts",
     "next-env.d.ts",
-    "next.config.js",
     ".next/types/**/*.ts"
-  ],
-  "exclude": ["node_modules"]
+  ]
 }
