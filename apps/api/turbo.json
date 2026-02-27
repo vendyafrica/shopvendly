@@ -1,0 +1,29 @@
+{
+  "extends": [
+    "//"
+  ],
+  "tasks": {
+    "build": {
+      "env": [
+        "PORT",
+        "DATABASE_URL",
+        "BETTER_AUTH_URL",
+        "BETTER_AUTH_SECRET",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "INSTAGRAM_CLIENT_ID",
+        "INSTAGRAM_CLIENT_SECRET",
+        "INSTAGRAM_APP_SECRET",
+        "INSTAGRAM_WEBHOOK_VERIFY_TOKEN",
+        "RESEND_API_KEY",
+        "V0_API_URL",
+        "ROOT_DOMAIN",
+        "VERCEL_API_TOKEN",
+        "VERCEL_PROJECT_ID"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
+    }
+  }
+}

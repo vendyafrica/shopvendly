@@ -1,9 +1,9 @@
 import { betterAuth } from "better-auth";
 import { genericOAuth, oneTap } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "@vendly/db/db";
-import * as schema from "@vendly/db/schema";
-import { sendAdminVerificationEmail } from "@vendly/transactional";
+import { db } from "@shopvendly/db/db";
+import * as schema from "@shopvendly/db/schema";
+import { sendAdminVerificationEmail } from "@shopvendly/transactional";
 import { getInstagramToken, getInstagramUserInfo } from "./instagram";
 
 const baseURL =
@@ -22,15 +22,21 @@ const isProd = process.env.NODE_ENV === "production";
 const isSecure = isProd || baseURL.startsWith("https://");
 
 function extractNameFromEmail(email: string): string {
-  const emailPrefix = email.split("@")[0];
-  return emailPrefix
+  const emailPrefix = email.split("@")[0] ?? email;
+  const parts = emailPrefix
     .split(/[._-]/)
+    .filter(Boolean)
     .map(
       (part: string) =>
         part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
-    )
+    );
+
+  const firstWord = parts
     .join(" ")
-    .split(" ")[0];
+    .split(" ")
+    .filter(Boolean)[0];
+
+  return firstWord ?? emailPrefix ?? email;
 }
 
 const trustedOrigins = [

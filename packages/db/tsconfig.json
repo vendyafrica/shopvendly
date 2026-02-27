@@ -4,6 +4,8 @@
     "lib": [
       "ES2020"
     ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "paths": {
       "@shopvendly/db": [
         "./src/index.ts"

@@ -1,0 +1,32 @@
+{
+  "extends": "../../packages/typescript-config/base.json",
+  "compilerOptions": {
+    "lib": [
+      "ES2015"
+    ],
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "@shopvendly/db/schema": [
+        "../../packages/db/src/schema/index.ts"
+      ],
+      "@shopvendly/db": [
+        "../../packages/db/src/index.ts"
+      ],
+      "@vendly/db/schema": [
+        "../../packages/db/src/schema/index.ts"
+      ],
+      "@vendly/db": [
+        "../../packages/db/src/index.ts"
+      ]
+    }
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [
+    ".",
+    "../../packages/db/drizzle.config.ts",
+    "../../packages/db/src/seed"
+  ]
+}

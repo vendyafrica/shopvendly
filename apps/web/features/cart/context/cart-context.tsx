@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
-import { useAppSession } from "./app-session-context";
+import { useAppSession } from "@/contexts/app-session-context";
 import { trackStorefrontEvents } from "@/features/storefront/lib/storefront-tracking";
 
 // Use relative paths for same-origin API calls (Next.js serverless routes)
