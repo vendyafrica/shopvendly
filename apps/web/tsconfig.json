@@ -8,7 +8,7 @@
     "outDir": "dist",
     "plugins": [
       {
-        "name": "next"
+        "name": "@shopvendly/web"
       }
     ],
     "paths": {
@@ -30,25 +30,31 @@
       "@shopvendly/auth/auth-client": [
         "../../packages/auth/src/auth-client.ts"
       ],
-      "@vendly/db/db": [
+      "@shopvendly/db/db": [
         "../../packages/db/src/db.ts"
       ],
-      "@vendly/db/schema": [
+      "@shopvendly/db/schema": [
         "../../packages/db/src/schema/index.ts"
       ],
-      "@vendly/auth/react": [
+      "@shopvendly/auth/react": [
         "../../packages/auth/src/auth-client.ts"
       ],
-      "@vendly/transactional": [
+      "@shopvendly/transactional": [
         "../../packages/transactional/index.ts"
       ],
       "@/*": [
-        "./src/*"
+        "./*"
       ]
     }
   },
   "include": [
-    "src",
+    "app",
+    "features",
+    "components",
+    "hooks",
+    "lib",
+    "utils",
+    "types",
     "../../packages/ui/src",
     "../../packages/db/src",
     "../../packages/auth/src",
