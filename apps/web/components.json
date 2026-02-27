@@ -5,21 +5,17 @@
   "tsx": true,
   "tailwind": {
     "config": "",
-    "css": "src/styles/globals.css",
+    "css": "../../packages/ui/src/styles/globals.css",
     "baseColor": "neutral",
     "cssVariables": true,
     "prefix": ""
   },
   "iconLibrary": "hugeicons",
-  "rtl": false,
   "aliases": {
-    "components": "@shopvendly/ui/components",
+    "components": "@/components",
+    "hooks": "@/hooks",
+    "lib": "@/lib",
     "utils": "@shopvendly/ui/lib/utils",
-    "ui": "@shopvendly/ui/components",
-    "lib": "@shopvendly/ui/lib",
-    "hooks": "@shopvendly/ui/hooks"
-  },
-  "menuColor": "default",
-  "menuAccent": "subtle",
-  "registries": {}
+    "ui": "@shopvendly/ui/components"
+  }
 }

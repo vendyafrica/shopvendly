@@ -12,6 +12,12 @@
       }
     ],
     "paths": {
+      "@shopvendly/ui/globals.css": [
+        "../../packages/ui/src/styles/globals.css"
+      ],
+      "@/src/*": [
+        "../../packages/ui/src/*"
+      ],
       "@shopvendly/ui/*": [
         "../../packages/ui/src/*"
       ],
@@ -49,6 +55,7 @@
     "../../packages/transactional",
     "next.config.ts",
     "next-env.d.ts",
-    ".next/types/**/*.ts"
-, "proxy.ts"  ]
+    ".next/types/**/*.ts",
+    "proxy.ts"
+  ]
 }
