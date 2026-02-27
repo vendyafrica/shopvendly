@@ -16,12 +16,12 @@ export function Hero() {
 
           <div className="flex flex-col items-center gap-2 *:w-full sm:flex-row sm:justify-center sm:*:w-auto">
             <Button className="px-8 h-11 rounded-full">
-              <Link href="#link">
+              <Link href="/c">
                 <span className="text-nowrap">Get Started</span>
               </Link>
             </Button>
             <Button variant="ghost" className="px-8 h-11 rounded-full">
-              <Link href="#link">
+              <Link href="https://vendly.shopvendly.store/" target="_blank" rel="noreferrer">
                 <span className="text-nowrap">View Demo</span>
               </Link>
             </Button>

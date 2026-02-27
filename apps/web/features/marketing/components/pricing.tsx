@@ -70,7 +70,7 @@ export function Pricing() {
             </ul>
 
             <Button className="mt-8 w-full h-11 rounded-full">
-              <Link href="/signup">
+              <Link href="/c">
                 Start Free Trial
               </Link>
             </Button>

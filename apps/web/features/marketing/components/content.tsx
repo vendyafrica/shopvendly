@@ -17,13 +17,13 @@ export function Content() {
 
         <div className="mt-8 flex justify-center gap-4">
           <Button className="h-12 px-8 rounded-full">
-            <Link href="/signup">
+            <Link href="/c">
               Get Started
             </Link>
           </Button>
 
           <Button variant="ghost" className="h-12 px-8 rounded-full">
-            <Link href="/demo">
+            <Link href="https://vendly.shopvendly.store/">
               View Demo
             </Link>
           </Button>
