@@ -1,21 +1,35 @@
-"use client"
+import { Button } from "@shopvendly/ui/components/button"
+import Link from "next/link"
 
 export function Content() {
-    return (
-        <section className="bg-background @container py-24">
-            <div className="mx-auto max-w-2xl px-6">
-                <h2 className="text-balance font-serif text-4xl font-medium">Create Content with AI Assistance</h2>
+  return (
+    <section className="py-24">
+      <div className="mx-auto max-w-4xl px-6 text-center">
 
-                <div className="@xl:gap-12 mt-12 grid grid-cols-2 gap-6">
-                    <p className="text-muted-foreground border-t pt-6">
-                        <span className="text-foreground font-medium">Generate Ideas</span> Spark creativity with AI-powered content suggestions and inspiration.
-                    </p>
+        <h2 className="text-4xl font-semibold">
+          Ready to run your business the easy way?
+        </h2>
 
-                    <p className="text-muted-foreground border-t pt-6">
-                        <span className="text-foreground font-medium">Improve Writing</span> Enhance your text with smart editing suggestions and style refinements.
-                    </p>
-                </div>
-            </div>
-        </section>
-    )
+        <p className="text-muted-foreground mt-4 text-lg">
+          Join sellers turning Instagram and TikTok into organized,
+          profitable storefronts.
+        </p>
+
+        <div className="mt-8 flex justify-center gap-4">
+          <Button className="h-12 px-8 rounded-full">
+            <Link href="/signup">
+              Get Started
+            </Link>
+          </Button>
+
+          <Button variant="ghost" className="h-12 px-8 rounded-full">
+            <Link href="/demo">
+              View Demo
+            </Link>
+          </Button>
+        </div>
+
+      </div>
+    </section>
+  )
 }

@@ -1,98 +1,100 @@
-import { Button } from '@shopvendly/ui/components/button'
 import { Card } from '@shopvendly/ui/components/card'
-import { ArrowUp, Globe, Plus, Sparkles } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ShoppingBag01Icon, CreditCardIcon, DeliveryTruck01Icon, Store02Icon, Search01Icon, DashboardSquare02Icon } from '@hugeicons/core-free-icons'
 
 export function Features() {
-    return (
-        <section>
-            <div className="py-24">
-                <div className="mx-auto w-full max-w-3xl px-6">
-                    <h2 className="text-foreground text-balance text-3xl font-semibold md:text-4xl">
-                        <span className="text-muted-foreground">Empowering Marketing teams with</span> AI-driven solutions
-                    </h2>
-                    <div className="@container mt-12 space-y-12">
-                        <Card className="relative overflow-hidden bg-card/70 p-0 sm:col-span-2">
-                            <img
-                                src="https://images.unsplash.com/photo-1635776062043-223faf322554?q=80&w=3132&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                                alt=""
-                                className="absolute inset-0 size-full object-cover"
-                            />
-                            <div className="m-auto max-w-md p-4 sm:p-12">
-                                <AIAssistantIllustration />
-                            </div>
-                        </Card>
-                        <div className="@sm:grid-cols-2 @2xl:grid-cols-3 grid gap-6">
-                            <div className="space-y-2">
-                                <h3 className="text-xl font-medium">Generate Ideas</h3>
-                                <p className="text-muted-foreground">Spark creativity with AI-powered content suggestions and inspiration.</p>
-                            </div>
-                            <div className="space-y-2">
-                                <h3 className="text-xl font-medium">Improve Writing</h3>
-                                <p className="text-muted-foreground">Enhance your text with smart editing suggestions and style refinements.</p>
-                            </div>
-                            <div className="space-y-2">
-                                <h3 className="text-xl font-medium">Design Layouts</h3>
-                                <p className="text-muted-foreground">Create visually appealing layouts that capture your audience's attention.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    )
-}
+  return (
+    <section className="py-24">
+      <div className="mx-auto w-full max-w-5xl px-6">
 
-const AIAssistantIllustration = () => {
-    return (
-        <Card
-            aria-hidden
-            className="relative space-y-4 p-6">
-            <div className="w-fit">
-                <Sparkles className="size-3.5 fill-purple-300 stroke-purple-300" />
-                <p className="mt-2 line-clamp-2 text-sm">How can I optimize my neural network to reduce inference time while maintaining accuracy?</p>
-                <ul
-                    role="list"
-                    className="text-muted-foreground mt-3 space-y-2 text-sm">
-                    {[
-                        { value: '90+', emoji: '⭐️', label: 'Integrations' },
-                        { value: '56%', emoji: '👨🏽‍💻', label: 'Productivity Boost' },
-                        { value: '24/7', emoji: '🦜', label: 'Customer Support' },
-                    ].map((stat, index) => (
-                        <li
-                            key={index}
-                            className="-ml-0.5 flex items-center gap-2">
-                            <span>{stat.emoji}</span>
-                            <span className="text-foreground font-medium">{stat.value}</span> {stat.label}
-                        </li>
-                    ))}
-                </ul>
-            </div>
-            <div className="bg-foreground/5 -mx-3 -mb-3 space-y-3 rounded-lg p-3">
-                <div className="text-muted-foreground text-sm">Ask AI Assistant</div>
+        {/* Section Header */}
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-semibold md:text-4xl">
+            Everything you need to run your <br/> social business in one place.
+          </h2>
+          <p className="text-muted-foreground mt-4 text-lg">
+            Stop juggling DMs, payment screenshots, spreadsheets, and delivery riders.
+            Vendly organizes your entire operation into one simple system.
+          </p>
+        </div>
 
-                <div className="flex justify-between">
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="size-7 rounded-2xl bg-transparent shadow-none">
-                            <Plus />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="size-7 rounded-2xl bg-transparent shadow-none">
-                            <Globe />
-                        </Button>
-                    </div>
+        {/* Feature Grid */}
+        <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
 
-                    <Button
-                        size="icon"
-                        className="size-7 rounded-2xl bg-black">
-                        <ArrowUp strokeWidth={3} />
-                    </Button>
-                </div>
-            </div>
-        </Card>
-    )
+          {/* Orders */}
+          <Card className="space-y-4 p-6">
+            <HugeiconsIcon icon={ShoppingBag01Icon} className="size-6" />
+            <h3 className="text-xl font-medium">
+              All Orders in One Dashboard
+            </h3>
+            <p className="text-muted-foreground">
+              Capture Instagram and TikTok inquiries automatically. Confirm,
+              track, and manage every order without losing messages in DMs.
+            </p>
+          </Card>
+
+          {/* Payments */}
+          <Card className="space-y-4 p-6">
+            <HugeiconsIcon icon={CreditCardIcon} className="size-6" />
+            <h3 className="text-xl font-medium">
+              Seamless Payments
+            </h3>
+            <p className="text-muted-foreground">
+              Send secure checkout links and get paid instantly.
+              No more manual confirmations or payment screenshots.
+            </p>
+          </Card>
+
+          {/* Delivery */}
+          <Card className="space-y-4 p-6">
+            <HugeiconsIcon icon={DeliveryTruck01Icon} className="size-6" />
+            <h3 className="text-xl font-medium">
+              Automated Delivery
+            </h3>
+            <p className="text-muted-foreground">
+              Book delivery, track parcels, and update customers automatically —
+              from pickup to doorstep.
+            </p>
+          </Card>
+
+          {/* Storefront */}
+          <Card className="space-y-4 p-6">
+            <HugeiconsIcon icon={Store02Icon} className="size-6" />
+            <h3 className="text-xl font-medium">
+              Instant Storefront
+            </h3>
+            <p className="text-muted-foreground">
+              Turn your social profile into a clean, shareable online store.
+              No coding. No design work.
+            </p>
+          </Card>
+
+          {/* Discovery */}
+          <Card className="space-y-4 p-6">
+            <HugeiconsIcon icon={Search01Icon} className="size-6" />
+            <h3 className="text-xl font-medium">
+              Marketplace Discovery
+            </h3>
+            <p className="text-muted-foreground">
+              List your products on Vendly’s marketplace and reach buyers
+              actively searching — not just your followers.
+            </p>
+          </Card>
+
+          {/* Growth Insights */}
+          <Card className="space-y-4 p-6">
+            <HugeiconsIcon icon={DashboardSquare02Icon} className="size-6" />
+            <h3 className="text-xl font-medium">
+              Simple Business Insights
+            </h3>
+            <p className="text-muted-foreground">
+              Track sales, revenue, and performance in real time —
+              so you can grow with clarity.
+            </p>
+          </Card>
+
+        </div>
+      </div>
+    </section>
+  )
 }

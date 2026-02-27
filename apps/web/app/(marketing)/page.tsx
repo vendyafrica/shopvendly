@@ -5,6 +5,7 @@ import { Hero } from "@/features/marketing/components/hero";
 import { Features } from "@/features/marketing/components/features";
 import { Integrations } from "@/features/marketing/components/integrations";
 import { Content } from "@/features/marketing/components/content";
+import { Pricing } from "@/features/marketing/components/pricing";
 
 export const metadata: Metadata = {
   title: "ShopVendly | Build Your Online Shop from Social Media Posts",
@@ -22,6 +23,7 @@ export default function LandingPage() {
       <Integrations />
       <Features />
       <Content />
+      <Pricing />
       <FAQs />
       <Footer />
     </div>

@@ -1,82 +1,84 @@
-import Link from 'next/link'
-import { Button } from '@shopvendly/ui/components/button'
-import { Card } from '@shopvendly/ui/components/card'
-import { Check } from 'lucide-react'
-import { cn } from '@shopvendly/ui/lib/utils'
+import Link from "next/link"
+import { Button } from "@shopvendly/ui/components/button"
+import { Card } from "@shopvendly/ui/components/card"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { CheckmarkSquareFreeIcons } from "@hugeicons/core-free-icons"
 
-const plans = [
-    {
-        name: 'Starter',
-        description: 'Perfect for individuals and small projects.',
-        price: '$0',
-        period: '/month',
-        features: ['Up to 3 integrations', '1,000 API calls/month', 'Community support', 'Basic analytics'],
-        cta: 'Get Started',
-        highlighted: false,
-    },
-    {
-        name: 'Pro',
-        description: 'For growing teams that need more power.',
-        price: '$29',
-        period: '/month',
-        features: ['Unlimited integrations', '100,000 API calls/month', 'Priority support', 'Advanced analytics', 'Custom webhooks', 'Team collaboration'],
-        cta: 'Start Free Trial',
-        highlighted: true,
-    },
-    {
-        name: 'Enterprise',
-        description: 'For organizations with advanced needs.',
-        price: 'Custom',
-        period: '',
-        features: ['Everything in Pro', 'Unlimited API calls', 'Dedicated support', 'SLA guarantee', 'Custom contracts', 'On-premise option'],
-        cta: 'Contact Sales',
-        highlighted: false,
-    },
-]
+const plan = {
+  name: "Pro",
+  description: "Everything you need to run your social business.",
+  price: "UGX 30,000",
+  period: "/month",
+  trial: "14-day free trial",
+  features: [
+    "Unlimited orders",
+    "Secure checkout links",
+    "Delivery booking & tracking",
+    "Instant storefront",
+    "Marketplace listing",
+    "Sales dashboard & insights",
+  ],
+}
 
 export function Pricing() {
-    return (
-        <section className="bg-background @container py-24">
-            <div className="mx-auto max-w-2xl px-6">
-                <div className="text-center">
-                    <h2 className="text-balance font-serif text-4xl font-medium">Simple, Transparent Pricing</h2>
-                    <p className="text-muted-foreground mx-auto mt-4 max-w-md text-balance">Choose the plan that fits your needs. All plans include a 14-day free trial.</p>
-                </div>
-                <div className="@3xl:grid-cols-2 mt-12 grid gap-3">
-                    {plans.map((plan) => (
-                        <Card
-                            key={plan.name}
-                            className={cn(
-                                'relative flex flex-col p-6 last:col-span-full',
-                                plan.highlighted ? 'bg-primary text-primary-foreground ring-primary' : 'bg-muted'
-                            )}>
-                            <div>
-                                <h3 className="text-foreground font-medium">{plan.name}</h3>
-                                <p className="text-muted-foreground mt-1 text-sm">{plan.description}</p>
-                            </div>
-                            <div className="mt-6">
-                                <span className="font-serif text-4xl font-medium">{plan.price}</span>
-                                <span className="text-muted-foreground">{plan.period}</span>
-                            </div>
-                            <ul className="mt-6 flex-1 space-y-3">
-                                {plan.features.map((feature) => (
-                                    <li
-                                        key={feature}
-                                        className="text-muted-foreground flex items-start gap-2 text-sm">
-                                        <Check className="text-primary mt-0.5 size-4 shrink-0" />
-                                        {feature}
-                                    </li>
-                                ))}
-                            </ul>
-                            <Button
-                                variant={plan.highlighted ? 'default' : 'outline'}
-                                className="mt-8 w-full">
-                                <Link href="#link">{plan.cta}</Link>
-                            </Button>
-                        </Card>
-                    ))}
-                </div>
+  return (
+    <section className="bg-background py-24">
+      <div className="mx-auto max-w-3xl px-6 text-center">
+
+        <h2 className="text-4xl font-semibold">
+          Simple, transparent pricing
+        </h2>
+
+        <p className="text-muted-foreground mt-4 text-lg">
+          Start free for 14 days. No setup fees. Cancel anytime.
+        </p>
+
+        <div className="mt-12">
+          <Card className="p-8 text-left">
+
+            <div>
+              <h3 className="text-xl font-medium">
+                {plan.name}
+              </h3>
+              <p className="text-muted-foreground mt-1 text-sm">
+                {plan.description}
+              </p>
             </div>
-        </section>
-    )
+
+            <div className="mt-6">
+              <span className="text-4xl font-semibold">
+                {plan.price}
+              </span>
+              <span className="text-muted-foreground">
+                {plan.period}
+              </span>
+              <p className="text-primary mt-2 text-sm font-medium">
+                {plan.trial}
+              </p>
+            </div>
+
+            <ul className="mt-8 space-y-3">
+              {plan.features.map((feature) => (
+                <li
+                  key={feature}
+                  className="text-muted-foreground flex items-start gap-2 text-sm"
+                >
+                  <HugeiconsIcon icon={CheckmarkSquareFreeIcons} className="mt-0.5 size-4 shrink-0" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+
+            <Button className="mt-8 w-full h-11 rounded-full">
+              <Link href="/signup">
+                Start Free Trial
+              </Link>
+            </Button>
+
+          </Card>
+        </div>
+
+      </div>
+    </section>
+  )
 }
