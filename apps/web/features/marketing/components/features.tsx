@@ -1,165 +1,98 @@
-"use client"
-
-import Image from "next/image"
-import { useEffect, useMemo, useRef, useState } from "react"
-
-const steps = [
-    {
-        num: "01",
-        tab: "Post",
-        title: "Post once, link every product.",
-        body: "Drop your ShopVendly link in bio or caption. Every product gets its own link—dress, serum, bundle—so buyers land on the exact thing they saw.",
-        media: { type: "image", src: "https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYJSC8u5AGXKmU67zhiVxFL4cqrgDYdMQaenAN" }
-    },
-    {
-        num: "02",
-        tab: "Buy",
-        title: "They tap, they pay.",
-        body: "Buyers go to a product page. Checkout instantly.",
-        media: { type: "video", src: "https://cdn.cosmos.so/08020ebf-2819-4bb1-ab66-ae3642a73697.mp4" }
-    },
-    {
-        num: "03",
-        tab: "Ping",
-        title: "Instant order ping.",
-        body: "The moment an order lands, WhatsApp sends buyer name, number, address, and items.",
-        media: { type: "image", src: "https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYbewHzom1tJzyuCTxU2RmXc6QZOKgE8wSPGIn" }
-    },
-    {
-        num: "04",
-        tab: "Credit",
-        title: "Creators get credit automatically.",
-        body: "Give any creator a tagged link. Every sale they drive is tracked and commission ready in your dashboard. They earn; you grow.",
-        media: { type: "image", src: "https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYBgl6bhtJ1aPV9vKIdZyqjXue6k7FNTswrcLA" }
-    }
-]
+import { Button } from '@shopvendly/ui/components/button'
+import { Card } from '@shopvendly/ui/components/card'
+import { ArrowUp, Globe, Plus, Sparkles } from 'lucide-react'
 
 export function Features() {
-    const tabs = useMemo(() => steps.map((s) => s.tab), [])
-    const [activeIndex, setActiveIndex] = useState(0)
-    const [isPaused, setIsPaused] = useState(false)
-    const lastManualSwitchRef = useRef<number>(0)
-
-    useEffect(() => {
-        if (isPaused) return
-        const id = window.setInterval(() => {
-            const now = Date.now()
-            if (now - lastManualSwitchRef.current < 7000) return
-            setActiveIndex((i) => (i + 1) % steps.length)
-        }, 4500)
-        return () => window.clearInterval(id)
-    }, [isPaused])
-
-    const step = steps[activeIndex]!
-
     return (
-        <section id="product" className="relative overflow-hidden pt-20 md:pt-32 pb-16 md:pb-24 flex flex-col justify-center min-h-screen"
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-        >
-            {/* Background media */}
-            {step.media.type === "image" ? (
-                <Image
-                    key={step.media.src}
-                    src={step.media.src}
-                    alt={step.title}
-                    fill
-                    sizes="100vw"
-                    className="absolute inset-0 h-full w-full object-cover object-[50%_30%]"
-                    priority={false}
-                />
-            ) : (
-                <video
-                    key={step.media.src}
-                    className="absolute inset-0 h-full w-full object-cover object-[50%_30%]"
-                    src={step.media.src}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="auto"
-                />
-            )}
-            <div className="absolute inset-0 bg-linear-to-r from-[#121214] via-[#121214]/80 to-[#121214]/30" />
-
-            <div className="relative mx-auto w-full max-w-6xl px-5 md:px-8 z-10 flex flex-col flex-1 h-full">
-
-                {/* Header */}
-                <div className="mb-12 md:mb-16">
-                    <div className="text-[11px] font-semibold tracking-[2px] uppercase text-[#BDB3FF] mb-5">
-                        How it works
-                    </div>
-                    <h2
-                        className="text-[clamp(32px,5vw,52px)] font-extrabold leading-[1.06] text-white"
-                        style={{ fontFamily: 'var(--font-sora), Sora, sans-serif', letterSpacing: '-1.5px' }}
-                    >
-                        From post to paid.<br />
-                        <span className="text-white/60">In four steps.</span>
+        <section>
+            <div className="py-24">
+                <div className="mx-auto w-full max-w-3xl px-6">
+                    <h2 className="text-foreground text-balance text-3xl font-semibold md:text-4xl">
+                        <span className="text-muted-foreground">Empowering Marketing teams with</span> AI-driven solutions
                     </h2>
-                    <p className="mt-5 text-[16px] text-white/80 max-w-2xl leading-relaxed">
-                        No DMs. No back-and-forth. No dropped orders. Your content does
-                        the selling — Shopvendly handles everything that comes after.
-                    </p>
-                </div>
-
-                <div className="flex-1 flex flex-col justify-end">
-                    <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-8">
-                        {tabs.map((tab, i) => {
-                            const isActive = i === activeIndex
-                            return (
-                                <button
-                                    key={tab}
-                                    type="button"
-                                    onClick={() => {
-                                        lastManualSwitchRef.current = Date.now()
-                                        setActiveIndex(i)
-                                    }}
-                                    className={
-                                        isActive
-                                            ? "px-4 py-2 rounded-full bg-white text-[#0A0A0F] text-[11px] font-bold tracking-widest uppercase"
-                                            : "px-4 py-2 rounded-full border border-white/20 bg-black/20 backdrop-blur-md hover:bg-white/10 text-white text-[11px] font-bold tracking-widest uppercase transition-colors"
-                                    }
-                                >
-                                    {tab}
-                                </button>
-                            )
-                        })}
-                    </div>
-
-                    <div className="max-w-2xl">
-                        <div
-                            className="text-[11px] font-bold tracking-widest text-[#BDB3FF] mb-4"
-                            style={{ fontFamily: 'var(--font-sora), Sora, sans-serif' }}
-                        >
-                            {step.num}
-                        </div>
-                        <div
-                            className="text-[clamp(28px,4vw,44px)] font-extrabold text-white leading-[1.05]"
-                            style={{ fontFamily: 'var(--font-sora), Sora, sans-serif', letterSpacing: '-1px' }}
-                        >
-                            {step.title}
-                        </div>
-                        <p className="mt-5 text-[15px] md:text-[16px] text-white/85 leading-relaxed max-w-xl">
-                            {step.body}
-                        </p>
-                    </div>
-
-                    <div className="mt-8 flex items-center">
-                        <div className="flex items-center gap-2">
-                            {steps.map((_, i) => (
-                                <div
-                                    key={i}
-                                    className={
-                                        i === activeIndex
-                                            ? "h-1.5 w-6 rounded-full bg-white"
-                                            : "h-1.5 w-6 rounded-full bg-white/25"
-                                    }
-                                />
-                            ))}
+                    <div className="@container mt-12 space-y-12">
+                        <Card className="relative overflow-hidden bg-card/70 p-0 sm:col-span-2">
+                            <img
+                                src="https://images.unsplash.com/photo-1635776062043-223faf322554?q=80&w=3132&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                                alt=""
+                                className="absolute inset-0 size-full object-cover"
+                            />
+                            <div className="m-auto max-w-md p-4 sm:p-12">
+                                <AIAssistantIllustration />
+                            </div>
+                        </Card>
+                        <div className="@sm:grid-cols-2 @2xl:grid-cols-3 grid gap-6">
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-medium">Generate Ideas</h3>
+                                <p className="text-muted-foreground">Spark creativity with AI-powered content suggestions and inspiration.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-medium">Improve Writing</h3>
+                                <p className="text-muted-foreground">Enhance your text with smart editing suggestions and style refinements.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-medium">Design Layouts</h3>
+                                <p className="text-muted-foreground">Create visually appealing layouts that capture your audience's attention.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
+    )
+}
+
+const AIAssistantIllustration = () => {
+    return (
+        <Card
+            aria-hidden
+            className="relative space-y-4 p-6">
+            <div className="w-fit">
+                <Sparkles className="size-3.5 fill-purple-300 stroke-purple-300" />
+                <p className="mt-2 line-clamp-2 text-sm">How can I optimize my neural network to reduce inference time while maintaining accuracy?</p>
+                <ul
+                    role="list"
+                    className="text-muted-foreground mt-3 space-y-2 text-sm">
+                    {[
+                        { value: '90+', emoji: '⭐️', label: 'Integrations' },
+                        { value: '56%', emoji: '👨🏽‍💻', label: 'Productivity Boost' },
+                        { value: '24/7', emoji: '🦜', label: 'Customer Support' },
+                    ].map((stat, index) => (
+                        <li
+                            key={index}
+                            className="-ml-0.5 flex items-center gap-2">
+                            <span>{stat.emoji}</span>
+                            <span className="text-foreground font-medium">{stat.value}</span> {stat.label}
+                        </li>
+                    ))}
+                </ul>
+            </div>
+            <div className="bg-foreground/5 -mx-3 -mb-3 space-y-3 rounded-lg p-3">
+                <div className="text-muted-foreground text-sm">Ask AI Assistant</div>
+
+                <div className="flex justify-between">
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-7 rounded-2xl bg-transparent shadow-none">
+                            <Plus />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-7 rounded-2xl bg-transparent shadow-none">
+                            <Globe />
+                        </Button>
+                    </div>
+
+                    <Button
+                        size="icon"
+                        className="size-7 rounded-2xl bg-black">
+                        <ArrowUp strokeWidth={3} />
+                    </Button>
+                </div>
+            </div>
+        </Card>
     )
 }

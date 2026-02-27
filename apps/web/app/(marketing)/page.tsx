@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { FAQ } from "@/features/marketing/components/faq";
-import Footer from "@/features/marketing/components/footer";
+import { FAQs } from "@/features/marketing/components/faq";
+import { Footer } from "@/features/marketing/components/footer";
 import { Hero } from "@/features/marketing/components/hero";
-import { Header } from "@/features/marketing/components/header";
 import { Features } from "@/features/marketing/components/features";
-import { TasteTransition } from "@/features/marketing/components/taste-transition";
-import { Solutions } from "@/features/marketing/components/solutions";
+import { Integrations } from "@/features/marketing/components/integrations";
+import { Content } from "@/features/marketing/components/content";
 
 export const metadata: Metadata = {
   title: "ShopVendly | Build Your Online Shop from Social Media Posts",
@@ -18,13 +17,12 @@ export const metadata: Metadata = {
 
 export default function LandingPage() {
   return (
-    <div className="bg-[#121214] text-white selection:bg-[#5B4BFF] selection:text-white scroll-smooth">
-      <Header />
+    <div className="scroll-smooth">
       <Hero />
-      <TasteTransition />
+      <Integrations />
       <Features />
-      <Solutions />
-      <FAQ />
+      <Content />
+      <FAQs />
       <Footer />
     </div>
   );
