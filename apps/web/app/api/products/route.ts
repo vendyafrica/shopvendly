@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
                 description: formData.get("description") || undefined,
                 priceAmount: Number(formData.get("priceAmount")) || 0,
                 currency: formData.get("currency") || undefined,
+                quantity: Number(formData.get("quantity")) || 0,
             });
 
             // Get files

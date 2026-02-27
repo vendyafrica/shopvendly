@@ -14,19 +14,19 @@ import Image from "next/image";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { Badge } from "@shopvendly/ui/components/badge";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Add01Icon, Delete02Icon, Edit02Icon, MoreHorizontalIcon, SparklesIcon } from "@hugeicons/core-free-icons";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@shopvendly/ui/components/dropdown-menu";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@shopvendly/ui/components/select";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { SparklesIcon, Edit02Icon } from "@hugeicons/core-free-icons";
 import { UploadModal } from "./components/upload-modal";
 import { EditProductModal } from "./components/edit-product-modal";
+import { ProductsMobileView } from "./components/products-mobile-view";
 import { Checkbox } from "@shopvendly/ui/components/checkbox";
-
 import {
   useProducts,
   useDeleteProduct,
@@ -45,7 +45,7 @@ const STATUS_STYLES: Record<ProductTableRow["status"], { label: string; badgeCla
   "sold-out": { label: "Sold out", badgeClass: "bg-rose-50 text-rose-700 border-rose-200" },
 };
 
-type EditableField = "name" | "priceAmount" | "quantity";
+type EditableField = "name" | "priceAmount" | "quantity" | "status";
 type DraftMap = Record<string, Partial<Record<EditableField, string>>>;
 
 function formatMoney(amount: number, currency: string) {
@@ -319,7 +319,8 @@ export default function ProductsPage() {
       if (draftValue !== undefined) return draftValue;
       if (field === "name") return product.name;
       if (field === "priceAmount") return product.priceAmount.toString();
-      return product.quantity.toString();
+      if (field === "quantity") return product.quantity.toString();
+      return product.status;
     },
     [drafts]
   );
@@ -333,7 +334,9 @@ export default function ProductsPage() {
             ? product.name
             : field === "priceAmount"
               ? product.priceAmount.toString()
-              : product.quantity.toString();
+              : field === "quantity"
+                ? product.quantity.toString()
+                : product.status;
 
         if (value === baseline) {
           const productDraft = next[product.id];
@@ -392,6 +395,9 @@ export default function ProductsPage() {
       }
       if (draft.quantity !== undefined) {
         payload.quantity = Number(draft.quantity);
+      }
+      if (draft.status !== undefined) {
+        payload.status = draft.status as ProductTableRow["status"];
       }
 
       if (Object.keys(payload).length === 0) {
@@ -565,21 +571,33 @@ export default function ProductsPage() {
                   autoFocus
                   value={value}
                   onChange={(event) => handleDraftChange(product, field, event.target.value)}
-                  onBlur={stopEditing}
+                  onBlur={() => {
+                    handleInlineSave(product.id);
+                    stopEditing();
+                  }}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") handleInlineSave(product.id);
-                    if (event.key === "Escape") stopEditing();
+                    if (event.key === "Escape") {
+                      // Reset draft on escape
+                      setDrafts((prev) => {
+                        const next = { ...prev };
+                        delete next[product.id];
+                        return next;
+                      });
+                      stopEditing();
+                    }
                   }}
                   className="h-9 border border-border bg-background font-semibold"
                 />
               ) : (
                 <button
                   type="button"
-                  className="truncate font-semibold text-left w-full"
+                  className="group flex items-center gap-2 truncate font-semibold text-left w-full hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors"
                   onClick={() => startEditing(product.id, field)}
                   title={product.name}
                 >
-                  {value}
+                  <span className="truncate">{value}</span>
+                  <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity shrink-0" />
                 </button>
               )}
             </div>
@@ -606,10 +624,20 @@ export default function ProductsPage() {
                 inputMode="decimal"
                 value={value}
                 onChange={(event) => handleDraftChange(product, field, event.target.value)}
-                onBlur={stopEditing}
+                onBlur={() => {
+                  handleInlineSave(product.id);
+                  stopEditing();
+                }}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") handleInlineSave(product.id);
-                  if (event.key === "Escape") stopEditing();
+                  if (event.key === "Escape") {
+                    setDrafts((prev) => {
+                      const next = { ...prev };
+                      delete next[product.id];
+                      return next;
+                    });
+                    stopEditing();
+                  }
                 }}
                 className="h-9 w-28 border border-border bg-background text-sm font-medium"
               />
@@ -617,9 +645,10 @@ export default function ProductsPage() {
               <button
                 type="button"
                 onClick={() => startEditing(product.id, field)}
-                className="text-sm font-medium whitespace-nowrap"
+                className="group flex items-center gap-1.5 text-sm font-medium whitespace-nowrap hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors"
               >
-                {formatMoney(product.priceAmount, product.currency)}
+                <span>{formatMoney(product.priceAmount, product.currency)}</span>
+                <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity" />
               </button>
             )}
           </div>
@@ -642,20 +671,31 @@ export default function ProductsPage() {
             inputMode="numeric"
             value={value}
             onChange={(event) => handleDraftChange(product, field, event.target.value)}
-            onBlur={stopEditing}
+            onBlur={() => {
+              handleInlineSave(product.id);
+              stopEditing();
+            }}
             onKeyDown={(event) => {
               if (event.key === "Enter") handleInlineSave(product.id);
-              if (event.key === "Escape") stopEditing();
+              if (event.key === "Escape") {
+                setDrafts((prev) => {
+                  const next = { ...prev };
+                  delete next[product.id];
+                  return next;
+                });
+                stopEditing();
+              }
             }}
             className="h-9 w-20 border border-border bg-background text-sm font-medium"
           />
         ) : (
           <button
             type="button"
-            className="text-sm font-medium"
+            className="group flex items-center gap-1.5 text-sm font-medium hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors"
             onClick={() => startEditing(product.id, field)}
           >
-            {value}
+            <span>{value}</span>
+            <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity" />
           </button>
         );
       },
@@ -673,12 +713,34 @@ export default function ProductsPage() {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => {
-        const status = row.original.status;
-        const badge = STATUS_STYLES[status];
+        const product = row.original;
+        const field: EditableField = "status";
+        // Get optimistic draft status if it exists, otherwise fall back to product status
+        const draftValue = drafts[product.id]?.status;
+        const currentStatus = (draftValue ?? product.status) as keyof typeof STATUS_STYLES;
+        const badge = STATUS_STYLES[currentStatus];
+
         return (
-          <Badge variant="outline" className={`px-3 py-1 text-xs font-medium border ${badge.badgeClass}`}>
-            {badge.label}
-          </Badge>
+          <Select
+            value={currentStatus}
+            onValueChange={(value) => {
+              if (!value) return;
+              handleDraftChange(product, field, value);
+              // Optimistically save status change immediately since it's a dropdown change
+              setTimeout(() => handleInlineSave(product.id), 0);
+            }}
+          >
+            <SelectTrigger className={`h-8 w-[110px] px-3 py-1 text-xs font-medium border ${badge.badgeClass} focus:ring-0 focus:ring-offset-0 bg-transparent`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(STATUS_STYLES).map(([key, style]) => (
+                <SelectItem key={key} value={key} className="text-xs font-medium">
+                  {style.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         );
       },
     },
@@ -754,70 +816,92 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {bootstrapError && (
-        <div className="bg-destructive/10 text-destructive p-4 rounded-md">{bootstrapError}</div>
-      )}
-      {error && (
-        <div className="bg-destructive/10 text-destructive p-4 rounded-md">{error}</div>
-      )}
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Products</h1>
-          <p className="text-sm text-muted-foreground">Keep your catalog tidy and stay on top of stock.</p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-          <Button
-            variant="outline"
-            disabled={selectedIds.length === 0 || isPublishing}
-            onClick={handlePublishSelected}
-            className="sm:order-1"
-          >
-            {isPublishing ? "Publishing..." : (
-              <span className="inline-flex items-center gap-2">
-                <HugeiconsIcon icon={SparklesIcon} className="size-4" />
-                Publish
-              </span>
-            )}
-          </Button>
-          <AddProductButton
-            onSelect={handleAddProductSelect}
-          />
-        </div>
+    <div className="md:p-6 p-0">
+      {/* Mobile View */}
+      <div className="block md:hidden">
+        <ProductsMobileView
+          bootstrap={bootstrap}
+          rows={rows}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onAddSelect={handleAddProductSelect}
+          onStatusChange={(productId, newStatus) => {
+            const product = rows.find(r => r.id === productId);
+            if (product) {
+              handleDraftChange(product, 'status', newStatus);
+              setTimeout(() => handleInlineSave(productId), 0);
+            }
+          }}
+          isPublishing={isPublishing}
+        />
       </div>
 
-      <SegmentedStatsCard segments={statSegments} />
-
-      <div className="rounded-md border bg-card p-3">
-        {isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex items-center gap-4 rounded-lg border border-dashed border-border/60 p-3 bg-muted/30">
-                <div className="size-10 bg-muted rounded-md animate-pulse shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-muted rounded w-1/3 animate-pulse" />
-                  <div className="h-4 bg-muted rounded w-24 animate-pulse" />
-                </div>
-                <div className="h-4 bg-muted rounded w-16 animate-pulse shrink-0" />
-                <div className="h-6 bg-muted rounded w-20 animate-pulse shrink-0" />
-                <div className="size-8 bg-muted rounded animate-pulse shrink-0" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={rows}
-            rowSelection={rowSelection}
-
-            onRowSelectionChange={(updater) => {
-              setRowSelection((prev) =>
-                typeof updater === "function" ? updater(prev) : updater
-              );
-            }}
-          />
+      {/* Desktop View */}
+      <div className="hidden md:block space-y-6">
+        {bootstrapError && (
+          <div className="bg-destructive/10 text-destructive p-4 rounded-md">{bootstrapError}</div>
         )}
+        {error && (
+          <div className="bg-destructive/10 text-destructive p-4 rounded-md">{error}</div>
+        )}
+
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Products</h1>
+            <p className="text-sm text-muted-foreground">Keep your catalog tidy and stay on top of stock.</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+            <Button
+              variant="outline"
+              disabled={selectedIds.length === 0 || isPublishing}
+              onClick={handlePublishSelected}
+              className="sm:order-1"
+            >
+              {isPublishing ? "Publishing..." : (
+                <span className="inline-flex items-center gap-2">
+                  <HugeiconsIcon icon={SparklesIcon} className="size-4" />
+                  Publish
+                </span>
+              )}
+            </Button>
+            <AddProductButton
+              onSelect={handleAddProductSelect}
+            />
+          </div>
+        </div>
+
+        <SegmentedStatsCard segments={statSegments} />
+
+        <div className="rounded-md border bg-card p-3">
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-4 rounded-lg border border-dashed border-border/60 p-3 bg-muted/30">
+                  <div className="size-10 bg-muted rounded-md animate-pulse shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-muted rounded w-1/3 animate-pulse" />
+                    <div className="h-4 bg-muted rounded w-24 animate-pulse" />
+                  </div>
+                  <div className="h-4 bg-muted rounded w-16 animate-pulse shrink-0" />
+                  <div className="h-6 bg-muted rounded w-20 animate-pulse shrink-0" />
+                  <div className="size-8 bg-muted rounded animate-pulse shrink-0" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={rows}
+              rowSelection={rowSelection}
+
+              onRowSelectionChange={(updater) => {
+                setRowSelection((prev) =>
+                  typeof updater === "function" ? updater(prev) : updater
+                );
+              }}
+            />
+          )}
+        </div>
       </div>
 
       <UploadModal

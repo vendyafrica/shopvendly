@@ -7,6 +7,7 @@ export const createProductSchema = z.object({
   description: z.string().optional(),
   priceAmount: z.number().int().min(0).default(0),
   currency: z.string().length(3).optional(),
+  quantity: z.number().int().min(0).default(0),
   source: z.enum(["manual", "instagram", "bulk-upload"]).default("manual"),
   sourceId: z.string().optional(),
   sourceUrl: z.string().url().optional(),
