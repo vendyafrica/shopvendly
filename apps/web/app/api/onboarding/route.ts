@@ -31,16 +31,22 @@ export async function POST(req: Request) {
         const alreadyOnboarded = await onboardingRepository.hasTenant(session.user.id);
         if (alreadyOnboarded) {
             // Fetch existing tenant + store to return consistent shape
-            const membership = await db.query.tenantMemberships.findFirst({
-                where: eq(tenantMemberships.userId, session.user.id),
-            });
+            const [membership] = await db
+                .select()
+                .from(tenantMemberships)
+                .where(eq(tenantMemberships.userId, session.user.id))
+                .limit(1);
             if (membership) {
-                const tenant = await db.query.tenants.findFirst({
-                    where: eq(tenants.id, membership.tenantId),
-                });
-                const store = await db.query.stores.findFirst({
-                    where: eq(stores.tenantId, membership.tenantId),
-                });
+                const [tenant] = await db
+                    .select()
+                    .from(tenants)
+                    .where(eq(tenants.id, membership.tenantId))
+                    .limit(1);
+                const [store] = await db
+                    .select()
+                    .from(stores)
+                    .where(eq(stores.tenantId, membership.tenantId))
+                    .limit(1);
                 if (tenant && store) {
                     return NextResponse.json({
                         success: true,
@@ -83,8 +89,8 @@ export async function POST(req: Request) {
         const storeSlug = result.storeSlug;
         const verifyBase = `${webBaseUrl}/api/auth/verify-seller?token=${token}&email=${encodeURIComponent(session.user.email)}`;
 
-        const dashboardUrl = `${verifyBase}&redirect=${encodeURIComponent(`/a/${storeSlug}`)}`;
-        const connectInstagramUrl = `${verifyBase}&redirect=${encodeURIComponent(`/a/${storeSlug}/integrations`)}`;
+        const dashboardUrl = `${verifyBase}&redirect=${encodeURIComponent(`/dashboard/${storeSlug}`)}`;
+        const connectInstagramUrl = `${verifyBase}&redirect=${encodeURIComponent(`/dashboard/${storeSlug}/integrations`)}`;
         const storefrontUrl = `${webBaseUrl}/${storeSlug}`;
 
         // Send seller welcome email

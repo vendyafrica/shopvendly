@@ -1,6 +1,6 @@
-import { ProductDetails } from "../components/product-details";
-import { ProductGridReveal } from "../components/product-grid-reveal";
-import { StorefrontFooter } from "../components/footer";
+import { ProductDetails } from "@/features/storefront/components/product-details";
+import { ProductGridReveal } from "@/features/storefront/components/product-grid-reveal";
+import { StorefrontFooter } from "@/features/storefront/components/footer";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { headers } from "next/headers";

@@ -9,7 +9,7 @@ import {
   Tick02Icon,
   FavouriteIcon,
 } from "@hugeicons/core-free-icons";
-import { useCart } from "../../../contexts/cart-context";
+import { useCart } from "@/features/cart/context/cart-context";
 import { useWishlist } from "@/hooks/use-wishlist";
 
 interface ProductActionsProduct {
