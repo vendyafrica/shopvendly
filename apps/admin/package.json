@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@shopvendly/ui": "workspace:*",
+    "better-auth": "^1.4.10",
     "next": "16.1.5",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

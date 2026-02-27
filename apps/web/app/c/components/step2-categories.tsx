@@ -3,30 +3,31 @@
 import { Button } from "@shopvendly/ui/components/button";
 import { GoogleIcon } from "@shopvendly/ui/components/svgs/google";
 import { signInWithGoogle } from "@shopvendly/auth/react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 
 import { useOnboarding } from "../context/onboarding-context";
-import { getCategoriesAction } from "../lib/categories";
 import { CategoriesSelector, type Category } from "../components/category-selector";
 import { useAppSession } from "@/contexts/app-session-context";
 import { getRootUrl } from "@/utils/misc";
+
+const STATIC_CATEGORIES: Category[] = [
+  { id: "women", label: "Women" },
+  { id: "men", label: "Men" },
+  { id: "food-and-drinks", label: "Food & Drinks" },
+  { id: "accessories", label: "Accessories" },
+  { id: "beauty-and-personal-care", label: "Beauty & Personal Care" },
+  { id: "home-and-living", label: "Home & Living" },
+  { id: "babies-and-toddlers", label: "Babies & Toddlers" },
+  { id: "electronics", label: "Electronics" },
+];
 
 export function Step3Categories() {
   const { session: appSession } = useAppSession();
   const { data, completeOnboarding, goBack, isLoading, error, saveBusinessDraft } = useOnboarding();
 
   const [categories, setCategories] = useState<string[]>(data.business?.categories ?? []);
-  const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
   const [authLoading, setAuthLoading] = useState(false);
-
-  useEffect(() => {
-    getCategoriesAction().then((res) => {
-      if (res.success && res.data) {
-        setAvailableCategories(res.data.map((c) => ({ id: c.slug, label: c.name })));
-      }
-    });
-  }, []);
 
   const getCallbackURL = useMemo(
     () => () => getRootUrl("/c?step=3"),
@@ -80,7 +81,7 @@ export function Step3Categories() {
         transition={{ delay: 0.1, duration: 0.4 }}
       >
         <CategoriesSelector
-          availableCategories={availableCategories}
+          availableCategories={STATIC_CATEGORIES}
           selectedCategories={categories}
           onChange={setCategories}
           maxSelections={5}

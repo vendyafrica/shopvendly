@@ -94,7 +94,7 @@ export function useOnboarding() {
     return context;
 }
 
-const STEP_ROUTES: Record<OnboardingStep, string> = {
+const STEP_ROUTES: Record<Exclude<OnboardingStep, "complete">, string> & { complete: string } = {
     step0: "/c?step=0",
     step1: "/c?step=1",
     step2: "/c?step=2",
@@ -229,6 +229,7 @@ export function OnboardingProvider({ children }: ProviderProps) {
             });
 
             if (result.success) {
+                const dashboardSlug = result.storeSlug || result.tenantSlug || null;
                 localStorage.setItem("vendly_tenant_id", result.tenantId);
                 localStorage.setItem("vendly_tenant_slug", result.tenantSlug);
                 localStorage.setItem("vendly_store_id", result.storeId);
@@ -244,7 +245,11 @@ export function OnboardingProvider({ children }: ProviderProps) {
                     data: {},
                 }));
 
-                router.push(STEP_ROUTES["complete"]);
+                if (dashboardSlug) {
+                    router.push(`/dashboard/${dashboardSlug}`);
+                } else {
+                    router.push(STEP_ROUTES["complete"]);
+                }
                 return true;
             }
 
