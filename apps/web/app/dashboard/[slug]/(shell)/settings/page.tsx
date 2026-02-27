@@ -17,6 +17,9 @@ export default async function SettingsPage({
       name: true,
       storeContactPhone: true,
       defaultCurrency: true,
+      slug: true,
+      tenantId: true,
+      heroMedia: true,
     },
   });
 
@@ -35,6 +38,9 @@ export default async function SettingsPage({
         name: store.name,
         storeContactPhone: store.storeContactPhone,
         defaultCurrency: store.defaultCurrency || "UGX",
+        slug: store.slug,
+        tenantId: store.tenantId,
+        heroMedia: Array.isArray(store.heroMedia) ? store.heroMedia : [],
       }}
     />
   );

@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@shopvendly/ui/components/select";
 import { useTenant } from "@/features/dashboard/context/tenant-context";
+import { HeroEditor } from "../studio/components/hero-editor";
 
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -22,20 +23,24 @@ const CURRENCY_OPTIONS: Array<{ value: AllowedCurrency; label: string }> = [
   { value: "USD", label: "USD" },
 ];
 
-export function SettingsClient({
-  store,
-}: {
-  store: {
-    id: string;
-    name: string;
-    storeContactPhone: string | null;
-    defaultCurrency: string;
-  };
-}) {
+type SettingsStore = {
+  id: string;
+  name: string;
+  storeContactPhone: string | null;
+  defaultCurrency: string;
+  slug: string;
+  tenantId: string | null;
+  heroMedia: string[];
+};
+
+export function SettingsClient({ store }: { store: SettingsStore }) {
   const { refetch } = useTenant();
 
   const [currency, setCurrency] = React.useState<AllowedCurrency>(
     (store.defaultCurrency as AllowedCurrency) || "UGX"
+  );
+  const [heroMedia, setHeroMedia] = React.useState<string[]>(() =>
+    Array.isArray(store.heroMedia) ? store.heroMedia : []
   );
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -68,10 +73,12 @@ export function SettingsClient({
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
+    <div className="space-y-8 p-6">
+      <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-sm text-muted-foreground">Store details</p>
+        <p className="text-sm text-muted-foreground">
+          Manage core store details and storefront appearance.
+        </p>
       </div>
 
       {error ? (
@@ -86,42 +93,53 @@ export function SettingsClient({
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-lg border bg-card p-4 space-y-2">
-          <div className="text-xs uppercase text-muted-foreground">Store Name</div>
-          <div className="text-base font-semibold text-foreground">{store.name || "—"}</div>
-        </div>
-
-        <div className="rounded-lg border bg-card p-4 space-y-2">
-          <div className="text-xs uppercase text-muted-foreground">Phone Number</div>
-          <div className="text-base font-semibold text-foreground">{store.storeContactPhone || "—"}</div>
-        </div>
-
-        <div className="rounded-lg border bg-card p-4 space-y-3">
-          <div className="text-xs uppercase text-muted-foreground">Store Currency</div>
-          <div className="flex items-center gap-3">
-            <Select value={currency} onValueChange={(v) => setCurrency(v as AllowedCurrency)}>
-              <SelectTrigger className="w-[220px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CURRENCY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Button type="button" onClick={onSave} disabled={isSaving}>
-              {isSaving ? (
-                <>
-                  <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : "Save"}
-            </Button>
+      <div className="grid gap-6 lg:grid-cols-[1.1fr_1.6fr]">
+        <div className="space-y-4">
+          <div className="rounded-lg border bg-card p-4 space-y-2">
+            <div className="text-xs uppercase text-muted-foreground">Store Name</div>
+            <div className="text-base font-semibold text-foreground">{store.name || "—"}</div>
           </div>
+
+          <div className="rounded-lg border bg-card p-4 space-y-2">
+            <div className="text-xs uppercase text-muted-foreground">Phone Number</div>
+            <div className="text-base font-semibold text-foreground">{store.storeContactPhone || "—"}</div>
+          </div>
+
+          <div className="rounded-lg border bg-card p-4 space-y-3">
+            <div className="text-xs uppercase text-muted-foreground">Store Currency</div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Select value={currency} onValueChange={(v) => setCurrency(v as AllowedCurrency)}>
+                <SelectTrigger className="sm:w-[220px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CURRENCY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button type="button" onClick={onSave} disabled={isSaving} className="sm:w-auto">
+                {isSaving ? (
+                  <>
+                    <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : "Save"}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div id="storefront-header" className="space-y-4 rounded-xl bg-card/80">
+          <HeroEditor
+            storeSlug={store.slug}
+            tenantId={store.tenantId}
+            heroMedia={heroMedia}
+            onUpdate={setHeroMedia}
+          />
         </div>
       </div>
     </div>

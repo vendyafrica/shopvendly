@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { useRef, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { 
     PlayIcon, 
-    Image02Icon 
+    Image02Icon
 } from "@hugeicons/core-free-icons";
+import { Button } from "@shopvendly/ui/components/button";
+import { cn } from "@shopvendly/ui/lib/utils";
 import { useUpload } from "@/features/media/hooks/use-upload";
-import { CoverUpload } from "./cover-upload";
 
 interface HeroEditorProps {
     storeSlug: string;
@@ -22,10 +22,24 @@ const VIDEO_EXTENSIONS = [".mp4", ".webm", ".ogg"];
 function isVideoUrl(url: string) {
     try {
         const parsed = new URL(url);
-        return VIDEO_EXTENSIONS.some((ext) => parsed.pathname.toLowerCase().endsWith(ext));
+        const typeParam = parsed.searchParams.get("x-ut-file-type") || parsed.searchParams.get("file-type");
+        if (typeParam && typeParam.toLowerCase().startsWith("video")) return true;
+
+        const pathname = parsed.pathname.toLowerCase();
+        const hasVideoExt = VIDEO_EXTENSIONS.some((ext) => pathname.endsWith(ext));
+        if (hasVideoExt) return true;
+
+        // Treat extensionless UploadThing URLs as video by default
+        const hasNoExtension = !pathname.includes(".");
+        return hasNoExtension;
     } catch {
         const cleanUrl = url.split("?")[0]?.split("#")[0] ?? url;
-        return VIDEO_EXTENSIONS.some((ext) => cleanUrl.toLowerCase().endsWith(ext));
+        const lower = cleanUrl.toLowerCase();
+        const hasVideoExt = VIDEO_EXTENSIONS.some((ext) => lower.endsWith(ext));
+        if (hasVideoExt) return true;
+
+        const hasNoExtension = !lower.includes(".");
+        return hasNoExtension;
     }
 }
 
@@ -36,9 +50,10 @@ export function HeroEditor({
     onUpdate 
 }: HeroEditorProps) {
     const [isSaving, setIsSaving] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const inputRef = useRef<HTMLInputElement | null>(null);
     const { uploadFile, isUploading } = useUpload();
-    console.log("heroMedia", heroMedia);
-///hey ...
+
     const handleCoverSelected = async (file: File | null) => {
         if (!file) return;
 
@@ -113,88 +128,114 @@ export function HeroEditor({
     };
 
     const hasHeroMedia = heroMedia.length > 0;
-    const firstUrl = heroMedia[0];
-    const isFirstVideo = typeof firstUrl === "string" && isVideoUrl(firstUrl);
+
+    const triggerFileDialog = () => {
+        if (!tenantId || isSaving || isUploading) return;
+        inputRef.current?.click();
+    };
+
+    const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0] ?? null;
+        void handleCoverSelected(file);
+        event.target.value = "";
+    };
+
+    const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        setIsDragging(false);
+        if (!tenantId || isSaving || isUploading) return;
+        const file = event.dataTransfer.files?.[0] ?? null;
+        void handleCoverSelected(file);
+    };
+
+    const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        if (!tenantId || isSaving || isUploading) return;
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = () => {
+        setIsDragging(false);
+    };
 
     return (
-        <div className="relative group">
-            {/* Hero Display */}
-            <div className="relative h-[60vh] sm:h-[70vh] md:h-[75vh] lg:h-[80vh] w-full overflow-hidden rounded-b-3xl">
+        <div className="rounded-2xl border bg-card/80 p-4 sm:p-6 space-y-6">
+            <div className="space-y-1">
+                <h3 className="text-lg font-semibold">Storefront header</h3>
+                <p className="text-sm text-muted-foreground">
+                    Update your hero here
+                </p>
+            </div>
+
+            <input
+                ref={inputRef}
+                type="file"
+                accept="image/*,video/*"
+                className="hidden"
+                onChange={handleInputChange}
+                disabled={!tenantId || isSaving || isUploading}
+            />
+
+            <div
+                onClick={triggerFileDialog}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                className={cn(
+                    "relative overflow-hidden rounded-xl border border-dashed px-6 py-12 text-center transition",
+                    !tenantId || isSaving || isUploading ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+                    isDragging ? "border-primary bg-primary/5" : "border-border bg-muted/30"
+                )}
+            >
                 {hasHeroMedia ? (
-                    isFirstVideo ? (
-                        <video
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                            className="w-full h-full object-cover"
-                        >
-                            <source src={firstUrl} type="video/mp4" />
-                        </video>
-                    ) : (
-                        <Image
-                            src={firstUrl}
-                            alt="Store hero"
-                            fill
-                            priority
-                            className="object-cover"
-                        />
-                    )
-                ) : (
-                    <div className="w-full h-full bg-linear-to-br from-neutral-100 to-neutral-200 flex items-center justify-center">
-                        <div className="text-center">
-                            <HugeiconsIcon 
-                                icon={Image02Icon} 
-                                size={48}
-                                className="mx-auto mb-4 text-neutral-400" 
+                    <div className="relative aspect-video w-full overflow-hidden rounded-lg">
+                        {isVideoUrl(heroMedia[0] ?? "") ? (
+                            <video
+                                src={heroMedia[0]}
+                                className="h-full w-full object-cover"
+                                autoPlay
+                                muted
+                                loop
+                                playsInline
                             />
-                            <p className="text-neutral-500 text-lg">No hero media</p>
-                            <p className="text-neutral-400 text-sm mt-2">
-                                Add a hero image or video to showcase your store
+                        ) : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={heroMedia[0]} alt="Current hero" className="h-full w-full object-cover" />
+                        )}
+
+                        <div className="absolute inset-0 bg-black/40 opacity-0 transition group-hover:opacity-100" />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white drop-shadow-sm pointer-events-none">
+                            <HugeiconsIcon icon={Image02Icon} size={32} />
+                            <p className="text-base font-medium">Drag & drop to replace</p>
+                            <p className="text-xs text-white/80">Or click to browse</p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="rounded-full bg-primary/10 p-4">
+                            <HugeiconsIcon icon={Image02Icon} size={32} className="text-primary" />
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-base font-medium">
+                                {isUploading ? "Uploading media..." : "Drag & drop media or click to browse"}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                                Images up to 10MB, videos up to 50MB. Supported formats: JPG, PNG, MP4, WEBM.
                             </p>
                         </div>
                     </div>
                 )}
-            </div>
 
-            {/* Inline editor content */}
-            <div className="absolute inset-0 bg-linear-to-b from-black/5 via-transparent to-black/40 pointer-events-none" />
-
-            <div className="bg-white rounded-xl p-6 shadow-lg mt-4">
-                <h3 className="text-lg font-semibold mb-4">Update Hero Media</h3>
-
-                <div className="space-y-4">
-                    <CoverUpload
-                        accept="image/*,video/*"
-                        maxSize={50 * 1024 * 1024}
-                        disabled={!tenantId || isUploading || isSaving}
-                        title={!tenantId ? "Loading store..." : isUploading ? "Uploading..." : "Upload cover image or video"}
-                        description="Drag & drop, or click to browse (images up to 10MB, videos up to 50MB)"
-                        onFileSelected={handleCoverSelected}
-                    />
-
-                    {heroMedia.length > 0 && (
-                        <div className="grid grid-cols-3 gap-2">
-                            {heroMedia.slice(0, 6).map((url, idx) => (
-                                <button
-                                    key={`${url}-${idx}`}
-                                    type="button"
-                                    onClick={() => handleRemove(idx)}
-                                    disabled={isSaving}
-                                    className="relative aspect-square overflow-hidden rounded-md border border-border/60"
-                                >
-                                    {isVideoUrl(url) ? (
-                                        <div className="w-full h-full bg-neutral-100 flex items-center justify-center">
-                                            <HugeiconsIcon icon={PlayIcon} size={18} className="text-neutral-500" />
-                                        </div>
-                                    ) : (
-                                        <Image src={url} alt="Hero item" fill className="object-cover" />
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                {!hasHeroMedia ? (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={!tenantId || isSaving || isUploading}
+                    >
+                        {isUploading ? "Uploading..." : "Choose file"}
+                    </Button>
+                ) : null}
             </div>
         </div>
     );

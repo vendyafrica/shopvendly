@@ -148,8 +148,16 @@ export function useUpload() {
                     throw new Error("Upload failed. No file returned by UploadThing.");
                 }
 
+                const appendTypeParam = (url: string, type: string | undefined) => {
+                    if (!type) return url;
+                    const separator = url.includes("?") ? "&" : "?";
+                    return `${url}${separator}x-ut-file-type=${encodeURIComponent(type)}`;
+                };
+
+                const urlWithType = appendTypeParam(uploaded.ufsUrl, preparedFile.type);
+
                 return {
-                    url: uploaded.ufsUrl,
+                    url: urlWithType,
                     pathname: uploaded.key,
                 };
             } finally {
