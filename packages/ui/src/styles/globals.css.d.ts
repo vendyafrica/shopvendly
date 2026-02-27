@@ -1,0 +1,1 @@
+declare module "@vendly/ui/globals.css";

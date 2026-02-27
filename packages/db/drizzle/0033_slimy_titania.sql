@@ -1,0 +1,1 @@
+DROP TABLE "whatsapp_message_queue" CASCADE;

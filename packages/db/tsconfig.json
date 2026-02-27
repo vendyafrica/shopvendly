@@ -1,0 +1,24 @@
+{
+  "extends": "@shopvendly/typescript-config/base.json",
+  "compilerOptions": {
+    "lib": [
+      "ES2020"
+    ],
+    "paths": {
+      "@shopvendly/db": [
+        "./src/index.ts"
+      ],
+      "@shopvendly/db/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "drizzle.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
