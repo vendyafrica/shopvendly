@@ -84,16 +84,6 @@ const tenantAdminItems: SidebarNavItem[] = [
     url: "/customers",
     icon: CustomerServiceIcon,
   },
-  {
-    title: "Integrations",
-    url: "/integrations",
-    icon: ConnectIcon,
-  },
-  {
-    title: "Studio",
-    url: "/studio",
-    icon: Store01Icon,
-  },
 ];
 
 const superAdminItems: SidebarNavItem[] = [

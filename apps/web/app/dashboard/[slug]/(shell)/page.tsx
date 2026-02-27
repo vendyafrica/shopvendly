@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SegmentedStatsCard } from "@/features/dashboard/components/segmented-stats-card";
 import { RevenueAreaChartCard, TopProductsBarChartCard } from "@/features/dashboard/components/dynamic-charts";
 import { RecentTransactionsTable } from "@/features/dashboard/components/recent-transactions-table";
+import { IntegrationsPanel } from "@/features/dashboard/components/integrations-panel";
 import { db } from "@shopvendly/db/db";
 import { orderItems, orders, stores } from "@shopvendly/db/schema";
 import { and, desc, eq, isNull, sql } from "@shopvendly/db";
@@ -243,40 +244,19 @@ export default async function DashboardPage({
                   <Button size="sm" variant="secondary">
                     <Link href={`${basePath}/products/new`}>Add more</Link>
                   </Button>
-                  <Button size="sm" variant="outline" >
+                  <Button size="sm" variant="outline">
                     <Link href={`${basePath}/products`}>View products</Link>
                   </Button>
                 </div>
               </div>
             </div>
-
-            <div className="flex h-full flex-col rounded-3xl border bg-background p-6 shadow-sm">
-              <div className="flex flex-col items-center gap-3 text-center md:flex-row md:items-start md:gap-4 md:text-left">
-                <div className="rounded-2xl p-4 text-primary md:self-start">
-                  <Palette className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-lg font-semibold">Design your store</p>
-                  <p className="text-sm text-muted-foreground">
-                    Choose a color theme for your store.
-                  </p>
-                </div>
-              </div>
-              <div className="mt-6 flex flex-1 flex-col space-y-4">
-                <Input defaultValue={designPrompt} />
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button variant="outline" className="w-full sm:flex-1">
-                    <Link href={`${basePath}/studio`} className="justify-center">Browse themes</Link>
-                  </Button>
-                  <Button className="w-full sm:flex-1">Generate</Button>
-                </div>
-              </div>
+            <div className="rounded-3xl border bg-background p-6 shadow-sm">
+              <IntegrationsPanel variant="compact" />
             </div>
           </div>
-
         </CardContent>
       </Card>
-
+      
       <SegmentedStatsCard segments={statSegments} />
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-7 lg:grid-cols-7">
