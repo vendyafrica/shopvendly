@@ -13,7 +13,7 @@ import {
   withCache,
 } from "@shopvendly/db";
 import { orders, orderItems, products, stores, tenants } from "@shopvendly/db";
-import { normalizePhoneToE164 } from "../shared/utils/phone";
+import { normalizePhoneToE164 } from "../../../shared/utils/phone";
 import { z } from "zod";
 
 type ProductWithMedia = (typeof products.$inferSelect) & {
@@ -128,6 +128,10 @@ export const orderService = {
         currency,
       })
       .returning();
+
+    if (!order) {
+      throw new Error("Failed to persist order");
+    }
 
     await db.insert(orderItems).values(
       orderItemsData.map((i) => ({

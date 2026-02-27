@@ -8,7 +8,7 @@ export type TemplateComponent = {
 export type TemplateMessageInput = {
   to: string;
   templateName: string;
-  languageCode: string;
+  languageCode?: string;
   components?: TemplateComponent[];
 };
 
@@ -25,7 +25,14 @@ export type TemplateMessageOptions = {
   tenantId?: string | null;
   orderId?: string | null;
   dedupeKey?: string | null;
+  type?: "template";
 };
+
+export type TemplateQueuePayload = TemplateMessageOptions & { type: "template" };
+
+export type TextQueuePayload = TextMessageOptions & { type: "text" };
+
+export type QueuePayload = TemplateQueuePayload | TextQueuePayload;
 
 export type InboundMessageOptions = {
   from: string;

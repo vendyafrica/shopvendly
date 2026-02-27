@@ -1,9 +1,9 @@
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
 import { Receiver } from "@upstash/qstash";
-import type { RawBodyRequest } from "../shared/types/raw-body";
-import { whatsappClient } from "../../messaging/services/whatsapp/whatsapp-client";
-import type { QueuePayload } from "../../messaging/services/whatsapp/message-queue";
+import type { RawBodyRequest } from "../../../shared/types/raw-body";
+import { whatsappClient } from "../services/whatsapp/whatsapp-client";
+import type { QueuePayload } from "../services/whatsapp/message-queue";
 
 export const whatsappDeliveryRouter: ExpressRouter = Router();
 
@@ -40,11 +40,12 @@ whatsappDeliveryRouter.post("/webhooks/qstash/whatsapp", async (req, res) => {
   try {
     let result: unknown;
     if (payload.type === "template") {
+      const input = payload.input;
       result = await whatsappClient.sendTemplateMessage({
-        to: payload.to,
-        templateName: payload.templateName || "",
-        languageCode: payload.languageCode || "en_US",
-        components: payload.components ?? undefined,
+        to: input.to,
+        templateName: input.templateName || "",
+        languageCode: input.languageCode || "en_US",
+        components: input.components ?? undefined,
       });
     } else {
       result = await whatsappClient.sendTextMessage({
@@ -53,10 +54,12 @@ whatsappDeliveryRouter.post("/webhooks/qstash/whatsapp", async (req, res) => {
       });
     }
 
+    const to = payload.type === "template" ? payload.input.to : payload.to;
+    const templateName = payload.type === "template" ? payload.input.templateName : undefined;
     console.log("[QStash] Delivery success", {
       type: payload.type,
-      to: payload.to,
-      template: payload.templateName,
+      to,
+      template: templateName,
       orderId: payload.orderId,
       tenantId: payload.tenantId,
       dedupeKey: payload.dedupeKey,
@@ -65,11 +68,13 @@ whatsappDeliveryRouter.post("/webhooks/qstash/whatsapp", async (req, res) => {
 
     return res.sendStatus(200);
   } catch (error) {
+    const to = payload.type === "template" ? payload.input.to : payload.to;
+    const templateName = payload.type === "template" ? payload.input.templateName : undefined;
     console.error("[QStash] Delivery failed", {
       error,
       type: payload.type,
-      to: payload.to,
-      template: payload.templateName,
+      to,
+      template: templateName,
       orderId: payload.orderId,
       tenantId: payload.tenantId,
       dedupeKey: payload.dedupeKey,

@@ -1,1 +1,1 @@
-export * from "../../../messaging/services/whatsapp/template-registry";
+export * from "../../services/whatsapp/template-registry";

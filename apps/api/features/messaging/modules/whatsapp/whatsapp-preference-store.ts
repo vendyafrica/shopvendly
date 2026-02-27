@@ -1,1 +1,1 @@
-export * from "../../../messaging/services/whatsapp/preference-store";
+export * from "../../services/whatsapp/preference-store";

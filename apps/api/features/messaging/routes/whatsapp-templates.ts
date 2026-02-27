@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
-import { TEMPLATE_NAMES } from "../../messaging/services/whatsapp/template-registry";
+import { TEMPLATE_NAMES } from "../services/whatsapp/template-registry";
 
 export const whatsappTemplatesRouter: ExpressRouter = Router();
 

@@ -1,9 +1,9 @@
 import { orders, type OrderItem } from "@shopvendly/db";
-import { enqueueTemplateMessage, enqueueTextMessage } from "../features/messaging/routes/whatsapp/message-queue";
-import { templateSend } from "../modules/whatsapp/whatsapp-template-registry";
-import { normalizePhoneToE164 } from "../shared/utils/phone";
-import { buyerPreferenceStore } from "../features/messaging/routes/whatsapp/preference-store";
-import { orderService } from "./order-service";
+import { enqueueTemplateMessage, enqueueTextMessage } from "./whatsapp/message-queue";
+import { templateSend } from "./whatsapp/template-registry";
+import { normalizePhoneToE164 } from "../../../shared/utils/phone";
+import { buyerPreferenceStore } from "./whatsapp/preference-store";
+import { orderService } from "../../orders/services/order-service";
 
 // ---------------------------------------------------------------------------
 // Helpers

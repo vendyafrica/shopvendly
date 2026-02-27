@@ -1,136 +1,134 @@
-# Turborepo starter
+# Shopvendly Monorepo
 
-This Turborepo starter is maintained by the Turborepo core team.
+> Modern commerce OS for African social sellers. This repository hosts every surface - customer storefront, merchant workspace, and automation APIs - built on a shared design system and database layer.
 
-## Using this example
+## Contents
 
-Run the following command:
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Running the apps](#running-the-apps)
+- [Environment configuration](#environment-configuration)
+- [Common workflows](#common-workflows)
+- [Deployment notes](#deployment-notes)
+- [Contributing](#contributing)
+
+## Architecture
+
+```
+apps/
+├─ web/    → Customer + merchant-facing Next.js experience
+├─ admin/  → Internal Next.js control panel (port 3001)
+└─ api/    → Express + tRPC edge API for automations & webhooks
+
+packages/
+├─ auth/             → Better Auth wrapper + session helpers
+├─ db/               → Drizzle schema, Neon/Postgres adapters, seeds
+├─ transactional/    → React Email templates + Resend wiring
+├─ ui/               → Shared design system (Base UI, Tailwind, CVA)
+└─ eslint-config/    → Central linting presets
+```
+
+Turbo keeps builds, lint, and type-check tasks in sync across the monorepo while pnpm workspaces provide dependency hoisting.
+
+## Tech Stack
+
+- **Runtime:** Node 18+, TypeScript everywhere
+- **UI:** Next.js 16, React 19, Tailwind, Base UI primitives, Framer Motion
+- **State/data:** TanStack Query/Form/Table, TRPC, Zod
+- **Infra:** Neon/Postgres via Drizzle ORM, Upstash Redis/QStash, UploadThing, Resend
+- **Auth:** Better Auth with workspace-specific helpers
+- **Observability:** Sentry, PostHog analytics + speed insights
+
+## Getting Started
+
+Prerequisites: Node ≥18, pnpm 9, Git, and access to all required third-party keys.
+
+1. **Install dependencies**
 
 ```sh
-npx create-turbo@latest
+pnpm install
 ```
 
-## What's inside?
+2. **Bootstrap environment variables**
 
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+```sh
+cp .env.example .env
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+Fill in the `.env` with credentials for your database, auth providers, WhatsApp, MTN MoMo, Paystack, UploadThing, Resend, etc.
 
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+3. **Generate database artifacts (optional first run)**
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+```sh
+pnpm --filter @shopvendly/db generate
+pnpm --filter @shopvendly/db push
+pnpm --filter @shopvendly/db seed
 ```
 
-### Develop
+## Running the apps
 
-To develop all apps and packages, run the following command:
+Use Turbo to fan out tasks or target each workspace individually.
 
-```
-cd my-turborepo
+```sh
+# run every app in watch mode
+pnpm dev
 
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+# run one target
+pnpm turbo run dev --filter=@shopvendly/web
+pnpm turbo run dev --filter=@shopvendly/admin
+pnpm turbo run dev --filter=@shopvendly/api
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+When running individually:
 
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+- Web app listens on **http://localhost:3000**
+- Admin app listens on **http://localhost:3001**
+- API server uses `tsx watch` with the shared `.env`
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+Build & type-check:
 
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+```sh
+pnpm build          # turbo run build across all projects
+pnpm lint           # eslint with zero allowed warnings
+pnpm check-types    # tsc + Next.js typegen
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+## Environment configuration
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+`.env.example` documents every secret grouped by domain:
 
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
+| Group | Highlights |
+| --- | --- |
+| Database | `DATABASE_URL` (Neon/Postgres) |
+| Core URLs | `WEB_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_ROOT_DOMAIN` |
+| Auth & Social | Better Auth secrets, Google + Instagram OAuth IDs |
+| Messaging | WhatsApp Cloud API tokens, QStash signing keys |
+| Payments | MTN MoMo sandbox credentials, Paystack public & secret keys |
+| Infra | Upstash Redis, UploadThing, Vercel tokens |
+| Analytics & AI | PostHog, AI gateway, Gemini, V0 experiments |
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
+**Never commit a populated `.env`.** Use `.env.local` overrides for machine-specific tweaks.
 
-## Useful Links
+## Common workflows
 
-Learn more about the power of Turborepo:
+| Task | Command |
+| --- | --- |
+| Format markdown + TS | `pnpm format` |
+| Lint only web | `pnpm turbo run lint --filter=@shopvendly/web` |
+| Watch DB package | `pnpm --filter @shopvendly/db dev` |
+| Ship transactional emails | `pnpm --filter @shopvendly/transactional build` |
 
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
-# shopvendly
+## Deployment notes
+
+- **Web/Admin:** Deploy to Vercel (Node 18 runtime). Configure env groups and UploadThing/Better Auth callbacks per environment.
+- **API:** Bundle with `tsup` (`pnpm --filter @shopvendly/api build`) and deploy to the preferred Node host (Vercel functions, Fly.io, etc.). Point webhooks (Instagram, WhatsApp, MTN MoMo) to the deployed API URL.
+- **Database:** Managed via Neon or chosen Postgres provider. Run `pnpm --filter @shopvendly/db push` during release pipelines to apply Drizzle migrations.
+
+## Contributing
+
+1. Create a feature branch off `main`.
+2. Keep scope small and ensure lint + type checks pass before pushing.
+3. Document migrations, new env vars, and any operational changes in this README or `/docs` if added in the future.
+
+Issues, questions, or proposals? Open a discussion or tag the relevant workspace maintainers.
