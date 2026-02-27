@@ -1,8 +1,8 @@
 import crypto from "crypto";
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
-import { db, eq } from "@vendly/db";
-import { orders } from "@vendly/db";
+import { db, eq } from "@shopvendly/db";
+import { orders } from "@shopvendly/db";
 import type { RawBodyRequest } from "../shared/types/raw-body";
 import { orderService } from "../services/order-service";
 import {

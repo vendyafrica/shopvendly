@@ -1,4 +1,4 @@
-import { orders, type OrderItem } from "@vendly/db";
+import { orders, type OrderItem } from "@shopvendly/db";
 import { enqueueTemplateMessage, enqueueTextMessage } from "../features/messaging/routes/whatsapp/message-queue";
 import { templateSend } from "../features/messaging/routes/whatsapp/template-registry";
 import { normalizePhoneToE164 } from "../shared/utils/phone";

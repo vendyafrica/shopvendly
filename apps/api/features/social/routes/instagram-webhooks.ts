@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
 import type { RawBodyRequest } from "../shared/types/raw-body";
-import { and, db, eq, instagramAccounts, account, stores, products, mediaObjects, productMedia } from "@vendly/db";
+import { and, db, eq, instagramAccounts, account, stores, products, mediaObjects, productMedia } from "@shopvendly/db";
 
 export const instagramWebhookRouter: ExpressRouter = Router();
 

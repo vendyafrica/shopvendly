@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { auth } from "@vendly/auth";
-import { db, tenantMemberships, superAdmins, and, eq } from "@vendly/db";
+import { auth } from "@shopvendly/auth";
+import { db, tenantMemberships, superAdmins, and, eq } from "@shopvendly/db";
 import { AuthenticatedRequest, TenantRole, PlatformRole } from "../types/auth";
 
 /**

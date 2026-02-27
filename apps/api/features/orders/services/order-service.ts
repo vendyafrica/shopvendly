@@ -11,8 +11,8 @@ import {
   or,
   sql,
   withCache,
-} from "@vendly/db";
-import { orders, orderItems, products, stores, tenants } from "@vendly/db";
+} from "@shopvendly/db";
+import { orders, orderItems, products, stores, tenants } from "@shopvendly/db";
 import { normalizePhoneToE164 } from "../shared/utils/phone";
 import { z } from "zod";
 

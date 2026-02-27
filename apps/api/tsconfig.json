@@ -13,10 +13,10 @@
       "@shopvendly/db": [
         "../../packages/db/src/index.ts"
       ],
-      "@vendly/db/schema": [
+      "@shopvendly/db/schema": [
         "../../packages/db/src/schema/index.ts"
       ],
-      "@vendly/db": [
+      "@shopvendly/db": [
         "../../packages/db/src/index.ts"
       ]
     }
