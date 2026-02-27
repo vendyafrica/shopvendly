@@ -9,15 +9,11 @@ import {
 
 class OnboardingService {
 
-    /**
-     * Complete onboarding with full data submission
-     */
     async createFullTenant(
         userId: string,
         email: string,
         data: OnboardingData
     ): Promise<OnboardingCompleteResponse> {
-        // Validate all steps
         if (!data.personal || !isValidPersonalInfo(data.personal)) {
             throw new Error("Personal info incomplete");
         }

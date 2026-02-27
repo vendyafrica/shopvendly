@@ -3,7 +3,7 @@
 import { Checkbox } from "@shopvendly/ui/components/checkbox";
 import { cn } from "@shopvendly/ui/lib/utils";
 import { useOnboarding } from "../context/onboarding-context";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 
 export type Category = {
   id: string;
@@ -11,16 +11,17 @@ export type Category = {
 };
 
 const STEP_LABELS: Record<import("../context/onboarding-context").OnboardingStep, string> = {
-  step0: "Start",
-  step1: "Business",
-  step2: "Categories",
-  complete: "Complete",
+  step0: "Sign in",
+  step1: "Personal",
+  step2: "Store",
+  step3: "Categories",
+  complete: "Done",
 };
 
 export function StepIndicator() {
   const { currentStep, isHydrated } = useOnboarding();
 
-  const steps: import("../context/onboarding-context").OnboardingStep[] = ["step1", "step2", "complete"];
+  const steps: import("../context/onboarding-context").OnboardingStep[] = ["step0", "step1", "step2", "step3", "complete"];
 
   const currentIndex = steps.indexOf(currentStep);
 
@@ -101,7 +102,7 @@ export function CategoriesSelector({
     }
   };
 
-  const item = {
+  const item: Variants = {
     hidden: { opacity: 0, scale: 0.95, y: 10 },
     show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
   };

@@ -12,7 +12,7 @@ import { CategoriesSelector, type Category } from "../components/category-select
 import { useAppSession } from "@/contexts/app-session-context";
 import { getRootUrl } from "@/utils/misc";
 
-export function Step2Categories() {
+export function Step3Categories() {
   const { session: appSession } = useAppSession();
   const { data, completeOnboarding, goBack, isLoading, error, saveBusinessDraft } = useOnboarding();
 
@@ -29,7 +29,7 @@ export function Step2Categories() {
   }, []);
 
   const getCallbackURL = useMemo(
-    () => () => getRootUrl("/c/complete"),
+    () => () => getRootUrl("/c?step=3"),
     []
   );
 

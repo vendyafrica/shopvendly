@@ -7,7 +7,7 @@ import type { PersonalInfo, StoreInfo, BusinessInfo, OnboardingData } from "../l
 // Re-export for convenience so consumers don't need a separate import
 export type { PersonalInfo, StoreInfo, BusinessInfo, OnboardingData };
 
-export type OnboardingStep = "step0" | "step1" | "step2" | "complete";
+export type OnboardingStep = "step0" | "step1" | "step2" | "step3" | "complete";
 
 interface OnboardingState {
     currentStep: OnboardingStep;
@@ -19,7 +19,8 @@ interface OnboardingState {
 }
 
 interface OnboardingContextValue extends OnboardingState {
-    saveDraft: (info: PersonalInfo & StoreInfo) => void;
+    savePersonalDraft: (info: PersonalInfo) => void;
+    saveStoreDraft: (info: StoreInfo) => void;
     saveBusinessDraft: (info: BusinessInfo) => void;
     completeOnboarding: (dataOverride?: Partial<OnboardingData>) => Promise<boolean>;
     goBack: () => void;
@@ -43,10 +44,10 @@ function readLS(): OnboardingData {
 function readLSStep(): OnboardingStep {
     try {
         const stored = localStorage.getItem(LS_STEP_KEY) as OnboardingStep | null;
-        if (!stored || stored === "step0") return "step1";
+        if (!stored) return "step0";
         return stored;
     } catch {
-        return "step1";
+        return "step0";
     }
 }
 
@@ -94,10 +95,11 @@ export function useOnboarding() {
 }
 
 const STEP_ROUTES: Record<OnboardingStep, string> = {
-    step0: "/c?step=1",
+    step0: "/c?step=0",
     step1: "/c?step=1",
     step2: "/c?step=2",
-    complete: "/c/complete",
+    step3: "/c?step=3",
+    complete: "/dashboard",
 };
 
 // ── Provider ────────────────────────────────────────────────────────
@@ -113,7 +115,7 @@ export function OnboardingProvider({ children }: ProviderProps) {
     const submittingRef = useRef(false);
 
     const [state, setState] = useState<OnboardingState>({
-        currentStep: "step1",
+        currentStep: "step0",
         data: {},
         isComplete: false,
         isLoading: false,
@@ -125,7 +127,17 @@ export function OnboardingProvider({ children }: ProviderProps) {
     useEffect(() => {
         if (typeof window === "undefined") return;
         const data = readLS();
-        const currentStep = readLSStep();
+        const storedStep = readLSStep();
+        const search = new URLSearchParams(window.location.search);
+        const stepParam = search.get("step");
+        const map: Record<string, OnboardingStep> = {
+            "0": "step0",
+            "1": "step1",
+            "2": "step2",
+            "3": "step3",
+        };
+        const stepFromParam = stepParam ? map[stepParam] : undefined;
+        const currentStep = stepFromParam ?? storedStep;
         setState(prev => ({
             ...prev,
             data,
@@ -152,16 +164,25 @@ export function OnboardingProvider({ children }: ProviderProps) {
      * Save personal + store info to localStorage before triggering Google OAuth.
      * This data is retrieved after the OAuth redirect completes.
      */
-    const saveDraft = useCallback((info: PersonalInfo & StoreInfo) => {
-        const { fullName, phoneNumber, countryCode, storeName, storeDescription, storeLocation } = info;
+    const savePersonalDraft = useCallback((info: PersonalInfo) => {
         setState(prev => {
             const updatedData: OnboardingData = {
                 ...prev.data,
-                personal: { fullName, phoneNumber, countryCode },
-                store: { storeName, storeDescription, storeLocation },
+                personal: info,
             };
             writeLS(updatedData, "step1");
-            return { ...prev, data: updatedData };
+            return { ...prev, data: updatedData, currentStep: "step1" };
+        });
+    }, []);
+
+    const saveStoreDraft = useCallback((info: StoreInfo) => {
+        setState(prev => {
+            const updatedData: OnboardingData = {
+                ...prev.data,
+                store: info,
+            };
+            writeLS(updatedData, "step2");
+            return { ...prev, data: updatedData, currentStep: "step2" };
         });
     }, []);
 
@@ -171,8 +192,8 @@ export function OnboardingProvider({ children }: ProviderProps) {
                 ...prev.data,
                 business,
             };
-            writeLS(updatedData, "step2");
-            return { ...prev, data: updatedData };
+            writeLS(updatedData, "step3");
+            return { ...prev, data: updatedData, currentStep: "step3" };
         });
     }, []);
 
@@ -242,12 +263,21 @@ export function OnboardingProvider({ children }: ProviderProps) {
     }, [router, state.data]);
 
     const goBack = useCallback(() => {
-        navigateToStep("step1");
-    }, [navigateToStep]);
+        setState(prev => {
+            const order: OnboardingStep[] = ["step0", "step1", "step2", "step3", "complete"];
+            const currentIdx = order.indexOf(prev.currentStep);
+            const previousIndex = currentIdx > 0 ? currentIdx - 1 : 0;
+            const previousStep = order[previousIndex] ?? "step0";
+            if (previousStep === prev.currentStep) return prev;
+            router.push(STEP_ROUTES[previousStep]);
+            return { ...prev, currentStep: previousStep };
+        });
+    }, [router]);
 
     const value: OnboardingContextValue = {
         ...state,
-        saveDraft,
+        savePersonalDraft,
+        saveStoreDraft,
         saveBusinessDraft,
         completeOnboarding,
         goBack,

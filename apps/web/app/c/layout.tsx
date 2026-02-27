@@ -35,20 +35,12 @@ export default async function OnboardingLayout({ children }: { children: ReactNo
 
 function OnboardingShell({ children }: { children: ReactNode }) {
   return (
-    <div className="dark h-dvh bg-black text-white flex flex-col overflow-hidden selection:bg-[#5B4BFF] selection:text-white relative">
-      {/* Violet Storm Background with Top Glow */}
-      <div
-        className="absolute inset-0 z-0 pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(139, 92, 246, 0.25), transparent 70%), #000000",
-        }}
-      />
-
+    <div className="min-h-dvh bg-white text-black flex flex-col overflow-hidden selection:bg-[#5B4BFF] selection:text-black">
       {/* Header — fixed height */}
-      <header className="relative z-10 flex flex-col gap-3 items-start md:flex-row md:items-center md:justify-between px-4 py-3 md:px-8 border-b border-white/10 bg-transparent shrink-0">
+      <header className="relative z-10 flex flex-col gap-3 items-start md:flex-row md:items-center md:justify-between px-4 py-3 md:px-8 border-b border-black/10 bg-transparent shrink-0">
         <Link href="/" className="flex items-center gap-1 group shrink-0">
           <span
-            className={`${anton.className} text-[20px] leading-none text-white`}
+            className={`${anton.className} text-[20px] leading-none text-black`}
           >
             shop
           </span>
@@ -65,8 +57,8 @@ function OnboardingShell({ children }: { children: ReactNode }) {
       </header>
 
       {/* Scrollable content area */}
-      <main className="relative z-10 flex-1 overflow-y-auto flex justify-center px-4 md:px-6 py-6">
-        <div className="w-full max-w-4xl">{children}</div>
+      <main className="relative z-10 flex-1 overflow-y-auto flex items-center justify-center px-4 md:px-6 py-10">
+        <div className="w-full max-w-3xl flex justify-center">{children}</div>
       </main>
     </div>
   );

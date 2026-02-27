@@ -23,11 +23,19 @@ class OnboardingRepository {
             status: "active",
         }).returning();
 
+        if (!tenant) {
+            throw new Error("Failed to create tenant record");
+        }
+
         const [membership] = await db.insert(tenantMemberships).values({
             tenantId: tenant.id,
             userId,
             role: "owner",
         }).returning();
+
+        if (!membership) {
+            throw new Error("Failed to create tenant membership");
+        }
 
         const [store] = await db.insert(stores).values({
             tenantId: tenant.id,
@@ -41,6 +49,10 @@ class OnboardingRepository {
             status: true,
         }).returning();
 
+        if (!store) {
+            throw new Error("Failed to create store record");
+        }
+
         return {
             tenant,
             store,
@@ -49,9 +61,11 @@ class OnboardingRepository {
     }
 
     async isSlugTaken(slug: string): Promise<boolean> {
-        const existing = await db.query.tenants.findFirst({
-            where: eq(tenants.slug, slug),
-        });
+        const [existing] = await db
+            .select({ id: tenants.id })
+            .from(tenants)
+            .where(eq(tenants.slug, slug))
+            .limit(1);
         return !!existing;
     }
 
@@ -71,9 +85,11 @@ class OnboardingRepository {
     }
 
     private async isStoreSlugTaken(slug: string): Promise<boolean> {
-        const existing = await db.query.stores.findFirst({
-            where: eq(stores.slug, slug),
-        });
+        const [existing] = await db
+            .select({ id: stores.id })
+            .from(stores)
+            .where(eq(stores.slug, slug))
+            .limit(1);
         return !!existing;
     }
 
@@ -98,9 +114,11 @@ class OnboardingRepository {
     }
 
     async hasTenant(userId: string): Promise<boolean> {
-        const membership = await db.query.tenantMemberships.findFirst({
-            where: eq(tenantMemberships.userId, userId),
-        });
+        const [membership] = await db
+            .select({ id: tenantMemberships.id })
+            .from(tenantMemberships)
+            .where(eq(tenantMemberships.userId, userId))
+            .limit(1);
         return !!membership;
     }
 }

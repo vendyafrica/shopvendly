@@ -5,6 +5,7 @@ export type OnboardingStep = "signup" | "personal" | "store" | "business" | "com
 export interface PersonalInfoDto {
     fullName: string;
     phoneNumber: string;
+    countryCode: string;
 }
 
 export interface StoreInfoDto {
@@ -68,7 +69,9 @@ export function isValidPersonalInfo(data: unknown): data is PersonalInfoDto {
         typeof d.fullName === "string" &&
         d.fullName.trim().length > 0 &&
         typeof d.phoneNumber === "string" &&
-        d.phoneNumber.trim().length > 0
+        d.phoneNumber.trim().length > 0 &&
+        typeof d.countryCode === "string" &&
+        d.countryCode.trim().length > 0
     );
 }
 
