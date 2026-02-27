@@ -1,1 +1,1 @@
-export { storefrontOrdersRouter } from "../../routes/storefront-orders";
+export { storefrontOrdersRouter } from "../routes/storefront-orders";

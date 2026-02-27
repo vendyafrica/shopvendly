@@ -18,12 +18,6 @@
       "@shopvendly/db/schema": [
         "../../packages/db/dist/schema/index.js"
       ],
-      "@shopvendly/auth": [
-        "../../packages/auth/dist/index.js"
-      ],
-      "@shopvendly/auth/auth-client": [
-        "../../packages/auth/dist/auth-client.js"
-      ],
       "@shopvendly/transactional": [
         "../../packages/transactional/dist/index.js"
       ]

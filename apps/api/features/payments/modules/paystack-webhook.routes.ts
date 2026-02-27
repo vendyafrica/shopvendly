@@ -1,1 +1,1 @@
-export { paystackWebhookRouter } from "../../routes/paystack-webhook";
+export { paystackWebhookRouter } from "../routes/paystack-webhook";
