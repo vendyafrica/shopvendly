@@ -1,4 +1,4 @@
-import { resend } from './resend';
+import { resend } from './resend.js';
 import { render } from '@react-email/components';
 import * as React from 'react';
 
@@ -17,7 +17,7 @@ export const sendWelcomeEmail = async ({
   dashboardUrl,
   connectInstagramUrl,
 }: SendWelcomeEmailProps) => {
-  const { default: SellerWelcomeEmail } = await import('./emails/welcome');
+  const { default: SellerWelcomeEmail } = await import('./emails/welcome.js');
   const emailHtml = await render(
     React.createElement(SellerWelcomeEmail, {
       name,
@@ -49,7 +49,7 @@ interface SendAdminVerificationProps {
 }
 
 export const sendAdminVerificationEmail = async ({ to, name, verificationUrl }: SendAdminVerificationProps) => {
-  const { AdminVerificationEmail } = await import('./emails/admin-verification');
+  const { AdminVerificationEmail } = await import('./emails/admin-verification.js');
   const emailHtml = await render(React.createElement(AdminVerificationEmail, {
     name,
     url: verificationUrl,
@@ -77,7 +77,7 @@ interface SendSuperAdminInviteProps {
 }
 
 export const sendSuperAdminInviteEmail = async ({ to, invitedByName, inviteUrl }: SendSuperAdminInviteProps) => {
-  const { SuperAdminInviteEmail } = await import('./emails/super-admin-invite');
+  const { SuperAdminInviteEmail } = await import('./emails/super-admin-invite.js');
   const emailHtml = await render(React.createElement(SuperAdminInviteEmail, {
     invitedByName,
     url: inviteUrl,
