@@ -13,7 +13,7 @@ import { cn } from "@shopvendly/ui/lib/utils";
 // Loading skeleton for charts
 function ChartSkeleton({ className }: { className?: string }) {
     return (
-        <Card className={cn("w-full border-border/70 shadow-sm", className)}>
+        <Card className={cn("w-full", className)}>
             <CardHeader className="space-y-1 pb-2">
                 <div className="h-5 w-32 bg-muted animate-pulse rounded" />
                 <div className="h-9 w-24 bg-muted animate-pulse rounded" />

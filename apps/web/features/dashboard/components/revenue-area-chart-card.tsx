@@ -34,7 +34,7 @@ export function revenue-area-chart-card({
   } satisfies ChartConfig;
 
   return (
-    <Card className={cn("w-full border-border/70 shadow-sm", className)}>
+    <Card className={cn("w-full", className)}>
       <CardHeader className="space-y-1 pb-2">
         <CardTitle className="text-base">{title}</CardTitle>
         <div className="text-2xl font-bold text-foreground md:text-3xl">{totalLabel}</div>

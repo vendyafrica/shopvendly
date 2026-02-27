@@ -20,7 +20,7 @@ function StatCard({ label, value, change, changeType = "neutral", isLoading = fa
 
     if (isLoading) {
         return (
-            <Card className="border border-border/70 shadow-none bg-card/70">
+            <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <div className="h-4 w-24 bg-muted rounded animate-pulse" />
                 </CardHeader>
@@ -33,7 +33,7 @@ function StatCard({ label, value, change, changeType = "neutral", isLoading = fa
     }
 
     return (
-        <Card className="border border-border/70 shadow-none bg-card/70">
+        <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
                 {change && <span className={`text-xs font-medium ${changeColorClass}`}>{change}</span>}

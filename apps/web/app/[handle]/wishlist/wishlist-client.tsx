@@ -43,7 +43,7 @@ export default function WishlistClient() {
                             Tap the heart on a product to save it here for later.
                         </p>
                         <Link href="/">
-                            <Button className="h-14 rounded-none px-8 bg-neutral-900 text-white hover:bg-black uppercase text-xs tracking-widest font-semibold transition-colors">
+                            <Button className="h-14 rounded-none px-8 uppercase text-xs tracking-widest font-semibold transition-colors">
                                 Continue Shopping
                             </Button>
                         </Link>
@@ -118,7 +118,7 @@ export default function WishlistClient() {
 
                                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-auto gap-4">
                                             <Link href={href} className="w-full sm:w-auto">
-                                                <Button className="w-full sm:w-auto h-12 rounded-none px-8 border border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white uppercase text-xs tracking-widest font-semibold transition-colors">
+                                                <Button variant="outline" className="w-full sm:w-auto h-12 rounded-none px-8 uppercase text-xs tracking-widest font-semibold transition-colors">
                                                     View product
                                                 </Button>
                                             </Link>

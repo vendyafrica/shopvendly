@@ -1,6 +1,6 @@
 'use client';
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@shopvendly/ui/components/accordion";
 import { Anton } from "next/font/google";
 
 const anton = Anton({ weight: "400", subsets: ["latin"], display: "swap" });
@@ -59,7 +59,7 @@ export function FAQ() {
 
           {/* Right: Accordion */}
           <div>
-            <Accordion type="single" collapsible className="flex flex-col divide-y divide-white/10">
+            <Accordion className="flex flex-col divide-y divide-white/10">
               {faqItems.map((item) => (
                 <AccordionItem key={item.id} value={item.id} className="border-0 py-1">
                   <AccordionTrigger

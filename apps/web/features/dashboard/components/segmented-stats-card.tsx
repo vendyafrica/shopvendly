@@ -16,7 +16,7 @@ export function segmented-stats-card({
   className?: string;
 }) {
   return (
-    <Card className={cn("overflow-hidden border-border/70 shadow-sm", className)}>
+    <Card className={cn("overflow-hidden", className)}>
       <CardContent className="p-0">
         <div className="grid grid-cols-2 gap-3 divide-y divide-border/70 p-3 md:grid-cols-4 md:gap-0 md:divide-y-0 md:divide-x md:p-5">
           {segments.map((s, idx) => {

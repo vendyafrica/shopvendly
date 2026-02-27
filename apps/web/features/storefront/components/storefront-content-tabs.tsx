@@ -46,7 +46,7 @@ export function StorefrontContentTabs({
 
   return (
     <Tabs defaultValue="products" className="w-full gap-6">
-      <TabsList variant="line" className="w-full justify-start rounded-none p-0 border-b border-border">
+      <TabsList variant="line" className="w-full justify-start rounded-none p-0">
         <TabsTrigger value="products" className="h-10 px-4 text-sm">
           All Products
         </TabsTrigger>

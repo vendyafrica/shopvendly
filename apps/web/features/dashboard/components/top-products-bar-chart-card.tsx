@@ -59,7 +59,7 @@ export function top-products-bar-chart-card({
   } satisfies ChartConfig;
 
   return (
-    <Card className={cn("md:col-span-3 lg:col-span-3 border-border/70 shadow-sm", className)}>
+    <Card className={cn("md:col-span-3 lg:col-span-3", className)}>
       <CardHeader className="pb-0">
         <div className="flex items-center justify-between">
           <div>

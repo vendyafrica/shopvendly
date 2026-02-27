@@ -252,7 +252,7 @@ function CheckoutContent() {
                         Thank you for shopping with {store.name}. Your order receipt has been sent to your email.
                     </p>
                     <Link href="/">
-                        <Button className="h-14 rounded-none px-10 bg-neutral-900 text-white hover:bg-black uppercase text-xs tracking-widest font-semibold transition-colors">
+                        <Button className="h-14 rounded-none px-10 uppercase text-xs tracking-widest font-semibold transition-colors">
                             Continue Shopping
                         </Button>
                     </Link>
@@ -292,7 +292,7 @@ function CheckoutContent() {
                                     placeholder="Full Name"
                                     value={fullName}
                                     onChange={(e) => setFullName(e.target.value)}
-                                    className="h-14 rounded-none border-neutral-300 focus:border-neutral-900 focus:ring-neutral-900 bg-transparent text-sm"
+                                    className="h-14 rounded-none text-sm"
                                     required
                                 />
 
@@ -302,7 +302,7 @@ function CheckoutContent() {
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="h-14 rounded-none border-neutral-300 focus:border-neutral-900 focus:ring-neutral-900 bg-transparent text-sm"
+                                        className="h-14 rounded-none text-sm"
                                         required
                                     />
                                     <Input
@@ -310,7 +310,7 @@ function CheckoutContent() {
                                         type="tel"
                                         value={phone}
                                         onChange={(e) => setPhone(e.target.value)}
-                                        className="h-14 rounded-none border-neutral-300 focus:border-neutral-900 focus:ring-neutral-900 bg-transparent text-sm"
+                                        className="h-14 rounded-none text-sm"
                                         required
                                     />
                                 </div>
@@ -319,7 +319,7 @@ function CheckoutContent() {
                                     placeholder="Delivery Address (e.g. 123 Main St, Kampala)"
                                     value={address}
                                     onChange={(e) => setAddress(e.target.value)}
-                                    className="h-14 rounded-none border-neutral-300 focus:border-neutral-900 focus:ring-neutral-900 bg-transparent text-sm"
+                                    className="h-14 rounded-none text-sm"
                                     required
                                 />
                             </div>
@@ -341,7 +341,7 @@ function CheckoutContent() {
 
                             <Button
                                 type="submit"
-                                className="w-full h-14 rounded-none bg-neutral-900 text-white hover:bg-black uppercase text-xs tracking-widest font-semibold transition-colors flex items-center justify-center gap-3"
+                                className="w-full h-14 rounded-none uppercase text-xs tracking-widest font-semibold transition-colors flex items-center justify-center gap-3"
                                 disabled={isSubmitting}
                             >
                                 {isSubmitting ? (

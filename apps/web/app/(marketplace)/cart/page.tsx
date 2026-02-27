@@ -199,7 +199,7 @@ export default function CartPage() {
                                         </span>
                                     </div>
                                     <Link href={`/checkout?storeId=${store.id}`}>
-                                        <Button className="w-full h-12 text-base font-semibold rounded-full shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all">
+                                        <Button className="w-full h-12 text-base font-semibold rounded-full transition-all">
                                             Continue to checkout
                                         </Button>
                                     </Link>

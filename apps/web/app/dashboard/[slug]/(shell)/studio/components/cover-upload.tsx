@@ -176,7 +176,7 @@ export function CoverUpload({
 
             <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
               <div className="flex gap-2">
-                <Button onClick={openFileDialog} variant="secondary" size="sm" className="bg-white/90 text-gray-900 hover:bg-white">
+                <Button onClick={openFileDialog} variant="secondary" size="sm">
                   <Upload />
                   Change
                 </Button>
