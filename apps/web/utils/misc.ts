@@ -24,8 +24,13 @@ export function isLikelyVideoMedia({ url, contentType }: MediaHint) {
 export function getStorefrontUrl(storeSlug: string, path: string = "") {
     const isLocalhost = process.env.NODE_ENV === "development";
     const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "shopvendly.store";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "");
 
     const formattedPath = path && !path.startsWith("/") ? `/${path}` : path;
+
+    if (appUrl) {
+        return `${appUrl}/${storeSlug}${formattedPath}`;
+    }
 
     if (isLocalhost) {
         return `http://localhost:3000/${storeSlug}${formattedPath}`;

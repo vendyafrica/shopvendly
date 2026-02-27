@@ -7,8 +7,10 @@ import { db } from "@shopvendly/db/db";
 import { orderItems, orders, stores } from "@shopvendly/db/schema";
 import { and, desc, eq, isNull, sql } from "@shopvendly/db";
 import { Button } from "@shopvendly/ui/components/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
+import { Card, CardContent, CardHeader } from "@shopvendly/ui/components/card";
+import { Input } from "@shopvendly/ui/components/input";
 import { getStorefrontUrl } from "@/utils/misc";
+import { CheckCircle2, ExternalLink, ImageIcon, Palette } from "lucide-react";
 
 
 function formatCurrency(amount: number, currency: string) {
@@ -36,7 +38,7 @@ export default async function DashboardPage({
 
   const store = await db.query.stores.findFirst({
     where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
-    columns: { id: true, tenantId: true, name: true, defaultCurrency: true },
+    columns: { id: true, tenantId: true, name: true, defaultCurrency: true, slug: true },
   });
 
   if (!store) {
@@ -176,18 +178,6 @@ export default async function DashboardPage({
     };
   });
 
-  const statusCounts = recentOrders.reduce(
-    (acc, order) => {
-      if (order.paymentStatus === "paid") acc.paid += 1;
-      else if (order.paymentStatus === "failed") acc.failed += 1;
-      else acc.pending += 1;
-      return acc;
-    },
-    { paid: 0, pending: 0, failed: 0 }
-  );
-
-  const lastOrder = recentOrders[0];
-
   const statSegments = [
     {
       label: "Total Revenue",
@@ -215,140 +205,77 @@ export default async function DashboardPage({
     },
   ];
 
-  const quickActions = [
-    {
-      title: "Add products",
-      description: "Upload new inventory and keep your catalog fresh.",
-      href: `${basePath}/products`,
-    },
-    {
-      title: "Launch a collection",
-      description: "Curate drops from Studio in a few clicks.",
-      href: `${basePath}/studio`,
-    },
-    {
-      title: "Manage orders",
-      description: "Track fulfillment and payment status at a glance.",
-      href: `${basePath}/transactions`,
-    },
-    {
-      title: "Share your store",
-      description: "Copy your live storefront link and promote it.",
-      href: storefrontUrl,
-      external: true,
-    },
-  ];
+  const featuredOrder = recentOrders[0];
+  const featuredItemName = featuredOrder?.items?.[0]?.productName;
+  const featuredItemValue = featuredOrder
+    ? formatCurrency(featuredOrder.totalAmount, featuredOrder.currency || currency)
+    : undefined;
+  const designPrompt = featuredItemName ? `A store specializing in ${featuredItemName.toLowerCase()}.` : `A store specializing in ${store.name.toLowerCase()}.`;
 
   return (
     <div className="space-y-8">
-      <section className="space-y-3">
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight">Quick actions</h2>
-          <p className="text-sm text-muted-foreground">Handle the most common tasks right from Home.</p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {quickActions.map((action) => (
-            <Card key={action.title} className="border border-border/70 shadow-sm transition hover:border-primary/40">
-              <CardHeader>
-                <CardTitle>{action.title}</CardTitle>
-                <CardDescription>{action.description}</CardDescription>
-              </CardHeader>
-              <CardFooter>
-                <Button size="sm" variant="secondary">
-                  <Link href={action.href} target={action.external ? "_blank" : undefined} rel={action.external ? "noreferrer" : undefined}>
-                    {action.external ? "Open store" : "Open"}
-                  </Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="border border-border/70 shadow-sm">
-          <CardHeader className="flex flex-col space-y-2">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <CardTitle>{store.name}</CardTitle>
-                <CardDescription className="truncate">{storefrontUrl}</CardDescription>
+      <Card className="bg-muted/20 shadow-sm">
+        <CardHeader className="flex flex-col gap-2 pb-2 md:flex-row md:items-center md:justify-between">
+          <Link
+            href={storefrontUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-sm border border-border/70 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/60"
+          >
+            <ExternalLink className="h-4 w-4" />
+            {storefrontUrl.replace(/^https?:\/\//, "")}
+          </Link>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-6">
+          <div className="grid gap-6 md:grid-cols-2 min-h-[480px]">
+            <div className="flex h-full flex-col rounded-3xl border border-dashed bg-background p-6 shadow-sm">
+              <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-muted-foreground/40 bg-muted/40 p-16 min-h-[260px]">
+                <ImageIcon className="h-10 w-10 text-muted-foreground" />
+                <p className="mt-4 font-semibold">{featuredItemName || "Add your first product"}</p>
+                <p className="text-sm text-muted-foreground">{featuredItemValue || "Upload an item to showcase it on your storefront."}</p>
               </div>
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">Live</span>
+              <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-2 text-sm font-medium text-emerald-600">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {featuredItemName ? "Product added" : "No product yet"}
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="secondary">
+                    <Link href={`${basePath}/products/new`}>Add more</Link>
+                  </Button>
+                  <Button size="sm" variant="outline" >
+                    <Link href={`${basePath}/products`}>View products</Link>
+                  </Button>
+                </div>
+              </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <p>Share your storefront or jump into Studio to tweak the look & feel.</p>
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm">
-                <Link href={storefrontUrl} target="_blank" rel="noreferrer">
-                  View store
-                </Link>
-              </Button>
-              <Button variant="outline" size="sm">
-                <Link href={`${basePath}/studio`}>
-                  Open Studio
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card className="border border-border/70 shadow-sm">
-          <CardHeader>
-            <CardTitle>Orders snapshot</CardTitle>
-            <CardDescription>Activity from the last 30 days</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid grid-cols-3 gap-4 text-sm">
-              <div>
-                <dt className="text-muted-foreground">Paid</dt>
-                <dd className="text-2xl font-semibold">{statusCounts.paid}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Pending</dt>
-                <dd className="text-2xl font-semibold">{statusCounts.pending}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Failed</dt>
-                <dd className="text-2xl font-semibold">{statusCounts.failed}</dd>
-              </div>
-            </dl>
-          </CardContent>
-          <CardFooter>
-            <Button size="sm" variant="link" className="px-0">
-              <Link href={`${basePath}/transactions`}>Go to Orders</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-
-        <Card className="border border-border/70 shadow-sm">
-          <CardHeader>
-            <CardTitle>Transactions</CardTitle>
-            <CardDescription>Total revenue collected</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-3xl font-semibold">{formatCurrency(paidKpis.revenuePaid, currency)}</p>
-            <div className="rounded-lg border bg-muted/40 p-3 text-sm">
-              {lastOrder ? (
-                <div className="space-y-1">
-                  <p className="text-muted-foreground">Most recent order</p>
-                  <p className="font-medium">{lastOrder.customerName || "New customer"}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatCurrency(lastOrder.totalAmount, lastOrder.currency || currency)} · {new Date(lastOrder.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            <div className="flex h-full flex-col rounded-3xl border bg-background p-6 shadow-sm">
+              <div className="flex flex-col items-center gap-3 text-center md:flex-row md:items-start md:gap-4 md:text-left">
+                <div className="rounded-2xl p-4 text-primary md:self-start">
+                  <Palette className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-lg font-semibold">Design your store</p>
+                  <p className="text-sm text-muted-foreground">
+                    Choose a color theme for your store.
                   </p>
                 </div>
-              ) : (
-                <p className="text-muted-foreground">No transactions yet</p>
-              )}
+              </div>
+              <div className="mt-6 flex flex-1 flex-col space-y-4">
+                <Input defaultValue={designPrompt} />
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button variant="outline" className="w-full sm:flex-1">
+                    <Link href={`${basePath}/studio`} className="justify-center">Browse themes</Link>
+                  </Button>
+                  <Button className="w-full sm:flex-1">Generate</Button>
+                </div>
+              </div>
             </div>
-          </CardContent>
-          <CardFooter>
-            <Button size="sm" variant="link" className="px-0">
-              <Link href={`${basePath}/transactions`}>View transactions</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+          </div>
+
+        </CardContent>
+      </Card>
 
       <SegmentedStatsCard segments={statSegments} />
 
