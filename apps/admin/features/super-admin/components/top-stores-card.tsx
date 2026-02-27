@@ -27,7 +27,7 @@ export type StoreData = {
     orders?: number;
 };
 
-export function top-stores-card({
+export function TopStoresCard({
     title,
     description,
     stores,

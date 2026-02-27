@@ -19,7 +19,7 @@ export async function signUp(email: string, password: string, name: string) {
 }
 
 export async function signInWithGoogle() {
-    return await sharedSignInWithGoogle({ callbackURL: "/" });
+    return await sharedSignInWithGoogle({ callbackURL: "/dashboard" });
 }
 
 export async function signOut() {

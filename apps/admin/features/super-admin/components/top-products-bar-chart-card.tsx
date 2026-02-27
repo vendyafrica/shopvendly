@@ -16,7 +16,7 @@ export type ProductData = {
     fill: string;
 };
 
-export function top-products-bar-chart-card({
+export function TopProductsBarChartCard({
     title,
     description,
     totalLabel,

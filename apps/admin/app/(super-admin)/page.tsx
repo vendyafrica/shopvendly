@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { segmented-stats-card } from "./components/segmented-stats-card";
-import { revenue-area-chart-card } from "./components/revenue-area-chart-card";
-import { top-products-bar-chart-card } from "./components/top-products-bar-chart-card";
-import { top-stores-card } from "./components/top-stores-card";
+import { SegmentedStatsCard } from "../../features/super-admin/components/segmented-stats-card";
+import { RevenueAreaChartCard } from "../../features/super-admin/components/revenue-area-chart-card";
+import { TopProductsBarChartCard } from "../../features/super-admin/components/top-products-bar-chart-card";
+import { TopStoresCard } from "../../features/super-admin/components/top-stores-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
 
 type RevenueSeriesPoint = { date: string; total: number };
@@ -106,7 +106,7 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Stats */}
-      <segmented-stats-card
+      <SegmentedStatsCard
         segments={[
           {
             label: "Total Revenue",
@@ -138,7 +138,7 @@ export default function DashboardPage() {
       {/* Charts Section */}
       <div className="grid gap-5 md:grid-cols-7 lg:grid-cols-7">
         {hasRevenueSeries ? (
-          <revenue-area-chart-card
+          <RevenueAreaChartCard
             className="md:col-span-4"
             title="Platform Revenue"
             totalLabel={formatCurrency(marketplace.gmv)}
@@ -159,7 +159,7 @@ export default function DashboardPage() {
         )}
 
         {hasTopStoresByOrders ? (
-          <top-products-bar-chart-card
+          <TopProductsBarChartCard
             className="md:col-span-3"
             title="Top Stores"
             description="By order volume"
@@ -183,14 +183,14 @@ export default function DashboardPage() {
 
       {/* Top Stores Grid */}
       <div className="grid gap-5 md:grid-cols-2">
-        <top-stores-card
+        <TopStoresCard
           title="Top Stores by Revenue"
           description="Stores generating the most paid revenue"
           stores={topStoresByRevenue}
           dataKey="revenue"
           formatValue={(store) => formatCurrency(Number(store.revenue ?? 0))}
         />
-        <top-stores-card
+        <TopStoresCard
           title="Top Stores by Traffic"
           description="Most visited stores (sessions)"
           stores={topStoresByVisits}

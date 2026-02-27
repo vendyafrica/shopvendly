@@ -72,7 +72,7 @@ export function LoginForm() {
         }
 
         // Success → session cookie is set, redirect to dashboard
-        router.push(redirectTo || "/");
+        router.push(redirectTo || "/dashboard");
         router.refresh();
       } catch (err: unknown) {
         setError(
