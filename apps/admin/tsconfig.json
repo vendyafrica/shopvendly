@@ -19,25 +19,25 @@
         "../../packages/ui/src/*"
       ],
       "@shopvendly/db": [
-        "../../packages/db/src/index.ts"
+        "../../packages/db/dist/index.js"
       ],
       "@shopvendly/auth": [
-        "../../packages/auth/src/index.ts"
+        "../../packages/auth/dist/index.js"
       ],
       "@shopvendly/auth/auth-client": [
-        "../../packages/auth/src/auth-client.ts"
+        "../../packages/auth/dist/auth-client.js"
       ],
       "@shopvendly/db/db": [
-        "../../packages/db/src/db.ts"
+        "../../packages/db/dist/db.js"
       ],
       "@shopvendly/db/schema": [
-        "../../packages/db/src/schema/index.ts"
+        "../../packages/db/dist/schema/index.js"
       ],
       "@shopvendly/auth/react": [
-        "../../packages/auth/src/auth-client.ts"
+        "../../packages/auth/dist/auth-client.js"
       ],
       "@shopvendly/transactional": [
-        "../../packages/transactional/index.ts"
+        "../../packages/transactional/dist/index.js"
       ],
       "@/*": [
         "./src/*"
@@ -47,9 +47,9 @@
   "include": [
     "src",
     "../../packages/ui/src",
-    "../../packages/db/src",
-    "../../packages/auth/src",
-    "../../packages/transactional",
+    "../../packages/db/dist",
+    "../../packages/auth/dist",
+    "../../packages/transactional/dist",
     "next.config.ts",
     "next-env.d.ts",
     ".next/types/**/*.ts"

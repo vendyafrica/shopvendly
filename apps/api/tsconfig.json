@@ -6,18 +6,26 @@
     ],
     "outDir": "./dist",
     "baseUrl": ".",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "paths": {
-      "@shopvendly/db/schema": [
-        "../../packages/db/src/schema/index.ts"
-      ],
       "@shopvendly/db": [
-        "../../packages/db/src/index.ts"
+        "../../packages/db/dist/index"
+      ],
+      "@shopvendly/db/db": [
+        "../../packages/db/dist/db"
       ],
       "@shopvendly/db/schema": [
-        "../../packages/db/src/schema/index.ts"
+        "../../packages/db/dist/schema/index.js"
       ],
-      "@shopvendly/db": [
-        "../../packages/db/src/index.ts"
+      "@shopvendly/auth": [
+        "../../packages/auth/dist/index.js"
+      ],
+      "@shopvendly/auth/auth-client": [
+        "../../packages/auth/dist/auth-client.js"
+      ],
+      "@shopvendly/transactional": [
+        "../../packages/transactional/dist/index.js"
       ]
     }
   },
