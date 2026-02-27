@@ -13,9 +13,12 @@
   "iconLibrary": "hugeicons",
   "aliases": {
     "components": "@/components",
-    "hooks": "@/hooks",
-    "lib": "@/lib",
     "utils": "@shopvendly/ui/lib/utils",
-    "ui": "@shopvendly/ui/components"
+    "ui": "@shopvendly/ui/components",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
+  },
+  "registries": {
+    "@magicui": "https://magicui.design/r/{name}"
   }
 }
