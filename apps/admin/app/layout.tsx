@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
-import "./globals.css";
+import {Public_Sans, Geist, Geist_Mono} from "next/font/google";
+import "@shopvendly/ui/globals.css";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
+const publicSans = Public_Sans({subsets:['latin'],variable:'--font-public-sans'});
+
+const geistSans = Geist({
   variable: "--font-geist-sans",
+  subsets: ["latin"],
 });
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
+
+const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
