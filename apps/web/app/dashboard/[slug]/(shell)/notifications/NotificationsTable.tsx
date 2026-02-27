@@ -1,6 +1,6 @@
 "use client";
 
-import { data-table } from "../components/data-table";
+import { DataTable } from "@/features/dashboard/components/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@shopvendly/ui/components/badge";
 
@@ -52,5 +52,5 @@ const columns: ColumnDef<NotificationRow>[] = [
 ];
 
 export function NotificationsTable({ rows }: { rows: NotificationRow[] }) {
-  return <data-table columns={columns} data={rows} />;
+  return <DataTable columns={columns} data={rows} />;
 }

@@ -5,13 +5,14 @@ import { Button } from "@shopvendly/ui/components/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@shopvendly/ui/components/dropdown-menu";
 import { useAppSession } from "@/contexts/app-session-context";
 import { signOut } from "@shopvendly/auth/react";
-import { Bell } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Notification01Icon } from "@hugeicons/core-free-icons";
 import { useRouter } from "next/navigation";
-import { useTenant } from "../tenant-context";
-import { useHeaderActions } from "./header-actions-context";
+import { useTenant } from "@/features/dashboard/context/tenant-context";
+import { useHeaderActions } from "@/features/dashboard/context/header-actions-context";
 import { getStorefrontUrl } from "@/utils/misc";
 
-export function dashboard-header({
+export function DashboardHeader({
   title = "Dashboard",
   tenantName,
 }: {
@@ -24,7 +25,7 @@ export function dashboard-header({
   const { actions } = useHeaderActions();
 
   const fullName = session?.user?.name || "Admin";
-  const firstName = fullName.split(" ")[0];
+  const firstName = fullName.split(" ")[0] ?? "A";
   const avatarUrl = session?.user?.image || "";
   const resolvedTenantName = tenantName || "Store";
   const storefrontUrl = bootstrap?.storeSlug ? getStorefrontUrl(bootstrap.storeSlug) : "/";
@@ -45,7 +46,7 @@ export function dashboard-header({
       <div className="flex items-center gap-2">
         {actions}
         <Button variant="ghost" size="icon-sm" className="rounded-full">
-          <Bell className="size-4" />
+          <HugeiconsIcon icon={Notification01Icon} className="size-4" />
           <span className="sr-only">Notifications</span>
         </Button>
 

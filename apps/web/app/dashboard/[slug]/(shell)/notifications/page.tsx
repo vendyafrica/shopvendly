@@ -1,4 +1,4 @@
-import { segmented-stats-card } from "../components/segmented-stats-card";
+import { SegmentedStatsCard } from "@/features/dashboard/components/segmented-stats-card";
 import { db } from "@shopvendly/db/db";
 import { and, desc, eq, isNull } from "@shopvendly/db";
 import { orders, stores } from "@shopvendly/db/schema";
@@ -116,7 +116,7 @@ export default async function NotificationsPage({
         <p className="text-sm text-muted-foreground">Recent activity from orders and payments.</p>
       </div>
 
-      <segmented-stats-card segments={statSegments} />
+      <SegmentedStatsCard segments={statSegments} />
 
       <div className="rounded-md border bg-card p-3">
         <NotificationsTable rows={notifications} />

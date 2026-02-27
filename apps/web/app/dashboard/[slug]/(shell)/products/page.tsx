@@ -1,13 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { segmented-stats-card } from "../components/segmented-stats-card";
-import { data-table } from "../components/data-table";
+import { SegmentedStatsCard } from "@/features/dashboard/components/segmented-stats-card";
+import { DataTable } from "@/features/dashboard/components/data-table";
+
 import type { ColumnDef } from "@tanstack/react-table";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { AddProductButton } from "./components/add-product-button";
-import { useTenant } from "../tenant-context";
+import { useTenant } from "@/features/dashboard/context/tenant-context";
+
 import Image from "next/image";
 import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -564,7 +566,7 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      <segmented-stats-card segments={statSegments} />
+      <SegmentedStatsCard segments={statSegments} />
 
       <div className="rounded-md border bg-card p-3">
         {isLoading ? (
@@ -583,10 +585,11 @@ export default function ProductsPage() {
             ))}
           </div>
         ) : (
-          <data-table
+          <DataTable
             columns={columns}
             data={rows}
             rowSelection={rowSelection}
+
             onRowSelectionChange={(updater) => {
               setRowSelection((prev) =>
                 typeof updater === "function" ? updater(prev) : updater

@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useUpload } from "@/features/media/hooks/use-upload";
-import { useHeaderActions } from "../components/header-actions-context";
+import { useHeaderActions } from "@/features/dashboard/context/header-actions-context";
 import { Button } from "@shopvendly/ui/components/button";
 
 export default function StudioPage() {

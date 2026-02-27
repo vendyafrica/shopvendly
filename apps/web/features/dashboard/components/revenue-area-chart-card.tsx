@@ -15,7 +15,7 @@ export type RevenuePoint = {
   total: number;
 };
 
-export function revenue-area-chart-card({
+export function RevenueAreaChartCard({
   title,
   totalLabel,
   data,

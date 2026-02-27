@@ -8,7 +8,7 @@ export type StatSegment = {
   changeTone?: "positive" | "negative" | "neutral";
 };
 
-export function segmented-stats-card({
+export function SegmentedStatsCard({
   segments,
   className,
 }: {

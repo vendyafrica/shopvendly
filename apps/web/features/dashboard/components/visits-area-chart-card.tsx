@@ -14,7 +14,7 @@ export type VisitsPoint = {
   visits: number;
 };
 
-export function visits-area-chart-card({
+export function VisitsAreaChartCard({
   title,
   totalLabel,
   data,

@@ -17,7 +17,7 @@ import {
 } from "@shopvendly/ui/components/table";
 import { cn } from "@shopvendly/ui/lib/utils";
 
-export function data-table<TData, TValue>({
+export function DataTable<TData, TValue>({
   columns,
   data,
   className,

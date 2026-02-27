@@ -15,7 +15,7 @@ import { Input } from "@shopvendly/ui/components/input";
 import { Label } from "@shopvendly/ui/components/label";
 import { Textarea } from "@shopvendly/ui/components/textarea";
 import Image from "next/image";
-import { useTenant } from "../../tenant-context";
+import { useTenant } from "@/features/dashboard/context/tenant-context";
 import { useUpload } from "@/features/media/hooks/use-upload";
 
 interface UploadModalProps {
@@ -146,7 +146,9 @@ export function UploadModal({
     const removeFile = (index: number) => {
         setFiles((prev) => {
             const updated = [...prev];
-            URL.revokeObjectURL(updated[index].previewUrl);
+            const target = updated[index];
+            if (!target) return prev;
+            URL.revokeObjectURL(target.previewUrl);
             updated.splice(index, 1);
             return updated;
         });
@@ -154,9 +156,10 @@ export function UploadModal({
 
     const moveFile = (from: number, to: number) => {
         setFiles((prev) => {
-            if (to < 0 || to >= prev.length) return prev;
+            if (from < 0 || from >= prev.length || to < 0 || to >= prev.length) return prev;
             const updated = [...prev];
             const [moved] = updated.splice(from, 1);
+            if (!moved) return prev;
             updated.splice(to, 0, moved);
             return updated;
         });
@@ -327,10 +330,10 @@ export function UploadModal({
                                     <div className="space-y-4">
                                         {/* Featured image */}
                                         <div className="relative aspect-square max-h-80 mx-auto">
-                                            {files[0].file.type.startsWith("video/") ? (
+                                            {files[0]?.file.type.startsWith("video/") ? (
                                                 <video
-                                                    src={files[0].previewUrl}
-                                                    className={`h-full w-full rounded-md object-cover transition-opacity ${files[0].isUploading ? "opacity-60" : "opacity-100"}`}
+                                                    src={files[0]?.previewUrl}
+                                                    className={`h-full w-full rounded-md object-cover transition-opacity ${files[0]?.isUploading ? "opacity-60" : "opacity-100"}`}
                                                     muted
                                                     playsInline
                                                     controls
@@ -338,14 +341,14 @@ export function UploadModal({
                                             ) : (
                                                 <div className="relative h-full w-full">
                                                     <Image
-                                                        src={files[0].previewUrl}
+                                                        src={files[0]?.previewUrl || ""}
                                                         alt="Featured preview"
                                                         fill
-                                                        className={`object-contain rounded-md transition-opacity ${files[0].isUploading ? "opacity-60" : "opacity-100"}`}
+                                                        className={`object-contain rounded-md transition-opacity ${files[0]?.isUploading ? "opacity-60" : "opacity-100"}`}
                                                     />
                                                 </div>
                                             )}
-                                            {files[0].isUploading && (
+                                            {files[0]?.isUploading && (
                                                 <div className="absolute inset-0 flex items-center justify-center">
                                                     <div className="size-10 rounded-full bg-background/80 flex items-center justify-center">
                                                         <div className="size-7 rounded-full border-2 border-primary/60 border-t-primary animate-spin" />

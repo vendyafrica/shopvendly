@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { data-table } from "../components/data-table";
+import { DataTable } from "@/features/dashboard/components/data-table";
 
 export type CustomerRow = {
   name: string;
@@ -66,5 +66,5 @@ const columns: ColumnDef<CustomerRow>[] = [
 ];
 
 export function CustomersTable({ rows }: { rows: CustomerRow[] }) {
-  return <data-table columns={columns} data={rows} />;
+  return <DataTable columns={columns} data={rows} />;
 }

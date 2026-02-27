@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { useTenant } from "../tenant-context";
+import { useTenant } from "@/features/dashboard/context/tenant-context";
 import { type OrderTableRow, type OrderStatus, type PaymentStatus } from "./components/order-table";
 import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Download04Icon, FilterIcon } from "@hugeicons/core-free-icons";
-import { segmented-stats-card } from "../components/segmented-stats-card";
-import { recent-transactions-table } from "../components/recent-transactions-table";
+import { SegmentedStatsCard } from "@/features/dashboard/components/segmented-stats-card";
+import { RecentTransactionsTable } from "@/features/dashboard/components/recent-transactions-table";
 import { OrdersPageSkeleton } from "@/components/ui/page-skeletons";
 
 const API_BASE = "";
@@ -142,7 +142,7 @@ export default function TransactionsPage() {
                 : "Pending") as "Completed" | "Failed" | "Pending",
         payment: o.paymentMethod,
         date: new Date(o.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }),
-    })) as Parameters<typeof recent-transactions-table>[0]["rows"];
+    })) as Parameters<typeof RecentTransactionsTable>[0]["rows"];
 
     if (isLoading) {
         return <OrdersPageSkeleton />;
@@ -186,9 +186,9 @@ export default function TransactionsPage() {
                 </div>
             )}
 
-            <segmented-stats-card segments={statSegments} />
+            <SegmentedStatsCard segments={statSegments} />
 
-            <recent-transactions-table rows={transactionRows} />
+            <RecentTransactionsTable rows={transactionRows} />
         </div>
     );
 }

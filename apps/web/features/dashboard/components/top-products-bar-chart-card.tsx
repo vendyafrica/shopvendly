@@ -33,7 +33,7 @@ function ProductLabel({ x, y, value }: { x?: number; y?: number; value?: string 
   );
 }
 
-export function top-products-bar-chart-card({
+export function TopProductsBarChartCard({
   title,
   description,
   totalLabel,

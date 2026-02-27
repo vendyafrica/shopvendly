@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useTenant } from "../tenant-context";
-import { segmented-stats-card } from "../components/segmented-stats-card";
-import { revenue-area-chart-card, visits-area-chart-card, type RevenuePoint, type VisitsPoint } from "../components/dynamic-charts";
+import { useTenant } from "@/features/dashboard/context/tenant-context";
+import { SegmentedStatsCard } from "@/features/dashboard/components/segmented-stats-card";
+import { RevenueAreaChartCard, VisitsAreaChartCard, type RevenuePoint, type VisitsPoint } from "@/features/dashboard/components/dynamic-charts";
 import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
 
 type OverviewResponse = {
@@ -138,11 +138,11 @@ export default function AnalyticsPage() {
         </p>
       </div>
 
-      <segmented-stats-card segments={kpiSegments} />
+      <SegmentedStatsCard segments={kpiSegments} />
 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-        <revenue-area-chart-card title="Revenue (Paid)" totalLabel={revenueTotalLabel} data={revenueData} />
-        <visits-area-chart-card title="Visits" totalLabel={visitsTotalLabel} data={visitsData} />
+        <RevenueAreaChartCard title="Revenue (Paid)" totalLabel={revenueTotalLabel} data={revenueData} />
+        <VisitsAreaChartCard title="Visits" totalLabel={visitsTotalLabel} data={visitsData} />
       </div>
 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">

@@ -15,7 +15,7 @@ import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { Label } from "@shopvendly/ui/components/label";
 import Image from "next/image";
-import { useTenant } from "../../tenant-context";
+import { useTenant } from "@/features/dashboard/context/tenant-context";
 import { useUpload } from "@/features/media/hooks/use-upload";
 
 interface AddProductProps {

@@ -15,7 +15,7 @@ import { Input } from "@shopvendly/ui/components/input";
 import { Label } from "@shopvendly/ui/components/label";
 import { Textarea } from "@shopvendly/ui/components/textarea";
 import Image from "next/image";
-import { useTenant } from "../../tenant-context";
+import { useTenant } from "@/features/dashboard/context/tenant-context";
 import type { ProductApiRow } from "@/features/products/hooks/use-products";
 import { useUpload } from "@/features/media/hooks/use-upload";
 

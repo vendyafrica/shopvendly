@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@shopvendly/ui/components/select";
-import { useTenant } from "../tenant-context";
+import { useTenant } from "@/features/dashboard/context/tenant-context";
 
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";

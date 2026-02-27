@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
-import { useTenant } from "../tenant-context";
+import { useTenant } from "@/features/dashboard/context/tenant-context";
 import { Button } from "@shopvendly/ui/components/button";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";

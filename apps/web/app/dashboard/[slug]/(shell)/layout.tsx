@@ -1,5 +1,3 @@
-import { AppSidebar } from "./components/app-sidebar";
-import { AdminMobileDock } from "./components/admin-mobile-dock";
 import { DashboardPageSkeleton } from "@/components/ui/page-skeletons";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
@@ -11,10 +9,12 @@ import { Suspense } from "react";
 
 import { SidebarInset, SidebarProvider } from "@shopvendly/ui/components/sidebar";
 import { Providers } from "../../../providers";
-import { dashboard-header } from "./components/dashboard-header";
-import { HeaderActionsProvider } from "./components/header-actions-context";
-import { TenantProvider } from "./tenant-context";
+import { DashboardHeader } from "@/features/dashboard/components/dashboard-header";
+import { HeaderActionsProvider } from "@/features/dashboard/context/header-actions-context";
+import { TenantProvider } from "@/features/dashboard/context/tenant-context";
 import { AppSessionProvider } from "@/contexts/app-session-context";
+import { AppSidebar } from "@/features/dashboard/components/app-sidebar";
+import { AdminMobileDock } from "@/features/dashboard/components/admin-mobile-dock";
 
 export default async function TenantDashboardLayout({
   children,
@@ -104,7 +104,7 @@ async function TenantDashboardLayoutInner({
             <AppSidebar basePath={basePath} />
             <HeaderActionsProvider>
               <SidebarInset>
-                <dashboard-header tenantName={store.name} />
+                <DashboardHeader tenantName={store.name} />
                 <div className="flex flex-1 flex-col gap-4 p-4 pt-4 pb-24 md:pb-4">{children}</div>
               </SidebarInset>
             </HeaderActionsProvider>

@@ -1,6 +1,6 @@
-import { segmented-stats-card } from "./components/segmented-stats-card";
-import { revenue-area-chart-card, top-products-bar-chart-card } from "./components/dynamic-charts";
-import { recent-transactions-table } from "./components/recent-transactions-table";
+import { SegmentedStatsCard } from "@/features/dashboard/components/segmented-stats-card";
+import { RevenueAreaChartCard, TopProductsBarChartCard } from "@/features/dashboard/components/dynamic-charts";
+import { RecentTransactionsTable } from "@/features/dashboard/components/recent-transactions-table";
 import { db } from "@shopvendly/db/db";
 import { orderItems, orders, stores } from "@shopvendly/db/schema";
 import { and, desc, eq, isNull, sql } from "@shopvendly/db";
@@ -198,17 +198,17 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-6">
-      <segmented-stats-card segments={statSegments} />
+      <SegmentedStatsCard segments={statSegments} />
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-7 lg:grid-cols-7">
-        <revenue-area-chart-card
+        <RevenueAreaChartCard
           className="md:col-span-4"
           title="Total Revenue"
           totalLabel={formatCurrency(paidKpis.revenuePaid, currency)}
           data={revenueSeries}
         />
-        <top-products-bar-chart-card
+        <TopProductsBarChartCard
           className="md:col-span-3"
           title="Top Products"
           description="By sales volume"
@@ -218,7 +218,7 @@ export default async function DashboardPage({
       </div>
 
       {/* Recent Transactions Table */}
-      <recent-transactions-table
+      <RecentTransactionsTable
         rows={transactionRows}
       />
     </div>

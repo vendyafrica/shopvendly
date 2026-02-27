@@ -26,24 +26,24 @@ function ChartSkeleton({ className }: { className?: string }) {
 }
 
 // Dynamic imports with loading states
-export const revenue-area-chart-card = dynamic(
-    () => import("./revenue-area-chart-card").then((mod) => ({ default: mod.revenue-area-chart-card })),
+export const RevenueAreaChartCard = dynamic(
+    () => import("./revenue-area-chart-card").then((mod) => ({ default: mod.RevenueAreaChartCard })),
     {
         loading: () => <ChartSkeleton />,
         ssr: false, // Charts don't need SSR, save server processing time
     }
 );
 
-export const top-products-bar-chart-card = dynamic(
-    () => import("./top-products-bar-chart-card").then((mod) => ({ default: mod.top-products-bar-chart-card })),
+export const TopProductsBarChartCard = dynamic(
+    () => import("./top-products-bar-chart-card").then((mod) => ({ default: mod.TopProductsBarChartCard })),
     {
         loading: () => <ChartSkeleton />,
         ssr: false,
     }
 );
 
-export const visits-area-chart-card = dynamic(
-    () => import("./visits-area-chart-card").then((mod) => ({ default: mod.visits-area-chart-card })),
+export const VisitsAreaChartCard = dynamic(
+    () => import("./visits-area-chart-card").then((mod) => ({ default: mod.VisitsAreaChartCard })),
     {
         loading: () => <ChartSkeleton />,
         ssr: false,

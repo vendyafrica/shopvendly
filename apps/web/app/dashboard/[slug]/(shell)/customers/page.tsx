@@ -1,4 +1,4 @@
-import { segmented-stats-card } from "../components/segmented-stats-card";
+import { SegmentedStatsCard } from "@/features/dashboard/components/segmented-stats-card";
 import { db } from "@shopvendly/db/db";
 import { orders, stores } from "@shopvendly/db/schema";
 import { and, desc, eq, isNull, sql } from "@shopvendly/db";
@@ -111,7 +111,7 @@ export default async function CustomersPage({
         <p className="text-sm text-muted-foreground">Key insights and details about your customers.</p>
       </div>
 
-      <segmented-stats-card segments={statSegments} />
+      <SegmentedStatsCard segments={statSegments} />
 
       <div className="rounded-md border bg-card p-3">
         <CustomersTable rows={customers} />
