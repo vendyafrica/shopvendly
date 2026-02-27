@@ -59,9 +59,24 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
   const [isOverlay, setIsOverlay] = useState(true);
   const lastScrollYRef = useRef(0);
 
+  const resolvedSlug = (() => {
+    if (!params) return undefined;
+    if (typeof params === "object") {
+      const maybeHandle = (params as Record<string, string | undefined>).handle;
+      if (typeof maybeHandle === "string" && maybeHandle.length > 0) {
+        return maybeHandle;
+      }
+      const maybeSlug = (params as Record<string, string | undefined>).s;
+      if (typeof maybeSlug === "string" && maybeSlug.length > 0) {
+        return maybeSlug;
+      }
+    }
+    return undefined;
+  })();
+
   useEffect(() => {
     const fetchStore = async () => {
-      const slug = params?.s as string | undefined;
+      const slug = resolvedSlug;
 
       if (!slug) {
         setLoading(false);
@@ -86,9 +101,11 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
       }
     };
     fetchStore();
-  }, [params?.s, initialStore]);
+  }, [resolvedSlug, initialStore]);
 
-  const isHomePath = pathname === "/" || pathname === `/${params?.s ?? ""}`;
+  const normalizedPathname = pathname?.replace(/\/$/, "") || "/";
+  const slugPath = resolvedSlug ? `/${resolvedSlug}` : "/";
+  const isHomePath = normalizedPathname === slugPath || normalizedPathname === "/";
 
   useEffect(() => {
     lastScrollYRef.current = window.scrollY;
@@ -131,7 +148,7 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [params?.s, pathname, isHomePath]);
+  }, [resolvedSlug, pathname, isHomePath]);
 
   if (loading) return <HeaderSkeleton />;
   if (!store) return null;

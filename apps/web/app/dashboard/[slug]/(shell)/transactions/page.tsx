@@ -9,6 +9,7 @@ import { Download04Icon, FilterIcon } from "@hugeicons/core-free-icons";
 import { SegmentedStatsCard } from "@/features/dashboard/components/segmented-stats-card";
 import { RecentTransactionsTable } from "@/features/dashboard/components/recent-transactions-table";
 import { OrdersPageSkeleton } from "@/components/ui/page-skeletons";
+import { TransactionsMobileView } from "./components/transactions-mobile-view";
 
 const API_BASE = "";
 
@@ -149,46 +150,58 @@ export default function TransactionsPage() {
     }
 
     return (
-        <div className="space-y-6 p-6">
-            {bootstrapError && (
-                <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-                    {bootstrapError}
-                </div>
-            )}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Transactions</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Monitor and manage your transactions in one place.
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" className="gap-2">
-                        <HugeiconsIcon icon={Download04Icon} className="h-4 w-4" /> Export
-                    </Button>
-                    <Button variant="outline" className="gap-2">
-                        <HugeiconsIcon icon={FilterIcon} className="h-4 w-4" /> Filter
-                    </Button>
-                </div>
+        <div className="md:p-6 p-0">
+            {/* Mobile View */}
+            <div className="block md:hidden">
+                <TransactionsMobileView
+                    bootstrap={bootstrap}
+                    transactions={transactionRows}
+                    statSegments={statSegments}
+                />
             </div>
 
-            {error && (
-                <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-                    {error}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="ml-4"
-                        onClick={fetchOrders}
-                    >
-                        Retry
-                    </Button>
+            {/* Desktop View */}
+            <div className="hidden md:block space-y-6">
+                {bootstrapError && (
+                    <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+                        {bootstrapError}
+                    </div>
+                )}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Transactions</h1>
+                        <p className="text-sm text-muted-foreground">
+                            Monitor and manage your transactions in one place.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" className="gap-2">
+                            <HugeiconsIcon icon={Download04Icon} className="h-4 w-4" /> Export
+                        </Button>
+                        <Button variant="outline" className="gap-2">
+                            <HugeiconsIcon icon={FilterIcon} className="h-4 w-4" /> Filter
+                        </Button>
+                    </div>
                 </div>
-            )}
 
-            <SegmentedStatsCard segments={statSegments} />
+                {error && (
+                    <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+                        {error}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="ml-4"
+                            onClick={fetchOrders}
+                        >
+                            Retry
+                        </Button>
+                    </div>
+                )}
 
-            <RecentTransactionsTable rows={transactionRows} />
+                <SegmentedStatsCard segments={statSegments} />
+
+                <RecentTransactionsTable rows={transactionRows} />
+            </div>
         </div>
     );
 }

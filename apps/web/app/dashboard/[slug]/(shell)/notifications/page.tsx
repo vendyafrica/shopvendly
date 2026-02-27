@@ -2,8 +2,8 @@ import { SegmentedStatsCard } from "@/features/dashboard/components/segmented-st
 import { db } from "@shopvendly/db/db";
 import { and, desc, eq, isNull } from "@shopvendly/db";
 import { orders, stores } from "@shopvendly/db/schema";
-
 import { NotificationsTable, type NotificationRow } from "./NotificationsTable";
+import { NotificationsMobileView } from "./components/notifications-mobile-view";
 
 function timeAgo(from: Date, to: Date) {
   const diffMs = Math.max(0, to.getTime() - from.getTime());
@@ -26,7 +26,7 @@ export default async function NotificationsPage({
 
   const store = await db.query.stores.findFirst({
     where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
-    columns: { id: true, tenantId: true },
+    columns: { id: true, tenantId: true, name: true, slug: true, logoUrl: true },
   });
 
   if (!store) {
@@ -110,16 +110,28 @@ export default async function NotificationsPage({
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
-        <p className="text-sm text-muted-foreground">Recent activity from orders and payments.</p>
+    <div className="md:p-6 p-0">
+      {/* Mobile View */}
+      <div className="block md:hidden">
+        <NotificationsMobileView
+          bootstrap={store as any}
+          notifications={notifications}
+          statSegments={statSegments}
+        />
       </div>
 
-      <SegmentedStatsCard segments={statSegments} />
+      {/* Desktop View */}
+      <div className="hidden md:block space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
+          <p className="text-sm text-muted-foreground">Recent activity from orders and payments.</p>
+        </div>
 
-      <div className="rounded-md border bg-card p-3">
-        <NotificationsTable rows={notifications} />
+        <SegmentedStatsCard segments={statSegments} />
+
+        <div className="w-full">
+          <NotificationsTable rows={notifications} />
+        </div>
       </div>
     </div>
   );

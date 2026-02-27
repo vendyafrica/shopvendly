@@ -35,12 +35,16 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
   const [isNavigating, setIsNavigating] = useState(false);
   const [forceVideo, setForceVideo] = useState(false);
 
-  const currentStoreSlug = storeSlug || (params?.s as string);
+  const paramsObject = typeof params === "object" ? (params as Record<string, string | undefined>) : {};
+  const derivedStoreSlug = storeSlug ?? paramsObject.handle ?? paramsObject.s;
+  const currentStoreSlug = derivedStoreSlug ?? "";
   const aspectClass = aspectVariants[index % aspectVariants.length];
 
   const imageUrl = image || FALLBACK_PRODUCT_IMAGE;
 
   const isVideo = forceVideo || isLikelyVideoMedia({ url: imageUrl, contentType });
+
+  const prefetchedHref = derivedStoreSlug ? getStorefrontUrl(derivedStoreSlug, `/${slug}`) : `/${slug}`;
 
   const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (isNavigating) {
@@ -50,7 +54,9 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
     setIsNavigating(true);
     // Best-effort prefetch to reduce perceived delay
     try {
-      router.prefetch(getStorefrontUrl(currentStoreSlug, `/${slug}`));
+      if (derivedStoreSlug) {
+        router.prefetch(prefetchedHref);
+      }
     } catch {
       // Prefetch is best-effort; ignore errors
     }
@@ -58,7 +64,7 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
 
   return (
     <Link
-      href={getStorefrontUrl(currentStoreSlug, `/${slug}`)}
+      href={prefetchedHref}
       onClick={handleClick}
       className={`group block break-inside-avoid mb-3 sm:mb-4 lg:mb-5 ${isNavigating ? "pointer-events-none opacity-70" : ""}`}
       aria-busy={isNavigating}

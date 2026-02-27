@@ -3,6 +3,7 @@ import { db } from "@shopvendly/db/db";
 import { orders, stores } from "@shopvendly/db/schema";
 import { and, desc, eq, isNull, sql } from "@shopvendly/db";
 import { CustomersTable, type CustomerRow } from "./CustomersTable";
+import { CustomersMobileView } from "./components/customers-mobile-view";
 
 export default async function CustomersPage({
   params,
@@ -13,7 +14,7 @@ export default async function CustomersPage({
 
   const store = await db.query.stores.findFirst({
     where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
-    columns: { id: true, tenantId: true, defaultCurrency: true },
+    columns: { id: true, tenantId: true, defaultCurrency: true, name: true, slug: true, logoUrl: true },
   });
 
   if (!store) {
@@ -105,16 +106,28 @@ export default async function CustomersPage({
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
-        <p className="text-sm text-muted-foreground">Key insights and details about your customers.</p>
+    <div className="md:p-6 p-0">
+      {/* Mobile View */}
+      <div className="block md:hidden">
+        <CustomersMobileView
+          bootstrap={store as any}
+          customers={customers}
+          statSegments={statSegments}
+        />
       </div>
 
-      <SegmentedStatsCard segments={statSegments} />
+      {/* Desktop View */}
+      <div className="hidden md:block space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
+          <p className="text-sm text-muted-foreground">Key insights and details about your customers.</p>
+        </div>
 
-      <div className="rounded-md border bg-card p-3">
-        <CustomersTable rows={customers} />
+        <SegmentedStatsCard segments={statSegments} />
+
+        <div className="w-full">
+          <CustomersTable rows={customers} />
+        </div>
       </div>
     </div>
   );

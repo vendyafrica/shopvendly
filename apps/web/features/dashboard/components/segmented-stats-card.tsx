@@ -3,7 +3,7 @@ import { cn } from "@shopvendly/ui/lib/utils";
 
 export type StatSegment = {
   label: string;
-  value: string;
+  value: string | number;
   changeLabel: string;
   changeTone?: "positive" | "negative" | "neutral";
 };

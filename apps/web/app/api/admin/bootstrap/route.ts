@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
             slug: true,
             name: true,
             tenantId: true,
+            logoUrl: true,
             defaultCurrency: true,
         },
     });
@@ -51,6 +52,7 @@ export async function GET(request: NextRequest) {
         storeId: store.id,
         storeSlug: store.slug,
         storeName: store.name,
+        storeLogoUrl: store.logoUrl,
         defaultCurrency: store.defaultCurrency,
     });
 }

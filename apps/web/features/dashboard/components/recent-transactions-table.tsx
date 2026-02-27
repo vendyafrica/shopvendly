@@ -1,7 +1,6 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
 import { Badge } from "@shopvendly/ui/components/badge";
 import { cn } from "@shopvendly/ui/lib/utils";
 import { DataTable } from "./data-table";
@@ -22,13 +21,16 @@ const columns: ColumnDef<TransactionRow>[] = [
     header: "ID",
     cell: ({ row }) => <span className="font-medium">{row.original.id}</span>,
   },
-  { accessorKey: "customer",
+  {
+    accessorKey: "customer",
     header: "Customer",
   },
-  { accessorKey: "product",
+  {
+    accessorKey: "product",
     header: "Product",
   },
-  { accessorKey: "amount",
+  {
+    accessorKey: "amount",
     header: "Amount",
   },
   {
@@ -61,17 +63,8 @@ const columns: ColumnDef<TransactionRow>[] = [
 
 export function RecentTransactionsTable({ rows }: { rows: TransactionRow[] }) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="grid gap-0.5">
-          <CardTitle className="text-lg font-bold">Recent Transactions</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="max-h-[320px] overflow-auto">
-          <DataTable columns={columns} data={rows} />
-        </div>
-      </CardContent>
-    </Card>
+    <div className="w-full">
+      <DataTable columns={columns} data={rows} />
+    </div>
   );
 }
