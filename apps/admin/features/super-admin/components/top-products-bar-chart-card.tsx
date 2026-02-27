@@ -1,0 +1,78 @@
+"use client";
+
+import {
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+    type ChartConfig,
+} from "@shopvendly/ui/components/chart";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
+import { cn } from "@shopvendly/ui/lib/utils";
+import { Bar, BarChart, XAxis, YAxis } from "recharts";
+
+export type ProductData = {
+    product: string;
+    sales: number;
+    fill: string;
+};
+
+export function top-products-bar-chart-card({
+    title,
+    description,
+    totalLabel,
+    data,
+    className,
+}: {
+    title: string;
+    description?: string;
+    totalLabel: string;
+    data: ProductData[];
+    className?: string;
+}) {
+    const chartConfig = {
+        sales: {
+            label: "Sales",
+            color: "hsl(var(--primary))",
+        },
+    } satisfies ChartConfig;
+
+    return (
+        <Card className={cn("w-full border-border/70 shadow-sm", className)}>
+            <CardHeader className="space-y-1 pb-2">
+                <CardTitle className="text-base">{title}</CardTitle>
+                {description && (
+                    <CardDescription className="text-xs">{description}</CardDescription>
+                )}
+                <div className="text-3xl font-bold text-foreground">{totalLabel}</div>
+            </CardHeader>
+            <CardContent className="px-3 pb-4 md:px-5">
+                <ChartContainer config={chartConfig} className="aspect-auto h-[260px] w-full md:h-[320px]">
+                    <BarChart
+                        accessibilityLayer
+                        data={data}
+                        layout="vertical"
+                        margin={{
+                            left: 0,
+                            right: 16,
+                            top: 8,
+                            bottom: 8,
+                        }}
+                    >
+                        <YAxis
+                            dataKey="product"
+                            type="category"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                            width={120}
+                            tick={{ fontSize: 12 }}
+                        />
+                        <XAxis type="number" hide />
+                        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                        <Bar dataKey="sales" fill="var(--color-sales)" radius={4} />
+                    </BarChart>
+                </ChartContainer>
+            </CardContent>
+        </Card>
+    );
+}
