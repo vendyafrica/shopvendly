@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete02Icon, MinusSignIcon, PlusSignIcon, ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
@@ -17,7 +17,8 @@ const geistSans = Bricolage_Grotesque({
 
 export default function StoreCartPage() {
     const params = useParams();
-    const storeSlug = params?.s as string;
+    const router = useRouter();
+    const storeSlug = (params?.handle as string) || (params?.s as string);
     const { itemsByStore, updateQuantity, removeItem, isLoaded } = useCart();
 
     const storeId = useMemo(() => {
@@ -31,6 +32,14 @@ export default function StoreCartPage() {
 
         return null;
     }, [isLoaded, itemsByStore, storeSlug]);
+
+    const handleBack = () => {
+        if (typeof window !== "undefined" && window.history.length > 1) {
+            router.back();
+            return;
+        }
+        router.push(`/${storeSlug || ""}`);
+    };
 
     if (!isLoaded) {
         return (
@@ -53,9 +62,9 @@ export default function StoreCartPage() {
             <div className="min-h-screen bg-white pt-24">
                 <div className="max-w-2xl mx-auto px-4 py-8">
                     <div className="flex items-center gap-2 mb-10">
-                        <Link href={`/${storeSlug || ""}`} className="p-2 -ml-2 hover:bg-neutral-100 transition-colors">
+                        <button onClick={handleBack} className="p-2 -ml-2 hover:bg-neutral-100 transition-colors">
                             <HugeiconsIcon icon={ArrowLeft01Icon} className="h-5 w-5" />
-                        </Link>
+                        </button>
                         <h1 className={`${geistSans.className} text-xl uppercase tracking-widest font-semibold`}>Shopping Bag</h1>
                     </div>
 
@@ -82,9 +91,9 @@ export default function StoreCartPage() {
         <div className="min-h-screen bg-white pt-24 pb-24">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex items-center gap-4 border-b border-neutral-200 pb-6 mb-8">
-                    <Link href={`/${storeSlug || ""}`} className="p-2 -ml-2 text-neutral-400 hover:text-neutral-900 transition-colors">
+                    <button onClick={handleBack} className="p-2 -ml-2 text-neutral-400 hover:text-neutral-900 transition-colors">
                         <HugeiconsIcon icon={ArrowLeft01Icon} className="h-6 w-6" />
-                    </Link>
+                    </button>
                     <h1 className={`${geistSans.className} text-2xl uppercase tracking-widest font-semibold`}>Shopping Bag</h1>
                     <span className="text-sm font-medium text-neutral-500 uppercase tracking-widest ml-auto">
                         {storeItems.length} {storeItems.length === 1 ? 'Item' : 'Items'}
@@ -97,7 +106,7 @@ export default function StoreCartPage() {
                         {storeItems.map((item) => (
                             <div key={item.id} className="py-8 flex gap-6">
                                 <Link
-                                    href={`/${item.product.id}/${item.product.slug}`}
+                                    href={`/${storeSlug || item.store.slug}/${item.product.slug}`}
                                     className="relative w-28 aspect-3/4 bg-neutral-100 shrink-0 block overflow-hidden"
                                 >
                                     {item.product.contentType?.startsWith("video/") || item.product.image?.match(/\.(mp4|webm|mov|ogg)$/i) || ((item.product.image || "").includes(".ufs.sh") && !(item.product.image || "").match(/\.(jpg|jpeg|png|webp|gif)$/i) && !item.product.contentType?.startsWith("image/")) ? (
@@ -125,7 +134,7 @@ export default function StoreCartPage() {
                                     <div className="flex justify-between items-start gap-4">
                                         <div>
                                             <h3 className="font-serif text-lg leading-tight mb-1">
-                                                <Link href={`/${item.product.id}/${item.product.slug}`} className="hover:underline">
+                                                <Link href={`/${storeSlug || item.store.slug}/${item.product.slug}`} className="hover:underline">
                                                     {item.product.name}
                                                 </Link>
                                             </h3>

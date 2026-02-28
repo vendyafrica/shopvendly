@@ -18,6 +18,7 @@ export interface CartItem {
         image?: string;
         contentType?: string;
         slug: string;
+        availableQuantity?: number;
     };
     store: {
         id: string;
@@ -195,21 +196,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
 
         let nextQuantity = quantity;
+        const maxQuantity = newItem.product.availableQuantity ?? Number.POSITIVE_INFINITY;
 
         // Optimistic update (also computes the exact quantity we should persist)
         setItems((prev) => {
             const existing = prev.find((item) => item.id === newItem.id);
             if (existing) {
-                nextQuantity = existing.quantity + quantity;
+                nextQuantity = Math.min(existing.quantity + quantity, maxQuantity);
                 return prev.map((item) =>
                     item.id === newItem.id
                         ? { ...item, quantity: nextQuantity }
                         : item
                 );
             }
-            nextQuantity = quantity;
+            nextQuantity = Math.min(quantity, maxQuantity);
             return [...prev, { ...newItem, quantity: nextQuantity }];
         });
+
+        // If maxQuantity is zero or less, do not persist to server
+        if (nextQuantity <= 0) {
+            return;
+        }
 
         if (session?.user) {
             try {
@@ -255,9 +262,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const item = items.find(i => i.id === productId);
         if (!item) return;
 
+        const maxQuantity = item.product.availableQuantity ?? Number.POSITIVE_INFINITY;
+        const clampedQuantity = Math.min(quantity, maxQuantity);
+
+        if (clampedQuantity <= 0) {
+            removeItem(productId);
+            return;
+        }
+
         setItems((prev) =>
             prev.map((item) =>
-                item.id === productId ? { ...item, quantity } : item
+                item.id === productId ? { ...item, quantity: clampedQuantity } : item
             )
         );
 
@@ -272,7 +287,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                     body: JSON.stringify({
                         productId: item.product.id,
                         storeId: item.store.id,
-                        quantity
+                        quantity: clampedQuantity
                     })
                 });
             } catch (e) {

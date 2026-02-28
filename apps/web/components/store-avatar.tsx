@@ -24,19 +24,30 @@ export function StoreAvatar({
     size = "md",
     className = "",
 }: StoreAvatarProps) {
-    const avatarUrl = instagramAvatarUrl || logoUrl;
+    const DEFAULT_STORE_LOGO = "https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYDG9RTaEFldC5yAexJX0UPbcvMfWYIpsTjn4G";
+    const avatarUrl = instagramAvatarUrl || logoUrl || DEFAULT_STORE_LOGO;
 
     // Get initials from store name (up to 2 characters)
     const getInitials = (name: string): string => {
         if (!name) return "S";
 
-        const words = name.trim().split(/\s+/);
-        if (words.length === 1) {
-            return words[0].substring(0, 2).toUpperCase();
+        const words = name
+            .trim()
+            .split(/\s+/)
+            .filter((word): word is string => Boolean(word));
+
+        if (words.length === 0) {
+            return "S";
         }
 
-        // Take first letter of first two words
-        return (words[0][0] + words[1][0]).toUpperCase();
+        if (words.length === 1) {
+            const firstWord = words[0];
+            return firstWord ? firstWord.substring(0, 2).toUpperCase() : "S";
+        }
+
+        // Take first letter of first two words; guard against missing characters
+        const firstTwoInitials = `${words[0]?.[0] ?? ""}${words[1]?.[0] ?? ""}`;
+        return firstTwoInitials ? firstTwoInitials.toUpperCase() : "S";
     };
 
     const initials = getInitials(storeName);
@@ -80,17 +91,30 @@ export function StoreAvatarSimple({
     size?: number;
     className?: string;
 }) {
-    const avatarUrl = instagramAvatarUrl || logoUrl;
+    const DEFAULT_STORE_LOGO = "/store-logo.jpg";
+    const avatarUrl = instagramAvatarUrl || logoUrl || DEFAULT_STORE_LOGO;
 
     const getInitials = (name: string): string => {
         if (!name) return "S";
 
-        const words = name.trim().split(/\s+/);
-        if (words.length === 1) {
-            return words[0].substring(0, 2).toUpperCase();
+        const words = name
+            .trim()
+            .split(/\s+/)
+            .filter((word): word is string => Boolean(word));
+
+        if (words.length === 0) {
+            return "S";
         }
 
-        return (words[0][0] + words[1][0]).toUpperCase();
+        if (words.length === 1) {
+            const firstWord = words[0];
+            return firstWord ? firstWord.substring(0, 2).toUpperCase() : "S";
+        }
+
+        const firstInitial = words[0]?.[0] ?? "";
+        const secondInitial = words[1]?.[0] ?? "";
+        const combined = `${firstInitial}${secondInitial}`;
+        return combined ? combined.toUpperCase() : "S";
     };
 
     const initials = getInitials(storeName);

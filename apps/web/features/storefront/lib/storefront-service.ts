@@ -1,6 +1,8 @@
 import { db, stores, products, productRatings, eq, and, isNull, instagramAccounts, inArray, sql } from "@shopvendly/db";
 import { cache } from "react";
 
+const DEFAULT_STORE_LOGO = "/store-logo.jpg";
+
 /**
  * Storefront Service for serverless environment
  * Handles public store data queries (no auth required)
@@ -21,7 +23,7 @@ const findStoreBySlugCached = cache(async (slug: string) => {
         return { ...store, logoUrl: igAccount.profilePictureUrl };
     }
 
-    return store;
+    return { ...store, logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO };
 });
 
 function slugifyName(name: string): string {
@@ -77,6 +79,7 @@ export const storefrontService = {
                 description: true,
                 priceAmount: true,
                 currency: true,
+                quantity: true,
             },
             with: {
                 media: {
@@ -146,6 +149,7 @@ export const storefrontService = {
                 description: true,
                 priceAmount: true,
                 currency: true,
+                quantity: true,
             },
             with: {
                 media: {
@@ -230,6 +234,7 @@ export const storefrontService = {
                 description: true,
                 priceAmount: true,
                 currency: true,
+                quantity: true,
             },
             with: {
                 media: {

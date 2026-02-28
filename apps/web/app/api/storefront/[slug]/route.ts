@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storefrontService } from "@/features/storefront/lib/storefront-service";
 
+const DEFAULT_STORE_LOGO = "/store-logo.jpg";
+
 type RouteParams = {
     params: Promise<{ slug: string }>;
 };
@@ -26,7 +28,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             name: store.name,
             slug: store.slug,
             description: store.description,
-            logoUrl: store.logoUrl ?? null,
+            logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO,
             heroMedia: store.heroMedia,
             categories: (store as { categories?: string[] }).categories ?? [],
             rating: rating.rating,

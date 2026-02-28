@@ -35,6 +35,8 @@ type StorefrontProduct = {
 
     currency: string;
 
+    quantity?: number | null;
+
     media?: ProductMedia[];
 
     styleGuideEnabled?: boolean | null;
@@ -100,55 +102,31 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 
         return NextResponse.json({
-
             id: product.id,
-
             slug: product.slug || product.productName.toLowerCase().replace(/\s+/g, "-"),
-
             name: product.productName,
-
             description: product.description,
-
             price: Number(product.priceAmount || 0),
-
             currency: product.currency,
-
+            availableQuantity: (product as { quantity?: number })?.quantity ?? 0,
             styleGuideEnabled: Boolean(product.styleGuideEnabled),
-
             styleGuideType: product.styleGuideType ?? "clothes",
-
             images: (product.media ?? [])
-
                 .map((m) => m.media?.ufsUrl ?? m.media?.url ?? m.media?.blobUrl ?? null)
-
                 .filter(Boolean),
-
             mediaItems: (product.media ?? [])
-
                 .map((m) => ({
-
                     url: m.media?.ufsUrl ?? m.media?.url ?? m.media?.blobUrl ?? null,
-
                     contentType: m.media?.contentType ?? null,
-
                 }))
-
                 .filter((m) => Boolean(m.url)),
-
             rating: 0,
-
             userRating,
-
             store: {
-
                 id: store.id,
-
                 name: store.name,
-
                 slug: store.slug,
-
             },
-
         });
 
     } catch (error) {

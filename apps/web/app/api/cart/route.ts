@@ -2,6 +2,7 @@ import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { db, instagramAccounts, eq, and } from "@shopvendly/db";
+const DEFAULT_STORE_LOGO = "/store-logo.jpg";
 import { cartService } from "@/features/cart/lib/cart-service";
 
 type CartItemWithRelations = {
@@ -74,16 +75,18 @@ export async function GET() {
                     currency: item.product.currency,
                     image: item.product.media?.[0]?.media?.blobUrl ?? null,
                     contentType: item.product.media?.[0]?.media?.contentType ?? null,
-                    slug: item.product.productName.toLowerCase().replace(/\s+/g, "-"),
+                    slug: (item.product as { slug?: string })?.slug
+                        ?? item.product.productName.toLowerCase().replace(/\s+/g, "-"),
+                    availableQuantity: (item.product as { quantity?: number })?.quantity ?? null,
                 },
                 store: {
                     id: item.product.store?.id,
                     name: item.product.store?.name,
                     slug: item.product.store?.slug,
                     logoUrl: storeTenantId
-                        ? igMap.get(storeTenantId) ?? item.product.store?.logoUrl ?? null
-                        : item.product.store?.logoUrl ?? null,
-                }
+                        ? igMap.get(storeTenantId) ?? item.product.store?.logoUrl ?? DEFAULT_STORE_LOGO
+                        : item.product.store?.logoUrl ?? DEFAULT_STORE_LOGO,
+                },
             };
         });
 

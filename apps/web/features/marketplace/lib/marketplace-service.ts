@@ -2,6 +2,8 @@ import { categoryRepo } from "@/lib/data/category-repo";
 import { storeRepo } from "@/lib/data/store-repo";
 import { withCache, cacheKeys, TTL } from "@shopvendly/db";
 
+const DEFAULT_STORE_LOGO = "/store-logo.jpg";
+
 export interface StoreWithCategory {
     id: string;
     name: string;
@@ -67,7 +69,7 @@ function mapProductRecord(product: ProductRecordForMarketplace, store: { id: str
             id: store.id,
             name: store.name,
             slug: store.slug,
-            logoUrl: store.logoUrl ?? null,
+            logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO,
         },
     };
 }
@@ -181,7 +183,7 @@ export const marketplaceService = {
                         name: store.name,
                         slug: store.slug,
                         description: store.description,
-                        logoUrl: store.logoUrl ?? null,
+                        logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO,
                         instagramAvatarUrl: igMap.get(store.tenantId) ?? null,
                         categories: store.categories || [],
                         heroMedia: (store as { heroMedia?: string[] }).heroMedia ?? [],

@@ -19,6 +19,10 @@ export const cartService = {
             [cart] = await db.insert(carts).values({ userId }).returning();
         }
 
+        if (!cart) {
+            throw new Error("Failed to initialize cart");
+        }
+
         const items = await db.query.cartItems.findMany({
             where: eq(cartItems.cartId, cart.id),
             with: {
@@ -40,7 +44,7 @@ export const cartService = {
             },
         });
 
-        return { cart, items };
+        return { cart, items } as const;
     },
 
     /**
@@ -48,6 +52,22 @@ export const cartService = {
      */
     async upsertItem(userId: string, productId: string, storeId: string, quantity: number) {
         const { cart } = await this.getUserCart(userId);
+
+        const product = await db.query.products.findFirst({
+            where: eq(products.id, productId),
+            columns: {
+                id: true,
+                quantity: true,
+                storeId: true,
+            },
+        });
+
+        if (!product || product.storeId !== storeId) {
+            return null;
+        }
+
+        const maxQuantity = product.quantity ?? 0;
+        const clampedQuantity = Math.min(quantity, maxQuantity);
 
         const existingItem = await db.query.cartItems.findFirst({
             where: and(
@@ -57,22 +77,22 @@ export const cartService = {
         });
 
         if (existingItem) {
-            if (quantity <= 0) {
+            if (clampedQuantity <= 0) {
                 await db.delete(cartItems).where(eq(cartItems.id, existingItem.id));
                 return null;
             }
             const [updated] = await db.update(cartItems)
-                .set({ quantity, updatedAt: new Date() })
+                .set({ quantity: clampedQuantity, updatedAt: new Date() })
                 .where(eq(cartItems.id, existingItem.id))
                 .returning();
             return updated;
         } else {
-            if (quantity <= 0) return null;
+            if (clampedQuantity <= 0) return null;
             const [newItem] = await db.insert(cartItems).values({
                 cartId: cart.id,
                 productId,
                 storeId,
-                quantity,
+                quantity: clampedQuantity,
             }).returning();
             return newItem;
         }

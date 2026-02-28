@@ -4,6 +4,8 @@ import { StorefrontHeader } from "@/features/storefront/components/header";
 import { NavigationOverlayProvider } from "@/features/storefront/components/navigation-overlay";
 import { headers } from "next/headers";
 
+const DEFAULT_STORE_LOGO = "/store-logo.jpg";
+
 type StorefrontStore = {
   name: string;
   slug: string;
@@ -41,7 +43,7 @@ export default async function StorefrontLayout({ children, params }: LayoutProps
     ? {
         name: store.name,
         slug: store.slug,
-        logoUrl: store.logoUrl ?? undefined,
+        logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO,
       }
     : null;
 
