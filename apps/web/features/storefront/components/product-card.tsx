@@ -89,7 +89,7 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
             priority={index < 4}
             sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
             className="object-cover transition-all duration-700 ease-out group-hover:scale-[1.03]"
-            unoptimized={imageUrl.includes(".ufs.sh")}
+            unoptimized={imageUrl.includes(".ufs.sh") || imageUrl.includes("utfs.io")}
             onError={() => setForceVideo(true)}
           />
         ) : (
