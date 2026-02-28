@@ -34,10 +34,6 @@ export default function StoreCartPage() {
     }, [isLoaded, itemsByStore, storeSlug]);
 
     const handleBack = () => {
-        if (typeof window !== "undefined" && window.history.length > 1) {
-            router.back();
-            return;
-        }
         router.push(`/${storeSlug || ""}`);
     };
 

@@ -3,6 +3,15 @@
 import Image from "next/image";
 import { Avatar, AvatarImage, AvatarFallback } from "@shopvendly/ui/components/avatar";
 
+const DEFAULT_STORE_LOGO = "https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYDG9RTaEFldC5yAexJX0UPbcvMfWYIpsTjn4G";
+
+function capitalizeFirst(value?: string | null) {
+    if (!value) return "Store";
+    const trimmed = value.trim();
+    if (trimmed.length === 0) return "Store";
+    return `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}`;
+}
+
 interface StoreAvatarProps {
     storeName: string;
     logoUrl?: string | null;
@@ -24,8 +33,8 @@ export function StoreAvatar({
     size = "md",
     className = "",
 }: StoreAvatarProps) {
-    const DEFAULT_STORE_LOGO = "https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYDG9RTaEFldC5yAexJX0UPbcvMfWYIpsTjn4G";
     const avatarUrl = instagramAvatarUrl || logoUrl || DEFAULT_STORE_LOGO;
+    const displayName = capitalizeFirst(storeName);
 
     // Get initials from store name (up to 2 characters)
     const getInitials = (name: string): string => {
@@ -64,7 +73,7 @@ export function StoreAvatar({
             {avatarUrl && (
                 <AvatarImage
                     src={avatarUrl}
-                    alt={`${storeName} logo`}
+                    alt={`${displayName} logo`}
                 />
             )}
             <AvatarFallback className="bg-neutral-100 text-neutral-700 font-semibold">
@@ -91,7 +100,6 @@ export function StoreAvatarSimple({
     size?: number;
     className?: string;
 }) {
-    const DEFAULT_STORE_LOGO = "/store-logo.jpg";
     const avatarUrl = instagramAvatarUrl || logoUrl || DEFAULT_STORE_LOGO;
 
     const getInitials = (name: string): string => {
@@ -118,6 +126,7 @@ export function StoreAvatarSimple({
     };
 
     const initials = getInitials(storeName);
+    const displayName = capitalizeFirst(storeName);
 
     return (
         <div
@@ -127,7 +136,7 @@ export function StoreAvatarSimple({
             {avatarUrl ? (
                 <Image
                     src={avatarUrl}
-                    alt={`${storeName} logo`}
+                    alt={`${displayName} logo`}
                     fill
                     sizes={`${size}px`}
                     className="object-cover"

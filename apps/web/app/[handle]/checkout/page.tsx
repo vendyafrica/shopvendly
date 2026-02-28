@@ -61,7 +61,7 @@ function CheckoutContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const params = useParams();
-    const storeSlug = params?.s as string;
+    const storeSlug = (params?.handle as string) || (params?.s as string);
 
     const storeId = searchParams.get("storeId");
     const { itemsByStore, clearStoreFromCart, isLoaded } = useCart();
@@ -114,6 +114,11 @@ function CheckoutContent() {
     const storeTotal = storeSubtotal; // Add shipping here if implemented
     const currency = storeItems[0]?.product.currency || "UGX";
     const FALLBACK_PRODUCT_IMAGE = "https://cdn.cosmos.so/25e7ef9d-3d95-486d-b7db-f0d19c1992d7?format=jpeg";
+    const resolvedStoreSlug = storeSlug || store.slug || "";
+
+    const navigateToCart = () => {
+        router.push(`/${resolvedStoreSlug}/cart`);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -272,9 +277,9 @@ function CheckoutContent() {
                     >
                         <div>
                             <div className="flex items-center gap-3 mb-8">
-                                <Link href={`/${storeSlug || ""}/cart`} className="text-neutral-500 hover:text-neutral-900 transition-colors -ml-1">
+                                <button onClick={navigateToCart} type="button" className="text-neutral-500 hover:text-neutral-900 transition-colors -ml-1">
                                     <HugeiconsIcon icon={ArrowLeft01Icon} className="h-5 w-5" />
-                                </Link>
+                                </button>
                                 <span className="text-xs font-semibold text-neutral-400 tracking-widest uppercase">Checkout</span>
                                 <HugeiconsIcon
                                     icon={ArrowRight01Icon}

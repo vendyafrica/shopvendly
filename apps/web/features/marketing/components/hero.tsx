@@ -38,7 +38,7 @@ export function Hero() {
           <div className="bg-background rounded-(--radius) relative m-4 overflow-hidden border border-transparent shadow-xl shadow-black/15 ring-1 ring-black/10 sm:m-8 md:m-12">
             <video
               className="size-full object-cover"
-              src="/store.mp4"
+              src="https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYlWrxxrQBAQ3F5fmNoip8XJaL29zWqSOv4EgV"
               autoPlay
               muted
               loop
