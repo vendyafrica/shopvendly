@@ -168,9 +168,9 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
     : "bg-background border-b border-border";
 
   const iconColor = overlayActive ? "text-white" : "text-foreground";
-  const customerLoginUrl = getRootUrl(
-    `/login?next=${encodeURIComponent(pathname || `/${store.slug}`)}`
-  );
+  const sellerLoginUrl = store.slug
+    ? getRootUrl(`/dashboard/${store.slug}/login`)
+    : getRootUrl("/dashboard/login");
 
   return (
     <header
@@ -223,7 +223,7 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
               </Link>
 
               <Link
-                href={customerLoginUrl}
+                href={sellerLoginUrl}
                 className={`relative inline-flex h-10 w-10 items-center justify-center transition-colors ${isHomePage ? "hover:opacity-80" : "hover:bg-muted/70 rounded-full"}`}
                 aria-label="Account"
               >

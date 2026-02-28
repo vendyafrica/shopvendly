@@ -56,7 +56,9 @@ export function Hero({ store }: HeroProps) {
     const heroMedia = Array.isArray(store.heroMedia) ? store.heroMedia : [];
     const mediaUrl = heroMedia[0] || FALLBACK_HERO_MEDIA;
     const isVideo = typeof mediaUrl === "string" && isVideoUrl(mediaUrl);
-    const dashboardHref = store.slug ? getRootUrl(`/dashboard/${store.slug}`) : getRootUrl("/dashboard");
+    const sellerLoginHref = store.slug
+        ? getRootUrl(`/dashboard/${store.slug}/login`)
+        : getRootUrl("/dashboard/login");
 
     if (typeof window !== "undefined") {
         console.info("[Hero] media selection", { mediaUrl, heroMediaCount: heroMedia.length, isVideo });
@@ -90,7 +92,7 @@ export function Hero({ store }: HeroProps) {
                             <HugeiconsIcon icon={FavouriteIcon} size={18} className="text-white" />
                         </Link>
                         <Link
-                            href={dashboardHref}
+                            href={sellerLoginHref}
                             className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/30 backdrop-blur hover:bg-black/45 transition-colors"
                             aria-label="Account"
                         >
