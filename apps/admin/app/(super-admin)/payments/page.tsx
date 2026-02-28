@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { segmented-stats-card } from "../components/segmented-stats-card";
+import { SegmentedStatsCard } from "@/features/super-admin/components/segmented-stats-card";
 import { Badge } from "@shopvendly/ui/components/badge";
 import { cn } from "@shopvendly/ui/lib/utils";
 
@@ -53,7 +53,7 @@ export default function PaymentsPage() {
             </div>
 
             {/* Stats */}
-            <segmented-stats-card
+            <SegmentedStatsCard
                 segments={[
                     {
                         label: "Total Payments",

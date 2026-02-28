@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { UserTable, type User } from "./components/user-table";
-import { segmented-stats-card } from "../components/segmented-stats-card";
+import { SegmentedStatsCard } from "@/features/super-admin/components/segmented-stats-card";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -45,7 +45,7 @@ export default function UsersPage() {
             </div>
 
             {/* Stats */}
-            <segmented-stats-card
+            <SegmentedStatsCard
                 segments={[
                     {
                         label: "Total Users",

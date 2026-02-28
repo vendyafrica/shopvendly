@@ -3,7 +3,7 @@ import { tenants, stores, orders, storefrontSessions } from "@shopvendly/db/sche
 import { count, eq, gte, sum, desc, sql, and } from "@shopvendly/db";
 import { TTL, withCache } from "@shopvendly/db";
 import { NextResponse } from "next/server";
-import { checkSuperAdminApi } from "@/lib/auth-guard";
+import { checkSuperAdminApi } from "../../../lib/auth-guard";
 
 export async function GET() {
     const auth = await checkSuperAdminApi(["super_admin"]);
@@ -21,25 +21,35 @@ export async function GET() {
 
                 // 1. Tenant Metrics
                 const [totalTenants] = await db.select({ count: count() }).from(tenants);
+                const totalTenantsCount = (totalTenants ?? { count: 0 }).count;
+
                 const [newTenants7d] = await db
                     .select({ count: count() })
                     .from(tenants)
                     .where(gte(tenants.createdAt, sevenDaysAgo));
+                const newTenants7dCount = (newTenants7d ?? { count: 0 }).count;
+
                 const [newTenants30d] = await db
                     .select({ count: count() })
                     .from(tenants)
                     .where(gte(tenants.createdAt, thirtyDaysAgo));
+                const newTenants30dCount = (newTenants30d ?? { count: 0 }).count;
 
                 // 2. Store Metrics
                 const [totalStores] = await db.select({ count: count() }).from(stores);
+                const totalStoresCount = (totalStores ?? { count: 0 }).count;
+
                 const [activeStores] = await db
                     .select({ count: count() })
                     .from(stores)
                     .where(eq(stores.status, true));
+                const activeStoresCount = (activeStores ?? { count: 0 }).count;
+
                 const [inactiveStores] = await db
                     .select({ count: count() })
                     .from(stores)
                     .where(eq(stores.status, false));
+                const inactiveStoresCount = (inactiveStores ?? { count: 0 }).count;
 
                 // 3. Marketplace Metrics
                 // GMV (Paid Orders)
@@ -60,6 +70,7 @@ export async function GET() {
                     .orderBy(sql`date_trunc('day', ${orders.createdAt})`);
 
                 const [totalOrders] = await db.select({ count: count() }).from(orders);
+                const totalOrdersCount = (totalOrders ?? { count: 0 }).count;
 
                 const topStoresByOrders = await db
                     .select({
@@ -102,18 +113,18 @@ export async function GET() {
 
                 return {
                     tenants: {
-                        total: totalTenants.count,
-                        new7d: newTenants7d.count,
-                        new30d: newTenants30d.count,
+                        total: totalTenantsCount,
+                        new7d: newTenants7dCount,
+                        new30d: newTenants30dCount,
                     },
                     stores: {
-                        total: totalStores.count,
-                        active: activeStores.count,
-                        inactive: inactiveStores.count,
+                        total: totalStoresCount,
+                        active: activeStoresCount,
+                        inactive: inactiveStoresCount,
                     },
                     marketplace: {
                         gmv: gmv,
-                        totalOrders: totalOrders.count,
+                        totalOrders: totalOrdersCount,
                     },
                     revenueSeries: revenueSeriesRaw,
                     topStoresByOrders,

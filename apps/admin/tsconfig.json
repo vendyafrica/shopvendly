@@ -4,6 +4,7 @@
     "node_modules"
   ],
   "compilerOptions": {
+    "baseUrl": ".",
     "jsx": "react-jsx",
     "outDir": "dist",
     "types": [
@@ -47,6 +48,18 @@
       ],
       "@shopvendly/transactional": [
         "../../packages/transactional/dist/index.js"
+      ],
+      "@/lib/*": [
+        "./lib/*"
+      ],
+      "@/app/*": [
+        "./app/*"
+      ],
+      "@/features/*": [
+        "./features/*"
+      ],
+      "@/src/*": [
+        "./src/*"
       ],
       "@/*": [
         "./src/*",

@@ -1,11 +1,11 @@
 import { db } from "@shopvendly/db/db";
 import { superAdmins } from "@shopvendly/db/schema";
 import { NextResponse } from "next/server";
-import { checkSuperAdminApi } from "../../../../lib/auth-guard";
+import { getSession } from "../../../lib/auth-guard";
 
 export async function POST() {
     try {
-        const session = await checkSuperAdminApi.getSession();
+        const session = await getSession();
 
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
