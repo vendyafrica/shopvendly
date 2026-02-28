@@ -3,12 +3,12 @@
 import * as React from "react";
 import Image from "next/image";
 import { Button } from "@shopvendly/ui/components/button";
-import { Avatar, AvatarFallback } from "@shopvendly/ui/components/avatar";
 import {
     Sheet,
     SheetContent
 } from "@shopvendly/ui/components/sheet";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Edit02Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import type { ProductTableRow } from "@/features/products/hooks/use-products";
 import type { TenantBootstrap } from "@/features/dashboard/context/tenant-context";
 import {
@@ -19,8 +19,9 @@ import {
     SelectValue,
 } from "@shopvendly/ui/components/select";
 import { isLikelyVideoMedia } from "@/utils/misc";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Badge } from "@shopvendly/ui/components/badge";
+import { StoreAvatar } from "@/components/store-avatar";
 
 const STATUS_STYLES: Record<ProductTableRow["status"], { label: string; badgeClass: string }> = {
     draft: { label: "Draft", badgeClass: "bg-muted text-muted-foreground border-dashed" },
@@ -116,15 +117,20 @@ export function ProductsMobileView({
 
     const storeName = bootstrap?.storeName || "My Store";
     const initial = storeName.charAt(0).toUpperCase();
+    const dashboardHref = bootstrap?.storeSlug ? `/dashboard/${bootstrap.storeSlug}` : "/dashboard";
+    const router = useRouter();
 
     return (
         <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden">
             {/* Header Profile Section */}
             <div className="px-5 py-6 border-b">
                 <div className="flex items-center gap-6 mb-5">
-                    <Avatar className="size-[84px] shrink-0 border border-border">
-                        <AvatarFallback className="text-3xl font-semibold bg-primary/10 text-primary">{initial}</AvatarFallback>
-                    </Avatar>
+                    <StoreAvatar
+                        storeName={storeName}
+                        logoUrl={bootstrap?.storeLogoUrl}
+                        size="lg"
+                        className="size-[84px] shrink-0 border border-border rounded-[32px]"
+                    />
 
                     <div className="flex-1 flex justify-between items-center text-center">
                         <div className="flex flex-col items-center flex-1">
@@ -162,10 +168,9 @@ export function ProductsMobileView({
                         className="flex-1 h-8 font-semibold text-xs"
                         variant="outline"
                         size="sm"
+                        onClick={() => router.push(dashboardHref)}
                     >
-                        <Link href={`/dashboard/${bootstrap?.storeSlug}`}>
-                            Dashboard
-                        </Link>
+                        Dashboard
                     </Button>
                 </div>
             </div>
@@ -241,6 +246,7 @@ export function ProductsMobileView({
                                         <Select
                                             value={selectedProduct.status}
                                             onValueChange={(value) => {
+                                                if (!value) return;
                                                 if (onStatusChange) {
                                                     onStatusChange(selectedProduct.id, value);
                                                 }

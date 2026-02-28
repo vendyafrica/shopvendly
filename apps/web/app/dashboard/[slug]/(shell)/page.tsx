@@ -241,10 +241,10 @@ export default async function DashboardPage({
                   {featuredItemName ? "Product added" : "No product yet"}
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="secondary">
-                    <Link href={`${basePath}/products/new`}>Add more</Link>
+                  <Button size="sm" variant="secondary" >
+                    <Link href={`${basePath}/products`}>Add more</Link>
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="outline" >
                     <Link href={`${basePath}/products`}>View products</Link>
                   </Button>
                 </div>
