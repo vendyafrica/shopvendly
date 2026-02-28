@@ -29,12 +29,10 @@ export const adminService = {
                 id: stores.id,
                 name: stores.name,
                 slug: stores.slug,
-                storeRating: stores.storeRating,
                 status: stores.status,
                 storeContactPhone: stores.storeContactPhone,
                 storeAddress: stores.storeAddress,
                 createdAt: stores.createdAt,
-                customDomain: stores.customDomain,
                 tenantName: tenants.fullName,
             })
             .from(stores)

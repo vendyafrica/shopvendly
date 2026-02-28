@@ -11,13 +11,14 @@
     "check-types": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@shopvendly/auth": "workspace:*",
-    "@shopvendly/db": "workspace:*",
     "@hugeicons/core-free-icons": "^2.0.0",
     "@hugeicons/react": "^1.1.1",
-    "@shopvendly/ui": "workspace:*",
     "@noble/hashes": "^1.4.0",
+    "@shopvendly/auth": "workspace:*",
+    "@shopvendly/db": "workspace:*",
+    "@shopvendly/ui": "workspace:*",
     "better-auth": "^1.4.10",
+    "date-fns": "^4.1.0",
     "next": "16.1.5",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

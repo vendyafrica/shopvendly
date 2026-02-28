@@ -109,6 +109,10 @@ export async function POST(req: Request) {
             })
             .returning();
 
+        if (!tenant) {
+            return NextResponse.json({ error: "Failed to create tenant" }, { status: 500 });
+        }
+
         await db.insert(tenantMemberships).values({
             tenantId: tenant.id,
             userId: user.id,
