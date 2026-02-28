@@ -71,8 +71,8 @@ export function LoginForm() {
           return;
         }
 
-        // Success → session cookie is set, redirect to dashboard
-        router.push(redirectTo || "/dashboard");
+        // Success → session cookie is set, redirect to the super-admin dashboard
+        router.push(redirectTo || "/");
         router.refresh();
       } catch (err: unknown) {
         setError(
@@ -90,7 +90,7 @@ export function LoginForm() {
     startTransition(() => {
       try {
         // This usually triggers a redirect to Google → promise may not resolve here
-        signInWithGoogle();
+        signInWithGoogle(redirectTo || "/");
         // No need to await or handle return value in most cases
       } catch (err: unknown) {
         setError(

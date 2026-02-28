@@ -1,5 +1,5 @@
-import { categoryRepo } from "../data/category-repo";
-import { storeRepo } from "../data/store-repo";
+import { categoryRepo } from "@/lib/data/category-repo";
+import { storeRepo } from "@/lib/data/store-repo";
 import { withCache, cacheKeys, TTL } from "@shopvendly/db";
 
 export interface StoreWithCategory {
@@ -238,7 +238,7 @@ export const marketplaceService = {
 
         const stores = await storeRepo.findByCategory({ slug: category.slug, name: category.name });
 
-        const { productRepo } = await import("../data/product-repo");
+        const { productRepo } = await import("@/lib/data/product-repo");
 
         return Promise.all(stores.map(async (store) => {
             const heroImages = Array.isArray((store as { heroMedia?: unknown }).heroMedia)
@@ -319,7 +319,7 @@ export const marketplaceService = {
             cacheKey,
             async () => {
                 // Dynamic import to avoid circular dependency
-                const { productRepo } = await import("../data/product-repo");
+                const { productRepo } = await import("@/lib/data/product-repo");
                 const products = await productRepo.findByStoreId(store.id);
 
                 const filtered = normalizedQuery
@@ -373,7 +373,7 @@ export const marketplaceService = {
                 const ids = new Set(matches.map((m) => m.id));
                 if (ids.size === 0) return [];
 
-                const { productRepo } = await import("../data/product-repo");
+                const { productRepo } = await import("@/lib/data/product-repo");
                 const productsForStore = await productRepo.findByStoreId(store.id);
 
                 const filteredByCategory = productsForStore.filter((p) => ids.has(p.id));
@@ -400,7 +400,7 @@ export const marketplaceService = {
         const store = await this.getStoreDetails(storeSlug);
         if (!store) return null;
 
-        const { productRepo } = await import("../data/product-repo");
+        const { productRepo } = await import("@/lib/data/product-repo");
         // Optimization: Ideally repo has findOneBySlug. For now, we fetch all and find.
         // This mirrors storefrontService logic but we should improve repo later.
         const products = await productRepo.findByStoreId(store.id);
@@ -428,7 +428,7 @@ export const marketplaceService = {
         const store = await this.getStoreDetails(storeSlug);
         if (!store) return null;
 
-        const { productRepo } = await import("../data/product-repo");
+        const { productRepo } = await import("@/lib/data/product-repo");
         const product = (await productRepo.findById(productId)) as (ProductRecordForMarketplace & { storeId: string; status?: string }) | null;
         if (!product) return null;
 

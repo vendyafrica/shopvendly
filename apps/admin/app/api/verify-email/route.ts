@@ -7,7 +7,7 @@ export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const token = searchParams.get("token");
-        const email = searchParams.get("email");
+        const email = searchParams.get("email")?.toLowerCase();
 
         if (!token || !email) {
             return NextResponse.redirect(
@@ -16,9 +16,11 @@ export async function GET(req: Request) {
         }
 
         // Find verification record
+        const identifier = `super_admin_bootstrap:${email}`;
+
         const verificationRecord = await db.query.verification.findFirst({
             where: and(
-                eq(verification.identifier, email),
+                eq(verification.identifier, identifier),
                 eq(verification.value, token)
             ),
         });
@@ -75,7 +77,7 @@ export async function GET(req: Request) {
 
         // Redirect to login with success message
         return NextResponse.redirect(
-            new URL("/login?message=email-verified", req.url)
+            new URL("/?message=email-verified", req.url)
         );
     } catch (error) {
         console.error("Email verification error:", error);

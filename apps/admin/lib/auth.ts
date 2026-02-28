@@ -18,8 +18,8 @@ export async function signUp(email: string, password: string, name: string) {
     return data;
 }
 
-export async function signInWithGoogle() {
-    return await sharedSignInWithGoogle({ callbackURL: "/dashboard" });
+export async function signInWithGoogle(redirectTo?: string) {
+    return await sharedSignInWithGoogle({ callbackURL: redirectTo || "/super-admin" });
 }
 
 export async function signOut() {

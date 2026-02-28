@@ -5,8 +5,8 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNavigation,
-  CarouselIndicator,
+  CarouselPrevious,
+  CarouselNext,
 } from "@shopvendly/ui/components/carousel";
 import { cn } from "@shopvendly/ui/lib/utils";
 
@@ -38,20 +38,10 @@ export function StoreCarousel({ images, className }: StoreCarouselProps) {
 
         {/* Navigation arrows — hover only */}
         {images.length > 1 && (
-          <CarouselNavigation
-            className="z-20 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-            classNameButton={cn(
-              "cursor-pointer hover:cursor-pointer",
-              "bg-white/90 hover:bg-white",
-              "shadow-md",
-              "pointer-events-auto"
-            )}
-          />
-        )}
-
-        {/* Indicators */}
-        {images.length > 1 && (
-          <CarouselIndicator className="pb-3" />
+          <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-3 z-20 opacity-0 transition-opacity duration-200 group-hover:opacity-100 pointer-events-none">
+            <CarouselPrevious className="pointer-events-auto bg-white/90 hover:bg-white shadow-md" />
+            <CarouselNext className="pointer-events-auto bg-white/90 hover:bg-white shadow-md" />
+          </div>
         )}
       </Carousel>
     </div>

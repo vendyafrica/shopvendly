@@ -1,5 +1,5 @@
-import { storeRepo } from "../data/store-repo";
-import { productRepo } from "../data/product-repo";
+import { storeRepo } from "@/lib/data/store-repo";
+import { productRepo } from "@/lib/data/product-repo";
 import { type NewStore } from "@shopvendly/db/schema";
 
 /**

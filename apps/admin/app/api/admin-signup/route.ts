@@ -1,5 +1,5 @@
 import { db } from "@shopvendly/db/db";
-import { users, verification, account } from "@shopvendly/db/schema";
+import { users, verification, account, superAdmins } from "@shopvendly/db/schema";
 import { NextResponse } from "next/server";
 import { sendAdminVerificationEmail } from "@shopvendly/transactional";
 import { auth } from "@shopvendly/auth/server";
@@ -33,14 +33,32 @@ export async function POST(req: Request) {
             );
         }
 
+        const normalizedEmail = (email as string).trim().toLowerCase();
+
         const origin = new URL(req.url).origin;
+        console.info("[admin-signup] Attempt", { email: normalizedEmail, origin });
+
+        const existingSuperAdmin = await db.query.superAdmins.findFirst({
+            columns: { id: true },
+        });
+
+        if (existingSuperAdmin) {
+            return NextResponse.json(
+                { error: "Super admin already exists. Please request an invite." },
+                { status: 403 }
+            );
+        }
 
         // Check if user already exists
         const existingUser = await db.query.users.findFirst({
-            where: eq(users.email, email),
+            where: eq(users.email, normalizedEmail),
         });
 
         if (existingUser) {
+            console.info("[admin-signup] Existing user detected", {
+                email,
+                hasPassword: !!existingUser.emailVerified,
+            });
             // Check if user already has a credential account
             const existingCredential = await db.query.account.findFirst({
                 where: and(
@@ -50,6 +68,7 @@ export async function POST(req: Request) {
             });
 
             if (existingCredential) {
+                console.warn("[admin-signup] Existing credential prevents signup", { email });
                 return NextResponse.json(
                     { error: "User with this email already exists" },
                     { status: 422 }
@@ -83,31 +102,54 @@ export async function POST(req: Request) {
                 columns: { id: true },
             });
 
-            if (!existingSuperAdmin) {
-                const token = crypto.randomBytes(32).toString("hex");
-                const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            let verificationEmailSent = false;
+            let verificationEmailError: string | null = null;
 
-                await db.delete(verification).where(eq(verification.identifier, email));
+            const token = crypto.randomBytes(32).toString("hex");
+            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            const identifier = `super_admin_bootstrap:${normalizedEmail}`;
 
-                await db.insert(verification).values({
-                    id: crypto.randomUUID(),
-                    identifier: email,
-                    value: token,
-                    expiresAt,
-                });
+            await db.delete(verification).where(eq(verification.identifier, identifier));
 
-                const verificationUrl = `${origin}/api/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
+            await db.insert(verification).values({
+                id: crypto.randomUUID(),
+                identifier,
+                value: token,
+                expiresAt,
+            });
 
+            const verificationUrl = `${origin}/api/verify-email?token=${token}&email=${encodeURIComponent(normalizedEmail)}`;
+
+            try {
                 await sendAdminVerificationEmail({
-                    to: email,
+                    to: normalizedEmail,
                     name: existingUser.name,
                     verificationUrl,
                 });
+                verificationEmailSent = true;
+            } catch (emailErr) {
+                verificationEmailError = emailErr instanceof Error ? emailErr.message : "Failed to send verification email";
+                console.error("[admin-signup] Verification email failed for existing user", {
+                    email: normalizedEmail,
+                    error: verificationEmailError,
+                });
             }
+
+            console.info("[admin-signup] Existing user credential bootstrap complete", {
+                email: normalizedEmail,
+                verificationEmailSent,
+                verificationNeeded: true,
+            });
 
             return NextResponse.json({
                 success: true,
-                message: "Credential account created! Please check your email to verify.",
+                message: existingSuperAdmin
+                    ? "Credential account created. You can now sign in."
+                    : verificationEmailError
+                        ? "Credential account created, but verification email failed."
+                        : "Credential account created! Please check your email to verify.",
+                verificationEmailSent,
+                verificationEmailError,
             });
         }
 
@@ -115,7 +157,7 @@ export async function POST(req: Request) {
         try {
             await auth.api.signUpEmail({
                 body: {
-                    email,
+                    email: normalizedEmail,
                     password,
                     name,
                     callbackURL: `${origin}/login?message=email-verified`,
@@ -129,9 +171,47 @@ export async function POST(req: Request) {
             );
         }
 
+        // Create bootstrap verification token + email
+        let verificationEmailSent = false;
+        let verificationEmailError: string | null = null;
+
+        const token = crypto.randomBytes(32).toString("hex");
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        const identifier = `super_admin_bootstrap:${normalizedEmail}`;
+
+        await db.delete(verification).where(eq(verification.identifier, identifier));
+
+        await db.insert(verification).values({
+            id: crypto.randomUUID(),
+            identifier,
+            value: token,
+            expiresAt,
+        });
+
+        const verificationUrl = `${origin}/api/verify-email?token=${token}&email=${encodeURIComponent(normalizedEmail)}`;
+
+        try {
+            await sendAdminVerificationEmail({
+                to: normalizedEmail,
+                name,
+                verificationUrl,
+            });
+            verificationEmailSent = true;
+        } catch (emailErr) {
+            verificationEmailError = emailErr instanceof Error ? emailErr.message : "Failed to send verification email";
+            console.error("[admin-signup] Verification email failed for new user", {
+                email: normalizedEmail,
+                error: verificationEmailError,
+            });
+        }
+
+        console.info("[admin-signup] New user created via Better Auth", { email });
+
         return NextResponse.json({
             success: true,
             message: "Account created! Please check your email to verify your account.",
+            verificationEmailSent,
+            verificationEmailError,
         });
     } catch (error) {
         console.error("Admin signup error:", error);

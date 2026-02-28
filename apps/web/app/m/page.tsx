@@ -1,13 +1,13 @@
-import Header from "@/app/(marketplace)/components/header";
-import Footer from "@/app/(marketplace)/components/footer";
+import Header from "@/features/marketplace/components/header";
+import Footer from "@/features/marketplace/components/footer";
 import { Button } from "@shopvendly/ui/components/button";
 import Link from "next/link";
 import { marketplaceService } from "@/features/marketplace/lib/marketplace-service";
 import type { MarketplaceStore } from "@/types/marketplace";
 import type { StoreWithCategory } from "@/features/marketplace/lib/marketplace-service";
-import { HeroSection } from "@/app/(marketplace)/components/home/hero-section";
-import { CollectionsRail } from "@/app/(marketplace)/components/home/collections-rail";
-import { StoreShelf } from "@/app/(marketplace)/components/home/store-shelf";
+import { HeroSection } from "@/features/marketplace/components/home/hero-section";
+import { CollectionsRail } from "@/features/marketplace/components/home/collections-rail";
+import { StoreShelf } from "@/features/marketplace/components/home/store-shelf";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";

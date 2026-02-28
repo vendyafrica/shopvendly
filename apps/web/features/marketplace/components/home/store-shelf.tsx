@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@shopvendly/ui/components/button";
 import type { MarketplaceStore } from "@/types/marketplace";
-import { StoreCard } from "@/app/(marketplace)/components/store-card";
+import { StoreCard } from "@/features/marketplace/components/store-card";
 import { Bricolage_Grotesque } from "next/font/google";
 
 const bricolageGrotesque = Bricolage_Grotesque({

@@ -33,7 +33,7 @@ export const SellerWelcomeEmail = ({
         {/* Header */}
         <Section style={header}>
           <Img
-            src="https://vendlyafrica.store/vendly.png"
+            src="https://shopvendly.store/vendly.png"
             width="28"
             height="28"
             alt="Vendly"

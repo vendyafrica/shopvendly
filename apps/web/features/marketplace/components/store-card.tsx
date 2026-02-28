@@ -7,9 +7,9 @@ import { getStorefrontUrl } from "@/utils/misc";
 import {
   Carousel,
   CarouselContent,
-  CarouselIndicator,
   CarouselItem,
-  CarouselNavigation,
+  CarouselPrevious,
+  CarouselNext,
 } from "@shopvendly/ui/components/carousel";
 import { StoreAvatarSimple } from "@/components/store-avatar";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -77,12 +77,12 @@ export function StoreCard({ store }: StoreCardProps) {
             </CarouselContent>
           </div>
 
-          <div onClick={(e) => e.stopPropagation()}>
-            <CarouselNavigation
-              className="opacity-0 transition-opacity duration-200 group-hover:opacity-100 cursor-pointer"
-              classNameButton="bg-background/90 shadow-sm pointer-events-auto cursor-pointer"
-            />
-            <CarouselIndicator className="pb-3 cursor-pointer" />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          >
+            <CarouselPrevious className="pointer-events-auto" />
+            <CarouselNext className="pointer-events-auto" />
           </div>
         </Carousel>
       </div>

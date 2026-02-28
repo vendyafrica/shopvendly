@@ -119,25 +119,8 @@ export const auth = betterAuth({
             };
           }
         },
-        after: async (user, request) => {
-          if (request?.headers?.get("referer")?.includes("localhost:4000") ||
-            request?.headers?.get("host")?.includes("admin")) {
-            try {
-              const existingRole = await db.query.superAdmins.findFirst({
-                where: (sa, { eq }) => eq(sa.userId, user.id),
-                columns: { id: true },
-              });
-
-              if (!existingRole) {
-                await db.insert(schema.superAdmins).values({
-                  userId: user.id,
-                });
-                console.log(`✅ Assigned super_admin role to ${user.email} (OAuth sign-in)`);
-              }
-            } catch (error) {
-              console.error("Failed to assign super_admin role:", error);
-            }
-          }
+        after: async (user) => {
+          console.log(`User created: ${user.email}`);
         },
       },
     },
