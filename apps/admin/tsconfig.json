@@ -49,13 +49,17 @@
         "../../packages/transactional/dist/index.js"
       ],
       "@/*": [
-        "./src/*"
+        "./src/*",
+        "./app/*",
+        "./lib/*",
+        "./features/*"
       ]
     }
   },
   "include": [
     "src",
     "app",
+    "lib",
     "../../packages/ui/src",
     "../../packages/db/src",
     "../../packages/auth/dist",

@@ -10,10 +10,10 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@shopvendly/ui/components/dropdown-menu";
-import { signOut } from "@/lib/auth";
+import { signOut } from "../../../lib/auth";
 import { useRouter } from "next/navigation";
 
-export function dashboard-header({
+export function DashboardHeader({
     title = "Dashboard",
     user
 }: {
@@ -26,7 +26,7 @@ export function dashboard-header({
 }) {
     const router = useRouter();
     const fullName = user?.name || "Admin";
-    const firstName = fullName.split(" ")[0];
+    const firstName = fullName.split(" ")[0] || fullName || "Admin";
     const avatarUrl = user?.image || "";
 
     const handleLogout = async () => {

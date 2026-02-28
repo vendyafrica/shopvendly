@@ -9,6 +9,33 @@ export async function getSession() {
     });
 }
 
+ async function resolveSuperAdminRole(userId: string) {
+    let userRole = await db.query.superAdmins.findFirst({
+        where: eq(superAdmins.userId, userId),
+    });
+
+    if (userRole) {
+        return userRole;
+    }
+
+    const existingSuperAdmin = await db.query.superAdmins.findFirst({
+        columns: { id: true },
+    });
+
+    if (!existingSuperAdmin) {
+        await db.insert(superAdmins).values({
+            userId,
+            role: "super_admin",
+        });
+
+        userRole = await db.query.superAdmins.findFirst({
+            where: eq(superAdmins.userId, userId),
+        });
+    }
+
+    return userRole;
+}
+
 /**
  * Enforces platform role check for Server Components / Actions.
  * Redirects if unauthorized.
@@ -19,9 +46,7 @@ export async function requireSuperAdmin(allowedRoles: string[]) {
         redirect("/login");
     }
 
-    const userRole = await db.query.superAdmins.findFirst({
-        where: eq(superAdmins.userId, session.user.id),
-    });
+    const userRole = await resolveSuperAdminRole(session.user.id);
 
     if (!userRole || !allowedRoles.includes(userRole.role)) {
         redirect("/unauthorized");
@@ -40,9 +65,7 @@ export async function checkSuperAdminApi(allowedRoles: string[]) {
         return { error: "Unauthorized", status: 401 };
     }
 
-    const userRole = await db.query.superAdmins.findFirst({
-        where: eq(superAdmins.userId, session.user.id),
-    });
+    const userRole = await resolveSuperAdminRole(session.user.id);
 
     if (!userRole || !allowedRoles.includes(userRole.role)) {
         return { error: "Forbidden", status: 403 };

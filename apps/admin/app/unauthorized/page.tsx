@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@shopvendly/ui/components/button";
-import { signOut } from "@/lib/auth";
+import { signOut } from "../../lib/auth";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -37,7 +37,7 @@ export default function UnauthorizedPage() {
                         This area is restricted to super administrators only.
                     </p>
                     <p className="mt-2 text-xs text-muted-foreground">
-                        If you just signed up, please contact an administrator to grant you access.
+                        Ask an existing super admin to send you an invite.
                     </p>
                 </div>
 

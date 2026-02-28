@@ -8,12 +8,11 @@ import {
   FieldSeparator,
 } from "@shopvendly/ui/components/field";
 import { Input } from "@shopvendly/ui/components/input";
-import { signIn, signInWithGoogle } from "../../../lib/auth";
-import { useRouter, useSearchParams } from "next/navigation";
+import { signInWithGoogle } from "../../../lib/auth";
+import { useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -23,62 +22,33 @@ export function LoginForm() {
   const urlError = searchParams.get("error");
 
   const successMessage =
-    message === "verify-email"
-      ? "Account created! Please check your email to verify your account."
-      : message === "email-verified"
-        ? "Email verified successfully! You can now sign in."
-        : null;
+    message === "invite-accepted" ? "Invite accepted successfully." : null;
 
   const urlErrorMessage =
-    urlError === "invalid-verification-link"
-      ? "Invalid verification link. Please try signing up again."
-      : urlError === "invalid-or-expired-token"
-        ? "Verification link is invalid or has expired. Please request a new one."
-        : urlError === "token-expired"
-          ? "Verification link has expired. Please request a new one."
-          : urlError === "user-not-found"
-            ? "User not found. Please sign up first."
-            : urlError === "verification-failed"
-              ? "Email verification failed. Please try again."
-              : null;
+    urlError === "invalid-or-expired-invite"
+      ? "Invite link is invalid or has expired. Ask a super admin for a new invite."
+      : urlError === "invite-expired"
+        ? "Invite link has expired. Ask a super admin for a new invite."
+        : urlError === "invite-accept-failed"
+          ? "Could not accept invite. Please try again."
+          : urlError === "invite-login-required"
+            ? "Sign in with the invited Google account to continue accepting this invite."
+          : urlError === "invalid-invite-link"
+            ? "Invalid invite link."
+            : null;
 
   const handleEmailSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
-    startTransition(async () => {
-      const formData = new FormData(e.currentTarget);
-      const email = formData.get("email") as string;
-      const password = formData.get("password") as string;
-
+    startTransition(() => {
       try {
-        const { error } = await signIn(email, password);
-
-        if (error) {
-          // Handle different error types from Better Auth
-          let errorMessage = "Invalid email or password. Please try again.";
-
-          if (error.status === 401) {
-            // User not found or invalid credentials
-            errorMessage = "Account not found. Please sign up first or check your credentials.";
-          } else if (error.status === 403 || error.message?.toLowerCase().includes("verify")) {
-            errorMessage = "Please verify your email address first.";
-          } else if (error.message) {
-            errorMessage = error.message;
-          }
-
-          setError(errorMessage);
-          return;
-        }
-
-        // Success → session cookie is set, redirect to the super-admin dashboard
-        router.push(redirectTo || "/");
-        router.refresh();
+        signInWithGoogle(redirectTo || "/tenants");
       } catch (err: unknown) {
         setError(
           err instanceof Error
             ? err.message
-            : "An unexpected error occurred. Please try again."
+            : "Failed to start Google sign-in. Please try again.",
         );
       }
     });
@@ -90,13 +60,13 @@ export function LoginForm() {
     startTransition(() => {
       try {
         // This usually triggers a redirect to Google → promise may not resolve here
-        signInWithGoogle(redirectTo || "/");
+        signInWithGoogle(redirectTo || "/tenants");
         // No need to await or handle return value in most cases
       } catch (err: unknown) {
         setError(
           err instanceof Error
             ? err.message
-            : "Failed to start Google sign-in. Please try again."
+            : "Failed to start Google sign-in. Please try again.",
         );
       }
     });
@@ -149,33 +119,8 @@ export function LoginForm() {
             </Field>
 
             <Field>
-              <div className="flex items-center justify-between">
-                <FieldLabel htmlFor="password">Password</FieldLabel>
-                <a
-                  href="/forgot-password"
-                  className={`text-sm text-primary hover:underline underline-offset-4 ${isPending ? "pointer-events-none opacity-60" : ""}`}
-                >
-                  Forgot password?
-                </a>
-              </div>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                autoComplete="current-password"
-                disabled={isPending}
-                className="focus-visible:border-primary/60 focus-visible:ring-primary/20"
-              />
-            </Field>
-
-            <Field>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isPending}
-              >
-                {isPending ? "Signing in..." : "Sign in"}
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? "Continuing..." : "Continue with Google"}
               </Button>
             </Field>
 
@@ -219,10 +164,7 @@ export function LoginForm() {
         </form>
 
         <div className="mt-4 text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <a href="/sign-up" className="text-primary hover:underline underline-offset-4">
-            Sign up
-          </a>
+          Access is invite-only after the first super admin.
         </div>
       </div>
     </div>

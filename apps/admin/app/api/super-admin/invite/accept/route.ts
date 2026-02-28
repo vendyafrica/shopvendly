@@ -37,7 +37,7 @@ export async function GET(req: Request) {
 
         if (!user) {
             const redirect = encodeURIComponent(acceptUrl.pathname + acceptUrl.search);
-            return NextResponse.redirect(new URL(`/sign-up?redirect=${redirect}&email=${encodeURIComponent(email)}`, req.url));
+            return NextResponse.redirect(new URL(`/login?error=invite-login-required&redirect=${redirect}`, req.url));
         }
 
         const session = await auth.api.getSession({
@@ -66,7 +66,7 @@ export async function GET(req: Request) {
 
         await db.delete(verification).where(eq(verification.id, inviteRecord.id));
 
-        return NextResponse.redirect(new URL("/?message=invite-accepted", req.url));
+        return NextResponse.redirect(new URL("/tenants?message=invite-accepted", req.url));
     } catch (error) {
         console.error("Accept super admin invite error:", error);
         return NextResponse.redirect(new URL("/login?error=invite-accept-failed", req.url));

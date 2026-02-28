@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { orderService } from "../services/order-service";
+import { orderService } from "../../orders/services/order-service";
 import { notifyCustomerOrderReceived, notifyCustomerPreparing, notifySellerNewOrder } from "../../messaging/services/notifications";
 import { z } from "zod";
 

@@ -3,7 +3,6 @@ import { genericOAuth, oneTap } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@shopvendly/db/db";
 import * as schema from "@shopvendly/db/schema";
-import { sendAdminVerificationEmail } from "@shopvendly/transactional";
 import { getInstagramToken, getInstagramUserInfo } from "./instagram";
 
 const baseURL =
@@ -66,43 +65,8 @@ export const auth = betterAuth({
   }),
 
   emailAndPassword: {
-    enabled: true,
+    enabled: false,
     requireEmailVerification: false,
-  },
-
-  emailVerification: {
-    sendOnSignUp: false,
-    autoSignInAfterVerification: true,
-    async sendVerificationEmail({ user, url }) {
-      await sendAdminVerificationEmail({
-        to: user.email,
-        name: user.name,
-        verificationUrl: url,
-      });
-    },
-    async afterEmailVerification(user, request) {
-      console.log(`${user.email} has been successfully verified!`);
-
-      // For admin app, assign super_admin role after verification
-      if (request?.headers?.get("referer")?.includes("localhost:4000") ||
-        request?.headers?.get("host")?.includes("admin")) {
-        try {
-          const existingRole = await db.query.superAdmins.findFirst({
-            where: (sa, { eq }) => eq(sa.userId, user.id),
-            columns: { id: true },
-          });
-
-          if (!existingRole) {
-            await db.insert(schema.superAdmins).values({
-              userId: user.id,
-            });
-            console.log(`Assigned super_admin role to ${user.email}`);
-          }
-        } catch (error) {
-          console.error("Failed to assign super_admin role:", error);
-        }
-      }
-    },
   },
 
   databaseHooks: {
@@ -119,8 +83,26 @@ export const auth = betterAuth({
             };
           }
         },
-        after: async (user) => {
-          console.log(`User created: ${user.email}`);
+        after: async (user, request) => {
+          const referer = request?.headers?.get("referer") ?? "";
+          const host = request?.headers?.get("host") ?? "";
+          const isAdminOrigin = referer.includes("localhost:4000") || host.includes("admin");
+
+          if (!isAdminOrigin) {
+            return;
+          }
+
+          const existingSuperAdmin = await db.query.superAdmins.findFirst({
+            columns: { id: true },
+          });
+
+          if (!existingSuperAdmin) {
+            await db.insert(schema.superAdmins).values({
+              userId: user.id,
+              role: "super_admin",
+            });
+            console.log(`Assigned bootstrap super_admin role to ${user.email}`);
+          }
         },
       },
     },

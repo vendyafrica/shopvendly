@@ -1,11 +1,11 @@
-import { AppSidebar } from "@/features/core/components/app-sidebar"
-import { AdminMobileDock } from "@/features/core/components/admin-mobile-dock"
+import { AppSidebar } from "../../features/core/components/app-sidebar"
+import { AdminMobileDock } from "../../features/core/components/admin-mobile-dock"
 import {
   SidebarInset,
   SidebarProvider,
 } from "@shopvendly/ui/components/sidebar"
-import { requireSuperAdmin } from "@/lib/auth-guard"
-import { dashboard-header } from "./components/dashboard-header"
+import { requireSuperAdmin } from "../../lib/auth-guard"
+import { DashboardHeader } from "../../features/super-admin/components/dashboard-header"
 
 export default async function DashboardLayout({
   children,
@@ -24,7 +24,7 @@ export default async function DashboardLayout({
     >
       <AppSidebar />
       <SidebarInset>
-        <dashboard-header user={user} />
+        <DashboardHeader user={user} />
         <div className="flex flex-1 flex-col gap-4 p-4 pt-4 pb-24 md:pb-4">
           {children}
         </div>
