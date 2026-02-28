@@ -35,7 +35,7 @@ type OutForDelivery = {
   riderDetails?: string | null;
 };
 
-type BuildTemplateArgs<T> = T & { to: string };
+type BuildTemplateArgs<T> = T;
 
 function bodyText(text: string): TemplateMessageInput {
   return {

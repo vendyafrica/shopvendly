@@ -12,16 +12,16 @@
     "moduleResolution": "Bundler",
     "paths": {
       "@shopvendly/db": [
-        "../../packages/db/dist/index"
+        "../../packages/db/src/index.ts"
       ],
       "@shopvendly/db/db": [
-        "../../packages/db/dist/db"
+        "../../packages/db/src/db.ts"
       ],
       "@shopvendly/db/schema": [
-        "../../packages/db/dist/schema/index.js"
+        "../../packages/db/src/schema/index.ts"
       ],
       "@shopvendly/transactional": [
-        "../../packages/transactional/dist/index.js"
+        "../../packages/transactional/src/index.ts"
       ]
     }
   },

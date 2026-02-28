@@ -8,7 +8,7 @@ import { AuthenticatedRequest, TenantRole, PlatformRole } from "../types/auth";
  */
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    const session = await auth.api.getSession({ headers: req.headers });
+    const session = await auth.api.getSession({ headers: req.headers as unknown as Headers });
 
     if (!session?.user) {
       return res.status(401).json({
@@ -37,7 +37,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
  */
 export async function optionalAuth(req: Request, _res: Response, next: NextFunction) {
   try {
-    const session = await auth.api.getSession({ headers: req.headers });
+    const session = await auth.api.getSession({ headers: req.headers as unknown as Headers });
 
     if (session?.user) {
       (req as AuthenticatedRequest).auth = {
