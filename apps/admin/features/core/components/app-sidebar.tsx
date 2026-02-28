@@ -162,10 +162,16 @@ function getTenantFromParams(params: ReturnType<typeof useParams>) {
   return Array.isArray(raw) ? raw[0] : raw;
 }
 
+type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
+  basePath?: string;
+  variant?: "tenant" | "super";
+};
+
 export function AppSidebar({
   basePath: basePathProp,
+  variant,
   ...props
-}: React.ComponentProps<typeof Sidebar> & { basePath?: string }) {
+}: AppSidebarProps) {
   const pathname = usePathname();
   const params = useParams();
   const { state, toggleSidebar } = useSidebar();
@@ -184,8 +190,10 @@ export function AppSidebar({
   // Ensure basePath is available for other uses
   const basePath = normalizePath(basePathProp ?? (tenant ? `/${tenant}` : ""));
 
-  // Select items based on whether we are in a tenant context
-  const items = tenant || basePathProp ? tenantAdminItems : superAdminItems;
+  const resolvedVariant = variant ?? (tenant || basePathProp ? "tenant" : "super");
+
+  // Select items based on resolved variant
+  const items = resolvedVariant === "tenant" ? tenantAdminItems : superAdminItems;
 
   return (
     <Sidebar variant="inset" collapsible="icon" {...props} className="cursor-pointer">
