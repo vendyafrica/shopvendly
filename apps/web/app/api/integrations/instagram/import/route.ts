@@ -165,17 +165,29 @@ export async function POST(request: NextRequest) {
       [igAccount] = await db.insert(instagramAccounts).values(accountValues).returning();
     }
 
+    if (!igAccount) {
+      throw new Error("Failed to upsert Instagram account");
+    }
+
+    const accountId = igAccount.id;
+
     // 4. Create Sync Job
     const [job] = await db
       .insert(instagramSyncJobs)
       .values({
         tenantId: membership.tenantId,
-        accountId: igAccount.id,
+        accountId,
         status: "processing",
         mediaFetched: limitedMediaItems.length,
         startedAt: new Date(),
       })
       .returning();
+
+    if (!job) {
+      throw new Error("Failed to create sync job");
+    }
+
+    const jobId = job.id;
 
     // 5. Process Media (Inline for simplicity)
     let createdCount = 0;
@@ -204,6 +216,12 @@ export async function POST(request: NextRequest) {
           variants: [],
         })
         .returning();
+
+      if (!product) {
+        throw new Error("Failed to create product record");
+      }
+
+      const productId = product.id;
 
       createdCount++;
 
@@ -237,9 +255,13 @@ export async function POST(request: NextRequest) {
             })
             .returning();
 
+          if (!mediaObj) {
+            throw new Error("Failed to create media object");
+          }
+
           await db.insert(productMedia).values({
             tenantId: membership.tenantId,
-            productId: product.id,
+            productId,
             mediaId: mediaObj.id,
             isFeatured: idx === 1,
             sortOrder: idx - 1,
@@ -276,9 +298,13 @@ export async function POST(request: NextRequest) {
             })
             .returning();
 
+          if (!mediaObj) {
+            throw new Error("Failed to create media object");
+          }
+
           await db.insert(productMedia).values({
             tenantId: membership.tenantId,
-            productId: product.id,
+            productId,
             mediaId: mediaObj.id,
             isFeatured: true,
             sortOrder: 0,
@@ -290,7 +316,7 @@ export async function POST(request: NextRequest) {
         await db
           .update(products)
           .set({ variants: variantEntries, updatedAt: new Date() })
-          .where(eq(products.id, product.id));
+          .where(eq(products.id, productId));
       }
     }
 
@@ -302,11 +328,11 @@ export async function POST(request: NextRequest) {
         productsCreated: createdCount,
         completedAt: new Date()
       })
-      .where(eq(instagramSyncJobs.id, job.id));
+      .where(eq(instagramSyncJobs.id, jobId));
 
     return NextResponse.json({
       ok: true,
-      jobId: job.id,
+      jobId,
       message: `Imported ${createdCount} products successfully.`,
     });
   } catch (error: unknown) {

@@ -33,16 +33,17 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
   const params = useParams();
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
-  const [forceVideo, setForceVideo] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const paramsObject = typeof params === "object" ? (params as Record<string, string | undefined>) : {};
   const derivedStoreSlug = storeSlug ?? paramsObject.handle ?? paramsObject.s;
   const currentStoreSlug = derivedStoreSlug ?? "";
   const aspectClass = aspectVariants[index % aspectVariants.length];
 
-  const imageUrl = image || FALLBACK_PRODUCT_IMAGE;
+  const originalImageUrl = image || FALLBACK_PRODUCT_IMAGE;
+  const currentImageUrl = imageError ? FALLBACK_PRODUCT_IMAGE : originalImageUrl;
 
-  const isVideo = forceVideo || isLikelyVideoMedia({ url: imageUrl, contentType });
+  const isVideo = !imageError && isLikelyVideoMedia({ url: currentImageUrl, contentType });
 
   const prefetchedHref = derivedStoreSlug ? getStorefrontUrl(derivedStoreSlug, `/${slug}`) : `/${slug}`;
 
@@ -73,24 +74,25 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
       <div className={`relative overflow-hidden rounded-lg ${aspectClass} bg-muted`}>
         {isVideo ? (
           <video
-            src={imageUrl}
+            src={currentImageUrl}
             poster={FALLBACK_PRODUCT_IMAGE}
             className="h-full w-full object-cover transition-all duration-700 ease-out group-hover:scale-[1.03]"
             muted
             playsInline
             loop
             autoPlay
+            onError={() => setImageError(true)}
           />
-        ) : imageUrl ? (
+        ) : currentImageUrl ? (
           <Image
-            src={imageUrl}
+            src={currentImageUrl}
             alt={title}
             fill
             priority={index < 4}
             sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
             className="object-cover transition-all duration-700 ease-out group-hover:scale-[1.03]"
-            unoptimized={imageUrl.includes(".ufs.sh") || imageUrl.includes("utfs.io")}
-            onError={() => setForceVideo(true)}
+            unoptimized={currentImageUrl.includes(".ufs.sh") || currentImageUrl.includes("utfs.io") || currentImageUrl.includes(".cdninstagram.com") || currentImageUrl.includes(".fbcdn.net")}
+            onError={() => !imageError && setImageError(true)}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
