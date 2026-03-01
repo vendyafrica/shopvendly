@@ -4,6 +4,7 @@ import { Checkbox } from "@shopvendly/ui/components/checkbox";
 import { cn } from "@shopvendly/ui/lib/utils";
 import { useOnboarding } from "../context/onboarding-context";
 import { motion, type Variants } from "framer-motion";
+import { useEffect, useState } from "react";
 
 export type Category = {
   id: string;
@@ -20,48 +21,60 @@ const STEP_LABELS: Record<import("../context/onboarding-context").OnboardingStep
 
 export function StepIndicator() {
   const { currentStep, isHydrated } = useOnboarding();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const steps: import("../context/onboarding-context").OnboardingStep[] = ["step0", "step1", "step2", "step3", "complete"];
 
   const currentIndex = steps.indexOf(currentStep);
-
-  if (!isHydrated) {
-    return (
-      <div className="w-full overflow-x-auto md:overflow-visible">
-        <div className="flex items-center gap-3 text-[11px] md:text-xs font-medium text-muted-foreground min-w-max pr-2">
-          {steps.map((step, idx) => (
-            <div key={step} className="flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full border bg-muted border-border" />
-              <span>{STEP_LABELS[step]}</span>
-              {idx < steps.length - 1 && <div className="h-px w-6 bg-border" />}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const canAnimate = mounted && isHydrated;
+  const showProgress = canAnimate && currentIndex >= 0;
 
   return (
     <div className="w-full overflow-x-auto md:overflow-visible">
       <div className="flex items-center gap-3 text-[11px] md:text-xs font-medium text-muted-foreground min-w-max pr-2">
         {steps.map((step, idx) => {
-          const isActive = idx === currentIndex;
-          const isComplete = idx < currentIndex;
+          const isActive = showProgress && idx === currentIndex;
+          const isComplete = showProgress && idx < currentIndex;
           return (
             <div key={step} className="flex items-center gap-2">
               <motion.div
                 initial={false}
                 animate={{
-                  scale: isActive ? 1.2 : 1,
-                  backgroundColor: isActive || isComplete ? "var(--primary)" : "transparent"
+                  scale: canAnimate && isActive ? 1.2 : 1,
+                  backgroundColor:
+                    canAnimate && (isActive || isComplete)
+                      ? "var(--primary)"
+                      : canAnimate
+                        ? "transparent"
+                        : "var(--muted)"
                 }}
+
                 className={cn(
                   "h-2.5 w-2.5 rounded-full border",
                   isActive || isComplete ? "border-primary" : "border-border"
                 )}
               />
-              <span className={cn(isActive ? "text-foreground font-semibold" : "")}>{STEP_LABELS[step]}</span>
-              {idx < steps.length - 1 && <div className="h-px w-6 bg-border/50" />}
+              <span
+                className={cn(
+                  isActive && canAnimate ? "text-foreground font-semibold" : "",
+                  !canAnimate && "text-muted-foreground"
+                )}
+              >
+                {STEP_LABELS[step]}
+              </span>
+              {idx < steps.length - 1 && (
+                <div
+                  className={cn(
+                    "h-px w-6",
+                    canAnimate ? "bg-border/50" : "bg-border"
+                  )}
+                />
+              )}
+
             </div>
           );
         })}

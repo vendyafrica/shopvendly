@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@shopvendly/ui/components/button";
-import { GoogleIcon } from "@shopvendly/ui/components/svgs/google";
+import { Google } from "@shopvendly/ui/components/svgs/google";
 import { signInWithGoogle } from "@shopvendly/auth/react";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
@@ -114,7 +114,7 @@ export function Step3Categories() {
                   "Continue with Google…"
                 ) : (
                   <span className="flex items-center gap-2">
-                    <GoogleIcon />
+                    <Google />
                     Continue with Google
                   </span>
                 )}

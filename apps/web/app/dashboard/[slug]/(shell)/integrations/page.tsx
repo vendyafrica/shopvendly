@@ -226,7 +226,7 @@ export default function IntegrationsPage() {
       {/* Instagram Card */}
       <div className="rounded-xl border border-border/70 overflow-hidden shadow-sm">
         {/* Hero Banner */}
-        <div className="bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 px-6 py-5 flex items-center justify-between">
+        <div className="bg-linear-to-r from-purple-600 via-pink-500 to-orange-400 px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="mr-3 h-10 w-10 rounded-full bg-pink-100 p-2 text-pink-500">
               <HugeiconsIcon icon={InstagramIcon} className="h-full w-full" />
@@ -392,7 +392,7 @@ export default function IntegrationsPage() {
 
       {/* TikTok Card */}
       <div className="rounded-xl border border-border/70 overflow-hidden shadow-sm">
-        <div className="bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-700 px-6 py-5 flex items-center justify-between">
+        <div className="bg-linear-to-r from-neutral-900 via-neutral-800 to-neutral-700 px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <HugeiconsIcon icon={MusicNote02Icon} className="h-5 w-5 text-white" />

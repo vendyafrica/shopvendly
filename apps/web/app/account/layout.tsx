@@ -7,10 +7,7 @@ import { auth } from "@shopvendly/auth";
 import { OnboardingProvider } from "./context/onboarding-context";
 import { AppSessionProvider } from "@/contexts/app-session-context";
 import { StepIndicator } from "./components/category-selector";
-
-import { Anton } from "next/font/google";
-
-const anton = Anton({ weight: "400", subsets: ["latin"], display: "swap" });
+import Image from "next/image";
 
 export default async function OnboardingLayout({ children }: { children: ReactNode }) {
   const headerList = await headers();
@@ -35,21 +32,10 @@ export default async function OnboardingLayout({ children }: { children: ReactNo
 
 function OnboardingShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-dvh bg-white text-black flex flex-col overflow-hidden selection:bg-[#5B4BFF] selection:text-black">
-      {/* Header — fixed height */}
-      <header className="relative z-10 flex flex-col gap-3 items-start md:flex-row md:items-center md:justify-between px-4 py-3 md:px-8 border-b border-black/10 bg-transparent shrink-0">
+    <div className="min-h-dvh bg-white pt-6 text-black flex flex-col overflow-hidden selection:bg-primary selection:text-white">
+      <header className="relative z-10 flex flex-col gap-3 items-start md:flex-row md:items-center md:justify-between px-4 py-3 md:px-8 bg-transparent shrink-0">
         <Link href="/" className="flex items-center gap-1 group shrink-0">
-          <span
-            className={`${anton.className} text-[20px] leading-none text-black`}
-          >
-            shop
-          </span>
-          <span
-            className="text-[18px] font-bold leading-none text-[#5B4BFF] -ml-[2px]"
-            style={{ fontFamily: "var(--font-sora), Sora, sans-serif" }}
-          >
-            Vendly
-          </span>
+        <Image src="/vendly.png" alt="ShopVendly" width={24} height={24} />
         </Link>
         <div className="w-full md:w-auto">
           <StepIndicator />
