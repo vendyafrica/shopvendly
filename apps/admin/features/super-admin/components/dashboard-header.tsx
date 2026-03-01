@@ -13,16 +13,16 @@ import {
 import { signOut } from "../../../lib/auth";
 import { useRouter } from "next/navigation";
 
-export function adminHeader({
+export function AdminHeader({
     title = "admin",
-    user
+    user,
 }: {
     title?: string;
     user?: {
         name?: string | null;
         image?: string | null;
         email?: string | null;
-    }
+    };
 }) {
     const router = useRouter();
     const fullName = user?.name || "Admin";

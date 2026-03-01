@@ -28,7 +28,7 @@ export default function UnauthorizedPage() {
                 <div className="space-y-2">
                     <h1 className="text-4xl font-bold tracking-tighter">Access Denied</h1>
                     <p className="text-muted-foreground">
-                        You don't have permission to access this page.
+                        You don&apos;t have permission to access this page.
                     </p>
                 </div>
 

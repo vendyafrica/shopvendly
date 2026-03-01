@@ -3,7 +3,7 @@
 import * as React from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  adminCircleIcon,
+  NineCircleIcon,
   ShoppingBag01Icon,
   ShoppingCart01Icon,
   Analytics02Icon,
@@ -49,7 +49,7 @@ type SidebarNavSubItem = {
 type SidebarNavItem = {
   title: string;
   url: string;
-  icon: typeof adminCircleIcon;
+  icon: typeof NineCircleIcon;
   items?: SidebarNavSubItem[];
 };
 
@@ -57,7 +57,7 @@ const tenantAdminItems: SidebarNavItem[] = [
   {
     title: "admin",
     url: "/",
-    icon: adminCircleIcon,
+    icon: NineCircleIcon,
   },
   {
     title: "Products",
@@ -95,7 +95,7 @@ const superAdminItems: SidebarNavItem[] = [
   {
     title: "admin",
     url: "/",
-    icon: adminCircleIcon,
+    icon: NineCircleIcon,
   },
   {
     title: "Tenants",

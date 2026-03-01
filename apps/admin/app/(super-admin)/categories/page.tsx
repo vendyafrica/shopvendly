@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import type { Category } from "./components/category-list";
 import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
@@ -17,7 +18,7 @@ import { Input } from "@shopvendly/ui/components/input";
 import { Label } from "@shopvendly/ui/components/label";
 
 export default function CategoriesPage() {
-    const [categories, setCategories] = React.useState<any[]>([]);
+    const [categories, setCategories] = React.useState<Category[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [isCreateOpen, setIsCreateOpen] = React.useState(false);
     const [parentId, setParentId] = React.useState<string | null>(null);
@@ -32,7 +33,9 @@ export default function CategoriesPage() {
             const res = await fetch("/api/categories");
             const data = await res.json();
             if (Array.isArray(data)) {
-                setCategories(data);
+                setCategories(data as Category[]);
+            } else {
+                setCategories([]);
             }
         } catch (error) {
             console.error(error);

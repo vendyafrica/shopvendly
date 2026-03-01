@@ -8,10 +8,10 @@ interface TokenExchangeParams {
 }
 
 interface TokenResponse {
-    accessToken: string;
+    accessToken?: string;
     refreshToken?: string;
     accessTokenExpiresAt?: Date;
-    raw: any;
+    raw?: Record<string, unknown>;
 }
 
 interface UserProfile {
@@ -51,23 +51,37 @@ export async function getInstagramToken({
     const responseText = await response.text();
     console.log("[Instagram OAuth] Token exchange status:", response.status);
 
-    let data: any;
+    let data: unknown;
+
     try {
-        data = JSON.parse(responseText);
-    } catch (e) {
+        data = JSON.parse(responseText) as Record<string, unknown>;
+    } catch {
         console.error("[Instagram OAuth] Token exchange non-JSON response:", responseText);
         throw new Error("Instagram token exchange returned a non-JSON response");
     }
 
-    const tokenPayload = Array.isArray(data?.data) ? data.data[0] : data;
+    type TokenPayload = {
+        data?: unknown;
+        error_type?: unknown;
+        error_message?: string;
+        error_description?: string;
+        access_token?: string;
+        user_id?: string;
+        username?: string;
+    } & Record<string, unknown>;
 
-    if (!response.ok || tokenPayload?.error_type || tokenPayload?.error_message || data?.error_type || data?.error_message) {
+    const tokenPayload = data as TokenPayload;
+    const tokenData = Array.isArray(tokenPayload.data) ? (tokenPayload.data[0] as TokenPayload) : tokenPayload;
+
+    if (
+        !response.ok ||
+        tokenPayload?.error_type ||
+        tokenPayload?.error_message
+    ) {
         console.error("[Instagram OAuth] Token exchange error:", data);
         throw new Error(
             tokenPayload?.error_message ||
                 tokenPayload?.error_description ||
-                data?.error_message ||
-                data?.error_description ||
                 "Failed to exchange code for token"
         );
     }
@@ -76,37 +90,41 @@ export async function getInstagramToken({
     console.log("[Instagram OAuth] Exchanging for long-lived token...");
 
     const longLivedResponse = await fetch(
-        `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${process.env.INSTAGRAM_CLIENT_SECRET}&access_token=${tokenPayload.access_token}`
+        `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${process.env.INSTAGRAM_CLIENT_SECRET}&access_token=${(tokenData as { access_token?: string })?.access_token}`
     );
 
     const longLivedText = await longLivedResponse.text();
-    const longLivedData = JSON.parse(longLivedText);
+    const longLivedData = JSON.parse(longLivedText) as {
+        access_token?: string;
+        expires_in?: number;
+        error?: unknown;
+    };
 
     if (longLivedData.error) {
         console.error("[Instagram OAuth] Long-lived token error:", longLivedData.error);
         // Fall back to short-lived token
         return {
-            accessToken: tokenPayload.access_token,
+            accessToken: (tokenData as { access_token?: string })?.access_token ?? "",
             refreshToken: undefined,
             accessTokenExpiresAt: undefined,
-            raw: tokenPayload,
+            raw: tokenData,
         };
     }
 
     return {
-        accessToken: longLivedData.access_token || tokenPayload.access_token,
+        accessToken: longLivedData.access_token || (tokenData as { access_token?: string })?.access_token || "",
         refreshToken: undefined,
         accessTokenExpiresAt: longLivedData.expires_in
             ? new Date(Date.now() + longLivedData.expires_in * 1000)
             : undefined,
-        raw: { ...tokenPayload, ...longLivedData },
+        raw: { ...tokenData, ...longLivedData },
     };
 }
 
 /**
  * Get Instagram user information
  */
-export async function getInstagramUserInfo(tokens: any): Promise<UserProfile | null> {
+export async function getInstagramUserInfo(tokens: TokenResponse): Promise<UserProfile | null> {
     const accessToken = tokens.accessToken;
 
     if (!accessToken) {
@@ -125,13 +143,14 @@ export async function getInstagramUserInfo(tokens: any): Promise<UserProfile | n
     const responseText = await response.text();
     console.log("[Instagram OAuth] User info status:", response.status);
 
-    const data = JSON.parse(responseText);
-    const userPayload = Array.isArray(data?.data) ? data.data[0] : data;
+    const data = JSON.parse(responseText) as { data?: unknown; error?: { message?: string }; user_id?: string; username?: string; id?: string };
+    const userPayload = Array.isArray(data?.data) ? (data.data[0] as { error?: { message?: string }; user_id?: string; username?: string; id?: string }) : data;
 
-    if (userPayload?.error || data?.error) {
-        const err = userPayload?.error || data?.error;
-        console.error("[Instagram OAuth] User info error:", err);
-        throw new Error(`Instagram API Error: ${err.message || "Unknown error"}`);
+    const apiError = userPayload?.error || data?.error;
+    if (apiError) {
+        const message = (apiError as { message?: string }).message ?? "Unknown error";
+        console.error("[Instagram OAuth] User info error:", apiError);
+        throw new Error(`Instagram API Error: ${message}`);
     }
 
     const finalId = userPayload.user_id || userPayload.id || userId;

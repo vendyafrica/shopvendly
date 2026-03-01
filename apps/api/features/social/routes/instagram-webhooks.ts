@@ -8,7 +8,21 @@ import { z } from "zod";
 import { and, db, eq, instagramAccounts, instagramSyncJobs, account, stores, products, mediaObjects, productMedia, tenantMemberships } from "@shopvendly/db";
 
 export const instagramWebhookRouter: ExpressRouter = Router();
-const utapi = new UTApi();
+
+let utapiClient: UTApi | null = null;
+
+function getUtapi(): UTApi | null {
+  if (utapiClient) return utapiClient;
+
+  try {
+    utapiClient = new UTApi();
+    return utapiClient;
+  } catch (err) {
+    console.warn("[InstagramWebhook] UploadThing not configured; continuing without media copy", err);
+    return null;
+  }
+}
+
 const syncBodySchema = z.object({
   storeId: z.string().uuid(),
   userId: z.string().min(1),
@@ -151,6 +165,11 @@ async function copyToUploadThing(params: {
   fallbackContentType: string;
 }) {
   try {
+    const utapi = getUtapi();
+    if (!utapi) {
+      return { url: params.sourceUrl, pathname: params.preferredBasename, contentType: params.fallbackContentType };
+    }
+
     const res = await fetch(params.sourceUrl);
     if (!res.ok) {
       throw new Error(`Fetch failed: ${res.status}`);

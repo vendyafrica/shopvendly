@@ -31,11 +31,10 @@ function formatCurrency(amount: number) {
   }).format(amount);
 }
 
-export default function adminPage() {
+export default function AdminPage() {
   const [data, setData] = useState<adminApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   console.log("data", data);
-  ///hey....
 
   useEffect(() => {
     fetch("/api/admin")

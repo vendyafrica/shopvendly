@@ -1,6 +1,4 @@
 "use client";
-
-import { useState } from "react";
 import {
     Accordion,
     AccordionContent,
@@ -22,7 +20,7 @@ import {
     DropdownMenuTrigger,
 } from "@shopvendly/ui/components/dropdown-menu";
 
-interface Category {
+export interface Category {
     id: string;
     name: string;
     slug: string;

@@ -5,7 +5,7 @@ import {
   SidebarProvider,
 } from "@shopvendly/ui/components/sidebar"
 import { requireSuperAdmin } from "../../lib/auth-guard"
-import { adminHeader } from "../../features/super-admin/components/admin-header"
+import { AdminHeader } from "../../features/super-admin/components/dashboard-header"
 
 export default async function adminLayout({
   children,
@@ -24,7 +24,7 @@ export default async function adminLayout({
     >
       <AppSidebar />
       <SidebarInset>
-        <adminHeader user={user} />
+        <AdminHeader user={user} />
         <div className="flex flex-1 flex-col gap-4 p-4 pt-4 pb-24 md:pb-4">
           {children}
         </div>
