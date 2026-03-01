@@ -1,5 +1,0 @@
-
-> @shopvendly/api@0.1.0 check-types
-> tsc --noEmit
-
-features/orders/modules/order-simulations-routes.ts(1,40): error TS2307: Cannot find module '../../routes/order-simulations' or its corresponding type declarations.
