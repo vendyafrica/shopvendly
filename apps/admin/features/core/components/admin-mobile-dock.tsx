@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  DashboardCircleIcon,
+  adminCircleIcon,
   UserMultiple02Icon,
   Store01Icon,
   GroupLayersIcon,
@@ -28,7 +28,7 @@ import {
 type DockItem = {
   label: string;
   href: string;
-  icon: typeof DashboardCircleIcon;
+  icon: typeof adminCircleIcon;
   exact?: boolean;
 };
 
@@ -56,7 +56,7 @@ export function AdminMobileDock() {
   if (!mounted) return null;
 
   const primary: DockItem[] = [
-    { label: "Home", href: "/", icon: DashboardCircleIcon, exact: true },
+    { label: "Home", href: "/", icon: adminCircleIcon, exact: true },
     { label: "Tenants", href: "/tenants", icon: UserMultiple02Icon },
     { label: "Stores", href: "/stores", icon: Store01Icon },
     { label: "Categories", href: "/categories", icon: GroupLayersIcon },

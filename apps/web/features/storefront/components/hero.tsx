@@ -57,8 +57,8 @@ export function Hero({ store }: HeroProps) {
     const mediaUrl = heroMedia[0] || FALLBACK_HERO_MEDIA;
     const isVideo = typeof mediaUrl === "string" && isVideoUrl(mediaUrl);
     const sellerLoginHref = store.slug
-        ? getRootUrl(`/dashboard/${store.slug}/login`)
-        : getRootUrl("/dashboard/login");
+        ? getRootUrl(`/admin/${store.slug}/login`)
+        : getRootUrl("/admin/login");
 
     if (typeof window !== "undefined") {
         console.info("[Hero] media selection", { mediaUrl, heroMediaCount: heroMedia.length, isVideo });

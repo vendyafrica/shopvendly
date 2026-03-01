@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/compone
 
 type RevenueSeriesPoint = { date: string; total: number };
 type TopStoresByOrdersRow = { storeId: string | null; storeName: string | null; orders: number };
-type DashboardApiResponse = {
+type adminApiResponse = {
   tenants: { total: number; new7d: number; new30d: number };
   stores: { total: number; active: number; inactive: number };
   marketplace: { gmv: number; totalOrders: number };
@@ -31,14 +31,14 @@ function formatCurrency(amount: number) {
   }).format(amount);
 }
 
-export default function DashboardPage() {
-  const [data, setData] = useState<DashboardApiResponse | null>(null);
+export default function adminPage() {
+  const [data, setData] = useState<adminApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   console.log("data", data);
   ///hey....
 
   useEffect(() => {
-    fetch("/api/dashboard")
+    fetch("/api/admin")
       .then((res) => res.json())
       .then((data) => {
         setData(data);
@@ -53,7 +53,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <div className="text-sm text-muted-foreground">Loading dashboard...</div>
+        <div className="text-sm text-muted-foreground">Loading admin...</div>
       </div>
     );
   }
@@ -61,7 +61,7 @@ export default function DashboardPage() {
   if (!data) {
     return (
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <div className="text-sm text-destructive">Failed to load dashboard data.</div>
+        <div className="text-sm text-destructive">Failed to load admin data.</div>
       </div>
     );
   }
@@ -99,7 +99,7 @@ export default function DashboardPage() {
     <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-2xl font-bold tracking-tight">admin</h1>
         <p className="text-sm text-muted-foreground">
           Platform overview and key metrics
         </p>

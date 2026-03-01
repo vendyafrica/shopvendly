@@ -266,7 +266,7 @@ export const productService = {
         const { storeId, source, page, limit, search } = filters;
         const offset = (page - 1) * limit;
 
-        // Removed caching to ensure admin dashboard always shows fresh data
+        // Removed caching to ensure admin admin always shows fresh data
         const conditions = [
             eq(products.tenantId, tenantId),
             isNull(products.deletedAt),

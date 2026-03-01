@@ -31,15 +31,15 @@ export const AdminVerificationEmail: React.FC<Readonly<AdminVerificationEmailPro
                 </Text>
                 <Text style={text}>
                     You've been granted super admin access to the Vendly platform.
-                    Please verify your email address to activate your account and access the admin dashboard.
+                    Please verify your email address to activate your account and access the admin admin.
                 </Text>
                 <Section style={buttonContainer}>
                     <Button href={url} style={button}>
-                        Verify Email & Access Dashboard
+                        Verify Email & Access admin
                     </Button>
                 </Section>
                 <Text style={footerText}>
-                    After verification, you'll be automatically signed in and redirected to the admin dashboard.
+                    After verification, you'll be automatically signed in and redirected to the admin admin.
                 </Text>
                 <Text style={footerText}>
                     If you didn't request admin access, please ignore this email.

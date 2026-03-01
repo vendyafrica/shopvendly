@@ -72,7 +72,7 @@ export function proxy(req: NextRequest) {
         "images",
         "fonts",
         "onboarding",
-        "dashboard",
+        "admin",
       ]);
       if (!knownRoutes.has(potentialSlug) && !potentialSlug.startsWith("_")) {
         return NextResponse.next();

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  DashboardCircleIcon,
+  adminCircleIcon,
   ShoppingBag01Icon,
   ShoppingCart01Icon,
   Analytics02Icon,
@@ -49,15 +49,15 @@ type SidebarNavSubItem = {
 type SidebarNavItem = {
   title: string;
   url: string;
-  icon: typeof DashboardCircleIcon;
+  icon: typeof adminCircleIcon;
   items?: SidebarNavSubItem[];
 };
 
 const tenantAdminItems: SidebarNavItem[] = [
   {
-    title: "Dashboard",
+    title: "admin",
     url: "/",
-    icon: DashboardCircleIcon,
+    icon: adminCircleIcon,
   },
   {
     title: "Products",
@@ -93,9 +93,9 @@ const tenantAdminItems: SidebarNavItem[] = [
 
 const superAdminItems: SidebarNavItem[] = [
   {
-    title: "Dashboard",
+    title: "admin",
     url: "/",
-    icon: DashboardCircleIcon,
+    icon: adminCircleIcon,
   },
   {
     title: "Tenants",
@@ -141,7 +141,7 @@ const superAdminItems: SidebarNavItem[] = [
 
 function normalizePath(path: string) {
   const resolved = path
-    // Remove route groups like (dashboard) if they ever leak in
+    // Remove route groups like (admin) if they ever leak in
     .replace(/\/\([^)]+\)/g, "")
     // Collapse multiple slashes
     .replace(/\/+/g, "/")

@@ -14,14 +14,14 @@ import {
 interface SellerWelcomeEmailProps {
   name: string;
   storefrontUrl: string;
-  dashboardUrl: string;
+  adminUrl: string;
   connectInstagramUrl: string;
 }
 
 export const SellerWelcomeEmail = ({
   name,
   storefrontUrl,
-  dashboardUrl,
+  adminUrl,
   connectInstagramUrl,
 }: SellerWelcomeEmailProps) => (
   <Html>
@@ -66,9 +66,9 @@ export const SellerWelcomeEmail = ({
             {storefrontUrl}
           </Link>
 
-          <Text style={label}>Seller Dashboard</Text>
-          <Link href={dashboardUrl} style={link}>
-            {dashboardUrl}
+          <Text style={label}>Seller admin</Text>
+          <Link href={adminUrl} style={link}>
+            {adminUrl}
           </Link>
         </Section>
 

@@ -6,7 +6,7 @@ interface SendWelcomeEmailProps {
   to: string;
   name: string;
   storefrontUrl: string;
-  dashboardUrl: string;
+  adminUrl: string;
   connectInstagramUrl: string;
 }
 
@@ -14,7 +14,7 @@ export const sendWelcomeEmail = async ({
   to,
   name,
   storefrontUrl,
-  dashboardUrl,
+  adminUrl,
   connectInstagramUrl,
 }: SendWelcomeEmailProps) => {
   console.info("[email] Sending welcome email", { to, storefrontUrl });
@@ -23,7 +23,7 @@ export const sendWelcomeEmail = async ({
     React.createElement(SellerWelcomeEmail, {
       name,
       storefrontUrl,
-      dashboardUrl,
+      adminUrl,
       connectInstagramUrl,
     })
   );

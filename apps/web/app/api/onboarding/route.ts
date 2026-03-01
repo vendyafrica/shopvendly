@@ -89,8 +89,8 @@ export async function POST(req: Request) {
         const storeSlug = result.storeSlug;
         const verifyBase = `${webBaseUrl}/api/auth/verify-seller?token=${token}&email=${encodeURIComponent(session.user.email)}`;
 
-        const dashboardUrl = `${verifyBase}&redirect=${encodeURIComponent(`/dashboard/${storeSlug}`)}`;
-        const connectInstagramUrl = `${verifyBase}&redirect=${encodeURIComponent(`/dashboard/${storeSlug}/integrations`)}`;
+        const adminUrl = `${verifyBase}&redirect=${encodeURIComponent(`/admin/${storeSlug}`)}`;
+        const connectInstagramUrl = `${verifyBase}&redirect=${encodeURIComponent(`/admin/${storeSlug}/integrations`)}`;
         const storefrontUrl = `${webBaseUrl}/${storeSlug}`;
 
         // Send seller welcome email
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
                 to: session.user.email,
                 name: session.user.name || data.personal?.fullName || "there",
                 storefrontUrl,
-                dashboardUrl,
+                adminUrl,
                 connectInstagramUrl,
             });
             emailSent = true;

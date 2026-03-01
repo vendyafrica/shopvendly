@@ -1,6 +1,6 @@
 import { Card } from '@shopvendly/ui/components/card'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ShoppingBag01Icon, CreditCardIcon, DeliveryTruck01Icon, Store02Icon, Search01Icon, DashboardSquare02Icon } from '@hugeicons/core-free-icons'
+import { ShoppingBag01Icon, CreditCardIcon, DeliveryTruck01Icon, Store02Icon, Search01Icon, adminSquare02Icon } from '@hugeicons/core-free-icons'
 
 export function Features() {
   return (
@@ -25,7 +25,7 @@ export function Features() {
           <Card className="space-y-4 p-6">
             <HugeiconsIcon icon={ShoppingBag01Icon} className="size-6" />
             <h3 className="text-xl font-medium">
-              All Orders in One Dashboard
+              All Orders in One admin
             </h3>
             <p className="text-muted-foreground">
               Capture Instagram and TikTok inquiries automatically. Confirm,
@@ -83,7 +83,7 @@ export function Features() {
 
           {/* Growth Insights */}
           <Card className="space-y-4 p-6">
-            <HugeiconsIcon icon={DashboardSquare02Icon} className="size-6" />
+            <HugeiconsIcon icon={adminSquare02Icon} className="size-6" />
             <h3 className="text-xl font-medium">
               Simple Business Insights
             </h3>

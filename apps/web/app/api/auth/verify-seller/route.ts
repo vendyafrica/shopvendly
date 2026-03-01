@@ -11,7 +11,7 @@ import crypto from "crypto";
  * - Validates the token (time-bound 24h, single-use)
  * - Marks the user's email as verified
  * - Creates a session (auto-login)
- * - Redirects to the requested destination (dashboard or integrations)
+ * - Redirects to the requested destination (admin or integrations)
  */
 export async function GET(req: Request) {
   try {

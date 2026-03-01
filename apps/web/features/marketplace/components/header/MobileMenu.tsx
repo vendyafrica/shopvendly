@@ -164,7 +164,7 @@ export function MobileMenu({
                         />
 
                         <MenuItem
-                            label="Admin dashboard"
+                            label="Admin admin"
                             href="/admin"
                             onClick={onClose}
                             delay={175}

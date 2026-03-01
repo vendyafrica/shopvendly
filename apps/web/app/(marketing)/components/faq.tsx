@@ -19,19 +19,19 @@ const faqs = [
     id: "item-2",
     question: "How does Vendly handle orders from Instagram and TikTok?",
     answer:
-      "Customers place orders through your Vendly store link. All orders appear in one dashboard where you can confirm, track, and manage them easily.",
+      "Customers place orders through your Vendly store link. All orders appear in one admin where you can confirm, track, and manage them easily.",
   },
   {
     id: "item-3",
     question: "How do I receive payments?",
     answer:
-      "Vendly provides secure checkout links for your customers. Payments are processed instantly and recorded automatically in your dashboard.",
+      "Vendly provides secure checkout links for your customers. Payments are processed instantly and recorded automatically in your admin.",
   },
   {
     id: "item-4",
     question: "Do you handle delivery?",
     answer:
-      "Yes. You can book delivery directly from your dashboard and track parcels in real time. Customers also receive delivery updates automatically.",
+      "Yes. You can book delivery directly from your admin and track parcels in real time. Customers also receive delivery updates automatically.",
   },
   {
     id: "item-6",

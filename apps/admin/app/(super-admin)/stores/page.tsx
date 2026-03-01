@@ -16,23 +16,23 @@ export default function StoresPage() {
     React.useEffect(() => {
         const fetchData = async () => {
             try {
-                const [storesRes, dashboardRes] = await Promise.all([
+                const [storesRes, adminRes] = await Promise.all([
                     fetch("/api/stores"),
-                    fetch("/api/dashboard")
+                    fetch("/api/admin")
                 ]);
 
                 const storesData = await storesRes.json();
-                const dashboardData = await dashboardRes.json();
+                const adminData = await adminRes.json();
 
                 if (Array.isArray(storesData)) {
                     setStores(storesData);
                 }
 
-                if (dashboardData.stores && dashboardData.marketplace) {
+                if (adminData.stores && adminData.marketplace) {
                     setStats({
-                        totalStores: dashboardData.stores.total,
-                        totalRevenue: dashboardData.marketplace.gmv,
-                        totalSales: dashboardData.marketplace.totalOrders
+                        totalStores: adminData.stores.total,
+                        totalRevenue: adminData.marketplace.gmv,
+                        totalSales: adminData.marketplace.totalOrders
                     });
                 }
             } catch (error) {

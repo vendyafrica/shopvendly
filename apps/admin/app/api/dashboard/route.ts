@@ -13,7 +13,7 @@ export async function GET() {
 
     try {
         const data = await withCache(
-            "admin:dashboard:super_admin",
+            "admin:admin:super_admin",
             async () => {
                 const now = new Date();
                 const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -139,7 +139,7 @@ export async function GET() {
 
         return NextResponse.json(data);
     } catch (error) {
-        console.error("Dashboard API Error:", error);
+        console.error("admin API Error:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

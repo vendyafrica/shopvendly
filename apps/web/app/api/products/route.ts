@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { productService } from "@/features/products/lib/product-service";
-import { getTenantMembership } from "@/features/dashboard/lib/tenant-membership";
+import { getTenantMembership } from "@/features/admin/lib/tenant-membership";
 import { productQuerySchema, createProductSchema } from "@/features/products/lib/product-models";
 import { db } from "@shopvendly/db/db";
 import { stores } from "@shopvendly/db/schema";

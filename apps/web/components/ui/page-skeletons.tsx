@@ -54,9 +54,9 @@ export function ProductsPageSkeleton() {
 }
 
 /**
- * Full-page skeleton for the Dashboard page
+ * Full-page skeleton for the admin page
  */
-export function DashboardPageSkeleton() {
+export function AdminPageSkeleton() {
     return (
         <div className="space-y-6 p-6">
             {/* Header */}

@@ -152,7 +152,7 @@ export async function POST(req: Request) {
             "https://vendlyafrica.store";
         const verifyBase = `${webBaseUrl}/api/auth/verify-seller?token=${token}&email=${encodeURIComponent(email)}`;
 
-        const dashboardUrl = `${verifyBase}&redirect=${encodeURIComponent(`/a/${storeSlug}`)}`;
+        const adminUrl = `${verifyBase}&redirect=${encodeURIComponent(`/a/${storeSlug}`)}`;
         const connectInstagramUrl = `${verifyBase}&redirect=${encodeURIComponent(`/a/${storeSlug}/integrations`)}`;
         const storefrontUrl = `${webBaseUrl}/${storeSlug}`;
 
@@ -160,7 +160,7 @@ export async function POST(req: Request) {
             to: email,
             name: fullName,
             storefrontUrl,
-            dashboardUrl,
+            adminUrl,
             connectInstagramUrl,
         });
 

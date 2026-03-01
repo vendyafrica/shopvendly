@@ -19,22 +19,22 @@ export default function TenantsPage() {
 
     const fetchData = React.useCallback(async () => {
         try {
-            const [tenantsRes, dashboardRes] = await Promise.all([
+            const [tenantsRes, adminRes] = await Promise.all([
                 fetch("/api/tenants"),
-                fetch("/api/dashboard")
+                fetch("/api/admin")
             ]);
 
             const tenantsData = await tenantsRes.json();
-            const dashboardData = await dashboardRes.json();
+            const adminData = await adminRes.json();
 
             if (Array.isArray(tenantsData)) {
                 setTenants(tenantsData);
             }
 
-            if (dashboardData.tenants) {
+            if (adminData.tenants) {
                 setStats({
-                    totalTenants: dashboardData.tenants.total,
-                    newThisMonth: dashboardData.tenants.new30d,
+                    totalTenants: adminData.tenants.total,
+                    newThisMonth: adminData.tenants.new30d,
                     activePlans: 0
                 });
             }

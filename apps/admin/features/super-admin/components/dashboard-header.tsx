@@ -13,8 +13,8 @@ import {
 import { signOut } from "../../../lib/auth";
 import { useRouter } from "next/navigation";
 
-export function DashboardHeader({
-    title = "Dashboard",
+export function adminHeader({
+    title = "admin",
     user
 }: {
     title?: string;

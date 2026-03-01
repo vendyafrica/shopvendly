@@ -169,8 +169,8 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
 
   const iconColor = overlayActive ? "text-white" : "text-foreground";
   const sellerLoginUrl = store.slug
-    ? getRootUrl(`/dashboard/${store.slug}/login`)
-    : getRootUrl("/dashboard/login");
+    ? getRootUrl(`/admin/${store.slug}/login`)
+    : getRootUrl("/admin/login");
 
   return (
     <header

@@ -99,7 +99,7 @@ const STEP_ROUTES: Record<Exclude<OnboardingStep, "complete">, string> & { compl
     step1: "/account?step=1",
     step2: "/account?step=2",
     step3: "/account?step=3",
-    complete: "/dashboard",
+    complete: "/admin",
 };
 
 // ── Provider ────────────────────────────────────────────────────────
@@ -229,7 +229,7 @@ export function OnboardingProvider({ children }: ProviderProps) {
             });
 
             if (result.success) {
-                const dashboardSlug = result.storeSlug || result.tenantSlug || null;
+                const adminSlug = result.storeSlug || result.tenantSlug || null;
                 localStorage.setItem("vendly_tenant_id", result.tenantId);
                 localStorage.setItem("vendly_tenant_slug", result.tenantSlug);
                 localStorage.setItem("vendly_store_id", result.storeId);
@@ -245,8 +245,8 @@ export function OnboardingProvider({ children }: ProviderProps) {
                     data: {},
                 }));
 
-                if (dashboardSlug) {
-                    router.push(`/dashboard/${dashboardSlug}`);
+                if (adminSlug) {
+                    router.push(`/admin/${adminSlug}`);
                 } else {
                     router.push(STEP_ROUTES["complete"]);
                 }

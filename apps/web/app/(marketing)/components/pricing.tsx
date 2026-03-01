@@ -16,7 +16,7 @@ const plan = {
     "Delivery booking & tracking",
     "Instant storefront",
     "Marketplace listing",
-    "Sales dashboard & insights",
+    "Sales admin & insights",
   ],
 }
 
