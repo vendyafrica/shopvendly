@@ -2,7 +2,7 @@ import { auth } from "@shopvendly/auth";
 import { z } from "zod";
 import { UploadThingError } from "uploadthing/server";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
-import { getTenantMembership } from "@/features/admin/lib/tenant-membership";
+import { getTenantMembership } from "@/app/admin/lib/tenant-membership";
 
 const f = createUploadthing();
 

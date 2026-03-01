@@ -4,24 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  AdminCircleIcon,
-  ShoppingBag01Icon,
   PackageOpenIcon,
-  Analytics02Icon,
-  Message01Icon,
-  CustomerServiceIcon,
-  ConnectIcon,
   Settings01Icon,
-  Store01Icon,
   Home01Icon,
+  ShoppingBag01Icon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@shopvendly/ui/lib/utils";
 
 type DockItem = {
   label: string;
   href: string;
-  icon: typeof AdminCircleIcon;
+  icon: typeof Home01Icon;
   exact?: boolean;
+  intent?: "primary";
 };
 
 function normalizePath(path: string) {
@@ -45,10 +40,44 @@ function isActivePath(pathname: string, item: DockItem) {
 
 export function AdminMobileDock({ basePath }: { basePath: string }) {
   const [mounted, setMounted] = React.useState(false);
+  const [isCompact, setIsCompact] = React.useState(false);
   const pathname = usePathname();
 
   React.useEffect(() => {
     setMounted(true);
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let lastY = window.scrollY;
+    let ticking = false;
+
+    const handleScroll = () => {
+      const current = window.scrollY;
+      const delta = current - lastY;
+
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          // Expand when near top
+          if (current < 24) {
+            setIsCompact(false);
+          } else if (delta > 4) {
+            // scrolling down
+            setIsCompact(true);
+          } else if (delta < -4) {
+            // scrolling up
+            setIsCompact(false);
+          }
+          lastY = current;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   if (!mounted) return null;
@@ -56,18 +85,18 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
   const items: DockItem[] = [
     { label: "Home", href: joinPaths(basePath, "/"), icon: Home01Icon, exact: true },
     { label: "Products", href: joinPaths(basePath, "/products"), icon: ShoppingBag01Icon },
-    { label: "Transactions", href: joinPaths(basePath, "/transactions"), icon: PackageOpenIcon },
-    { label: "Notifications", href: joinPaths(basePath, "/notifications"), icon: Message01Icon },
-    { label: "Studio", href: joinPaths(basePath, "/studio"), icon: Store01Icon },
-    { label: "Analytics", href: joinPaths(basePath, "/analytics"), icon: Analytics02Icon },
-    { label: "Customers", href: joinPaths(basePath, "/accountustomers"), icon: CustomerServiceIcon },
-    { label: "Integrations", href: joinPaths(basePath, "/integrations"), icon: ConnectIcon },
+    { label: "Orders", href: joinPaths(basePath, "/transactions"), icon: PackageOpenIcon },
     { label: "Settings", href: joinPaths(basePath, "/settings"), icon: Settings01Icon },
   ];
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80 md:hidden">
-      <nav className="flex items-center gap-1 overflow-x-auto px-4 py-2 no-scrollbar">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center md:hidden" style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 4px)" }}>
+      <nav
+        className={cn(
+          "pointer-events-auto flex w-[95vw] max-w-xl items-center gap-2 rounded-3xl border border-white/10 bg-background/80 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] transition-all duration-300 ease-out",
+          isCompact ? "px-5 py-1" : "px-6 py-1"
+        )}
+      >
         {items.map((item) => {
           const isActive = isActivePath(pathname, item);
           return (
@@ -76,19 +105,32 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
               href={item.href}
               aria-label={item.label}
               className={cn(
-                "relative flex min-w-[4.5rem] flex-shrink-0 flex-col items-center justify-center gap-1 rounded-xl py-2 transition-colors hover:bg-muted/50",
-                isActive ? "text-primary" : "text-muted-foreground"
+                "relative flex flex-1 min-w-0 shrink-0 flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-out",
+                isCompact ? "py-1" : "py-1",
+                item.intent === "primary" ? "bg-primary/10 text-primary" : isActive ? "text-primary" : "text-muted-foreground",
+                !isCompact && "hover:bg-muted/50"
               )}
             >
               <HugeiconsIcon
                 icon={item.icon}
-                className={cn("size-6", isActive && "text-primary")}
+                className={cn(
+                  "transition-all duration-200",
+                  isCompact ? "size-5" : "size-6",
+                  (isActive || item.intent === "primary") && "text-primary"
+                )}
               />
-              <span className={cn("text-[10px] font-medium leading-none", isActive && "font-semibold")}>
+              <span
+                className={cn(
+                  "text-[10px] font-medium leading-none transition-all duration-200",
+                  isCompact ? "opacity-0 translate-y-1 scale-95 h-0" : "opacity-100 translate-y-0 scale-100 h-3",
+                  isActive && "font-semibold"
+                )}
+                aria-hidden={isCompact}
+              >
                 {item.label}
               </span>
               {isActive ? (
-                <span className="absolute inset-x-0 -bottom-[1px] mx-auto h-1 w-8 rounded-t-full bg-primary/20" />
+                <span className="absolute inset-x-0 -bottom-px mx-auto h-1 w-8 rounded-t-full bg-primary/20" />
               ) : null}
             </Link>
           );

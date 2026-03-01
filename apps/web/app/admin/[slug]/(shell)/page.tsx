@@ -10,7 +10,18 @@ import { and, desc, eq, isNull, sql } from "@shopvendly/db";
 import { Button } from "@shopvendly/ui/components/button";
 import { Card, CardContent, CardHeader } from "@shopvendly/ui/components/card";
 import { getStorefrontUrl } from "@/utils/misc";
-import { CheckCircle2, ExternalLink, ImageIcon } from "lucide-react";
+import {
+  Add01Icon,
+  ShoppingBag01Icon,
+  Invoice01Icon,
+  Notification01Icon,
+  Share01Icon,
+  CheckmarkCircle01Icon,
+  Link01Icon,
+  Image01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Badge } from "@shopvendly/ui/components/badge";
 
 
 function formatCurrency(amount: number, currency: string) {
@@ -22,7 +33,6 @@ function formatCurrency(amount: number, currency: string) {
 }
 
 function toChartDateLabel(date: string) {
-  // Input is YYYY-MM-DD. Keep it short for the X axis.
   const d = new Date(date);
   if (Number.isNaN(d.getTime())) return date;
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -211,9 +221,103 @@ export default async function AdminPage({
     ? formatCurrency(featuredOrder.totalAmount, featuredOrder.currency || currency)
     : undefined;
 
+  const quickActions = [
+    { label: "Add product", href: `${basePath}/products?quickAdd=1`, icon: Add01Icon },
+    { label: "Orders", href: `${basePath}/transactions`, icon: Invoice01Icon },
+    { label: "Products", href: `${basePath}/products`, icon: ShoppingBag01Icon },
+    { label: "Notifications", href: `${basePath}/notifications`, icon: Notification01Icon },
+    { label: "Share store", href: storefrontUrl, icon: Share01Icon, external: true },
+  ];
+
+  const activityItems = transactionRows.slice(0, 6).map((tx) => ({
+    id: tx.id,
+    title: tx.customer || "New customer",
+    subtitle: tx.product,
+    amount: tx.amount,
+    status: tx.status,
+    time: tx.date,
+  }));
+
   return (
     <div className="space-y-8">
-      <Card className="bg-muted/20 shadow-sm">
+      {/* Mobile-first: profile header + stats + actions + activity */}
+      <div className="md:hidden space-y-5">
+        {/* Profile header */}
+        <div className="flex items-center gap-3 px-1">
+          <div className="flex-1 min-w-0">
+            <Link
+              href={storefrontUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/10"
+            >
+              <HugeiconsIcon icon={Link01Icon} className="size-3.5" />
+              <span className="truncate">{storefrontUrl.replace(/^https?:\/\//, "")}</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="flex gap-3 overflow-x-auto no-scrollbar px-1">
+          {statSegments.map((s) => (
+            <div key={s.label} className="min-w-[160px] rounded-xl border bg-card/80 px-4 py-3 shadow-sm">
+              <p className="text-xs text-muted-foreground">{s.label}</p>
+              <p className="text-xl font-semibold mt-1">{s.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Quick actions 2x2 */}
+        <div className="grid grid-cols-2 gap-3 px-1">
+          {quickActions.slice(0, 4).map((action) => (
+            <Link
+              key={action.label}
+              href={action.href}
+              target={action.external ? "_blank" : undefined}
+              rel={action.external ? "noreferrer" : undefined}
+              className="flex items-center gap-3 rounded-xl border bg-card/80 px-4 py-3 shadow-sm transition hover:bg-muted/60"
+            >
+              <HugeiconsIcon icon={action.icon} className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold">{action.label}</span>
+            </Link>
+          ))}
+        </div>
+
+        {/* Activity feed (orders and product updates via transactions) */}
+        <div className="space-y-3 px-1">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold">Recent activity</p>
+            <Badge variant="outline" className="text-[11px] rounded-md">Live</Badge>
+          </div>
+          {activityItems.length === 0 ? (
+            <div className="rounded-xl border bg-card/80 px-4 py-8 text-center text-sm text-muted-foreground">
+              No recent activity yet.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activityItems.map((item) => (
+                <div key={item.id} className="rounded-xl border bg-card/80 px-4 py-3 shadow-sm flex items-center gap-3">
+                  <div className="size-10 rounded-full border flex items-center justify-center bg-primary/5 text-primary">
+                    <HugeiconsIcon icon={Invoice01Icon} className="size-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{item.title}</p>
+                    <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{item.time}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-semibold">{item.amount}</p>
+                    <span className="text-[10px] uppercase text-muted-foreground">{item.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop-first cards and charts */}
+      <Card className="bg-muted/20 shadow-sm hidden md:block">
         <CardHeader className="flex flex-col gap-2 pb-2 md:flex-row md:items-center md:justify-between">
           <Link
             href={storefrontUrl}
@@ -221,7 +325,7 @@ export default async function AdminPage({
             rel="noreferrer"
             className="inline-flex items-center gap-2 rounded-sm border border-border/70 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/60"
           >
-            <ExternalLink className="h-4 w-4" />
+            <HugeiconsIcon icon={Link01Icon} className="h-4 w-4" />
             {storefrontUrl.replace(/^https?:\/\//, "")}
           </Link>
         </CardHeader>
@@ -229,13 +333,13 @@ export default async function AdminPage({
           <div className="grid gap-6 md:grid-cols-2 min-h-[480px]">
             <div className="flex h-full flex-col rounded-3xl border border-dashed bg-background p-6 shadow-sm">
               <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-muted-foreground/40 bg-muted/40 p-16 min-h-[260px]">
-                <ImageIcon className="h-10 w-10 text-muted-foreground" />
+                <HugeiconsIcon icon={Image01Icon} className="h-10 w-10 text-muted-foreground" />
                 <p className="mt-4 font-semibold">{featuredItemName || "Add your first product"}</p>
                 <p className="text-sm text-muted-foreground">{featuredItemValue || "Upload an item to showcase it on your storefront."}</p>
               </div>
               <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-center gap-2 text-sm font-medium text-emerald-600">
-                  <CheckCircle2 className="h-4 w-4" />
+                  <HugeiconsIcon icon={CheckmarkCircle01Icon} className="h-4 w-4" />
                   {featuredItemName ? "Product added" : "No product yet"}
                 </div>
                 <div className="flex gap-2">
@@ -257,7 +361,7 @@ export default async function AdminPage({
       
       <SegmentedStatsCard segments={statSegments} />
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-7 lg:grid-cols-7">
+      <div className="hidden md:grid grid-cols-1 gap-5 md:grid-cols-7 lg:grid-cols-7">
         <RevenueAreaChartCard
           className="md:col-span-4"
           title="Total Revenue"
@@ -272,8 +376,9 @@ export default async function AdminPage({
           data={topProducts}
         />
       </div>
-
-      <RecentTransactionsTable rows={transactionRows} />
+      <div className="hidden md:block">
+        <RecentTransactionsTable rows={transactionRows} />
+      </div>
     </div>
   );
 }

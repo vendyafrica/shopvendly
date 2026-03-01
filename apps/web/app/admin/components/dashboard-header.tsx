@@ -1,12 +1,10 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@shopvendly/ui/components/avatar";
-import { Button } from "@shopvendly/ui/components/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@shopvendly/ui/components/dropdown-menu";
+import { StoreAvatar } from "@/components/store-avatar";
 import { useAppSession } from "@/contexts/app-session-context";
 import { signOut } from "@shopvendly/auth/react";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Notification01Icon } from "@hugeicons/core-free-icons";
 import { useRouter } from "next/navigation";
 import { useTenant } from "@/app/admin/context/tenant-context";
 import { useHeaderActions } from "@/app/admin/context/header-actions-context";
@@ -34,19 +32,16 @@ export function AdminHeader({
   };
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b bg-background/80 px-4 backdrop-blur supports-backdrop-filter:bg-background/60">
+    <header className="flex h-20 shrink-0 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="font-semibold text-muted-foreground">Welcome to {resolvedTenantName}</span>
+        <StoreAvatar storeName={resolvedTenantName} logoUrl={bootstrap?.storeLogoUrl} size="md" className="rounded-none" />
+        <div className="min-w-0">
+          <p className="text-base font-semibold truncate">Welcome to {resolvedTenantName}</p>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
         {actions}
-        <Button variant="ghost" size="icon-sm" className="rounded-full">
-          <HugeiconsIcon icon={Notification01Icon} className="size-4" />
-          <span className="sr-only">Notifications</span>
-        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger className="outline-none ring-offset-2 ring-offset-background focus-visible:ring-2 ring-ring rounded-full">

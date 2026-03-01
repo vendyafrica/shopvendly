@@ -13,7 +13,7 @@ import { Input } from "@shopvendly/ui/components/input"
 import { signInWithGoogle } from "@shopvendly/auth/react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Loading03Icon } from "@hugeicons/core-free-icons"
-import { GoogleIcon } from "@shopvendly/ui/components/svgs/google"
+import { Google } from "@shopvendly/ui/components/svgs/google"
 
 type FormState = "idle" | "loading"
 
@@ -126,7 +126,7 @@ export function SellerLoginForm({
                             </>
                         ) : (
                             <>
-                                <GoogleIcon />
+                                <Google />
                                 Continue with Google
                             </>
                         )}

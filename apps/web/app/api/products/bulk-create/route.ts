@@ -2,7 +2,7 @@ import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { productService } from "@/features/products/lib/product-service";
-import { getTenantMembership } from "@/features/admin/lib/tenant-membership";
+import { getTenantMembership } from "@/app/admin/lib/tenant-membership";
 import { db } from "@shopvendly/db/db";
 import { stores } from "@shopvendly/db/schema";
 import { eq, and, isNull } from "@shopvendly/db";

@@ -62,13 +62,12 @@ export function UploadModal({
     const { uploadFile } = useUpload();
 
     const [files, setFiles] = React.useState<FilePreview[]>([]);
-    const [isSaving, setIsSaving] = React.useState(false);
-    const [error, setError] = React.useState<string | null>(null);
-
     const filesRef = React.useRef<FilePreview[]>([]);
     React.useEffect(() => {
         filesRef.current = files;
     }, [files]);
+    const [isSaving, setIsSaving] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
 
     const [productName, setProductName] = React.useState("");
     const [description, setDescription] = React.useState("");
@@ -76,6 +75,12 @@ export function UploadModal({
     const [quantity, setQuantity] = React.useState<string>("");
 
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const triggerSelect = () => {
+        if (!isSaving) {
+            fileInputRef.current?.click();
+        }
+    };
 
     const handleUploadFiles = async (selectedFiles: File[]) => {
         const newFiles = selectedFiles.map(file => ({
@@ -270,20 +275,15 @@ export function UploadModal({
 
     return (
         <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-            <DialogContent className="flex max-h-[90svh] w-[95vw] flex-col gap-0 overflow-hidden p-0 sm:max-h-[85vh] sm:max-w-3xl sm:top-1/2 sm:-translate-y-1/2 top-[5svh] translate-y-0" showCloseButton={false}>
-                <div className="border-b px-6 py-4">
+            <DialogContent className="flex max-h-[90svh] w-[95vw] flex-col gap-0 overflow-hidden p-0 sm:max-h-[85vh] sm:max-w-3xl sm:top-1/2 sm:-translate-y-1/2 top-[5svh] translate-y-0 rounded-2xl bg-background" showCloseButton={false}>
+                <div className="border-b px-6 py-4 bg-linear-to-r from-muted/40 to-background">
                     <DialogHeader>
-                        <DialogTitle>Add Product</DialogTitle>
+                        <DialogTitle className="text-base font-semibold">Quick upload</DialogTitle>
                     </DialogHeader>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-5 sm:p-6">
                     <div className="space-y-4">
-                        <p className="text-sm text-muted-foreground">
-                            {mode === "single"
-                                ? "Upload images or videos for this product. Each file is a variant media item."
-                                : "Upload media and details for each product. After saving, you'll stay here to add the next product."}
-                        </p>
 
                         {error && (
                             <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
@@ -294,8 +294,8 @@ export function UploadModal({
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             {/* Gallery / drop zone */}
                             <div
-                                className="border-2 border-dashed border-border/70 rounded-lg p-4 md:p-5 lg:p-6 cursor-pointer hover:bg-muted/50 transition-colors"
-                                onClick={() => !isSaving && fileInputRef.current?.click()}
+                                className="border-2 border-dashed border-border/60 rounded-lg md:rounded-xl p-4 md:p-5 lg:p-6 cursor-pointer bg-muted/20 hover:bg-muted/40 transition-colors"
+                                onClick={() => !isSaving && triggerSelect()}
                                 onDragOver={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
@@ -315,22 +315,22 @@ export function UploadModal({
                                             className="size-14 mx-auto text-muted-foreground"
                                         />
                                         <p className="text-sm text-muted-foreground mt-3 font-medium">
-                                            Drag & drop product media here
+                                            Tap to snap or drop files
                                         </p>
                                         <p className="text-xs text-muted-foreground mt-1">
-                                            Images or videos up to 10MB each
+                                            Images / videos up to 10MB
                                         </p>
                                         <Button
                                             type="button"
-                                            variant="outline"
-                                            className="mt-4"
+                                            variant="secondary"
+                                            className="mt-4 rounded-md"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                fileInputRef.current?.click();
+                                                triggerSelect();
                                             }}
                                             disabled={isSaving}
                                         >
-                                            Upload media
+                                            Choose media
                                         </Button>
                                     </div>
                                 ) : (
@@ -414,10 +414,10 @@ export function UploadModal({
                                             {/* Add more tile */}
                                             <button
                                                 type="button"
-                                                className="relative aspect-square border-2 border-dashed border-border/70 rounded-md flex items-center justify-center hover:bg-muted/10"
+                                                className="relative aspect-square border-2 border-dashed border-border/60 rounded-md flex items-center justify-center hover:bg-muted/20 bg-muted/10"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    fileInputRef.current?.click();
+                                                    triggerSelect();
                                                 }}
                                                 disabled={isSaving}
                                             >

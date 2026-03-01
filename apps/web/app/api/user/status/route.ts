@@ -1,7 +1,7 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { getTenantMembership } from "@/features/admin/lib/tenant-membership";
+import { getTenantMembership } from "@/app/admin/lib/tenant-membership";
 import { db } from "@shopvendly/db/db";
 import { and, eq, isNull } from "@shopvendly/db";
 import { stores, superAdmins } from "@shopvendly/db/schema";

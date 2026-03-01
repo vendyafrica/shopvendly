@@ -1,6 +1,6 @@
 import { Card } from '@shopvendly/ui/components/card'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ShoppingBag01Icon, CreditCardIcon, DeliveryTruck01Icon, Store02Icon, Search01Icon, adminSquare02Icon } from '@hugeicons/core-free-icons'
+import { ShoppingBag01Icon, CreditCardIcon, DeliveryTruck01Icon, Store02Icon, Search01Icon, LoginSquare02Icon } from '@hugeicons/core-free-icons'
 
 export function Features() {
   return (
@@ -76,14 +76,14 @@ export function Features() {
               Marketplace Discovery
             </h3>
             <p className="text-muted-foreground">
-              List your products on Vendly’s marketplace and reach buyers
+              List your products on shopvendly&apos;s marketplace and reach buyers
               actively searching — not just your followers.
             </p>
           </Card>
 
           {/* Growth Insights */}
           <Card className="space-y-4 p-6">
-            <HugeiconsIcon icon={adminSquare02Icon} className="size-6" />
+            <HugeiconsIcon icon={LoginSquare02Icon} className="size-6" />
             <h3 className="text-xl font-medium">
               Simple Business Insights
             </h3>

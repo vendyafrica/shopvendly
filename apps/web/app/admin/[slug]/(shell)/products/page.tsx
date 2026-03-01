@@ -9,10 +9,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { AddProductButton } from "./components/add-product-button";
 import { useTenant } from "@/app/admin/context/tenant-context";
+import { useSearchParams } from "next/navigation";
 
 import Image from "next/image";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
+
 import {
   Select,
   SelectContent,
@@ -22,6 +24,7 @@ import {
 } from "@shopvendly/ui/components/select";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { SparklesIcon, Edit02Icon } from "@hugeicons/core-free-icons";
+
 import { UploadModal } from "./components/upload-modal";
 import { EditProductModal } from "./components/edit-product-modal";
 import { ProductsMobileView } from "./components/products-mobile-view";
@@ -99,6 +102,8 @@ function ProductThumbnail({
 
 export default function ProductsPage() {
   const { bootstrap, error: bootstrapError } = useTenant();
+  const searchParams = useSearchParams();
+
   const queryClient = useQueryClient();
 
   // Use React Query for products with optimistic updates
@@ -133,8 +138,19 @@ export default function ProductsPage() {
   const [drafts, setDrafts] = React.useState<DraftMap>({});
   const [savingId, setSavingId] = React.useState<string | null>(null);
   const [uploadMode, setUploadMode] = React.useState<"single" | "multiple">("single");
+  const [handledQuickAdd, setHandledQuickAdd] = React.useState(false);
 
   const updateProductMutation = useUpdateProduct(bootstrap?.storeId ?? "");
+
+  React.useEffect(() => {
+    const quickAdd = searchParams.get("quickAdd");
+    if (quickAdd && !handledQuickAdd) {
+      setUploadMode("single");
+      setUploadModalOpen(true);
+      setHandledQuickAdd(true);
+      // Stay on current page; no redirect to products list
+    }
+  }, [handledQuickAdd, searchParams]);
 
   // Optimistic delete - removes instantly from UI
   const handleDelete = async (id: string) => {
