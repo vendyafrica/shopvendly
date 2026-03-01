@@ -1,10 +1,9 @@
 "use client";
 
-import * as React from "react";
 import Image from "next/image";
 import { Avatar, AvatarFallback } from "@shopvendly/ui/components/avatar";
-import type { TenantBootstrap } from "@/features/Admin/context/tenant-context";
-import { SegmentedStatsCard } from "@/features/Admin/components/segmented-stats-card";
+import type { TenantBootstrap } from "@/app/admin/context/tenant-context";
+import { SegmentedStatsCard } from "@/app/admin/components/segmented-stats-card";
 import type { NotificationRow } from "../NotificationsTable";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {

@@ -8,8 +8,8 @@ import {
     SheetContent
 } from "@shopvendly/ui/components/sheet";
 import { Badge } from "@shopvendly/ui/components/badge";
-import type { TenantBootstrap } from "@/features/Admin/context/tenant-context";
-import { SegmentedStatsCard } from "@/features/Admin/components/segmented-stats-card";
+import type { TenantBootstrap } from "@/app/admin/context/tenant-context";
+import { SegmentedStatsCard } from "@/app/admin/components/segmented-stats-card";
 import type { CustomerRow } from "../CustomersTable";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { UserMultiple02Icon, Mail02Icon, ShoppingCart01Icon, AnalyticsUpIcon, CheckmarkBadge01Icon } from "@hugeicons/core-free-icons";
@@ -67,7 +67,7 @@ export function CustomersMobileView({
                             <HugeiconsIcon icon={CheckmarkBadge01Icon} className="size-4 text-blue-500" />
                         </h1>
                         <p className="text-xs text-muted-foreground font-medium">
-                            #{bootstrap?.storeSlug ?? bootstrap?.tenantSlug ?? "unknown"}
+                            {bootstrap?.storeSlug ? `#${bootstrap.storeSlug}` : "Customer insights"}
                         </p>
                     </div>
                 </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { DataTable } from "@/features/Admin/components/data-table";
+import { DataTable } from "@/app/admin/components/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@shopvendly/ui/components/badge";
 

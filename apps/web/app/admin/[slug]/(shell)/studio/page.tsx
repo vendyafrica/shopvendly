@@ -6,5 +6,5 @@ export default async function StudioPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  redirect(`/Admin/${slug}/settings#storefront-header`);
+  redirect(`/admin/${slug}/settings#storefront-header`);
 }
