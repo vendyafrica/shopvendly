@@ -33,7 +33,6 @@ export function Step1Info() {
 
   const isLoading = formState === "loading";
 
-  // Sync form fields from localStorage data once hydration completes
   useEffect(() => {
     if (!isHydrated) return;
     if (data.personal) {
@@ -89,7 +88,7 @@ export function Step1Info() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 disabled={isLoading}
-                className="h-11 bg-muted/30 focus:bg-background transition-colors"
+                className="h-10 bg-muted/30 focus:bg-background transition-colors"
               />
             </Field>
             <Field>

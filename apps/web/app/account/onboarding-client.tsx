@@ -5,7 +5,7 @@ import { useOnboarding } from "./context/onboarding-context";
 import { Step0Auth } from "./components/step0-auth";
 import { Step1Info } from "./components/step1-info";
 import { Step2Store } from "./components/step2-store";
-import { Step3Categories } from "./components/step2-categories";
+import { Step3Categories } from "./components/step3-categories";
 
 export default function OnboardingClient() {
   const { currentStep } = useOnboarding();

@@ -71,7 +71,7 @@ export function Step2Store() {
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
                 disabled={isLoading}
-                className="h-11 bg-muted/30 focus:bg-background transition-colors"
+                className="bg-muted/30 focus:bg-background transition-colors"
               />
             </Field>
             <Field>
@@ -83,7 +83,7 @@ export function Step2Store() {
                 value={storeLocation}
                 onChange={(e) => setStoreLocation(e.target.value)}
                 disabled={isLoading}
-                className="h-11 bg-muted/30 focus:bg-background transition-colors"
+                className="bg-muted/30 focus:bg-background transition-colors"
               />
             </Field>
           </FieldGroup>
@@ -102,20 +102,18 @@ export function Step2Store() {
           </Field>
         </motion.div>
 
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-muted/20 p-4 rounded-xl border border-border/40">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-4">
           <Button
             type="button"
             variant="outline"
-            size="lg"
             onClick={goBack}
             disabled={isLoading}
-            className="w-full md:w-auto"
+            className="w-[80px]"
           >
             Back
           </Button>
           <Button
             type="button"
-            size="lg"
             onClick={handleSubmit}
             disabled={isLoading}
             className="w-full md:w-auto min-w-[160px] shadow-sm transition-all active:scale-[0.98]"

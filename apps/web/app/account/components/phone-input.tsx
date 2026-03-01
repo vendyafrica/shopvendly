@@ -10,8 +10,8 @@ import {
 } from "@shopvendly/ui/components/select";
 
 const COUNTRY_OPTIONS = [
-  { code: "256", label: "Uganda", flag: "🇺🇬" },
-  { code: "254", label: "Kenya", flag: "🇰🇪" },
+  { code: "256", iso: "Ug", label: "Uganda", flag: "🇺🇬" },
+  { code: "254", iso: "Ke", label: "Kenya", flag: "🇰🇪" },
 ];
 
 interface PhoneInputProps {
@@ -32,7 +32,7 @@ export function PhoneInput({
   const selected = COUNTRY_OPTIONS.find((o) => o.code === countryCode);
 
   return (
-    <div className="flex h-9 rounded-md border border-input bg-background focus-within:border-primary/50 focus-within:ring-[3px] focus-within:ring-primary/10 overflow-hidden transition-colors">
+    <div className="flex h-10 rounded-md border border-input bg-background text-sm focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary/20 overflow-hidden transition-all">
       <Select
         value={countryCode}
         onValueChange={(value) => {
@@ -40,18 +40,20 @@ export function PhoneInput({
         }}
         disabled={disabled}
       >
-        <SelectTrigger className="h-full w-[68px] shrink-0 rounded-none border-0 border-r border-input bg-muted/40 shadow-none focus-visible:ring-0 px-2 transition-colors">
+        <SelectTrigger className="h-10 min-w-[88px] shrink-0 rounded-md border-0 border-r border-input/60 bg-transparent px-2.5 text-sm font-medium text-foreground shadow-none focus-visible:ring-0">
           <SelectValue>
-            <span className="flex items-center justify-center text-base">{selected?.flag}</span>
+            <span className="flex items-center gap-1">
+              <span className="text-xs text-muted-foreground">+{selected?.code}</span>
+            </span>
           </SelectValue>
         </SelectTrigger>
-        <SelectContent align="start" className="min-w-[200px]">
+        <SelectContent align="start" side="bottom" sideOffset={6} alignItemWithTrigger={false} className="z-50 rounded-md min-w-[220px]">
           {COUNTRY_OPTIONS.map((opt) => (
             <SelectItem key={opt.code} value={opt.code}>
-              <span className="flex items-center gap-2">
-                <span>{opt.flag}</span>
-                <span>{opt.label}</span>
-                <span className="text-xs text-muted-foreground">+{opt.code}</span>
+              <span className="flex items-center gap-2 text-sm">
+                <span className="text-base">{opt.flag}</span>
+                <span className="font-medium">{opt.label}</span>
+                <span className="text-xs text-muted-foreground">(+{opt.code})</span>
               </span>
             </SelectItem>
           ))}
@@ -64,7 +66,7 @@ export function PhoneInput({
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
         disabled={disabled}
-        className="h-full flex-1 rounded-none border-0 shadow-none focus-visible:ring-0 px-3"
+        className="h-full flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 px-3 text-sm"
       />
     </div>
   );
