@@ -143,9 +143,7 @@ export function useUpload() {
                     : productUpload.startUpload;
 
                 const uploads = (await startUpload([preparedFile], {
-                    input: {
-                        tenantId: options.tenantId,
-                    },
+                    tenantId: options.tenantId,
                 })) ?? [];
 
                 const uploaded = uploads[0];

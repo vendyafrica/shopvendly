@@ -2,13 +2,12 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useAppSession } from "@/contexts/app-session-context";
-import { trackStorefrontEvents } from "@/features/storefront/lib/storefront-tracking";
+import { trackStorefrontEvents } from "@/app/[handle]/lib/storefront-tracking";
 
-// Use relative paths for same-origin API calls (Next.js serverless routes)
 const API_BASE = "";
 
 export interface CartItem {
-    id: string; // Product ID
+    id: string;
     quantity: number;
     product: {
         id: string;

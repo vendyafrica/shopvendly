@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { signInWithOneTap } from "@shopvendly/auth/react";
 import { useAppSession } from "@/contexts/app-session-context";
-import { trackStorefrontEvents } from "@/features/storefront/lib/storefront-tracking";
+import { trackStorefrontEvents } from "@/app/[handle]/lib/storefront-tracking";
 
 export function OneTapLogin({ storeSlug }: { storeSlug?: string }) {
   const { session } = useAppSession();

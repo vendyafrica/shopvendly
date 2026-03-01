@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { trackStorefrontEvents } from "@/features/storefront/lib/storefront-tracking";
+import { trackStorefrontEvents } from "../lib/storefront-tracking";
 import { useAppSession } from "@/contexts/app-session-context";
 
 export function StorefrontViewTracker({ storeSlug }: { storeSlug: string }) {

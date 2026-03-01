@@ -16,7 +16,7 @@ import { Input } from "@shopvendly/ui/components/input";
 import { useCart } from "@/features/cart/context/cart-context";
 import { useAppSession } from "@/contexts/app-session-context";
 import { signInWithOneTap } from "@shopvendly/auth/react";
-import { trackStorefrontEvents } from "@/features/storefront/lib/storefront-tracking";
+import { trackStorefrontEvents } from "@/app/[handle]/lib/storefront-tracking";
 import { Bricolage_Grotesque } from "next/font/google";
 
 const geistSans = Bricolage_Grotesque({

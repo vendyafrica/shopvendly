@@ -3,7 +3,13 @@
 import * as React from "react";
 import Image from "next/image";
 import { Dialog, DialogContent } from "@shopvendly/ui/components/dialog";
-import { X, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Cancel01Icon,
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  Link01Icon,
+} from "@hugeicons/core-free-icons";
 
 type TikTokVideo = {
   id: string;
@@ -146,7 +152,7 @@ export function InspirationGrid({ videos }: InspirationGridProps) {
                 className="absolute top-4 right-4 z-10 rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition"
                 aria-label="Close"
               >
-                <X className="h-4 w-4" />
+                <HugeiconsIcon icon={Cancel01Icon} className="h-4 w-4" />
               </button>
 
               <div className="flex flex-col h-full p-6 pr-10">
@@ -200,7 +206,7 @@ export function InspirationGrid({ videos }: InspirationGridProps) {
                     rel="noreferrer"
                     className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground underline underline-offset-2 hover:opacity-60 transition mb-5"
                   >
-                    <ExternalLink className="h-3 w-3" />
+                    <HugeiconsIcon icon={Link01Icon} className="h-3 w-3" />
                     Open on TikTok
                   </a>
                 )}
@@ -213,9 +219,10 @@ export function InspirationGrid({ videos }: InspirationGridProps) {
                       onClick={goPrev}
                       className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition"
                     >
-                      <ChevronLeft className="h-4 w-4" />
+                      <HugeiconsIcon icon={ArrowLeft01Icon} className="h-4 w-4" />
                       Prev
                     </button>
+
                     <span className="mx-auto text-xs text-muted-foreground tabular-nums">
                       {selectedIndex + 1} / {videos.length}
                     </span>
@@ -225,7 +232,7 @@ export function InspirationGrid({ videos }: InspirationGridProps) {
                       className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition"
                     >
                       Next
-                      <ChevronRight className="h-4 w-4" />
+                      <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4" />
                     </button>
                   </div>
                 )}

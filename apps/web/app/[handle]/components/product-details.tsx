@@ -8,7 +8,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { StarIcon } from "@hugeicons/core-free-icons";
 import { StoreAvatar } from "@/components/store-avatar";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
-import { trackStorefrontEvents } from "@/features/storefront/lib/storefront-tracking";
+import { trackStorefrontEvents } from "../lib/storefront-tracking";
 import { ProductActions } from "./product-actions";
 import { Bricolage_Grotesque } from "next/font/google";
 import { signInWithOneTap } from "@shopvendly/auth/react";

@@ -1,9 +1,5 @@
 "use client";
 
-// =====================================
-// Skeleton Components for Loading States
-// =====================================
-
 export function HeroSkeleton() {
     return (
         <section className="relative h-[85vh] w-full overflow-hidden">

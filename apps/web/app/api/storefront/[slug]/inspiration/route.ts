@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { storefrontService } from "@/features/storefront/lib/storefront-service";
+import { storefrontService } from "@/app/[handle]/lib/storefront-service";
 import { db } from "@shopvendly/db/db";
 import { sql } from "@shopvendly/db";
 

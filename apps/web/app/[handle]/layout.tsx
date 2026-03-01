@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import MarketplaceLayout from "../m/layout";
-import { StorefrontHeader } from "@/features/storefront/components/header";
-import { NavigationOverlayProvider } from "@/features/storefront/components/navigation-overlay";
+import { StorefrontHeader } from "./components/header";
+import { NavigationOverlayProvider } from "./components/navigation-overlay";
 import { headers } from "next/headers";
 
 const DEFAULT_STORE_LOGO = "/store-logo.jpg";

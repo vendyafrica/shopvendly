@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@shopvendly/auth";
 import { db, products, productRatings, eq, sql } from "@shopvendly/db";
-import { storefrontService } from "@/features/storefront/lib/storefront-service";
+import { storefrontService } from "@/app/[handle]/lib/storefront-service";
 
 interface RouteParams {
     params: Promise<{ slug: string; productSlug: string }>;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { storefrontService } from "@/features/storefront/lib/storefront-service";
+import { storefrontService } from "@/app/[handle]/lib/storefront-service";
 
 const DEFAULT_STORE_LOGO = "/store-logo.jpg";
 

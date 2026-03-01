@@ -1,7 +1,7 @@
-import { StorefrontContentTabs } from "@/features/storefront/components/storefront-content-tabs";
-import { StorefrontFooter } from "@/features/storefront/components/footer";
-import { Hero } from "@/features/storefront/components/hero";
-import { StorefrontViewTracker } from "@/features/storefront/components/StorefrontViewTracker";
+import { StorefrontContentTabs } from "./components/storefront-content-tabs";
+import { StorefrontFooter } from "./components/footer";
+import { Hero } from "./components/hero";
+import { StorefrontViewTracker } from "./components/StorefrontViewTracker";
 import { OneTapLogin } from "@/features/marketplace/components/one-tap-login";
 
 import { notFound } from "next/navigation";

@@ -9,6 +9,7 @@ import { ShoppingBag02Icon, FavouriteIcon, UserIcon } from "@hugeicons/core-free
 import { DeferredHeroVideo } from "./deferred-hero-video";
 import { Bricolage_Grotesque } from "next/font/google";
 import { getRootUrl } from "@/utils/misc";
+import { Button } from "@shopvendly/ui/components/button";
 
 const geistSans = Bricolage_Grotesque({
   variable: "--font-bricolage-grotesque",
@@ -197,17 +198,17 @@ export function Hero({ store }: HeroProps) {
                   {store.description}
                 </p>
               )}
-              <button
+              <Button
                 onClick={() => {
                   window.scrollTo({
                     top: window.innerHeight,
                     behavior: "smooth",
                   });
                 }}
-                className="px-8 py-3 bg-white text-black text-sm font-medium tracking-widest uppercase hover:bg-white/90 transition-colors"
+                className="px-8 h-11 bg-white text-black text-sm font-medium tracking-widest uppercase hover:bg-white/90 transition-colors"
               >
                 Shop Now
-              </button>
+              </Button>
             </div>
           </div>
         </div>
