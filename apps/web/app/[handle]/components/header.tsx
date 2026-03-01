@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useParams, usePathname } from "next/navigation";
+import { useState, useEffect, useRef, type MouseEvent } from "react";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 
@@ -33,6 +33,7 @@ interface StorefrontHeaderProps {
 export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
   const params = useParams();
   const pathname = usePathname();
+  const router = useRouter();
   const { itemsByStore } = useCart();
   const [store, setStore] = useState<StoreData | null>(initialStore ?? null);
 
@@ -58,6 +59,7 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [isOverlay, setIsOverlay] = useState(true);
   const lastScrollYRef = useRef(0);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
 
   const resolvedSlug = (() => {
     if (!params) return undefined;
@@ -102,6 +104,14 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
     };
     fetchStore();
   }, [resolvedSlug, initialStore]);
+
+  useEffect(() => {
+    if (store?.slug) {
+      router.prefetch(`/${store.slug}`);
+      router.prefetch(`/${store.slug}/cart`);
+    }
+    router.prefetch("/wishlist");
+  }, [store?.slug, router]);
 
   const normalizedPathname = pathname?.replace(/\/$/, "") || "/";
   const slugPath = resolvedSlug ? `/${resolvedSlug}` : "/";
@@ -158,6 +168,21 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
   // Avoid double headers on the storefront home (hero) page; hero renders its own inline header.
   if (isHomePage) return null;
 
+  const handleNav = (href: string) => (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    setPendingHref(href);
+
+    if (href.startsWith("http")) {
+      window.location.href = href;
+      return;
+    }
+
+    router.push(href);
+  };
+
+  const isPending = (href: string) => pendingHref === href;
+
   const overlayActive = isHomePath && isOverlay;
   const textColorClass = overlayActive
     ? "text-white hover:text-white/90"
@@ -172,8 +197,11 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
     ? getRootUrl(`/admin/${store.slug}/login`)
     : getRootUrl("/admin/login");
 
+  const spinnerColor = overlayActive ? "border-white/70" : "border-foreground/60";
+
   return (
     <header
+      aria-busy={Boolean(pendingHref)}
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}`}
     >
       <div className={`relative ${barClass}`}>
@@ -183,7 +211,9 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
             <div className="min-w-[120px] sm:min-w-[160px] flex items-center gap-3">
               <Link
                 href={`/${store.slug}`}
-                className={`${geistSans.className} ${textColorClass} font-semibold text-xl sm:text-xl tracking-tight transition-colors`}
+                onClick={handleNav(`/${store.slug}`)}
+                aria-busy={isPending(`/${store.slug}`)}
+                className={`${geistSans.className} ${textColorClass} font-semibold text-xl sm:text-xl tracking-tight transition-colors ${isPending(`/${store.slug}`) ? "opacity-70" : ""}`}
               >
                 {store.name}
               </Link>
@@ -193,7 +223,9 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
             <div className="flex items-center gap-1 sm:gap-1 ml-auto">
               <Link
                 href={`/${store.slug}/cart`}
-                className={`relative inline-flex h-10 w-10 items-center cursor-pointer justify-center transition-colors ${isHomePage ? "hover:opacity-80" : "hover:bg-muted/70 rounded-full"}`}
+                onClick={handleNav(`/${store.slug}/cart`)}
+                aria-busy={isPending(`/${store.slug}/cart`)}
+                className={`relative inline-flex h-10 w-10 items-center cursor-pointer justify-center transition-colors ${isHomePage ? "hover:opacity-80" : "hover:bg-muted/70 rounded-full"} ${isPending(`/${store.slug}/cart`) ? "opacity-60" : ""}`}
                 aria-label="Cart"
               >
                 <HugeiconsIcon
@@ -201,6 +233,11 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
                   size={18}
                   className={iconColor}
                 />
+                {isPending(`/${store.slug}/cart`) && (
+                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden>
+                    <span className={`h-4 w-4 rounded-full border-2 ${spinnerColor} border-t-transparent animate-spin`} />
+                  </span>
+                )}
                 {storeItemCount > 0 && (
                   <span
                     className={`pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-white ${isHomePage ? "bg-black/90 ring-2 ring-white/60" : "bg-neutral-900 ring-2 ring-white"}`}
@@ -212,7 +249,9 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
 
               <Link
                 href="/wishlist"
-                className={`relative inline-flex h-10 w-10 items-center justify-center transition-colors ${isHomePage ? "hover:opacity-80" : "hover:bg-muted/70 rounded-full"}`}
+                onClick={handleNav("/wishlist")}
+                aria-busy={isPending("/wishlist")}
+                className={`relative inline-flex h-10 w-10 items-center justify-center transition-colors ${isHomePage ? "hover:opacity-80" : "hover:bg-muted/70 rounded-full"} ${isPending("/wishlist") ? "opacity-60" : ""}`}
                 aria-label="Wishlist"
               >
                 <HugeiconsIcon
@@ -220,11 +259,18 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
                   size={18}
                   className={iconColor}
                 />
+                {isPending("/wishlist") && (
+                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden>
+                    <span className={`h-4 w-4 rounded-full border-2 ${spinnerColor} border-t-transparent animate-spin`} />
+                  </span>
+                )}
               </Link>
 
               <Link
                 href={sellerLoginUrl}
-                className={`relative inline-flex h-10 w-10 items-center justify-center transition-colors ${isHomePage ? "hover:opacity-80" : "hover:bg-muted/70 rounded-full"}`}
+                onClick={handleNav(sellerLoginUrl)}
+                aria-busy={isPending(sellerLoginUrl)}
+                className={`relative inline-flex h-10 w-10 items-center justify-center transition-colors ${isHomePage ? "hover:opacity-80" : "hover:bg-muted/70 rounded-full"} ${isPending(sellerLoginUrl) ? "opacity-60" : ""}`}
                 aria-label="Account"
               >
                 <HugeiconsIcon
@@ -232,6 +278,11 @@ export function StorefrontHeader({ initialStore }: StorefrontHeaderProps) {
                   size={18}
                   className={iconColor}
                 />
+                {isPending(sellerLoginUrl) && (
+                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden>
+                    <span className={`h-4 w-4 rounded-full border-2 ${spinnerColor} border-t-transparent animate-spin`} />
+                  </span>
+                )}
               </Link>
             </div>
           </div>

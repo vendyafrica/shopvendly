@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { orderService } from "../../orders/services/order-service.js";
-import { notifyCustomerOrderReceived, notifyCustomerPreparing, notifySellerNewOrder } from "../../messaging/services/notifications.js";
+import { orderService } from "../../orders/services/order-service";
+import { notifyCustomerOrderReceived, notifyCustomerPreparing, notifySellerNewOrder } from "../../messaging/services/notifications";
 import { z } from "zod";
 
 const orderIdSchema = z.string().uuid();

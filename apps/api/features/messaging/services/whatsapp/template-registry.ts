@@ -1,4 +1,4 @@
-import type { TemplateMessageInput } from "./message-queue.js";
+import type { TemplateMessageInput } from "./message-queue";
 
 export const TEMPLATE_NAMES = [
   "seller_new_order",

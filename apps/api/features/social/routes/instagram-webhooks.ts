@@ -3,7 +3,7 @@ import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
 import { Receiver } from "@upstash/qstash";
 import { UTApi, UTFile } from "uploadthing/server";
-import type { RawBodyRequest } from "../../../shared/types/raw-body.js";
+import type { RawBodyRequest } from "../../../shared/types/raw-body";
 
 import { z } from "zod";
 import { and, db, eq, instagramAccounts, instagramSyncJobs, account, stores, products, mediaObjects, productMedia, tenantMemberships } from "@shopvendly/db";

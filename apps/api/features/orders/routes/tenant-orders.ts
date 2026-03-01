@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
-import { requireAuth, requireTenantRole } from "../../../shared/middleware/auth.js";
-import { orderService, updateOrderStatusSchema } from "../services/order-service.js";
+import { requireAuth, requireTenantRole } from "../../../shared/middleware/auth";
+import { orderService, updateOrderStatusSchema } from "../services/order-service";
 
 export const tenantOrdersRouter: ExpressRouter = Router();
 

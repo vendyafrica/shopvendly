@@ -1,1 +1,1 @@
-export * from "../../services/whatsapp/preference-store.js";
+export * from "../../services/whatsapp/preference-store";

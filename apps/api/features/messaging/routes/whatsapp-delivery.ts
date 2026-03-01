@@ -1,9 +1,9 @@
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
 import { Receiver } from "@upstash/qstash";
-import type { RawBodyRequest } from "../../../shared/types/raw-body.js";
-import { whatsappClient } from "../services/whatsapp/whatsapp-client.js";
-import type { QueuePayload } from "../services/whatsapp/message-queue.js";
+import type { RawBodyRequest } from "../../../shared/types/raw-body";
+import { whatsappClient } from "../services/whatsapp/whatsapp-client";
+import type { QueuePayload } from "../services/whatsapp/message-queue";
 
 export const whatsappDeliveryRouter: ExpressRouter = Router();
 

@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { createOrderSchema, orderService } from "../services/order-service.js";
-import { capturePosthogEvent } from "../../../shared/utils/posthog.js";
+import { createOrderSchema, orderService } from "../services/order-service";
+import { capturePosthogEvent } from "../../../shared/utils/posthog";
 
 export const storefrontOrdersRouter: Router = Router();
 

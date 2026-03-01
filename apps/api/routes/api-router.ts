@@ -1,15 +1,15 @@
 import { Router } from "express";
 
-import { storefrontOrdersRouter } from "../features/orders/routes/storefront-orders.js";
-import { tenantOrdersRouter } from "../features/orders/routes/tenant-orders.js";
-import { orderSimulationsRouter } from "../features/orders/routes/order-simulations.js";
-import { paystackPaymentsRouter } from "../features/payments/routes/paystack-payments.js";
-import { storefrontPaymentsRouter } from "../features/payments/routes/storefront-payments.js";
-import { paystackWebhookRouter } from "../features/payments/routes/paystack-webhook.js";
-import { whatsappRouter } from "../features/messaging/routes/whatsapp.js";
-import { whatsappDeliveryRouter } from "../features/messaging/routes/whatsapp-delivery.js";
-import { whatsappTemplatesRouter } from "../features/messaging/routes/whatsapp-templates.js";
-import { instagramWebhookRouter } from "../features/social/routes/instagram-webhooks.js";
+import { storefrontOrdersRouter } from "../features/orders/routes/storefront-orders";
+import { tenantOrdersRouter } from "../features/orders/routes/tenant-orders";
+import { orderSimulationsRouter } from "../features/orders/routes/order-simulations";
+import { paystackPaymentsRouter } from "../features/payments/routes/paystack-payments";
+import { storefrontPaymentsRouter } from "../features/payments/routes/storefront-payments";
+import { paystackWebhookRouter } from "../features/payments/routes/paystack-webhook";
+import { whatsappRouter } from "../features/messaging/routes/whatsapp";
+import { whatsappDeliveryRouter } from "../features/messaging/routes/whatsapp-delivery";
+import { whatsappTemplatesRouter } from "../features/messaging/routes/whatsapp-templates";
+import { instagramWebhookRouter } from "../features/social/routes/instagram-webhooks";
 
 export const apiRouter: Router = Router();
 

@@ -1,7 +1,7 @@
 import express, { Express, Request, Response } from "express";
 import cors from "cors";
-import { apiRouter } from "./routes/api-router.js";
-import type { RawBodyRequest } from "./shared/types/raw-body.js";
+import { apiRouter } from "./routes/api-router";
+import type { RawBodyRequest } from "./shared/types/raw-body";
 
 export function createApp(): Express {
   const app = express();

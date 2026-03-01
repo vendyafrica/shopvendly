@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { requireAuth, requireTenantRole } from "../../../shared/middleware/auth.js";
-import { orderService } from "../services/order-service.js";
-import { notifySellerNewOrder, notifyCustomerOrderReceived } from "../../messaging/services/notifications.js";
+import { requireAuth, requireTenantRole } from "../../../shared/middleware/auth";
+import { orderService } from "../services/order-service";
+import { notifySellerNewOrder, notifyCustomerOrderReceived } from "../../messaging/services/notifications";
 
 export const orderSimulationsRouter :Router = Router();
 

@@ -1,9 +1,9 @@
 import crypto from "crypto";
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
-import type { RawBodyRequest } from "../../../shared/types/raw-body.js";
-import { orderService } from "../../orders/services/order-service.js";
-import { enqueueInboundMessage, enqueueTextMessage, hasDedupeKey } from "../../messaging/services/whatsapp/message-queue.js";
+import type { RawBodyRequest } from "../../../shared/types/raw-body";
+import { orderService } from "../../orders/services/order-service";
+import { enqueueInboundMessage, enqueueTextMessage, hasDedupeKey } from "../../messaging/services/whatsapp/message-queue";
 import {
   notifyCustomerOrderAccepted,
   notifyCustomerPreparing,
@@ -16,7 +16,7 @@ import {
   notifySellerMarkReady,
   notifySellerOutForDelivery,
   notifySellerOrderCompleted,
-} from "../../messaging/services/notifications.js";
+} from "../../messaging/services/notifications";
 
 export const whatsappRouter: ExpressRouter = Router();
 

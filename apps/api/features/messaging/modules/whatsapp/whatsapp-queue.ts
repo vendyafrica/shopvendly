@@ -1,1 +1,1 @@
-export * from "../../../messaging/services/whatsapp/message-queue.js";
+export * from "../../../messaging/services/whatsapp/message-queue";
