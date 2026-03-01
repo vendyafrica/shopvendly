@@ -1,7 +1,7 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { storeService } from "@/features/storefront/lib/store-service";
+import { storeService } from "@/app/[handle]/lib/store-service";
 import { db } from "@shopvendly/db";
 import { tenantMemberships } from "@shopvendly/db/schema";
 import { eq } from "@shopvendly/db";

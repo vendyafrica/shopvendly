@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { ProductGrid } from "@/features/storefront/components/product-grid";
-import { Categories } from "@/features/storefront/components/categories";
+import { ProductGrid } from "@/app/[handle]/components/product-grid";
+import { Categories } from "@/app/[handle]/components/categories";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 
