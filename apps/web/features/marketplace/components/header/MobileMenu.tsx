@@ -158,7 +158,7 @@ export function MobileMenu({
 
                         <MenuItem
                             label="Contact us"
-                            href="/contact"
+                            href="/accountontact"
                             onClick={onClose}
                             delay={150}
                         />

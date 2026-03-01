@@ -14,7 +14,6 @@ import {
   GroupLayersIcon,
   Payment02Icon,
   PackageOpenIcon,
-  ConnectIcon,
   Home01Icon,
 } from "@hugeicons/core-free-icons";
 
@@ -81,7 +80,7 @@ const tenantAdminItems: SidebarNavItem[] = [
   },
   {
     title: "Customers",
-    url: "/customers",
+    url: "/accountustomers",
     icon: CustomerServiceIcon,
   },
 ];
@@ -104,7 +103,7 @@ const superAdminItems: SidebarNavItem[] = [
   },
   {
     title: "Categories",
-    url: "/categories",
+    url: "/accountategories",
     icon: GroupLayersIcon,
   },
   {

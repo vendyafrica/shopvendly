@@ -95,10 +95,10 @@ export function useOnboarding() {
 }
 
 const STEP_ROUTES: Record<Exclude<OnboardingStep, "complete">, string> & { complete: string } = {
-    step0: "/c?step=0",
-    step1: "/c?step=1",
-    step2: "/c?step=2",
-    step3: "/c?step=3",
+    step0: "/account?step=0",
+    step1: "/account?step=1",
+    step2: "/account?step=2",
+    step3: "/account?step=3",
     complete: "/dashboard",
 };
 

@@ -20,7 +20,6 @@ import {
 } from "@shopvendly/ui/components/select";
 import { isLikelyVideoMedia } from "@/utils/misc";
 import { useRouter } from "next/navigation";
-import { Badge } from "@shopvendly/ui/components/badge";
 import { StoreAvatar } from "@/components/store-avatar";
 
 const STATUS_STYLES: Record<ProductTableRow["status"], { label: string; badgeClass: string }> = {
@@ -90,7 +89,7 @@ interface ProductsMobileViewProps {
     onEdit: (id: string) => void;
     onDelete: (id: string) => void;
     onAddSelect: (mode: "single" | "multiple") => void;
-    onStatusChange?: (productId: string, newStatus: string) => void;
+    onStatusChange?: (productId: string, newStatus: ProductTableRow["status"]) => void;
     isPublishing?: boolean;
 }
 
@@ -101,7 +100,6 @@ export function ProductsMobileView({
     onDelete,
     onAddSelect,
     onStatusChange,
-    isPublishing
 }: ProductsMobileViewProps) {
     const [selectedProduct, setSelectedProduct] = React.useState<ProductTableRow | null>(null);
     const [sheetOpen, setSheetOpen] = React.useState(false);
@@ -116,7 +114,6 @@ export function ProductsMobileView({
     };
 
     const storeName = bootstrap?.storeName || "My Store";
-    const initial = storeName.charAt(0).toUpperCase();
     const dashboardHref = bootstrap?.storeSlug ? `/dashboard/${bootstrap.storeSlug}` : "/dashboard";
     const router = useRouter();
 
@@ -184,7 +181,7 @@ export function ProductsMobileView({
             </div>
 
             {/* Grid */}
-            <div className="grid grid-cols-3 gap-[1px]">
+            <div className="grid grid-cols-3 gap-px">
                 {rows.length === 0 ? (
                     <div className="col-span-3 py-16 flex flex-col items-center justify-center text-center text-muted-foreground px-4">
                         <div className="size-12 rounded-full border-2 border-dashed border-border flex items-center justify-center mb-3">
@@ -251,7 +248,7 @@ export function ProductsMobileView({
                                                     onStatusChange(selectedProduct.id, value);
                                                 }
                                                 // Optimistic local update for the sheet
-                                                setSelectedProduct(prev => prev ? { ...prev, status: value as any } : null);
+                                                setSelectedProduct(prev => prev ? { ...prev, status: value as ProductTableRow["status"] } : null);
                                             }}
                                         >
                                             <SelectTrigger className={`h-6 w-[90px] px-2 py-0 text-[10px] font-medium border ${STATUS_STYLES[selectedProduct.status].badgeClass} focus:ring-0 focus:ring-offset-0 bg-transparent`}>

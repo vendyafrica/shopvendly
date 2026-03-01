@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { uploadFiles } from "@/utils/uploadthing";
+import { useUploadThing } from "@/utils/uploadthing";
 
 type UploadEndpoint = "productMedia" | "storeHeroMedia";
 
@@ -128,6 +128,8 @@ async function prepareFileForUpload(file: File, options: UploadOptions): Promise
 
 export function useUpload() {
     const [isUploading, setIsUploading] = useState(false);
+    const productUpload = useUploadThing("productMedia");
+    const heroUpload = useUploadThing("storeHeroMedia");
 
     const uploadFile = useCallback(
         async (file: File, options: UploadOptions): Promise<{ url: string; pathname: string }> => {
@@ -136,12 +138,15 @@ export function useUpload() {
                 const endpoint = options.endpoint ?? "productMedia";
                 const preparedFile = await prepareFileForUpload(file, options);
 
-                const uploads = await uploadFiles(endpoint, {
-                    files: [preparedFile],
+                const startUpload = endpoint === "storeHeroMedia"
+                    ? heroUpload.startUpload
+                    : productUpload.startUpload;
+
+                const uploads = (await startUpload([preparedFile], {
                     input: {
                         tenantId: options.tenantId,
                     },
-                });
+                })) ?? [];
 
                 const uploaded = uploads[0];
                 if (!uploaded) {
@@ -164,7 +169,7 @@ export function useUpload() {
                 setIsUploading(false);
             }
         },
-        []
+        [heroUpload.startUpload, productUpload.startUpload]
     );
 
     return { uploadFile, isUploading };

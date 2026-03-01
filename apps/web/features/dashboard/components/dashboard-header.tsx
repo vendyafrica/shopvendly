@@ -13,10 +13,8 @@ import { useHeaderActions } from "@/features/dashboard/context/header-actions-co
 import { getStorefrontUrl } from "@/utils/misc";
 
 export function DashboardHeader({
-  title = "Dashboard",
-  tenantName,
+    tenantName,
 }: {
-  title?: string;
   tenantName?: string | null;
 }) {
   const { session } = useAppSession();

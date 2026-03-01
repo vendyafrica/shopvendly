@@ -56,7 +56,6 @@ interface ProductStatsProps {
 
 export function ProductStats({
     totalProducts = 0,
-    totalSales = 0,
     activeNow = 0,
     newProducts = 0,
     lowStock = 0,

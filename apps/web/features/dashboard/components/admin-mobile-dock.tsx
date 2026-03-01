@@ -60,7 +60,7 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
     { label: "Notifications", href: joinPaths(basePath, "/notifications"), icon: Message01Icon },
     { label: "Studio", href: joinPaths(basePath, "/studio"), icon: Store01Icon },
     { label: "Analytics", href: joinPaths(basePath, "/analytics"), icon: Analytics02Icon },
-    { label: "Customers", href: joinPaths(basePath, "/customers"), icon: CustomerServiceIcon },
+    { label: "Customers", href: joinPaths(basePath, "/accountustomers"), icon: CustomerServiceIcon },
     { label: "Integrations", href: joinPaths(basePath, "/integrations"), icon: ConnectIcon },
     { label: "Settings", href: joinPaths(basePath, "/settings"), icon: Settings01Icon },
   ];

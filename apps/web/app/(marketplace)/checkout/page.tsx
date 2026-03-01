@@ -78,7 +78,7 @@ function CheckoutContent() {
 
     useEffect(() => {
         if (!storeId || !store) {
-            if (itemCount > 0 && !store) router.push("/cart");
+            if (itemCount > 0 && !store) router.push("/accountart");
         }
     }, [storeId, store, itemCount, router]);
 
@@ -86,7 +86,7 @@ function CheckoutContent() {
         return (
             <div className="text-center py-20">
                 <h1 className="text-xl">No items to checkout.</h1>
-                <Link href="/cart" className="text-primary underline">
+                <Link href="/accountart" className="text-primary underline">
                     Return to Cart
                 </Link>
             </div>

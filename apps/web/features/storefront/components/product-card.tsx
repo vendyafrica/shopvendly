@@ -37,7 +37,6 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
 
   const paramsObject = typeof params === "object" ? (params as Record<string, string | undefined>) : {};
   const derivedStoreSlug = storeSlug ?? paramsObject.handle ?? paramsObject.s;
-  const currentStoreSlug = derivedStoreSlug ?? "";
   const aspectClass = aspectVariants[index % aspectVariants.length];
 
   const originalImageUrl = image || FALLBACK_PRODUCT_IMAGE;

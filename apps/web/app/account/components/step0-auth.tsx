@@ -17,7 +17,7 @@ export function Step0Auth() {
     if (e) e.preventDefault();
     setAuthLoading(true);
     try {
-      const res = await signInWithGoogle({ callbackURL: getRootUrl("/c?step=1") });
+      const res = await signInWithGoogle({ callbackURL: getRootUrl("/account?step=1") });
       if (res?.error) {
         console.error("Sign in failed:", res.error);
         setAuthLoading(false);

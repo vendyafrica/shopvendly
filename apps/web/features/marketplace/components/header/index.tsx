@@ -88,7 +88,7 @@ export default function Header({
         };
     }, [isMenuOpen, isSearchOpen, showLogin]);
 
-    const handleSellNow = () => router.push("/c");
+    const handleSellNow = () => router.push("/account");
     const handleSignOut = async () => {
         await signOut();
         router.refresh();

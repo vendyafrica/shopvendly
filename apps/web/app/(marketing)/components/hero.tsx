@@ -24,7 +24,7 @@ export function Hero() {
 
           <div className="flex flex-col items-center gap-2 *:w-full sm:flex-row sm:justify-center sm:*:w-auto">
             <Button className="px-8 h-11 rounded-full">
-              <Link href="/c">
+              <Link href="/account">
                 <span className="text-nowrap">Get Started</span>
               </Link>
             </Button>

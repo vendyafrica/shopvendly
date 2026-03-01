@@ -160,7 +160,7 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                         amount: Math.round(totalAmount),
                         currency: product.currency,
                         ref: reference,
-                        onSuccess: async (_resp) => {
+                        onSuccess: async () => {
                             resolve();
                         },
                         onCancel: () => reject(new Error("Payment cancelled")),

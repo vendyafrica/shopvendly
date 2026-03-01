@@ -13,7 +13,6 @@ import { useTenant } from "@/features/dashboard/context/tenant-context";
 import Image from "next/image";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
-import { Badge } from "@shopvendly/ui/components/badge";
 import {
   Select,
   SelectContent,

@@ -19,9 +19,9 @@ const footerLinks = [
   {
     title: "Shop",
     links: [
-      { name: "Trending", href: "/category/trending" },
+      { name: "Trending", href: "/accountategory/trending" },
       { name: "Track an Order", href: "/track-order" },
-      { name: "Customer Service", href: "/contact" },
+      { name: "Customer Service", href: "/accountontact" },
     ],
   },
   {

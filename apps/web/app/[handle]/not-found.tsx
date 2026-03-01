@@ -11,7 +11,7 @@ export default function NotFound() {
             This store doesn’t exist yet (or the link is incorrect). If you’re trying to start a store, you can create one now.
           </p>
           <div className="mt-8 flex items-center justify-center gap-3">
-            <Link href="/c">
+            <Link href="/account">
               <Button>Sell now</Button>
             </Link>
             <Link href="/">

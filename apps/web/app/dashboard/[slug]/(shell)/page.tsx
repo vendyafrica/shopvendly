@@ -9,9 +9,8 @@ import { orderItems, orders, stores } from "@shopvendly/db/schema";
 import { and, desc, eq, isNull, sql } from "@shopvendly/db";
 import { Button } from "@shopvendly/ui/components/button";
 import { Card, CardContent, CardHeader } from "@shopvendly/ui/components/card";
-import { Input } from "@shopvendly/ui/components/input";
 import { getStorefrontUrl } from "@/utils/misc";
-import { CheckCircle2, ExternalLink, ImageIcon, Palette } from "lucide-react";
+import { CheckCircle2, ExternalLink, ImageIcon } from "lucide-react";
 
 
 function formatCurrency(amount: number, currency: string) {
@@ -211,7 +210,6 @@ export default async function DashboardPage({
   const featuredItemValue = featuredOrder
     ? formatCurrency(featuredOrder.totalAmount, featuredOrder.currency || currency)
     : undefined;
-  const designPrompt = featuredItemName ? `A store specializing in ${featuredItemName.toLowerCase()}.` : `A store specializing in ${store.name.toLowerCase()}.`;
 
   return (
     <div className="space-y-8">

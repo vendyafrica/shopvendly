@@ -1,4 +1,6 @@
 import { SegmentedStatsCard } from "@/features/dashboard/components/segmented-stats-card";
+import type { TenantBootstrap } from "@/features/dashboard/context/tenant-context";
+
 import { db } from "@shopvendly/db/db";
 import { and, desc, eq, isNull } from "@shopvendly/db";
 import { orders, stores } from "@shopvendly/db/schema";
@@ -88,6 +90,14 @@ export default async function NotificationsPage({
   const orderCount = recentOrders.length;
   const total = notifications.length;
 
+  const bootstrap: TenantBootstrap = {
+    tenantId: store.tenantId,
+    storeId: store.id,
+    storeSlug: store.slug,
+    storeName: store.name ?? undefined,
+    storeLogoUrl: store.logoUrl ?? undefined,
+  };
+
   const statSegments = [
     {
       label: "Recent Alerts",
@@ -113,11 +123,7 @@ export default async function NotificationsPage({
     <div className="md:p-6 p-0">
       {/* Mobile View */}
       <div className="block md:hidden">
-        <NotificationsMobileView
-          bootstrap={store as any}
-          notifications={notifications}
-          statSegments={statSegments}
-        />
+        <NotificationsMobileView bootstrap={bootstrap} notifications={notifications} statSegments={statSegments} />
       </div>
 
       {/* Desktop View */}

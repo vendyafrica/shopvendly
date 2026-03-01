@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { Avatar, AvatarFallback } from "@shopvendly/ui/components/avatar";
 import {
     Sheet,
@@ -47,7 +48,13 @@ export function CustomersMobileView({
                 <div className="flex items-center gap-3">
                     <Avatar className="size-12 border border-border/50">
                         {bootstrap?.storeLogoUrl ? (
-                            <img src={bootstrap.storeLogoUrl} alt={bootstrap.storeName} className="object-cover" />
+                            <Image
+                                src={bootstrap.storeLogoUrl}
+                                alt={bootstrap.storeName || "Store logo"}
+                                width={48}
+                                height={48}
+                                className="object-cover rounded-full"
+                            />
                         ) : (
                             <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
                                 {storeInitials}
@@ -78,7 +85,7 @@ export function CustomersMobileView({
                 <SegmentedStatsCard segments={statSegments} />
             </div>
 
-            <div className="w-full h-[1px] bg-border/40" />
+            <div className="w-full h-1px bg-border/40" />
 
             {/* Navigation Tabs */}
             <div className="flex w-full border-b border-border/40">
@@ -173,7 +180,7 @@ export function CustomersMobileView({
                                 </div>
                             </div>
 
-                            <div className="h-[1px] w-full bg-border/60" />
+                            <div className="h-1px w-full bg-border/60" />
 
                             {/* Details*/}
                             <div className="flex flex-col gap-4">

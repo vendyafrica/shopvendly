@@ -17,7 +17,7 @@ export function Content() {
 
         <div className="mt-8 flex justify-center gap-4">
           <Button className="h-12 px-8 rounded-full">
-            <Link href="/c">
+            <Link href="/account">
               Get Started
             </Link>
           </Button>

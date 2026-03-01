@@ -7,6 +7,7 @@ import {
     SheetContent
 } from "@shopvendly/ui/components/sheet";
 import { Badge } from "@shopvendly/ui/components/badge";
+import Image from "next/image";
 import type { TenantBootstrap } from "@/features/dashboard/context/tenant-context";
 import { SegmentedStatsCard } from "@/features/dashboard/components/segmented-stats-card";
 import type { TransactionRow } from "@/features/dashboard/components/recent-transactions-table";
@@ -53,7 +54,7 @@ export function TransactionsMobileView({
                 <div className="flex items-center gap-3">
                     <Avatar className="size-12 border border-border/50">
                         {bootstrap?.storeLogoUrl ? (
-                            <img src={bootstrap.storeLogoUrl} alt={bootstrap.storeName} className="object-cover" />
+                            <Image src={bootstrap.storeLogoUrl} alt={bootstrap?.storeName ?? "Store logo"} className="object-cover" />
                         ) : (
                             <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
                                 {storeInitials}
@@ -73,7 +74,7 @@ export function TransactionsMobileView({
             {/* Bio / Description */}
             <div className="px-5 mb-5 space-y-1.5">
                 <p className="text-sm">
-                    Monitor your store's transactions and revenue flow.
+                    Monitor your store&apos;s transactions and revenue flow.
                 </p>
             </div>
 
@@ -82,7 +83,7 @@ export function TransactionsMobileView({
                 <SegmentedStatsCard segments={statSegments} />
             </div>
 
-            <div className="w-full h-[1px] bg-border/40" />
+            <div className="w-full h-px bg-border/40" />
 
             {/* Navigation Tabs */}
             <div className="flex w-full border-b border-border/40">
@@ -158,7 +159,7 @@ export function TransactionsMobileView({
                                 </div>
                             </div>
 
-                            <div className="h-[1px] w-full bg-border" />
+                            <div className="h-px w-full bg-border" />
 
                             {/* Details Details */}
                             <div className="flex flex-col gap-4">

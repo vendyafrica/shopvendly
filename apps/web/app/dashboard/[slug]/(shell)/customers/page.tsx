@@ -1,6 +1,7 @@
 import { SegmentedStatsCard } from "@/features/dashboard/components/segmented-stats-card";
 import { db } from "@shopvendly/db/db";
 import { orders, stores } from "@shopvendly/db/schema";
+
 import { and, desc, eq, isNull, sql } from "@shopvendly/db";
 import { CustomersTable, type CustomerRow } from "./CustomersTable";
 import { CustomersMobileView } from "./components/customers-mobile-view";
@@ -25,7 +26,16 @@ export default async function CustomersPage({
     );
   }
 
-  const currency = store.defaultCurrency || "USD";
+  const bootstrap = {
+    tenantId: store.tenantId,
+    storeId: store.id,
+    storeSlug: store.slug,
+    storeName: store.name,
+    storeLogoUrl: store.logoUrl ?? undefined,
+    defaultCurrency: store.defaultCurrency ?? undefined,
+  };
+
+  const currency = bootstrap.defaultCurrency || "USD";
   const now = new Date();
   const newThreshold = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const churnThreshold = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
@@ -110,7 +120,7 @@ export default async function CustomersPage({
       {/* Mobile View */}
       <div className="block md:hidden">
         <CustomersMobileView
-          bootstrap={store as any}
+          bootstrap={bootstrap}
           customers={customers}
           statSegments={statSegments}
         />

@@ -30,7 +30,7 @@ export function Step3Categories() {
   const [authLoading, setAuthLoading] = useState(false);
 
   const getCallbackURL = useMemo(
-    () => () => getRootUrl("/c?step=3"),
+    () => () => getRootUrl("/account?step=3"),
     []
   );
 

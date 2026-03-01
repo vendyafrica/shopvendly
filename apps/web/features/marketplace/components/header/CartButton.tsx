@@ -11,7 +11,7 @@ export function CartButton({ itemCount, mobile = false }: CartButtonProps) {
     if (mobile) {
         return (
             <Link
-                href="/cart"
+                href="/accountart"
                 aria-label="Cart"
                 className="relative p-2 rounded-lg hover:bg-muted/70 active:bg-muted active:scale-95 transition-all"
             >
@@ -27,7 +27,7 @@ export function CartButton({ itemCount, mobile = false }: CartButtonProps) {
 
     return (
         <Link
-            href="/cart"
+            href="/accountart"
             className="group relative p-2.5 rounded-full hover:bg-muted/70 active:scale-95 transition-all"
             aria-label="Cart"
         >

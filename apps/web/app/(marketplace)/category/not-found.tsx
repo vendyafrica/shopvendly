@@ -11,7 +11,7 @@ export default function NotFound() {
             Stores for this category will appear here soon. In the meantime, you can start selling on Vendly.
           </p>
           <div className="mt-8 flex items-center justify-center gap-3">
-            <Link href="/c">
+            <Link href="/account">
               <Button>Sell now</Button>
             </Link>
             <Link href="/">

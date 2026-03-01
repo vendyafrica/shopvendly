@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { storeService } from "@/features/storefront/lib/store-service";
 import { db } from "@shopvendly/db";
-import { tenants, tenantMemberships } from "@shopvendly/db/schema";
+import { tenantMemberships } from "@shopvendly/db/schema";
 import { eq } from "@shopvendly/db";
 import { z } from "zod";
 
@@ -15,8 +15,6 @@ const createStoreSchema = z.object({
     storeAddress: z.string().optional(),
     categories: z.array(z.string()).optional(),
 });
-
-const updateStoreSchema = createStoreSchema.partial();
 
 /**
  * GET /api/stores

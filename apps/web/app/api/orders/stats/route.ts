@@ -1,9 +1,9 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { orderService } from "@/features/orders/lib/order-service";
 import { db } from "@shopvendly/db/db";
-import { tenants, tenantMemberships } from "@shopvendly/db/schema";
+import { tenantMemberships } from "@shopvendly/db/schema";
 import { eq } from "@shopvendly/db";
 
 /**

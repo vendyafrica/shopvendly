@@ -1,9 +1,9 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { onboardingService } from "@/app/c/lib/onboarding-service";
-import { onboardingRepository } from "@/app/c/lib/onboarding-repository";
-import type { OnboardingData } from "@/app/c/lib/models";
+import { onboardingService } from "@/app/account/lib/onboarding-service";
+import { onboardingRepository } from "@/app/account/lib/onboarding-repository";
+import type { OnboardingData } from "@/app/account/lib/models";
 import { db } from "@shopvendly/db/db";
 import { verification, tenantMemberships, tenants, stores } from "@shopvendly/db/schema";
 import { eq } from "@shopvendly/db";

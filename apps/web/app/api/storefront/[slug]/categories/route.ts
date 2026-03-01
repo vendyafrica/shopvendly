@@ -9,6 +9,12 @@ type RouteParams = {
  * GET /api/storefront/[slug]/categories
  * Returns store categories
  */
+type Category = {
+    slug: string;
+    name: string;
+    image: string | null;
+};
+
 export async function GET(request: NextRequest, { params }: RouteParams) {
     try {
         const { slug } = await params;
@@ -19,7 +25,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
 
         // Categories are stored as string[] in store
-        const categories = ((store as any).categories ?? []).map((name: string) => ({
+        const categories: Category[] = (store.categories ?? []).map((name: string) => ({
             slug: name.toLowerCase().replace(/\s+/g, "-"),
             name,
             image: null,

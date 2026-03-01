@@ -2,10 +2,7 @@
 
 import { useRef, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { 
-    PlayIcon, 
-    Image02Icon
-} from "@hugeicons/core-free-icons";
+import { Image02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
 import { cn } from "@shopvendly/ui/lib/utils";
 import { useUpload } from "@/features/media/hooks/use-upload";
@@ -91,37 +88,6 @@ export function HeroEditor({
         } catch (error) {
             console.error("Failed to upload hero media:", error);
             alert("Failed to upload hero media. Please try again.");
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    const handleRemove = async (index: number) => {
-        if (!confirm("Are you sure you want to remove this hero media item?")) return;
-
-        try {
-            setIsSaving(true);
-
-            const nextUrls = heroMedia.filter((_, i) => i !== index);
-
-            const response = await fetch(`/api/storefront/${storeSlug}/hero`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    heroMedia: nextUrls,
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error("Failed to remove hero media");
-            }
-
-            onUpdate(nextUrls);
-        } catch (error) {
-            console.error("Failed to remove hero media:", error);
-            alert("Failed to remove hero media. Please try again.");
         } finally {
             setIsSaving(false);
         }

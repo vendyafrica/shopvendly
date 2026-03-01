@@ -1,5 +1,5 @@
 import { db } from "@shopvendly/db/db";
-import { carts, cartItems, products, stores, productMedia, mediaObjects } from "@shopvendly/db/schema";
+import { carts, cartItems, products } from "@shopvendly/db/schema";
 import { eq, and } from "@shopvendly/db";
 
 /**

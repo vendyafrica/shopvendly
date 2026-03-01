@@ -2,7 +2,7 @@ import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@shopvendly/db/db";
-import { account, products, stores } from "@shopvendly/db/schema";
+import { account, products } from "@shopvendly/db/schema";
 import { eq, and } from "@shopvendly/db";
 
 export async function GET(req: NextRequest) {
