@@ -1,9 +1,25 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@shopvendly/ui/components/button";
 import { Badge } from "@shopvendly/ui/components/badge";
 
 export function Hero() {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const handleGetStarted = () => {
+    if (isPending) return;
+
+    startTransition(() => {
+      router.push("/account");
+    });
+  };
+
   return (
     <section className="py-20">
       <div className="relative z-10 mx-auto w-full max-w-2xl px-6 lg:px-0">
@@ -23,10 +39,16 @@ export function Hero() {
           </p>
 
           <div className="flex flex-col items-center gap-2 *:w-full sm:flex-row sm:justify-center sm:*:w-auto">
-            <Button className="px-8 h-11 rounded-full">
-              <Link href="/account">
-                <span className="text-nowrap">Get Started</span>
-              </Link>
+            <Button
+              className="px-8 h-11 rounded-full"
+              onClick={handleGetStarted}
+              disabled={isPending}
+              aria-live="polite"
+            >
+              <span className="flex items-center gap-2">
+                {isPending && <Loader2 className="size-4 animate-spin" aria-hidden />}
+                <span className="text-nowrap">{isPending ? "Redirecting..." : "Get Started"}</span>
+              </span>
             </Button>
             <Button variant="ghost" className="px-8 h-11 rounded-full">
               <Link href="https://vendly.shopvendly.store/" target="_blank" rel="noreferrer">
