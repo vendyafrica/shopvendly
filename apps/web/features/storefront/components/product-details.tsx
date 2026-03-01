@@ -190,7 +190,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     }, [product.mediaItems, product.images]);
 
     const safeSelectedIndex = Math.min(selectedMediaIndex, mediaItems.length - 1);
-    const currentMedia = mediaItems[safeSelectedIndex] ?? mediaItems[0];
+    const currentMedia = mediaItems[safeSelectedIndex] ?? mediaItems[0] ?? { url: FALLBACK_PRODUCT_IMAGE, contentType: "image/jpeg" };
     const posterFallback = product.images?.find((img) => !isVideoUrl(img)) || FALLBACK_PRODUCT_IMAGE;
     const currentIsVideo = isVideoUrl(currentMedia.url, currentMedia.contentType);
 

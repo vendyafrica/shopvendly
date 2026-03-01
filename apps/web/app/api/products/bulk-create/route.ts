@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
                     title,
                     description: "", // Empty for now, user can edit later
                     priceAmount: 0,
+                    quantity: 0,
                     currency: store.defaultCurrency || "UGX",
                     status: "draft",
                     source: "bulk-upload",

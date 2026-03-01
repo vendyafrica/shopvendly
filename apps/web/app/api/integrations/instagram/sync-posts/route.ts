@@ -5,6 +5,7 @@ import { z } from "zod";
 
 const bodySchema = z.object({
   storeId: z.string().uuid(),
+  limit: z.number().int().min(1).max(50).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { storeId } = bodySchema.parse(body);
+    const { storeId, limit } = bodySchema.parse(body);
 
     const apiBaseFromEnv = process.env.NEXT_PUBLIC_API_URL;
     const apiBase =
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${apiBase}/api/internal/instagram/sync`, {
+    const response = await fetch(`${apiBase}/api/internal/instagram/sync-posts`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         storeId,
         userId: session.user.id,
+        limit,
       }),
       cache: "no-store",
     });
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(json, { status: 200 });
   } catch (error) {
-    console.error("Instagram sync error:", error);
+    console.error("Instagram sync posts error:", error);
     return NextResponse.json({ error: "Sync failed" }, { status: 500 });
   }
 }

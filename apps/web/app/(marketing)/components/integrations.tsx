@@ -1,11 +1,9 @@
-import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   MetaIcon,
   TiktokIcon,
   InstagramIcon,
 } from "@hugeicons/core-free-icons";
-import Link from "next/link";
 
 export function Integrations() {
   return (

@@ -109,7 +109,7 @@ export function TopProductsBarChartCard({
                 offset={8}
                 className="fill-muted-foreground"
                 fontSize={12}
-                formatter={(val) => (typeof val === "number" ? val.toLocaleString() : "")}
+                formatter={(val: number | string) => (typeof val === "number" ? val.toLocaleString() : "")}
               />
             </Bar>
           </BarChart>

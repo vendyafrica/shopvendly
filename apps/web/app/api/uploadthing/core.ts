@@ -44,7 +44,7 @@ function assertTenantFileSizeLimits(files: readonly { size: number; type: string
   }
 }
 
-export const ourFileRouter = {
+export const ourFileRouter: FileRouter = {
   productMedia: f({
     image: {
       maxFileSize: IMAGE_MAX_FILE_SIZE,

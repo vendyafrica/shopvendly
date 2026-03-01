@@ -22,11 +22,19 @@ class OnboardingRepository {
       status: "active",
     }).returning();
 
+    if (!tenant) {
+      throw new Error("Failed to create tenant");
+    }
+
     const [membership] = await db.insert(tenantMemberships).values({
       tenantId: tenant.id,
       userId,
       role: "owner",
     }).returning();
+
+    if (!membership) {
+      throw new Error("Failed to create tenant membership");
+    }
 
     const defaultCurrency = data.personal.countryCode === "254" ? "KES" : "UGX";
 
@@ -42,6 +50,10 @@ class OnboardingRepository {
       storeAddress: data.store.storeLocation ?? null,
       status: true,
     }).returning();
+
+    if (!store) {
+      throw new Error("Failed to create store");
+    }
 
     return {
       tenant,

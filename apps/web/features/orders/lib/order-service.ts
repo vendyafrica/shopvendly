@@ -1,7 +1,7 @@
 import { db } from "@shopvendly/db/db";
 import { orders, orderItems, products, stores } from "@shopvendly/db/schema";
 import { eq, and, isNull, desc, sql, like, or, inArray } from "@shopvendly/db";
-import type { CreateOrderInput, UpdateOrderStatusInput, OrderFilters, OrderWithItems, OrderStats } from "../models/order-models";
+import type { CreateOrderInput, UpdateOrderStatusInput, OrderFilters, OrderWithItems, OrderStats, OrderItemInput } from "./order-models";
 
 type ProductWithMedia = (typeof products.$inferSelect) & {
     media?: Array<{ media?: { blobUrl?: string | null } | null; sortOrder?: number | null } | null>;
@@ -25,7 +25,7 @@ export const orderService = {
         }
 
         // Get product details
-        const productIds = input.items.map((item) => item.productId);
+        const productIds = input.items.map((item: OrderItemInput) => item.productId);
         const productList = await db.query.products.findMany({
             where: and(
                 inArray(products.id, productIds),
@@ -51,7 +51,7 @@ export const orderService = {
         let subtotal = 0;
         const currency = productList[0]?.currency || "UGX";
 
-        const orderItemsData = input.items.map((item) => {
+        const orderItemsData = input.items.map((item: OrderItemInput) => {
             const product = productMap.get(item.productId) as ProductWithMedia | undefined;
             if (!product) {
                 throw new Error(`Product ${item.productId} not found`);
@@ -100,6 +100,10 @@ export const orderService = {
                 currency,
             })
             .returning();
+
+        if (!order) {
+            throw new Error("Failed to create order");
+        }
 
         const items = orderItemsData.map((item) => ({
             tenantId: store.tenantId,
@@ -188,7 +192,7 @@ export const orderService = {
             offset,
         });
 
-        const [{ count }] = await db
+        const [{ count = 0 } = { count: 0 }] = await db
             .select({ count: sql<number>`count(*)::int` })
             .from(orders)
             .where(whereClause);

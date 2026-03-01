@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { Avatar, AvatarFallback } from "@shopvendly/ui/components/avatar";
 import type { TenantBootstrap } from "@/features/dashboard/context/tenant-context";
 import { SegmentedStatsCard } from "@/features/dashboard/components/segmented-stats-card";
-import type { NotificationRow } from "./NotificationsTable";
+import type { NotificationRow } from "../NotificationsTable";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
     Notification02Icon,
@@ -28,22 +29,24 @@ interface NotificationsMobileViewProps {
 
 const TYPE_ICONS = {
     Order: ShoppingCart01Icon,
+    Payment: ShoppingCart01Icon,
     System: InformationCircleIcon,
     Alert: Alert01Icon,
-};
+} as const;
 
 const TYPE_COLORS = {
     Order: "text-blue-500 bg-blue-50 border-blue-200",
+    Payment: "text-blue-500 bg-blue-50 border-blue-200",
     System: "text-emerald-500 bg-emerald-50 border-emerald-200",
     Alert: "text-amber-500 bg-amber-50 border-amber-200",
-};
+} as const;
 
 export function NotificationsMobileView({
     bootstrap,
     notifications,
     statSegments,
 }: NotificationsMobileViewProps) {
-    const storeInitials = bootstrap?.name?.substring(0, 2).toUpperCase() || "SV";
+    const storeInitials = bootstrap?.storeName?.substring(0, 2).toUpperCase() || "SV";
 
     return (
         <div className="flex flex-col min-h-screen bg-background pb-20 fade-in-0 duration-500 animate-in">
@@ -51,8 +54,13 @@ export function NotificationsMobileView({
             <div className="px-5 pt-8 pb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <Avatar className="size-12 border border-border/50">
-                        {bootstrap?.logoUrl ? (
-                            <img src={bootstrap.logoUrl} alt={bootstrap.name} className="object-cover" />
+                        {bootstrap?.storeLogoUrl ? (
+                            <Image
+                                src={bootstrap.storeLogoUrl}
+                                alt={bootstrap.storeName || "Store logo"}
+                                fill
+                                className="object-cover"
+                            />
                         ) : (
                             <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
                                 {storeInitials}
@@ -64,7 +72,7 @@ export function NotificationsMobileView({
                             Notifications
                             <HugeiconsIcon icon={CheckmarkBadge01Icon} className="size-4 text-blue-500" />
                         </h1>
-                        <p className="text-xs text-muted-foreground font-medium">#{bootstrap?.slug}</p>
+                        <p className="text-xs text-muted-foreground font-medium">#{bootstrap?.storeSlug}</p>
                     </div>
                 </div>
             </div>
@@ -81,7 +89,7 @@ export function NotificationsMobileView({
                 <SegmentedStatsCard segments={statSegments} />
             </div>
 
-            <div className="w-full h-[1px] bg-border/40" />
+            <div className="w-full h-px bg-border/40" />
 
             {/* Navigation Tabs */}
             <div className="flex w-full border-b border-border/40">
@@ -103,9 +111,11 @@ export function NotificationsMobileView({
                         <p className="font-semibold text-foreground">All caught up!</p>
                     </div>
                 ) : (
-                    notifications.map((n, i) => {
-                        const Icon = TYPE_ICONS[n.type] || InformationCircleIcon;
-                        const colors = TYPE_COLORS[n.type] || TYPE_COLORS.System;
+                    notifications.map((n: NotificationRow, i) => {
+                        const iconKey = n.type as keyof typeof TYPE_ICONS;
+                        const Icon = TYPE_ICONS[iconKey] || InformationCircleIcon;
+                        const colorKey = n.type as keyof typeof TYPE_COLORS;
+                        const colors = TYPE_COLORS[colorKey] || TYPE_COLORS.System;
                         const isNew = n.status === "New";
 
                         return (

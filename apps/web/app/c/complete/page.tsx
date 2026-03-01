@@ -72,7 +72,10 @@ export default function Complete() {
 
   const removePreview = (index: number) => {
     setPreviews((prev) => {
-      URL.revokeObjectURL(prev[index].url);
+      const target = prev[index];
+      if (target) {
+        URL.revokeObjectURL(target.url);
+      }
       return prev.filter((_, i) => i !== index);
     });
   };

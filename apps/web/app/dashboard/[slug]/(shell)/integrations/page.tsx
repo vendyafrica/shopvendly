@@ -25,9 +25,9 @@ export default function IntegrationsPage() {
   const storeId = bootstrap?.storeId;
   
   const [isConnecting, setIsConnecting] = React.useState(false);
-  const [isImporting, setIsImporting] = React.useState(false);
-  const [importError, setImportError] = React.useState<string | null>(null);
-  const [importSuccess, setImportSuccess] = React.useState(false);
+  const [isSyncingPosts, setIsSyncingPosts] = React.useState(false);
+  const [syncPostsError, setSyncPostsError] = React.useState<string | null>(null);
+  const [syncPostsSuccess, setSyncPostsSuccess] = React.useState(false);
   const [syncError, setSyncError] = React.useState<string | null>(null);
   const [isConnectedFromApi, setIsConnectedFromApi] = React.useState(false);
   const [isTikTokConnectedFromApi, setIsTikTokConnectedFromApi] = React.useState(false);
@@ -44,7 +44,7 @@ export default function IntegrationsPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.connected) setIsConnectedFromApi(true);
-        if (data.imported) setImportSuccess(true);
+        if (data.imported) setSyncPostsSuccess(true);
       })
       .catch((e) => console.error("Failed to check instagram status", e));
 
@@ -166,26 +166,26 @@ export default function IntegrationsPage() {
     }
   };
 
-  const handleImport = async () => {
+  const handleSyncPosts = async () => {
     if (!bootstrap?.storeId) return;
-    setIsImporting(true);
-    setImportError(null);
-    setImportSuccess(false);
+    setIsSyncingPosts(true);
+    setSyncPostsError(null);
+    setSyncPostsSuccess(false);
     try {
-      const res = await fetch("/api/integrations/instagram/import", {
+      const res = await fetch("/api/integrations/instagram/sync-posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ storeId: bootstrap.storeId }),
       });
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(text || "Import failed");
+        throw new Error(text || "Sync posts failed");
       }
-      setImportSuccess(true);
+      setSyncPostsSuccess(true);
     } catch (e) {
-      setImportError(e instanceof Error ? e.message : "Import failed");
+      setSyncPostsError(e instanceof Error ? e.message : "Sync posts failed");
     } finally {
-      setIsImporting(false);
+      setIsSyncingPosts(false);
     }
   };
 
@@ -299,45 +299,45 @@ export default function IntegrationsPage() {
             <div className="rounded-lg border border-border/60 bg-muted/20 px-4 py-4 flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-medium">
-                  {importSuccess ? "Products imported" : "Import products"}
+                  {syncPostsSuccess ? "Posts synced" : "Sync posts"}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {importSuccess
-                    ? "Import complete. New posts will sync automatically via webhooks."
-                    : "Pull your existing Instagram posts in as products."}
+                  {syncPostsSuccess
+                    ? "Sync complete. New posts still sync automatically via webhooks."
+                    : "Fallback manual sync for posts if webhook delivery misses updates."}
                 </p>
               </div>
               <Button
-                onClick={handleImport}
-                disabled={isImporting || importSuccess || !bootstrap?.storeId}
+                onClick={handleSyncPosts}
+                disabled={isSyncingPosts || !bootstrap?.storeId}
                 variant="outline"
                 size="sm"
                 className="shrink-0"
               >
-                {isImporting ? (
+                {isSyncingPosts ? (
                   <>
                     <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-3.5 w-3.5 animate-spin" />
-                    Importing…
+                    Syncing…
                   </>
-                ) : importSuccess ? (
+                ) : syncPostsSuccess ? (
                   <>
                     <HugeiconsIcon icon={CheckmarkCircle01Icon} className="mr-2 h-5 w-5 text-emerald-500" />
-                    Imported
+                    Synced
                   </>
                 ) : (
                   <>
                     <HugeiconsIcon icon={Download01Icon} className="h-4 w-4" />
-                    Import now
+                    Sync Posts
                   </>
                 )}
               </Button>
             </div>
           )}
 
-          {importError && (
+          {syncPostsError && (
             <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
               <HugeiconsIcon icon={AlertCircleIcon} className="h-4 w-4 shrink-0" />
-              {importError}
+              {syncPostsError}
             </div>
           )}
         </div>
@@ -357,8 +357,8 @@ export default function IntegrationsPage() {
             {showDangerZone && (
               <div className="px-6 pb-5 space-y-3">
                 <p className="text-xs text-muted-foreground">
-                  Disconnects your Instagram account and removes all stored tokens.{" "}
-                  <strong>Imported products are not deleted.</strong>
+                  Disconnects your Instagram account and removes Instagram
+                  products, media, jobs, and stored tokens.
                 </p>
                 <Button
                   variant="destructive"

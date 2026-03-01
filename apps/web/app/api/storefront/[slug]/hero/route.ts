@@ -50,9 +50,15 @@ export async function PUT(
             .where(eq(stores.id, store.id))
             .returning();
 
+        const firstStore = updatedStore[0];
+
+        if (!firstStore) {
+            return NextResponse.json({ error: "Failed to update store hero" }, { status: 500 });
+        }
+
         return NextResponse.json({ 
             success: true, 
-            heroMedia: updatedStore[0].heroMedia,
+            heroMedia: firstStore.heroMedia,
         });
     } catch (error) {
         console.error("Failed to update store hero:", error);

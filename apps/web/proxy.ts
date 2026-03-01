@@ -60,6 +60,9 @@ export function proxy(req: NextRequest) {
     const pathParts = pathname.split("/").filter(Boolean);
     if (pathParts.length > 0) {
       const potentialSlug = pathParts[0];
+      if (!potentialSlug) {
+        return NextResponse.next();
+      }
       const knownRoutes = new Set([
         "sell",
         "api",

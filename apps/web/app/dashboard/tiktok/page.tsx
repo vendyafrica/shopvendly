@@ -70,7 +70,7 @@ function TikTokAuthTestPageContent() {
   const [videos, setVideos] = useState<TikTokVideo[]>([]);
   const [playerOpen, setPlayerOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<TikTokVideo | null>(null);
-  const [selectedAspectClass, setSelectedAspectClass] = useState<string>(aspectVariants[0]);
+  const [selectedAspectClass, setSelectedAspectClass] = useState<string>(aspectVariants[0] ?? TILE_ASPECT_CLASS);
 
   const getEmbedSrc = (video?: TikTokVideo | null) => {
     if (!video?.embed_link) return undefined;

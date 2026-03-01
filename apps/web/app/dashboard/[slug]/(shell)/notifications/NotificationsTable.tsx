@@ -6,7 +6,7 @@ import { Badge } from "@shopvendly/ui/components/badge";
 
 export type NotificationRow = {
   id: string;
-  type: "Order" | "Payment";
+  type: "Order" | "System" | "Alert" | "Payment";
   summary: string;
   channel: "In-App";
   status: "New";
