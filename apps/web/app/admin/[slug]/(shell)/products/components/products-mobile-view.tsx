@@ -120,7 +120,7 @@ export function ProductsMobileView({
     return (
         <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden">
             {/* Header Profile Section */}
-            <div className="px-5 py-6 border-b">
+            <div className="px-5 py-6">
                 <div className="flex items-center gap-6 mb-5">
                     <StoreAvatar
                         storeName={storeName}
@@ -154,7 +154,7 @@ export function ProductsMobileView({
 
                 <div className="flex gap-2 w-full">
                     <Button
-                        className="flex-1 font-semibold text-xs"
+                        className="flex-1 rounded-md font-semibold text-xs"
                         variant="default"
                         size="sm"
                         onClick={() => onAddSelect("single")}
@@ -162,7 +162,7 @@ export function ProductsMobileView({
                         Add Product
                     </Button>
                     <Button
-                        className="flex-1 h-8 font-semibold text-xs"
+                        className="flex-1 rounded-md font-semibold text-xs"
                         variant="outline"
                         size="sm"
                         onClick={() => router.push(AdminHref)}

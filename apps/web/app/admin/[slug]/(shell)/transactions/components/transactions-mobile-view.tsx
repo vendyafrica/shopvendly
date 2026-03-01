@@ -10,9 +10,10 @@ import { Badge } from "@shopvendly/ui/components/badge";
 import type { TenantBootstrap } from "@/app/admin/context/tenant-context";
 import type { TransactionRow } from "@/app/admin/components/recent-transactions-table";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { CheckmarkBadge01Icon, Invoice01Icon, Store01Icon, PackageOpenIcon } from "@hugeicons/core-free-icons";
+import { CheckmarkBadge01Icon, Invoice01Icon, PackageOpenIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
 import { useRouter } from "next/navigation";
+import { cn } from "@shopvendly/ui/lib/utils";
 
 interface TransactionsMobileViewProps {
     bootstrap: TenantBootstrap | null;
@@ -48,7 +49,7 @@ export function TransactionsMobileView({
     return (
         <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden">
             {/* Header Profile Section */}
-            <div className="px-5 py-6 border-b">
+            <div className="px-5 py-6">
                 <div className="flex items-center gap-6 mb-5">
                     <StoreAvatar
                         storeName={storeName}
@@ -82,7 +83,7 @@ export function TransactionsMobileView({
 
                 <div className="flex gap-2 w-full">
                     <Button
-                        className="flex-1 h-8 font-semibold text-xs"
+                        className="flex-1 rounded-md font-semibold text-xs"
                         variant="default"
                         size="sm"
                         onClick={() => router.push(`${adminHref}/products`)}
@@ -90,7 +91,7 @@ export function TransactionsMobileView({
                         View Products
                     </Button>
                     <Button
-                        className="flex-1 h-8 font-semibold text-xs"
+                        className="flex-1 rounded-md font-semibold text-xs"
                         variant="outline"
                         size="sm"
                         onClick={() => router.push(adminHref)}
@@ -100,20 +101,12 @@ export function TransactionsMobileView({
                 </div>
             </div>
 
-            {/* Navigation Tabs */}
-            <div className="flex w-full items-center justify-center border-b pt-3">
-                <div className="flex items-center gap-2 border-b-2 border-primary pb-3 px-8 text-sm font-semibold">
-                    <HugeiconsIcon icon={Invoice01Icon} className="size-5" />
-                    <span className="sr-only">Transactions</span>
+            {/* Transactions table */}
+            <div className="px-4 pt-2">
+                <div className="mb-2 flex items-center justify-between">
+                    <h3 className="text-sm font-semibold">Recent transactions</h3>
+                    <span className="text-xs text-muted-foreground">Tap row for details</span>
                 </div>
-                <div className="flex items-center gap-2 border-b-2 border-transparent pb-3 px-8 text-muted-foreground">
-                    <HugeiconsIcon icon={Store01Icon} className="size-5" />
-                    <span className="sr-only">Store</span>
-                </div>
-            </div>
-
-            {/* Transactions List */}
-            <div className="flex flex-col px-4 pt-4 gap-3">
                 {transactions.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 opacity-60">
                         <div className="size-16 rounded-full border-2 border-dashed border-border flex items-center justify-center mb-4">
@@ -123,37 +116,39 @@ export function TransactionsMobileView({
                         <p className="text-sm mt-1 text-muted-foreground">New transactions will appear here.</p>
                     </div>
                 ) : (
-                    transactions.map((tx) => {
-                        const Icon = STATUS_ICONS[tx.status];
-                        const colors = STATUS_COLORS[tx.status];
-
-                        return (
-                            <button
-                                key={tx.id}
-                                onClick={() => {
-                                    setSelectedTx(tx);
-                                    setSheetOpen(true);
-                                }}
-                                className="w-full text-left flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/40 hover:bg-muted/50 transition-colors active:scale-[0.98]"
-                            >
-                                <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className={`shrink-0 size-10 rounded-full flex items-center justify-center border ${colors}`}>
-                                        <HugeiconsIcon icon={Icon} className="size-5" />
-                                    </div>
-                                    <div className="flex flex-col overflow-hidden">
-                                        <span className="font-semibold text-sm truncate">{tx.customer || "Guest"}</span>
-                                        <span className="text-xs text-muted-foreground truncate">{tx.date}</span>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col items-end shrink-0 pl-3">
-                                    <span className="font-bold text-sm">{tx.amount}</span>
-                                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-sm mt-1 uppercase ${colors.replace("border-", "border border-").replace("text-", "text-").replace("bg-", "bg-/50 ")}`}>
-                                        {tx.status}
-                                    </span>
-                                </div>
-                            </button>
-                        );
-                    })
+                    <div className="overflow-hidden rounded-xl border border-border/50 bg-card/60">
+                        <div className="grid grid-cols-[1.4fr_0.9fr_0.9fr] items-center border-b bg-muted/40 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            <span>Customer</span>
+                            <span className="text-right">Amount</span>
+                            <span className="text-right">Status</span>
+                        </div>
+                        <div className="divide-y">
+                            {transactions.map((tx) => {
+                                const colors = STATUS_COLORS[tx.status];
+                                return (
+                                    <button
+                                        key={tx.id}
+                                        onClick={() => {
+                                            setSelectedTx(tx);
+                                            setSheetOpen(true);
+                                        }}
+                                        className="grid w-full grid-cols-[1.4fr_0.9fr_0.9fr] items-center gap-2 px-3 py-3 text-left transition-colors hover:bg-muted/40 active:bg-muted/50"
+                                    >
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-semibold">{tx.customer || "Guest"}</p>
+                                            <p className="truncate text-[11px] text-muted-foreground">{tx.date}</p>
+                                        </div>
+                                        <p className="text-right text-sm font-semibold">{tx.amount}</p>
+                                        <div className="flex justify-end">
+                                            <span className={cn("rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase", colors)}>
+                                                {tx.status}
+                                            </span>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
                 )}
             </div>
 

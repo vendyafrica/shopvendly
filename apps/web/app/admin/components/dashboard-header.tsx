@@ -32,7 +32,7 @@ export function AdminHeader({
   };
 
   return (
-    <header className="flex h-20 shrink-0 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur supports-backdrop-filter:bg-background/60">
+    <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-accent-foreground/20 bg-background/80 px-4 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="flex min-w-0 items-center gap-3">
         <StoreAvatar storeName={resolvedTenantName} logoUrl={bootstrap?.storeLogoUrl} size="md" className="rounded-none" />
         <div className="min-w-0">
