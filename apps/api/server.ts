@@ -2,8 +2,8 @@ import dotenv from "dotenv";
 dotenv.config({ path: "../../.env" });
 
 import morgan from "morgan";
-import { createApp } from "./app";
-import { shutdownPosthog } from "./shared/utils/posthog";
+import { createApp } from "./app.js";
+import { shutdownPosthog } from "./shared/utils/posthog.js";
 
 const PORT = process.env.PORT || 8000;
 

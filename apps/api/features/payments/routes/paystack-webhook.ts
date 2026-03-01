@@ -3,13 +3,13 @@ import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
 import { db, eq } from "@shopvendly/db";
 import { orders } from "@shopvendly/db";
-import type { RawBodyRequest } from "../../../shared/types/raw-body";
-import { orderService } from "../../orders/services/order-service";
+import type { RawBodyRequest } from "../../../shared/types/raw-body.js";
+import { orderService } from "../../orders/services/order-service.js";
 import {
   notifyCustomerOrderReceived,
   notifyCustomerPreparing,
   notifySellerNewOrder,
-} from "../../messaging/services/notifications";
+} from "../../messaging/services/notifications.js";
 
 export const paystackWebhookRouter: ExpressRouter = Router();
 

@@ -145,16 +145,23 @@ export async function POST(req: Request) {
             expiresAt,
         });
 
-        const webBaseUrl =
+        const configuredWebUrl =
             process.env.WEB_URL ||
             process.env.NEXT_PUBLIC_WEB_URL ||
-            process.env.NEXT_PUBLIC_APP_URL ||
-            "https://vendlyafrica.store";
-        const verifyBase = `${webBaseUrl}/api/auth/verify-seller?token=${token}&email=${encodeURIComponent(email)}`;
+            process.env.NEXT_PUBLIC_APP_URL;
+        const fallbackProdUrl = "https://shopvendly.store";
+
+        const webBaseUrl = (configuredWebUrl || fallbackProdUrl).replace(/\/$/, "");
+        const normalizedWebBaseUrl = webBaseUrl.includes("localhost")
+            ? webBaseUrl
+            : webBaseUrl.startsWith("http")
+            ? webBaseUrl
+            : `https://${webBaseUrl}`;
+        const verifyBase = `${normalizedWebBaseUrl}/api/auth/verify-seller?token=${token}&email=${encodeURIComponent(email)}`;
 
         const adminUrl = `${verifyBase}&redirect=${encodeURIComponent(`/a/${storeSlug}`)}`;
         const connectInstagramUrl = `${verifyBase}&redirect=${encodeURIComponent(`/a/${storeSlug}/integrations`)}`;
-        const storefrontUrl = `${webBaseUrl}/${storeSlug}`;
+        const storefrontUrl = `${normalizedWebBaseUrl}/${storeSlug}`;
 
         await sendWelcomeEmail({
             to: email,

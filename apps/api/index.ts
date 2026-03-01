@@ -1,5 +1,5 @@
 import morgan from "morgan";
-import { createApp } from "./app";
+import { createApp } from "./app.js";
 
 const app = createApp();
 

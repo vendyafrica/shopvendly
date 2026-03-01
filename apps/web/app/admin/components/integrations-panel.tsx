@@ -342,7 +342,7 @@ export function IntegrationsPanel({
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {syncPostsSuccess
-                      ? "Sync complete. New posts still sync automatically via webhooks."
+                      ? "Sync complete. Imported Instagram posts are saved as Draft. Publish them in Products to show on storefront."
                       : "Fallback manual sync for posts if webhook delivery misses updates."}
                   </p>
                 </div>
@@ -367,7 +367,7 @@ export function IntegrationsPanel({
                         icon={CheckmarkCircle01Icon}
                         className="mr-2 h-5 w-5 text-emerald-500"
                       />
-                      Synced
+                      Drafts Imported
                     </>
                   ) : (
                     <>
@@ -379,6 +379,13 @@ export function IntegrationsPanel({
                     </>
                   )}
                 </Button>
+              </div>
+            )}
+
+            {connected && (
+              <div className="rounded-lg border border-amber-300/60 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                Instagram imports are saved as <span className="font-semibold">Draft</span> by default.
+                Publish them from <span className="font-semibold">Products</span> before they appear on your storefront.
               </div>
             )}
 

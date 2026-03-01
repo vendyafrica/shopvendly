@@ -1,1 +1,1 @@
-export * from "../../services/whatsapp/whatsapp-client";
+export * from "../../services/whatsapp/whatsapp-client.js";

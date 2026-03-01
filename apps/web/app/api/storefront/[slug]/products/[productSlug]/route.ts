@@ -16,7 +16,11 @@ type RouteParams = {
 
 
 type ProductMedia = {
-    media?: { ufsUrl?: string | null; url?: string | null; blobUrl?: string | null; contentType?: string | null } | null;
+    media?: {
+        blobUrl?: string | null;
+        blobPathname?: string | null;
+        contentType?: string | null;
+    } | null;
 };
 
 
@@ -46,6 +50,19 @@ type StorefrontProduct = {
     rating?: number;
     ratingCount?: number;
 };
+
+function resolveMediaUrl(entry?: ProductMedia | null): string | null {
+    if (!entry?.media) return null;
+
+    const { blobUrl, blobPathname } = entry.media;
+
+    if (blobUrl) return blobUrl;
+
+    if (!blobPathname) return null;
+    if (/^https?:\/\//i.test(blobPathname)) return blobPathname;
+
+    return `https://utfs.io/f/${blobPathname.replace(/^\/+/, "")}`;
+}
 
 
 
@@ -112,11 +129,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             styleGuideEnabled: Boolean(product.styleGuideEnabled),
             styleGuideType: product.styleGuideType ?? "clothes",
             images: (product.media ?? [])
-                .map((m) => m.media?.ufsUrl ?? m.media?.url ?? m.media?.blobUrl ?? null)
+                .map((m) => resolveMediaUrl(m))
                 .filter(Boolean),
             mediaItems: (product.media ?? [])
                 .map((m) => ({
-                    url: m.media?.ufsUrl ?? m.media?.url ?? m.media?.blobUrl ?? null,
+                    url: resolveMediaUrl(m),
                     contentType: m.media?.contentType ?? null,
                 }))
                 .filter((m) => Boolean(m.url)),

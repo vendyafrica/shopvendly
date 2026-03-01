@@ -80,18 +80,26 @@ export async function POST(req: Request) {
         });
 
         // Build URLs with embedded verification token
-        const webBaseUrl =
+        const configuredWebUrl =
             process.env.WEB_URL ||
             process.env.NEXT_PUBLIC_WEB_URL ||
-            process.env.NEXT_PUBLIC_APP_URL ||
-            req.headers.get("origin") ||
-            "https://vendlyafrica.store";
+            process.env.NEXT_PUBLIC_APP_URL;
+        const origin = req.headers.get("origin")?.trim();
+        const fallbackProdUrl = "https://shopvendly.store";
+
+        const webBaseUrl = (configuredWebUrl || origin)?.replace(/\/$/, "") || fallbackProdUrl;
+
+        const normalizedWebBaseUrl = webBaseUrl.includes("localhost")
+            ? webBaseUrl
+            : webBaseUrl.startsWith("http")
+            ? webBaseUrl
+            : `https://${webBaseUrl}`;
         const storeSlug = result.storeSlug;
-        const verifyBase = `${webBaseUrl}/api/auth/verify-seller?token=${token}&email=${encodeURIComponent(session.user.email)}`;
+        const verifyBase = `${normalizedWebBaseUrl}/api/auth/verify-seller?token=${token}&email=${encodeURIComponent(session.user.email)}`;
 
         const adminUrl = `${verifyBase}&redirect=${encodeURIComponent(`/admin/${storeSlug}`)}`;
         const connectInstagramUrl = `${verifyBase}&redirect=${encodeURIComponent(`/admin/${storeSlug}/integrations`)}`;
-        const storefrontUrl = `${webBaseUrl}/${storeSlug}`;
+        const storefrontUrl = `${normalizedWebBaseUrl}/${storeSlug}`;
 
         // Send seller welcome email
         let emailSent = false;
