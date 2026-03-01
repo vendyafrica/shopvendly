@@ -154,7 +154,7 @@ export function ProductsMobileView({
 
                 <div className="flex gap-2 w-full">
                     <Button
-                        className="flex-1 h-8 font-semibold text-xs"
+                        className="flex-1 font-semibold text-xs"
                         variant="default"
                         size="sm"
                         onClick={() => onAddSelect("single")}

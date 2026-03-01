@@ -1,9 +1,11 @@
+import { type ReactNode } from "react";
+
 import { Card, CardContent } from "@shopvendly/ui/components/card";
 import { cn } from "@shopvendly/ui/lib/utils";
 
 export type StatSegment = {
   label: string;
-  value: string | number;
+  value: ReactNode;
   changeLabel: string;
   changeTone?: "positive" | "negative" | "neutral";
 };

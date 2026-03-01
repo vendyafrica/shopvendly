@@ -1,28 +1,22 @@
 "use client";
 
 import * as React from "react";
-import { Avatar, AvatarFallback } from "@shopvendly/ui/components/avatar";
+import { StoreAvatar } from "@/components/store-avatar";
 import {
     Sheet,
     SheetContent
 } from "@shopvendly/ui/components/sheet";
 import { Badge } from "@shopvendly/ui/components/badge";
-import Image from "next/image";
 import type { TenantBootstrap } from "@/app/admin/context/tenant-context";
-import { SegmentedStatsCard } from "@/app/admin/components/segmented-stats-card";
 import type { TransactionRow } from "@/app/admin/components/recent-transactions-table";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { CheckmarkBadge01Icon, Invoice01Icon, Store01Icon } from "@hugeicons/core-free-icons";
+import { CheckmarkBadge01Icon, Invoice01Icon, Store01Icon, PackageOpenIcon } from "@hugeicons/core-free-icons";
+import { Button } from "@shopvendly/ui/components/button";
+import { useRouter } from "next/navigation";
 
 interface TransactionsMobileViewProps {
     bootstrap: TenantBootstrap | null;
     transactions: TransactionRow[];
-    statSegments: {
-        label: string;
-        value: string | number;
-        changeLabel: string;
-        changeTone: "neutral" | "positive" | "negative";
-    }[];
 }
 
 const STATUS_ICONS = {
@@ -40,69 +34,93 @@ const STATUS_COLORS = {
 export function TransactionsMobileView({
     bootstrap,
     transactions,
-    statSegments,
 }: TransactionsMobileViewProps) {
     const [selectedTx, setSelectedTx] = React.useState<TransactionRow | null>(null);
     const [sheetOpen, setSheetOpen] = React.useState(false);
+    const router = useRouter();
 
-    const storeInitials = bootstrap?.storeName?.substring(0, 2).toUpperCase() || "SV";
+    const storeName = bootstrap?.storeName || "My Store";
+    const adminHref = bootstrap?.storeSlug ? `/admin/${bootstrap.storeSlug}` : "/admin";
+    const completedCount = transactions.filter((tx) => tx.status === "Completed").length;
+    const pendingCount = transactions.filter((tx) => tx.status === "Pending").length;
+    const transactionCount = transactions.length;
 
     return (
-        <div className="flex flex-col min-h-screen bg-background pb-20 fade-in-0 duration-500 animate-in">
-            {/* Header section resembling a profile header */}
-            <div className="px-5 pt-8 pb-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Avatar className="size-12 border border-border/50">
-                        {bootstrap?.storeLogoUrl ? (
-                            <Image src={bootstrap.storeLogoUrl} alt={bootstrap?.storeName ?? "Store logo"} className="object-cover" />
-                        ) : (
-                            <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
-                                {storeInitials}
-                            </AvatarFallback>
-                        )}
-                    </Avatar>
-                    <div className="flex flex-col">
-                        <h1 className="font-bold text-lg leading-tight flex items-center gap-1.5">
-                            Transactions
-                            <HugeiconsIcon icon={CheckmarkBadge01Icon} className="size-4 text-blue-500" />
-                        </h1>
-                        <p className="text-xs text-muted-foreground font-medium">#{bootstrap?.storeSlug}</p>
+        <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden">
+            {/* Header Profile Section */}
+            <div className="px-5 py-6 border-b">
+                <div className="flex items-center gap-6 mb-5">
+                    <StoreAvatar
+                        storeName={storeName}
+                        logoUrl={bootstrap?.storeLogoUrl}
+                        size="lg"
+                        className="size-[84px] shrink-0 border border-border rounded-[32px]"
+                    />
+
+                    <div className="flex-1 flex justify-between items-center text-center">
+                        <div className="flex flex-col items-center flex-1">
+                            <span className="font-semibold text-xl tracking-tight">{transactionCount}</span>
+                            <span className="text-[11px] font-medium text-foreground tracking-wide uppercase mt-0.5">Orders</span>
+                        </div>
+                        <div className="flex flex-col items-center flex-1">
+                            <span className="font-semibold text-xl tracking-tight">{completedCount}</span>
+                            <span className="text-[11px] font-medium text-foreground tracking-wide uppercase mt-0.5">Paid</span>
+                        </div>
+                        <div className="flex flex-col items-center flex-1">
+                            <span className="font-semibold text-xl tracking-tight">{pendingCount}</span>
+                            <span className="text-[11px] font-medium text-foreground tracking-wide uppercase mt-0.5">Pending</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Bio / Description */}
-            <div className="px-5 mb-5 space-y-1.5">
-                <p className="text-sm">
-                    Monitor your store&apos;s transactions and revenue flow.
-                </p>
-            </div>
+                <div className="mb-5 px-0.5">
+                    <h2 className="font-bold text-sm tracking-tight">{storeName}</h2>
+                    <p className="text-[13px] text-foreground/80 mt-1 leading-snug whitespace-pre-line text-balance">
+                        Track payments and order flow in real time.
+                    </p>
+                </div>
 
-            {/* Stats section */}
-            <div className="px-5 mb-6">
-                <SegmentedStatsCard segments={statSegments} />
+                <div className="flex gap-2 w-full">
+                    <Button
+                        className="flex-1 h-8 font-semibold text-xs"
+                        variant="default"
+                        size="sm"
+                        onClick={() => router.push(`${adminHref}/products`)}
+                    >
+                        View Products
+                    </Button>
+                    <Button
+                        className="flex-1 h-8 font-semibold text-xs"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(adminHref)}
+                    >
+                        Dashboard
+                    </Button>
+                </div>
             </div>
-
-            <div className="w-full h-px bg-border/40" />
 
             {/* Navigation Tabs */}
-            <div className="flex w-full border-b border-border/40">
-                <div className="flex-1 py-3.5 flex justify-center items-center border-b-[1.5px] border-foreground">
-                    <HugeiconsIcon icon={Invoice01Icon} className="size-[22px] text-foreground" />
+            <div className="flex w-full items-center justify-center border-b pt-3">
+                <div className="flex items-center gap-2 border-b-2 border-primary pb-3 px-8 text-sm font-semibold">
+                    <HugeiconsIcon icon={Invoice01Icon} className="size-5" />
+                    <span className="sr-only">Transactions</span>
                 </div>
-                <div className="flex-1 py-3.5 flex justify-center items-center text-muted-foreground opacity-50">
-                    <HugeiconsIcon icon={Store01Icon} className="size-[22px]" />
+                <div className="flex items-center gap-2 border-b-2 border-transparent pb-3 px-8 text-muted-foreground">
+                    <HugeiconsIcon icon={Store01Icon} className="size-5" />
+                    <span className="sr-only">Store</span>
                 </div>
             </div>
 
             {/* Transactions List */}
             <div className="flex flex-col px-4 pt-4 gap-3">
                 {transactions.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 opacity-50">
+                    <div className="flex flex-col items-center justify-center py-20 opacity-60">
                         <div className="size-16 rounded-full border-2 border-dashed border-border flex items-center justify-center mb-4">
-                            <HugeiconsIcon icon={Invoice01Icon} className="size-8 text-muted-foreground" />
+                            <HugeiconsIcon icon={PackageOpenIcon} className="size-8 text-muted-foreground" />
                         </div>
-                        <p className="font-semibold text-foreground">No Transactions Yet</p>
+                        <p className="font-semibold text-foreground">No Orders Yet</p>
+                        <p className="text-sm mt-1 text-muted-foreground">New transactions will appear here.</p>
                     </div>
                 ) : (
                     transactions.map((tx) => {

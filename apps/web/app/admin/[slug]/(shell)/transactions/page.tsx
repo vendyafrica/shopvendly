@@ -156,7 +156,6 @@ export default function TransactionsPage() {
                 <TransactionsMobileView
                     bootstrap={bootstrap}
                     transactions={transactionRows}
-                    statSegments={statSegments}
                 />
             </div>
 

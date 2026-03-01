@@ -1,11 +1,14 @@
 import Link from "next/link";
+import { type ReactNode } from "react";
 
 import { SegmentedStatsCard } from "@/app/admin/components/segmented-stats-card";
 import { RevenueAreaChartCard, TopProductsBarChartCard } from "@/app/admin/components/dynamic-charts";
 import { RecentTransactionsTable } from "@/app/admin/components/recent-transactions-table";
 import { IntegrationsPanel } from "@/app/admin/components/integrations-panel";
+import { QuickAddLauncher } from "@/app/admin/components/quick-add-launcher";
+import { SocialConnectPrompt } from "@/app/admin/components/social-connect-prompt";
 import { db } from "@shopvendly/db/db";
-import { orderItems, orders, stores } from "@shopvendly/db/schema";
+import { orderItems, orders, storefrontSessions, stores } from "@shopvendly/db/schema";
 import { and, desc, eq, isNull, sql } from "@shopvendly/db";
 import { Button } from "@shopvendly/ui/components/button";
 import { Card, CardContent, CardHeader } from "@shopvendly/ui/components/card";
@@ -30,6 +33,19 @@ function formatCurrency(amount: number, currency: string) {
     currency,
     minimumFractionDigits: 0,
   }).format(amount);
+}
+
+function formatStatCurrency(amount: number, currency: string): ReactNode {
+  const formatted = formatCurrency(amount, currency);
+  const match = formatted.match(/^([A-Z]{3})[\s\u00a0]*(.*)$/);
+  if (!match) return formatted;
+  const [, code, numeric] = match;
+  return (
+    <span className="inline-flex items-baseline gap-1">
+      <span className="text-xs font-semibold text-muted-foreground align-sub tracking-tight">{code}</span>
+      <span>{numeric}</span>
+    </span>
+  );
 }
 
 function toChartDateLabel(date: string) {
@@ -75,7 +91,14 @@ export default async function AdminPage({
     sql`${orders.createdAt} <= ${to}`
   );
 
-  const [paidKpis, customerAgg] = await Promise.all([
+  const whereSessionsInRange = and(
+    eq(storefrontSessions.tenantId, store.tenantId),
+    eq(storefrontSessions.storeId, store.id),
+    sql`${storefrontSessions.lastSeenAt} >= ${from}`,
+    sql`${storefrontSessions.lastSeenAt} <= ${to}`
+  );
+
+  const [paidKpis, customerAgg, trafficTotals] = await Promise.all([
     db
       .select({
         revenuePaid: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)::int`,
@@ -92,7 +115,19 @@ export default async function AdminPage({
       .from(orders)
       .where(wherePaidOrders)
       .then((rows) => rows[0] ?? { distinctCustomers: 0 }),
+
+    db
+      .select({
+        visits: sql<number>`COALESCE(SUM(${storefrontSessions.visitCount}), 0)::int`,
+        uniqueVisitors: sql<number>`COALESCE(COUNT(DISTINCT ${storefrontSessions.sessionId}), 0)::int`,
+      })
+      .from(storefrontSessions)
+      .where(whereSessionsInRange)
+      .then((rows) => rows[0] ?? { visits: 0, uniqueVisitors: 0 }),
   ]);
+
+  const conversionRate = trafficTotals.visits > 0 ? (paidKpis.ordersPaid / trafficTotals.visits) * 100 : null;
+  const conversionRateLabel = conversionRate === null ? "—" : `${conversionRate.toFixed(1)}%`;
 
   const revenueSeriesRaw = await db
     .select({
@@ -191,7 +226,7 @@ export default async function AdminPage({
   const statSegments = [
     {
       label: "Total Revenue",
-      value: formatCurrency(paidKpis.revenuePaid, currency),
+      value: formatStatCurrency(paidKpis.revenuePaid, currency),
       changeLabel: "",
       changeTone: "neutral" as const,
     },
@@ -209,7 +244,7 @@ export default async function AdminPage({
     },
     {
       label: "Conversion Rate",
-      value: "—",
+      value: conversionRateLabel,
       changeLabel: "",
       changeTone: "neutral" as const,
     },
@@ -269,18 +304,20 @@ export default async function AdminPage({
 
         {/* Quick actions 2x2 */}
         <div className="grid grid-cols-2 gap-3 px-1">
-          {quickActions.slice(0, 4).map((action) => (
+          <QuickAddLauncher className="h-14 w-full justify-start" label="Add product" />
+          {quickActions.slice(1, 3).map((action) => (
             <Link
               key={action.label}
               href={action.href}
               target={action.external ? "_blank" : undefined}
               rel={action.external ? "noreferrer" : undefined}
-              className="flex items-center gap-3 rounded-xl border bg-card/80 px-4 py-3 shadow-sm transition hover:bg-muted/60"
+              className="flex h-14 items-center gap-3 rounded-xl border bg-card/80 px-4 py-3 shadow-sm transition hover:bg-muted/60"
             >
               <HugeiconsIcon icon={action.icon} className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold">{action.label}</span>
             </Link>
           ))}
+          <SocialConnectPrompt className="h-14" />
         </div>
 
         {/* Activity feed (orders and product updates via transactions) */}

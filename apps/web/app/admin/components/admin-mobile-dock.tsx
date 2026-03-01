@@ -8,6 +8,7 @@ import {
   Settings01Icon,
   Home01Icon,
   ShoppingBag01Icon,
+  Loading03Icon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@shopvendly/ui/lib/utils";
 
@@ -41,6 +42,7 @@ function isActivePath(pathname: string, item: DockItem) {
 export function AdminMobileDock({ basePath }: { basePath: string }) {
   const [mounted, setMounted] = React.useState(false);
   const [isCompact, setIsCompact] = React.useState(false);
+  const [pendingHref, setPendingHref] = React.useState<string | null>(null);
   const pathname = usePathname();
 
   React.useEffect(() => {
@@ -80,6 +82,15 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  React.useEffect(() => {
+    if (!pendingHref) return;
+    const normalizedPending = normalizePath(pendingHref.split("?")[0] || pendingHref);
+    const normalizedCurrent = normalizePath(pathname);
+    if (normalizedCurrent === normalizedPending || normalizedCurrent.startsWith(normalizedPending + "/")) {
+      setPendingHref(null);
+    }
+  }, [pathname, pendingHref]);
+
   if (!mounted) return null;
 
   const items: DockItem[] = [
@@ -104,6 +115,9 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
               key={item.label}
               href={item.href}
               aria-label={item.label}
+              onClick={() => {
+                setPendingHref(item.href);
+              }}
               className={cn(
                 "relative flex flex-1 min-w-0 shrink-0 flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-out",
                 isCompact ? "py-1" : "py-1",
@@ -111,14 +125,25 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
                 !isCompact && "hover:bg-muted/50"
               )}
             >
-              <HugeiconsIcon
-                icon={item.icon}
-                className={cn(
-                  "transition-all duration-200",
-                  isCompact ? "size-5" : "size-6",
-                  (isActive || item.intent === "primary") && "text-primary"
-                )}
-              />
+              {pendingHref === item.href ? (
+                <HugeiconsIcon
+                  icon={Loading03Icon}
+                  className={cn(
+                    "animate-spin transition-all duration-200",
+                    isCompact ? "size-5" : "size-6",
+                    "text-primary"
+                  )}
+                />
+              ) : (
+                <HugeiconsIcon
+                  icon={item.icon}
+                  className={cn(
+                    "transition-all duration-200",
+                    isCompact ? "size-5" : "size-6",
+                    (isActive || item.intent === "primary") && "text-primary"
+                  )}
+                />
+              )}
               <span
                 className={cn(
                   "text-[10px] font-medium leading-none transition-all duration-200",
