@@ -2,12 +2,10 @@ import dotenv from "dotenv";
 dotenv.config({ path: "../../.env" });
 
 import morgan from "morgan";
-import { createApp } from "./app";
-import { shutdownPosthog } from "./shared/utils/posthog";
+import app from "./app.js";
+import { shutdownPosthog } from "./shared/utils/posthog.js";
 
 const PORT = process.env.PORT || 8000;
-
-const app = createApp();
 
 // Add request logging
 app.use(morgan("dev"));

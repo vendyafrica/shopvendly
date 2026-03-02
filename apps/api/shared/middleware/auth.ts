@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { auth } from "@shopvendly/auth";
+import { auth } from "@shopvendly/auth/server";
 import { db, tenantMemberships, superAdmins, and, eq } from "@shopvendly/db";
-import { AuthenticatedRequest, TenantRole, PlatformRole } from "../types/auth";
+import { AuthenticatedRequest, TenantRole, PlatformRole } from "../types/auth.js";
 
 /**
  * Requires a valid authenticated session and attaches base auth context to the request.

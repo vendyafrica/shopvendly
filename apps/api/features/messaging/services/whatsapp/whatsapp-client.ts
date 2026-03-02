@@ -1,4 +1,4 @@
-import type { TemplateMessageInput } from "./message-queue";
+import type { TemplateMessageInput } from "./message-queue.js";
 
 type SendTextMessageInput = {
   to: string;

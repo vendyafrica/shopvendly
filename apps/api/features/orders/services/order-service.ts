@@ -13,7 +13,7 @@ import {
   withCache,
 } from "@shopvendly/db";
 import { orders, orderItems, products, stores, tenants } from "@shopvendly/db";
-import { normalizePhoneToE164 } from "../../../shared/utils/phone";
+import { normalizePhoneToE164 } from "../../../shared/utils/phone.js";
 import { z } from "zod";
 
 type ProductWithMedia = (typeof products.$inferSelect) & {

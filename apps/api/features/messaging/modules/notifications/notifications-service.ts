@@ -1,1 +1,1 @@
-export * from "../../../messaging/services/notifications";
+export * from "../../../messaging/services/notifications.js";

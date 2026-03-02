@@ -1,7 +1,5 @@
 import morgan from "morgan";
-import { createApp } from "./app";
-
-const app = createApp();
+import app from "./app.js";
 
 // Vercel Express runtime entrypoint
 app.use(morgan("dev"));

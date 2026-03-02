@@ -96,7 +96,9 @@ export function Categories({ storeSlug, initialCategories = [] }: CategoriesProp
       className="border-px border-border bg-background sticky top-0 z-10"
     >
       <div className="px-3 sm:px-4 lg:px-6 xl:px-8">
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-3 flex-nowrap">
+        <div
+          className="flex flex-wrap md:flex-nowrap items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-3"
+        >
 
           {/* Quick filters */}
           {QUICK_FILTERS(derivedSlug).map((filter) => {
@@ -151,7 +153,6 @@ export function Categories({ storeSlug, initialCategories = [] }: CategoriesProp
               })}
             </>
           )}
-
         </div>
       </div>
     </nav>

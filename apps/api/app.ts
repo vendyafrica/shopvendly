@@ -1,7 +1,7 @@
 import express, { Express, Request, Response } from "express";
 import cors from "cors";
-import { apiRouter } from "./routes/api-router";
-import type { RawBodyRequest } from "./shared/types/raw-body";
+import { apiRouter } from "./routes/api-router.js";
+import type { RawBodyRequest } from "./shared/types/raw-body.js";
 
 export function createApp(): Express {
   const app = express();
@@ -16,11 +16,11 @@ export function createApp(): Express {
         /^http:\/\/localhost:\d+$/,
         /^http:\/\/[\w-]+\.localhost:\d+$/,
         "https://vendly-web.vercel.app",
-        "https://www.vendlyafrica.store",
-        "https://vendlyafrica.store",
-        "https://admin.vendlyafrica.store",
+        "https://www.shopvendly.store",
+        "https://shopvendly.store",
+        "https://admin.shopvendly.store",
         /\.vercel\.app$/,
-        /\.vendlyafrica\.store$/,
+        /\.shopvendly\.store$/,
         /\.ngrok-free\.dev$/,
         /\.ngrok\.io$/,
       ],
@@ -64,3 +64,7 @@ export function createApp(): Express {
 
   return app;
 }
+
+const app = createApp();
+
+export default app;
