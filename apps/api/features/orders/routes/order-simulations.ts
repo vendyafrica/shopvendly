@@ -1,9 +1,10 @@
 import { Router } from "express";
+import type { Router as ExpressRouter } from "express";
 import { requireAuth, requireTenantRole } from "../../../shared/middleware/auth.js";
 import { orderService } from "../services/order-service.js";
 import { notifySellerNewOrder, notifyCustomerOrderReceived } from "../../messaging/services/notifications.js";
 
-export const orderSimulationsRouter :Router = Router();
+export const orderSimulationsRouter: ExpressRouter = Router();
 
 // POST /api/tenants/:tenantId/orders/:orderId/simulate-paid
 orderSimulationsRouter.post(

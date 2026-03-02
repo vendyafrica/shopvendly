@@ -1,8 +1,9 @@
 import { Router } from "express";
+import type { Router as ExpressRouter } from "express";
 import { createOrderSchema, orderService } from "../services/order-service.js";
 import { capturePosthogEvent } from "../../../shared/utils/posthog.js";
 
-export const storefrontOrdersRouter: Router = Router();
+export const storefrontOrdersRouter: ExpressRouter = Router();
 
 // POST /api/storefront/:slug/orders
 storefrontOrdersRouter.post("/storefront/:slug/orders", async (req, res, next) => {

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Router as ExpressRouter } from "express";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
@@ -14,7 +15,7 @@ const { whatsappDeliveryRouter } = require("../features/messaging/routes/whatsap
 const { whatsappTemplatesRouter } = require("../features/messaging/routes/whatsapp-templates.js") as typeof import("../features/messaging/routes/whatsapp-templates.js");
 const { instagramWebhookRouter } = require("../features/social/routes/instagram-webhooks.js") as typeof import("../features/social/routes/instagram-webhooks.js");
 
-export const apiRouter: Router = Router();
+export const apiRouter: ExpressRouter = Router();
 
 apiRouter.use(storefrontOrdersRouter);
 apiRouter.use(storefrontPaymentsRouter);

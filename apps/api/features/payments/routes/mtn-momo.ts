@@ -1,10 +1,10 @@
-import type { Request, Response } from "express";
+import type { Request, Response, Router as ExpressRouter } from "express";
 import { Router } from "express";
 import { z } from "zod";
  import { and, db, eq, isNull, orders, stores } from "@shopvendly/db";
 import { mtnMomoCollections, requestToPayInputSchema } from "../modules/mtn-momo-service.js";
 
-export const mtnMomoRouter: Router = Router();
+export const mtnMomoRouter: ExpressRouter = Router();
 
 const requestToPayBodySchema = requestToPayInputSchema.extend({
   orderId: z.string().uuid(),

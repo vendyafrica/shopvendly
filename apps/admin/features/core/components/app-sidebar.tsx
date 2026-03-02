@@ -94,7 +94,7 @@ const tenantAdminItems: SidebarNavItem[] = [
 const superAdminItems: SidebarNavItem[] = [
   {
     title: "admin",
-    url: "/",
+    url: "/dashboard",
     icon: NineCircleIcon,
   },
   {

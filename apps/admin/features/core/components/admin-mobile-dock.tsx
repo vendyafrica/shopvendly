@@ -56,7 +56,7 @@ export function AdminMobileDock() {
   if (!mounted) return null;
 
   const primary: DockItem[] = [
-    { label: "Home", href: "/", icon: NineCircleIcon, exact: true },
+    { label: "Home", href: "/dashboard", icon: NineCircleIcon, exact: true },
     { label: "Tenants", href: "/tenants", icon: UserMultiple02Icon },
     { label: "Stores", href: "/stores", icon: Store01Icon },
     { label: "Categories", href: "/categories", icon: GroupLayersIcon },

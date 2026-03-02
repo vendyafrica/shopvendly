@@ -1,11 +1,12 @@
 import { Router } from "express";
+import type { Router as ExpressRouter } from "express";
 import { orderService } from "../../orders/services/order-service.js";
 import { notifyCustomerOrderReceived, notifyCustomerPreparing, notifySellerNewOrder } from "../../messaging/services/notifications.js";
 import { z } from "zod";
 
 const orderIdSchema = z.string().uuid();
 
-export const storefrontPaymentsRouter: Router = Router();
+export const storefrontPaymentsRouter: ExpressRouter = Router();
 
 // POST /api/storefront/orders/:orderId/pay
 storefrontPaymentsRouter.post("/storefront/orders/:orderId/pay", async (req, res, next) => {

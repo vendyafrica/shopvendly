@@ -1,8 +1,9 @@
 import { Router } from "express";
+import type { Router as ExpressRouter } from "express";
 
 const PAYSTACK_API = "https://api.paystack.co";
 
-export const paystackPaymentsRouter: Router = Router();
+export const paystackPaymentsRouter: ExpressRouter = Router();
 
 /**
  * POST /api/payments/paystack/initialize

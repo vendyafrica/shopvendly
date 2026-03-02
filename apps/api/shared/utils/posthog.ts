@@ -44,7 +44,7 @@ export async function shutdownPosthog() {
   if (!client) return;
 
   try {
-    await client.shutdown();
+    await client._shutdown();
   } catch (err) {
     console.error("[PostHog] Failed to shutdown", err);
   } finally {

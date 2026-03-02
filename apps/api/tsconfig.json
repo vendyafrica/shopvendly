@@ -13,6 +13,12 @@
     "moduleResolution": "Bundler",
 
     "paths": {
+      "@shopvendly/auth": [
+        "../../packages/auth/src/index.ts"
+      ],
+      "@shopvendly/auth/server": [
+        "../../packages/auth/src/auth.ts"
+      ],
       "@shopvendly/db": [
         "../../packages/db/src/index.ts"
       ],

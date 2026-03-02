@@ -1,9 +1,9 @@
-import express, { Express, Request, Response } from "express";
+import express, { Request, Response, Router } from "express";
 import cors from "cors";
 import { apiRouter } from "./routes/api-router.js";
 import type { RawBodyRequest } from "./shared/types/raw-body.js";
 
-export function createApp(): Express {
+export function createApp():Router {
   const app = express();
 
   app.set("trust proxy", true);
