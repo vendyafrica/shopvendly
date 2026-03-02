@@ -3,33 +3,45 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
     },
     "./client": {
       "types": "./dist/auth-client.d.ts",
-      "import": "./dist/auth-client.js"
+      "import": "./dist/auth-client.js",
+      "require": "./dist/auth-client.cjs",
+      "default": "./dist/auth-client.js"
     },
     "./server": {
       "types": "./dist/auth.d.ts",
-      "import": "./dist/auth.js"
+      "import": "./dist/auth.js",
+      "require": "./dist/auth.cjs",
+      "default": "./dist/auth.js"
     },
     "./auth": {
       "types": "./dist/auth.d.ts",
-      "import": "./dist/auth.js"
+      "import": "./dist/auth.js",
+      "require": "./dist/auth.cjs",
+      "default": "./dist/auth.js"
     },
     "./auth-client": {
       "types": "./dist/auth-client.d.ts",
-      "import": "./dist/auth-client.js"
+      "import": "./dist/auth-client.js",
+      "require": "./dist/auth-client.cjs",
+      "default": "./dist/auth-client.js"
     },
     "./react": {
       "types": "./dist/auth-client.d.ts",
-      "import": "./dist/auth-client.js"
+      "import": "./dist/auth-client.js",
+      "require": "./dist/auth-client.cjs",
+      "default": "./dist/auth-client.js"
     }
   },
   "scripts": {
