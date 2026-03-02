@@ -4,14 +4,23 @@ import { useState, useEffect, useRef, type MouseEvent } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ShoppingBag01Icon, FavouriteIcon } from "@hugeicons/core-free-icons";
-import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon";
+import {
+  ShoppingBag01Icon,
+  FavouriteIcon,
+  UserCircleIcon,
+} from "@hugeicons/core-free-icons";
 import { HeaderSkeleton } from "./skeletons";
 import { useCart } from "@/features/cart/context/cart-context";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { Bricolage_Grotesque } from "next/font/google";
 import { getRootUrl } from "@/utils/misc";
 import { Input } from "@shopvendly/ui/components/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@shopvendly/ui/components/dropdown-menu";
 
 const geistSans = Bricolage_Grotesque({
   variable: "--font-bricolage-grotesque",
@@ -170,6 +179,16 @@ export default function StorefrontHeaderClient({
       router.push(href);
     };
 
+  const navigateTo = (href: string) => {
+    setMobileMenuOpen(false);
+    setPendingHref(href);
+    if (href.startsWith("http")) {
+      window.location.href = href;
+      return;
+    }
+    router.push(href);
+  };
+
   const isPending = (href: string) => pendingHref === href;
 
   const overlayActive = isHomePath && isOverlay;
@@ -238,7 +257,7 @@ export default function StorefrontHeaderClient({
               href={`/${store.slug}/cart`}
               aria-busy={isPending(`/${store.slug}/cart`)}
               onClick={handleNav(`/${store.slug}/cart`)}
-              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/15 transition-colors ${
+              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-black/30 backdrop-blur-sm hover:bg-black/45 transition-colors ${
                 isPending(`/${store.slug}/cart`) ? "opacity-60" : ""
               }`}
               aria-label="Cart"
@@ -268,7 +287,7 @@ export default function StorefrontHeaderClient({
               href="/wishlist"
               aria-busy={isPending("/wishlist")}
               onClick={handleNav("/wishlist")}
-              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/15 transition-colors ${
+              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-black/30 backdrop-blur-sm hover:bg-black/45 transition-colors ${
                 isPending("/wishlist") ? "opacity-60" : ""
               }`}
               aria-label="Wishlist"
@@ -293,18 +312,31 @@ export default function StorefrontHeaderClient({
               )}
             </Link>
             {/* Mobile menu toggle */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((open) => !open)}
-              className="inline-flex md:hidden h-11 w-11 items-center justify-center rounded-full hover:bg-white/15 transition-colors"
-              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-              aria-expanded={mobileMenuOpen}
-            >
-              <MenuToggleIcon
-                open={mobileMenuOpen}
-                className="h-5 w-5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]"
-              />
-            </button>
+            <DropdownMenu open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <DropdownMenuTrigger
+                className="inline-flex md:hidden h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-black/30 backdrop-blur-sm hover:bg-black/45 transition-colors"
+                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={mobileMenuOpen}
+              >
+                <HugeiconsIcon
+                  icon={UserCircleIcon}
+                  size={20}
+                  className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]"
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                sideOffset={8}
+                className="w-56 rounded-xl border border-white/20 bg-white/95 p-1 text-neutral-900 shadow-xl backdrop-blur-sm"
+              >
+                <DropdownMenuItem
+                  onClick={() => navigateTo(sellerLoginUrl)}
+                  className="rounded-lg px-3 py-2 text-sm font-medium"
+                >
+                  Sign in to admin
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {/* Sign In */}
             <Link
               href={sellerLoginUrl}
@@ -315,26 +347,6 @@ export default function StorefrontHeaderClient({
             </Link>
           </div>
         </div>
-
-        {mobileMenuOpen && (
-          <div className="md:hidden px-3 pb-4">
-            <div className="flex flex-col gap-3 rounded-2xl bg-white/95 border border-black/5 shadow-lg p-4 backdrop-blur">
-              <Input
-                type="text"
-                aria-label="Search products"
-                placeholder="What are you looking for?"
-                className={`${searchClasses} w-full`}
-              />
-              <Link
-                href={sellerLoginUrl}
-                onClick={handleNav(sellerLoginUrl)}
-                className="inline-flex items-center justify-center rounded-full border border-black/10 bg-black/5 text-neutral-900 px-4 py-3 text-sm font-semibold hover:bg-black/10 transition-colors"
-              >
-                Sign In
-              </Link>
-            </div>
-          </div>
-        )}
       </header>
     );
   }
@@ -394,18 +406,31 @@ export default function StorefrontHeaderClient({
               {/* Icons */}
               <div className="flex items-center gap-1 sm:gap-2 ml-auto">
                 {/* Mobile menu toggle */}
-                <button
-                  type="button"
-                  onClick={() => setMobileMenuOpen((open) => !open)}
-                  className="inline-flex md:hidden h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-black/5"
-                  aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-                  aria-expanded={mobileMenuOpen}
-                >
-                  <MenuToggleIcon
-                    open={mobileMenuOpen}
-                    className="h-5 w-5 text-neutral-900"
-                  />
-                </button>
+                <DropdownMenu open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                  <DropdownMenuTrigger
+                    className="inline-flex md:hidden h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-black/5"
+                    aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                    aria-expanded={mobileMenuOpen}
+                  >
+                    <HugeiconsIcon
+                      icon={UserCircleIcon}
+                      size={20}
+                      className="text-neutral-900"
+                    />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    sideOffset={8}
+                    className="w-56 rounded-xl border border-black/10 bg-white p-1 text-neutral-900 shadow-xl"
+                  >
+                    <DropdownMenuItem
+                      onClick={() => navigateTo(sellerLoginUrl)}
+                      className="rounded-lg px-3 py-2 text-sm font-medium"
+                    >
+                      Sign in to admin
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
                 {/* Cart */}
                 <Link

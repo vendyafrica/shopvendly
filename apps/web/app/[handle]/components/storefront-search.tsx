@@ -10,9 +10,15 @@ interface StorefrontSearchProps {
     storeSlug: string;
     isHomePage?: boolean;
     onSubmitted?: () => void;
+    placeholder?: string;
 }
 
-export function StorefrontSearch({ storeSlug, isHomePage, onSubmitted }: StorefrontSearchProps) {
+export function StorefrontSearch({
+    storeSlug,
+    isHomePage,
+    onSubmitted,
+    placeholder = "Search this store",
+}: StorefrontSearchProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [query, setQuery] = useState(searchParams?.get("q") || "");
@@ -43,8 +49,7 @@ export function StorefrontSearch({ storeSlug, isHomePage, onSubmitted }: Storefr
                 <Input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    onBlur={() => submit()}
-                    placeholder="Search this store"
+                    placeholder={placeholder}
                     className={`h-full border-0 bg-transparent px-0 text-sm focus-visible:ring-0 focus-visible:outline-none ${isHomePage ? "text-white" : "text-neutral-900"}`}
                 />
             </div>

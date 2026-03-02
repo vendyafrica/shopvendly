@@ -2,7 +2,8 @@ import { SellerLoginForm } from "./seller-login-form";
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getRootUrl } from "@/utils/misc";
+import { getRootUrl, getStorefrontUrl } from "@/utils/misc";
+import { resolveTenantAdminAccess } from "../../lib/admin-access";
 
 export default async function TenantAdminLoginPage({
   params,
@@ -19,7 +20,14 @@ export default async function TenantAdminLoginPage({
   const base = getRootUrl(adminPath);
 
   if (session?.user) {
-    redirect(next && verified ? `${adminPath}/${next}` : `${adminPath}/`);
+    const access = await resolveTenantAdminAccess(session.user.id, slug);
+
+    if (access.isAuthorized) {
+      const safeNext = next && next.startsWith(adminPath) ? next : `${adminPath}/`;
+      redirect(safeNext);
+    }
+
+    redirect(getStorefrontUrl(slug));
   }
 
   const redirectTo = next && next.startsWith(adminPath) ? getRootUrl(next) : base;

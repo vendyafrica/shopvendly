@@ -1,9 +1,10 @@
 import { auth } from "@shopvendly/auth";
 import { db } from "@shopvendly/db/db";
-import { stores, tenantMemberships } from "@shopvendly/db/schema";
-import { eq, isNull, and } from "@shopvendly/db";
+import { tenants } from "@shopvendly/db/schema";
+import { eq } from "@shopvendly/db";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { resolveTenantAdminAccess } from "../../../admin/lib/admin-access";
 
 export async function GET(request: NextRequest) {
     const session = await auth.api.getSession({
@@ -21,36 +22,27 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Missing storeSlug" }, { status: 400 });
     }
 
-    const membership = await db.query.tenantMemberships.findFirst({
-        where: eq(tenantMemberships.userId, session.user.id),
-        with: { tenant: true },
-    });
-
-    if (!membership) {
-        return NextResponse.json({ error: "No tenant membership" }, { status: 404 });
-    }
-
-    const store = await db.query.stores.findFirst({
-        where: and(eq(stores.slug, storeSlug), eq(stores.tenantId, membership.tenantId), isNull(stores.deletedAt)),
-        columns: {
-            id: true,
-            slug: true,
-            name: true,
-            tenantId: true,
-            logoUrl: true,
-            defaultCurrency: true,
-        },
-    });
+    const access = await resolveTenantAdminAccess(session.user.id, storeSlug);
+    const store = access.store;
 
     if (!store) {
         return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
+    if (!access.isAuthorized) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const tenant = await db.query.tenants.findFirst({
+        where: eq(tenants.id, store.tenantId),
+        columns: { slug: true },
+    });
+
     return NextResponse.json({
-        tenantId: membership.tenantId,
-        tenantSlug: membership.tenant?.slug,
+        tenantId: store.tenantId,
+        tenantSlug: tenant?.slug,
         storeId: store.id,
-        storeSlug: store.slug,
+        storeSlug,
         storeName: store.name,
         storeLogoUrl: store.logoUrl,
         defaultCurrency: store.defaultCurrency,

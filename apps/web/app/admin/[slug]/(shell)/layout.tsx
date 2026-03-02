@@ -2,10 +2,8 @@ import { AdminPageSkeleton } from "@/components/ui/page-skeletons";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@shopvendly/auth";
-import { db } from "@shopvendly/db/db";
-import { stores, tenantMemberships, superAdmins } from "@shopvendly/db/schema";
-import { and, eq, isNull } from "@shopvendly/db";
 import { Suspense } from "react";
+import { resolveTenantAdminAccess } from "../../lib/admin-access";
 
 import { SidebarInset, SidebarProvider } from "@shopvendly/ui/components/sidebar";
 import { Providers } from "../../../providers";
@@ -52,33 +50,14 @@ async function TenantAdminLayoutInner({
     redirect(`/admin/${slug}/login?next=${encodeURIComponent(basePath)}`);
   }
 
-  const store = await db.query.stores.findFirst({
-    where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
-    columns: { id: true, tenantId: true, name: true, defaultCurrency: true },
-  });
+  const access = await resolveTenantAdminAccess(session.user.id, slug);
+  const store = access.store;
 
   if (!store) {
     redirect("/");
   }
 
-  const [superAdmin, membership] = await Promise.all([
-    db.query.superAdmins.findFirst({
-      where: eq(superAdmins.userId, session.user.id),
-      columns: { id: true },
-    }),
-    db.query.tenantMemberships.findFirst({
-      where: and(
-        eq(tenantMemberships.tenantId, store.tenantId),
-        eq(tenantMemberships.userId, session.user.id)
-      ),
-      columns: { role: true },
-    }),
-  ]);
-
-  const isTenantAdmin = membership && ["owner", "admin"].includes(membership.role);
-  const isSuperAdmin = !!superAdmin;
-
-  if (!isTenantAdmin && !isSuperAdmin) {
+  if (!access.isAuthorized) {
     redirect(`/admin/${slug}/unauthorized`);
   }
 
