@@ -1,7 +1,7 @@
 import { defineConfig, type Options } from "tsup";
 
 export default defineConfig((options: Options) => ({
-  entry: ["index.ts", "server.ts"],
+  entry: ["index.ts", "server.ts", "app.ts"],
   clean: true,
   format: ["esm"],
   outDir: "dist",
