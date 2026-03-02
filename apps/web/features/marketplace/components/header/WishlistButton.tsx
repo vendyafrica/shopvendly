@@ -6,7 +6,7 @@ export function WishlistButton() {
     return (
         <Link
             href="/wishlist"
-            className="group relative p-2.5 rounded-full hover:bg-muted/70 active:scale-95 transition-all"
+            className="group relative p-2.5 rounded-full hover:bg-muted/70 hover:-translate-y-0.5 active:bg-muted active:scale-95 transition-all"
             aria-label="Wishlist"
         >
             <HugeiconsIcon

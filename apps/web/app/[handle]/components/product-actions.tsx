@@ -116,7 +116,7 @@ export function ProductActions({ product }: ProductActionsProps) {
       <div className="pt-2">
         <Button
           onClick={handleAddToCart}
-          className="w-full h-12 rounded-md bg-neutral-900 text-white hover:bg-black uppercase text-xs tracking-widest font-semibold transition-colors mb-3"
+          className="w-full h-12 rounded-md bg-primary text-white hover:bg-primary/90 uppercase text-xs tracking-widest font-semibold transition-colors mb-3"
           disabled={isAdded}
         >
           {isAdded ? (
@@ -132,17 +132,18 @@ export function ProductActions({ product }: ProductActionsProps) {
         <div className="grid grid-cols-1 gap-3">
           <Button
             onClick={handleToggleWishlist}
-            className={`w-full h-12 rounded-md bg-neutral-50 text-neutral-900 hover:bg-neutral-100 uppercase text-xs tracking-widest font-semibold transition-colors border border-neutral-200 flex items-center justify-center gap-2.5 ${
+            variant="outline"
+            className={`w-full h-12 rounded-md uppercase text-xs tracking-widest font-semibold transition-all duration-150 border flex items-center justify-center gap-2.5 active:scale-[0.98] hover:-translate-y-0.5 ${
               wishlisted
-                ? "border-neutral-900 text-neutral-900 bg-neutral-100"
-                : ""
+                ? "border-red-400 bg-red-50 text-red-600 hover:bg-red-100"
+                : "border-neutral-200 bg-neutral-50 text-neutral-900 hover:bg-neutral-100"
             }`}
             aria-pressed={wishlisted}
           >
             <HugeiconsIcon
               icon={FavouriteIcon}
               size={18}
-              className={wishlisted ? "fill-neutral-900 text-neutral-900" : "text-neutral-900"}
+              className={wishlisted ? "fill-red-500 text-red-500" : "text-neutral-800"}
             />
             {wishlisted ? "Saved" : "Save"}
           </Button>

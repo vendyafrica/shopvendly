@@ -13,7 +13,7 @@ export function CartButton({ itemCount, mobile = false }: CartButtonProps) {
             <Link
                 href="/accountart"
                 aria-label="Cart"
-                className="relative p-2 rounded-lg hover:bg-muted/70 active:bg-muted active:scale-95 transition-all"
+                className="relative p-2 rounded-lg hover:bg-muted/70 hover:-translate-y-0.5 active:bg-muted active:scale-95 transition-all"
             >
                 <HugeiconsIcon icon={ShoppingBag02Icon} size={22} />
                 {itemCount > 0 && (
@@ -28,7 +28,7 @@ export function CartButton({ itemCount, mobile = false }: CartButtonProps) {
     return (
         <Link
             href="/accountart"
-            className="group relative p-2.5 rounded-full hover:bg-muted/70 active:scale-95 transition-all"
+            className="group relative p-2.5 rounded-full hover:bg-muted/70 hover:-translate-y-0.5 active:scale-95 transition-all"
             aria-label="Cart"
         >
             <HugeiconsIcon icon={ShoppingBag02Icon} size={22} />

@@ -8,6 +8,7 @@ import { ShoppingBag01Icon, FavouriteIcon } from "@hugeicons/core-free-icons";
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon";
 import { HeaderSkeleton } from "./skeletons";
 import { useCart } from "@/features/cart/context/cart-context";
+import { useWishlist } from "@/hooks/use-wishlist";
 import { Bricolage_Grotesque } from "next/font/google";
 import { getRootUrl } from "@/utils/misc";
 import { Input } from "@shopvendly/ui/components/input";
@@ -34,6 +35,7 @@ export default function StorefrontHeaderClient({
   const pathname = usePathname();
   const router = useRouter();
   const { itemsByStore } = useCart();
+  const { items: wishlistItems } = useWishlist();
   const [store, setStore] = useState<StoreData | null>(initialStore ?? null);
 
   const [storeId, setStoreId] = useState<string | null>(null);
@@ -52,6 +54,7 @@ export default function StorefrontHeaderClient({
 
   const storeItems = storeId ? itemsByStore[storeId] : [];
   const storeItemCount = storeItems ? storeItems.length : 0;
+  const wishlistCount = wishlistItems?.length ?? 0;
 
   const [loading, setLoading] = useState(!initialStore);
   const [isVisible, setIsVisible] = useState(true);
@@ -254,7 +257,7 @@ export default function StorefrontHeaderClient({
                 </span>
               )}
               {storeItemCount > 0 && (
-                <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-white bg-neutral-900 ring-2 ring-white">
+                <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-primary-foreground bg-primary ring-2 ring-white">
                   {storeItemCount > 99 ? "99+" : storeItemCount}
                 </span>
               )}
@@ -281,6 +284,11 @@ export default function StorefrontHeaderClient({
                   aria-hidden
                 >
                   <span className="h-4 w-4 rounded-full border-2 border-neutral-800/60 border-t-transparent animate-spin" />
+                </span>
+              )}
+              {wishlistCount > 0 && (
+                <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-primary-foreground bg-primary ring-2 ring-white">
+                  {wishlistCount > 99 ? "99+" : wishlistCount}
                 </span>
               )}
             </Link>

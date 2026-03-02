@@ -354,7 +354,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                             onMouseEnter={() => setHoverRating(idx + 1)}
                                             onMouseLeave={() => setHoverRating(null)}
                                             disabled={isSubmittingRating}
-                                            className="p-1 text-yellow-500 disabled:opacity-50"
+                                            className="p-1 rounded-full text-yellow-500 disabled:opacity-50 transition-transform duration-150 hover:-translate-y-0.5 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200"
                                             aria-label={`Rate ${idx + 1} stars`}
                                         >
                                             <HugeiconsIcon

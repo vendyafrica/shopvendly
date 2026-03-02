@@ -27,6 +27,13 @@ const geistSans = Bricolage_Grotesque({
 const API_BASE = "";
 const PAYMENTS_API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
+const capitalizeFirst = (value?: string | null) => {
+    if (!value) return value;
+    const trimmed = value.trim();
+    if (!trimmed) return value;
+    return `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}`;
+};
+
 type PaystackPopup = {
     resumeTransaction: (accessCode: string, callback?: (resp: { status: string; reference: string }) => void) => void;
     newTransaction: (config: {
@@ -95,9 +102,31 @@ function CheckoutContent() {
 
     if (!isLoaded) {
         return (
-            <div className="min-h-screen bg-white">
-                <div className="flex h-[60vh] items-center justify-center">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-900" />
+            <div className="min-h-screen bg-white pt-20 pb-24">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="rounded-2xl border border-neutral-200 bg-white/90 shadow-sm p-4 sm:p-6 lg:p-8 space-y-8 animate-pulse">
+                        <div className="h-5 w-32 bg-neutral-100 rounded" />
+                        <div className="grid lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
+                            <div className="space-y-4">
+                                {Array.from({ length: 2 }).map((_, idx) => (
+                                    <div key={idx} className="rounded-2xl border border-neutral-200 bg-neutral-50/80 p-4 sm:p-5 space-y-4">
+                                        <div className="h-4 w-1/2 bg-neutral-200 rounded" />
+                                        <div className="grid sm:grid-cols-2 gap-3">
+                                            <div className="h-11 bg-neutral-200 rounded-lg" />
+                                            <div className="h-11 bg-neutral-200 rounded-lg" />
+                                        </div>
+                                        <div className="h-11 bg-neutral-200 rounded-lg" />
+                                        <div className="h-11 bg-neutral-200 rounded-lg" />
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="rounded-2xl border border-neutral-200 bg-neutral-50/80 p-5 space-y-4">
+                                <div className="h-4 w-28 bg-neutral-200 rounded" />
+                                <div className="h-16 bg-neutral-200 rounded" />
+                                <div className="h-11 bg-neutral-200 rounded" />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -267,177 +296,181 @@ function CheckoutContent() {
     }
 
     return (
-        <div className="min-h-screen bg-white">
-            <div className="grid lg:grid-cols-2 min-h-screen">
-                {/* LEFT — CHECKOUT FORM */}
-                <div className="flex justify-center items-start p-6 lg:p-14 lg:pt-24 order-2 lg:order-1 bg-white">
-                    <form
-                        onSubmit={handleSubmit}
-                        className="w-full max-w-lg space-y-10"
-                    >
-                        <div>
-                            <div className="flex items-center gap-3 mb-8">
-                                <button onClick={navigateToCart} type="button" className="text-neutral-500 hover:text-neutral-900 transition-colors -ml-1">
-                                    <HugeiconsIcon icon={ArrowLeft01Icon} className="h-5 w-5" />
-                                </button>
-                                <span className="text-xs font-semibold text-neutral-400 tracking-widest uppercase">Checkout</span>
-                                <HugeiconsIcon
-                                    icon={ArrowRight01Icon}
-                                    className="h-3 w-3 text-neutral-300"
-                                />
-                                <Link href="/" className={`${geistSans.className} text-lg font-semibold tracking-tight hover:opacity-80 transition-opacity`}>
-                                    {store.name}
-                                </Link>
-                            </div>
-
-                            <h2 className={`${geistSans.className} text-xl uppercase tracking-widest font-semibold mb-6`}>Shipping Information</h2>
-
-                            <div className="space-y-4">
-                                <Input
-                                    placeholder="Full Name"
-                                    value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
-                                    className="h-14 rounded-none text-sm"
-                                    required
-                                />
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <Input
-                                        placeholder="Email Address"
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="h-14 rounded-none text-sm"
-                                        required
-                                    />
-                                    <Input
-                                        placeholder="Phone Number"
-                                        type="tel"
-                                        value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
-                                        className="h-14 rounded-none text-sm"
-                                        required
-                                    />
-                                </div>
-
-                                <Input
-                                    placeholder="Delivery Address (e.g. 123 Main St, Kampala)"
-                                    value={address}
-                                    onChange={(e) => setAddress(e.target.value)}
-                                    className="h-14 rounded-none text-sm"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className="pt-6 border-t border-neutral-200">
-                            <h2 className={`${geistSans.className} text-xl uppercase tracking-widest font-semibold mb-6`}>Payment</h2>
-                            <div className="p-5 border border-neutral-200 bg-neutral-50/50 mb-8">
-                                <p className="text-sm text-neutral-600 leading-relaxed max-w-sm">
-                                    All transactions are secure and encrypted. You will be redirected to Paystack to complete your purchase securely.
-                                </p>
-                            </div>
-
-                            {error && (
-                                <div className="p-4 mb-6 bg-red-50 border border-red-100 text-red-600 text-sm">
-                                    {error}
-                                </div>
-                            )}
-
-                            <Button
-                                type="submit"
-                                className="w-full h-14 rounded-none uppercase text-xs tracking-widest font-semibold transition-colors flex items-center justify-center gap-3"
-                                disabled={isSubmitting}
+        <div className="min-h-screen bg-white pt-20 pb-24">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="rounded-2xl border border-neutral-200 bg-white/90 shadow-sm overflow-hidden">
+                    <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
+                        {/* LEFT — CHECKOUT FORM */}
+                        <div className="order-2 lg:order-1 p-5 sm:p-7 lg:p-10 bg-white">
+                            <form
+                                onSubmit={handleSubmit}
+                                className="w-full max-w-2xl space-y-10"
                             >
-                                {isSubmitting ? (
-                                    <>
+                                <div className="space-y-6">
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <button onClick={navigateToCart} type="button" className="text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-full p-2 transition-colors">
+                                            <HugeiconsIcon icon={ArrowLeft01Icon} className="h-5 w-5" />
+                                        </button>
+                                        <span className="text-xs font-semibold text-neutral-400 tracking-widest uppercase">Checkout</span>
                                         <HugeiconsIcon
-                                            icon={Loading03Icon}
-                                            className="h-5 w-5 animate-spin"
+                                            icon={ArrowRight01Icon}
+                                            className="h-3 w-3 text-neutral-300"
                                         />
-                                        Processing Order...
-                                    </>
-                                ) : (
-                                    <span>Pay {currency} {storeTotal.toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0 })}</span>
-                                )}
-                            </Button>
-                        </div>
-                    </form>
-                </div>
+                                        <Link href="/" className={`${geistSans.className} text-lg font-semibold tracking-tight hover:opacity-80 transition-opacity`}>
+                                            {capitalizeFirst(store.name)}
+                                        </Link>
+                                    </div>
 
-                {/* RIGHT — ORDER SUMMARY */}
-                <div className="bg-neutral-50/50 lg:border-l border-neutral-200 overflow-y-auto order-1 lg:order-2">
-                    <div className="flex justify-center items-start p-6 lg:p-14 lg:pt-24 border-b lg:border-b-0 border-neutral-200">
-                        <div className="w-full max-w-md space-y-8">
-                            <div className="flex items-center justify-between">
-                                <h2 className={`${geistSans.className} text-xl uppercase tracking-widest font-semibold`}>Order Summary</h2>
-                            </div>
+                                    <div className="space-y-5 rounded-2xl border border-neutral-200 bg-neutral-50/60 p-5 sm:p-6 shadow-sm">
+                                        <h2 className={`${geistSans.className} text-lg uppercase tracking-widest font-semibold`}>Shipping Information</h2>
 
-                            <div className="space-y-6">
-                                {storeItems.map((item) => (
-                                    <div
-                                        key={item.id}
-                                        className="flex gap-5 items-center"
-                                    >
-                                        <div className="relative h-20 w-16 bg-neutral-100 shrink-0 block overflow-hidden">
-                                            {item.product.contentType?.startsWith("video/") || item.product.image?.match(/\.(mp4|webm|mov|ogg)$/i) || ((item.product.image || "").includes(".ufs.sh") && !(item.product.image || "").match(/\.(jpg|jpeg|png|webp|gif)$/i) && !item.product.contentType?.startsWith("image/")) ? (
-                                                <video
-                                                    src={item.product.image || ""}
-                                                    className="h-full w-full object-cover mix-blend-multiply"
-                                                    muted
-                                                    playsInline
-                                                    loop
-                                                    autoPlay
+                                        <div className="space-y-4">
+                                            <Input
+                                                placeholder="Full Name"
+                                                value={fullName}
+                                                onChange={(e) => setFullName(e.target.value)}
+                                                className="h-12 rounded-lg text-sm"
+                                                required
+                                            />
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <Input
+                                                    placeholder="Email Address"
+                                                    type="email"
+                                                    value={email}
+                                                    onChange={(e) => setEmail(e.target.value)}
+                                                    className="h-12 rounded-lg text-sm"
+                                                    required
                                                 />
-                                            ) : (
-                                                <Image
-                                                    src={item.product.image || FALLBACK_PRODUCT_IMAGE}
-                                                    alt={item.product.name}
-                                                    fill
-                                                    sizes="64px"
-                                                    className="object-cover mix-blend-multiply"
-                                                    unoptimized={(item.product.image || "").includes(".ufs.sh")}
+                                                <Input
+                                                    placeholder="Phone Number"
+                                                    type="tel"
+                                                    value={phone}
+                                                    onChange={(e) => setPhone(e.target.value)}
+                                                    className="h-12 rounded-lg text-sm"
+                                                    required
                                                 />
-                                            )}
-                                            <span className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-neutral-900 text-white text-[10px] font-bold flex items-center justify-center z-10 border border-neutral-50">
-                                                {item.quantity}
-                                            </span>
-                                        </div>
+                                            </div>
 
-                                        <div className="flex-1 flex flex-col gap-1">
-                                            <p className="font-serif text-base leading-tight">
-                                                {item.product.name}
-                                            </p>
-                                            <p className="text-[10px] uppercase tracking-widest text-neutral-500">
-                                                Standard Variant
-                                            </p>
+                                            <Input
+                                                placeholder="Delivery Address (e.g. 123 Main St, Kampala)"
+                                                value={address}
+                                                onChange={(e) => setAddress(e.target.value)}
+                                                className="h-12 rounded-lg text-sm"
+                                                required
+                                            />
                                         </div>
+                                    </div>
+                                </div>
 
-                                        <p className="text-sm font-medium whitespace-nowrap">
-                                            {currency} {(item.product.price * item.quantity).toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0, maximumFractionDigits: currency === "USD" ? 2 : 0 })}
+                                <div className="space-y-4 rounded-2xl border border-neutral-200 bg-neutral-50/60 p-5 sm:p-6 shadow-sm">
+                                    <h2 className={`${geistSans.className} text-lg uppercase tracking-widest font-semibold`}>Payment</h2>
+                                    <div className="p-4 rounded-xl border border-neutral-200 bg-white">
+                                        <p className="text-sm text-neutral-600 leading-relaxed">
+                                            All transactions are secure and encrypted. You will be redirected to Paystack to complete your purchase securely.
                                         </p>
                                     </div>
-                                ))}
-                            </div>
 
-                            <div className="border-t border-neutral-200 pt-6 space-y-4">
-                                <div className="flex justify-between text-sm text-neutral-600">
-                                    <span>Subtotal</span>
-                                    <span className="font-medium text-neutral-900">
-                                        {currency} {storeSubtotal.toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0, maximumFractionDigits: currency === "USD" ? 2 : 0 })}
-                                    </span>
+                                    {error && (
+                                        <div className="p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg">
+                                            {error}
+                                        </div>
+                                    )}
+
+                                    <Button
+                                        type="submit"
+                                        className="w-full h-12 rounded-md uppercase text-xs tracking-widest font-semibold transition-colors flex items-center justify-center gap-3"
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <HugeiconsIcon
+                                                    icon={Loading03Icon}
+                                                    className="h-5 w-5 animate-spin"
+                                                />
+                                                Processing Order...
+                                            </>
+                                        ) : (
+                                            <span>Pay {currency} {storeTotal.toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0 })}</span>
+                                        )}
+                                    </Button>
                                 </div>
-                                <div className="flex justify-between text-sm text-neutral-600">
-                                    <span>Shipping</span>
-                                    <span>Calculated next step</span>
+                            </form>
+                        </div>
+
+                        {/* RIGHT — ORDER SUMMARY */}
+                        <div className="order-1 lg:order-2 bg-neutral-50/70 border-b lg:border-b-0 lg:border-l border-neutral-200 p-5 sm:p-7 lg:p-10">
+                            <div className="w-full max-w-xl mx-auto space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <h2 className={`${geistSans.className} text-lg uppercase tracking-widest font-semibold`}>Order Summary</h2>
                                 </div>
-                                <div className="flex justify-between items-end pt-4 border-t border-neutral-200">
-                                    <span className={`${geistSans.className} uppercase tracking-widest font-semibold`}>Total</span>
-                                    <div className="text-right">
-                                        <span className="text-xs text-neutral-500 mr-2">{currency}</span>
-                                        <span className="text-2xl font-medium">
-                                            {storeTotal.toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0, maximumFractionDigits: currency === "USD" ? 2 : 0 })}
+
+                                <div className="space-y-4">
+                                    {storeItems.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="group flex gap-4 items-center rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                                        >
+                                            <div className="relative h-20 w-20 bg-white shrink-0 overflow-hidden rounded-xl border border-neutral-200 shadow-sm">
+                                                {item.product.contentType?.startsWith("video/") || item.product.image?.match(/\.(mp4|webm|mov|ogg)$/i) || ((item.product.image || "").includes(".ufs.sh") && !(item.product.image || "").match(/\.(jpg|jpeg|png|webp|gif)$/i) && !item.product.contentType?.startsWith("image/")) ? (
+                                                    <video
+                                                        src={item.product.image || ""}
+                                                        className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-110"
+                                                        muted
+                                                        playsInline
+                                                        loop
+                                                        autoPlay
+                                                    />
+                                                ) : (
+                                                    <Image
+                                                        src={item.product.image || FALLBACK_PRODUCT_IMAGE}
+                                                        alt={item.product.name}
+                                                        fill
+                                                        sizes="80px"
+                                                        className="object-cover transition-transform duration-200 group-hover:scale-110"
+                                                        unoptimized={(item.product.image || "").includes(".ufs.sh")}
+                                                    />
+                                                )}
+                                                <span className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-neutral-900 text-white text-[10px] font-bold flex items-center justify-center z-10 border border-neutral-50">
+                                                    {item.quantity}
+                                                </span>
+                                            </div>
+
+                                            <div className="flex-1 flex flex-col gap-1">
+                                                <p className="font-serif text-base leading-tight">
+                                                    {capitalizeFirst(item.product.name)}
+                                                </p>
+                                                <p className="text-[10px] uppercase tracking-widest text-neutral-500">
+                                                    Standard Variant
+                                                </p>
+                                            </div>
+
+                                            <p className="text-sm font-semibold whitespace-nowrap text-neutral-900">
+                                                {currency} {(item.product.price * item.quantity).toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0, maximumFractionDigits: currency === "USD" ? 2 : 0 })}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="rounded-xl border border-neutral-200 bg-white p-4 space-y-3 shadow-sm">
+                                    <div className="flex justify-between text-sm text-neutral-600">
+                                        <span>Subtotal</span>
+                                        <span className="font-semibold text-neutral-900">
+                                            {currency} {storeSubtotal.toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0, maximumFractionDigits: currency === "USD" ? 2 : 0 })}
                                         </span>
+                                    </div>
+                                    <div className="flex justify-between text-sm text-neutral-600">
+                                        <span>Shipping</span>
+                                        <span>Calculated next step</span>
+                                    </div>
+                                    <div className="flex justify-between items-end pt-3 border-t border-neutral-200">
+                                        <span className={`${geistSans.className} uppercase tracking-widest font-semibold`}>Total</span>
+                                        <div className="text-right">
+                                            <span className="text-xs text-neutral-500 mr-2">{currency}</span>
+                                            <span className="text-2xl font-semibold text-neutral-900">
+                                                {storeTotal.toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0, maximumFractionDigits: currency === "USD" ? 2 : 0 })}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -453,11 +486,34 @@ export default function CheckoutPage() {
     return (
         <Suspense
             fallback={
-                <div className="min-h-screen flex items-center justify-center bg-white">
-                    <HugeiconsIcon
-                        icon={Loading03Icon}
-                        className="h-8 w-8 animate-spin text-neutral-900"
-                    />
+                <div className="min-h-screen bg-white pt-20 pb-24">
+                    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="rounded-2xl border border-neutral-200 bg-white/90 shadow-sm p-6 space-y-4 animate-pulse">
+                            <div className="h-5 w-32 bg-neutral-100 rounded" />
+                            <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-6 lg:gap-8">
+                                <div className="space-y-4">
+                                    <div className="rounded-2xl border border-neutral-200 bg-neutral-50/80 p-5 space-y-3">
+                                        <div className="h-4 w-28 bg-neutral-200 rounded" />
+                                        <div className="h-11 bg-neutral-200 rounded" />
+                                        <div className="grid sm:grid-cols-2 gap-3">
+                                            <div className="h-11 bg-neutral-200 rounded" />
+                                            <div className="h-11 bg-neutral-200 rounded" />
+                                        </div>
+                                        <div className="h-11 bg-neutral-200 rounded" />
+                                    </div>
+                                    <div className="rounded-2xl border border-neutral-200 bg-neutral-50/80 p-5 space-y-3">
+                                        <div className="h-4 w-24 bg-neutral-200 rounded" />
+                                        <div className="h-12 bg-neutral-200 rounded" />
+                                    </div>
+                                </div>
+                                <div className="rounded-2xl border border-neutral-200 bg-neutral-50/80 p-5 space-y-3">
+                                    <div className="h-4 w-24 bg-neutral-200 rounded" />
+                                    <div className="h-16 bg-neutral-200 rounded" />
+                                    <div className="h-10 bg-neutral-200 rounded" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             }
         >
