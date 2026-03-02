@@ -40,6 +40,7 @@ export interface OrderTableRow {
     totalAmount: number;
     currency: string;
     createdAt: string;
+    items?: Array<{ productName?: string | null } | null>;
 }
 
 interface OrderTableProps {

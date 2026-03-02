@@ -24,6 +24,7 @@ interface OrderAPIResponse {
     totalAmount: number;
     currency: string;
     createdAt: string;
+    items?: Array<{ productName?: string | null } | null>;
 }
 
 interface OrdersListResponse {
@@ -131,10 +132,18 @@ export default function TransactionsPage() {
         },
     ];
 
-    const transactionRows = orders.map((o) => ({
+    const transactionRows = orders.map((o) => {
+        const itemLabel =
+            o.items?.length === 1
+                ? o.items[0]?.productName
+                : o.items?.length
+                    ? `${o.items.length} items`
+                    : "—";
+
+        return {
         id: o.orderNumber,
         customer: o.customerName,
-        product: o.paymentMethod.replace(/_/g, " "),
+        product: itemLabel || "—",
         amount: new Intl.NumberFormat("en-US", { style: "currency", currency }).format(o.totalAmount),
         status: (o.paymentStatus === "paid"
             ? "Completed"
@@ -143,7 +152,8 @@ export default function TransactionsPage() {
                 : "Pending") as "Completed" | "Failed" | "Pending",
         payment: o.paymentMethod,
         date: new Date(o.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }),
-    })) as Parameters<typeof RecentTransactionsTable>[0]["rows"];
+        };
+    }) as Parameters<typeof RecentTransactionsTable>[0]["rows"];
 
     if (isLoading) {
         return <OrdersPageSkeleton />;

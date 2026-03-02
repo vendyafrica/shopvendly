@@ -2,7 +2,7 @@ import { SellerLoginForm } from "./seller-login-form";
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getRootUrl, getStorefrontUrl } from "@/utils/misc";
+import { getRootUrl } from "@/utils/misc";
 import { resolveTenantAdminAccess } from "../../lib/admin-access";
 
 export default async function TenantAdminLoginPage({
@@ -15,9 +15,13 @@ export default async function TenantAdminLoginPage({
   const { slug } = await params;
   const { next, verified, error } = await searchParams;
 
-  const session = await auth.api.getSession({ headers: await headers() });
+  const headerList = await headers();
+  const session = await auth.api.getSession({ headers: headerList });
   const adminPath = `/admin/${slug}`;
-  const base = getRootUrl(adminPath);
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
+  const proto = headerList.get("x-forwarded-proto") ?? "https";
+  const origin = host ? `${proto}://${host}` : getRootUrl();
+  const base = `${origin}${adminPath}`;
 
   if (session?.user) {
     const access = await resolveTenantAdminAccess(session.user.id, slug);
@@ -27,10 +31,10 @@ export default async function TenantAdminLoginPage({
       redirect(safeNext);
     }
 
-    redirect(getStorefrontUrl(slug));
+    redirect(`${adminPath}/unauthorized`);
   }
 
-  const redirectTo = next && next.startsWith(adminPath) ? getRootUrl(next) : base;
+  const redirectTo = next && next.startsWith(adminPath) ? `${origin}${next}` : base;
   const title = `Welcome to ${slug} Admin`;
 
   return (

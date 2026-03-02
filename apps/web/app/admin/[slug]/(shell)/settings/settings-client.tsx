@@ -11,6 +11,7 @@ import {
 } from "@shopvendly/ui/components/select";
 import { useTenant } from "@/app/admin/context/tenant-context";
 import { HeroEditor } from "../studio/components/hero-editor";
+import { IntegrationsPanel } from "../../../components/integrations-panel";
 
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -142,6 +143,8 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
           />
         </div>
       </div>
+
+      <IntegrationsPanel />
     </div>
   );
 }
