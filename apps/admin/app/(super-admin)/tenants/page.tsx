@@ -21,7 +21,7 @@ export default function TenantsPage() {
         try {
             const [tenantsRes, adminRes] = await Promise.all([
                 fetch("/api/tenants"),
-                fetch("/api/admin")
+                fetch("/api/dashboard")
             ]);
 
             const tenantsData = await tenantsRes.json();

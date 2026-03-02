@@ -18,7 +18,7 @@ export default function StoresPage() {
             try {
                 const [storesRes, adminRes] = await Promise.all([
                     fetch("/api/stores"),
-                    fetch("/api/admin")
+                    fetch("/api/dashboard")
                 ]);
 
                 const storesData = await storesRes.json();

@@ -4,8 +4,6 @@ import * as React from "react";
 import { UserTable, type User } from "./components/user-table";
 import { SegmentedStatsCard } from "@/features/super-admin/components/segmented-stats-card";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
 export default function UsersPage() {
     const [users, setUsers] = React.useState<User[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
@@ -13,11 +11,11 @@ export default function UsersPage() {
     React.useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await fetch(`${API_BASE}/api/admin/users`);
+                const res = await fetch("/api/users");
                 const data = await res.json();
 
-                if (data.success) {
-                    setUsers(data.data);
+                if (Array.isArray(data)) {
+                    setUsers(data);
                 }
             } catch (error) {
                 console.error("Failed to fetch users:", error);

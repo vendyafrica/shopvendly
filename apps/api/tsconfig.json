@@ -9,8 +9,8 @@
     ],
     "outDir": "./dist",
     "baseUrl": ".",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
 
     "paths": {
       "@shopvendly/db": [

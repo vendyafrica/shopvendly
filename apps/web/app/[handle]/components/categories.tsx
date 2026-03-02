@@ -53,6 +53,14 @@ const CATEGORY_VARIANTS: BadgeVariant[] = [
 const formatCategoryName = (name: string) =>
   name ? name.charAt(0).toUpperCase() + name.slice(1) : name;
 
+const getBadgeClassName = (isActive: boolean) =>
+  [
+    "cursor-pointer rounded-full border h-9 px-4 text-sm font-medium transition-all duration-150",
+    isActive
+      ? "border-border bg-background text-foreground shadow-xs"
+      : "border-transparent bg-muted/55 text-foreground/80 hover:bg-muted",
+  ].join(" ");
+
 export function Categories({ storeSlug, initialCategories = [] }: CategoriesProps) {
   const params = useParams();
   const derivedSlug =
@@ -81,10 +89,12 @@ export function Categories({ storeSlug, initialCategories = [] }: CategoriesProp
   if (loading) {
     return (
       <nav className="bg-background">
-        <div className="px-3 sm:px-4 lg:px-6 xl:px-8 py-4 flex gap-3 overflow-x-auto scrollbar-hide">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-7 w-24 bg-muted rounded-full animate-pulse shrink-0" />
-          ))}
+        <div className="px-3 sm:px-4 lg:px-6 xl:px-8 py-4 overflow-x-auto scrollbar-hide">
+          <div className="mx-auto flex w-max min-w-full items-center justify-center gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-9 w-24 bg-muted rounded-full animate-pulse shrink-0" />
+            ))}
+          </div>
         </div>
       </nav>
     );
@@ -96,63 +106,62 @@ export function Categories({ storeSlug, initialCategories = [] }: CategoriesProp
       className="border-px border-border bg-background sticky top-0 z-10"
     >
       <div className="px-3 sm:px-4 lg:px-6 xl:px-8">
-        <div
-          className="flex flex-wrap md:flex-nowrap items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-3"
-        >
-
-          {/* Quick filters */}
-          {QUICK_FILTERS(derivedSlug).map((filter) => {
-            const isActive = activeCategory === filter.slug;
-            return (
-              <Badge
-                key={filter.slug}
-                asChild
-                variant={filter.variant}
-                appearance={isActive ? "outline" : "ghost"}
-                shape="circle"
-                size="lg"
-                className="cursor-pointer transition-all duration-150 px-3.5"
-              >
-                <Link
-                  href={filter.href}
-                  onClick={() => setActiveCategory(filter.slug)}
-                  className="whitespace-nowrap text-base font-semibold"
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="mx-auto flex w-max min-w-full items-center justify-center gap-1.5 sm:gap-2 py-3">
+            {/* Quick filters */}
+            {QUICK_FILTERS(derivedSlug).map((filter) => {
+              const isActive = activeCategory === filter.slug;
+              return (
+                <Badge
+                  key={filter.slug}
+                  asChild
+                  variant={filter.variant}
+                  appearance={isActive ? "outline" : "ghost"}
+                  shape="circle"
+                  size="lg"
+                  className={getBadgeClassName(isActive)}
                 >
-                  {filter.name}
-                </Link>
-              </Badge>
-            );
-          })}
-
-          {/* Dynamic categories — separated by a subtle divider */}
-          {categories.length > 0 && (
-            <>
-              <span className="h-5 w-px bg-border mx-1 shrink-0" aria-hidden />
-              {categories.map((category, index) => {
-                const isActive = activeCategory === category.slug;
-                const variant = CATEGORY_VARIANTS[index % CATEGORY_VARIANTS.length];
-                return (
-                  <Badge
-                    key={category.slug}
-                    asChild
-                    variant={variant}
-                    appearance={isActive ? "outline" : "ghost"}
-                    shape="circle"
-                    size="lg"
-                    className="cursor-pointer transition-all duration-150 px-3.5"
+                  <Link
+                    href={filter.href}
+                    onClick={() => setActiveCategory(filter.slug)}
+                    className="whitespace-nowrap"
                   >
-                    <Link
-                      href={`/${derivedSlug}/categories/${category.slug}`}
-                      onClick={() => setActiveCategory(category.slug)}
-                      className="whitespace-nowrap text-base font-semibold"
+                    {filter.name}
+                  </Link>
+                </Badge>
+              );
+            })}
+
+            {/* Dynamic categories — separated by a subtle divider */}
+            {categories.length > 0 && (
+              <>
+                <span className="h-5 w-px bg-border mx-1 shrink-0" aria-hidden />
+                {categories.map((category, index) => {
+                  const isActive = activeCategory === category.slug;
+                  const variant = CATEGORY_VARIANTS[index % CATEGORY_VARIANTS.length];
+                  return (
+                    <Badge
+                      key={category.slug}
+                      asChild
+                      variant={variant}
+                      appearance={isActive ? "outline" : "ghost"}
+                      shape="circle"
+                      size="lg"
+                      className={getBadgeClassName(isActive)}
                     >
-                      {formatCategoryName(category.name)}
-                    </Link>
-                  </Badge>
-                );
-              })}
-            </>
-          )}
+                      <Link
+                        href={`/${derivedSlug}/categories/${category.slug}`}
+                        onClick={() => setActiveCategory(category.slug)}
+                        className="whitespace-nowrap"
+                      >
+                        {formatCategoryName(category.name)}
+                      </Link>
+                    </Badge>
+                  );
+                })}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </nav>

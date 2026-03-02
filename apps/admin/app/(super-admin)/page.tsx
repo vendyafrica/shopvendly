@@ -37,7 +37,7 @@ export default function AdminPage() {
   console.log("data", data);
 
   useEffect(() => {
-    fetch("/api/admin")
+    fetch("/api/dashboard")
       .then((res) => res.json())
       .then((data) => {
         setData(data);

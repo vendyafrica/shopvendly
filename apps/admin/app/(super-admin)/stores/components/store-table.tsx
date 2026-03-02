@@ -83,7 +83,7 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
                         </TableCell>
                         <TableCell>
                             <Badge
-                                variant={store.status ? "default" : "secondary"}
+                                variant={store.status ? "primary" : "secondary"}
                                 className="capitalize"
                             >
                                 {store.status ? "Active" : "Inactive"}
