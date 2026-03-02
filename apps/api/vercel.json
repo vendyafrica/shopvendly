@@ -1,15 +1,16 @@
 {
   "version": 2,
+  "buildCommand": "pnpm build",
   "builds": [
     {
-      "src": "index.ts",
+      "src": "dist/index.mjs",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "index.ts"
+      "dest": "dist/index.mjs"
     }
   ]
 }

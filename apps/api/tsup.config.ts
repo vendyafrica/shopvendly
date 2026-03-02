@@ -7,5 +7,6 @@ export default defineConfig((options: Options) => ({
   outDir: "dist",
   outExtension: () => ({ js: ".mjs" }),
   external: ["better-auth/node"],
+  noExternal: ["@shopvendly/db", "@shopvendly/auth"],
   ...options,
 }));
