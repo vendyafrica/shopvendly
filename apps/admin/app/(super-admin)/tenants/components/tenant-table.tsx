@@ -73,7 +73,7 @@ export function TenantTable({ tenants, isLoading }: TenantTableProps) {
                         <TableCell>{tenant.phoneNumber || "-"}</TableCell>
                         <TableCell>
                             <Badge
-                                variant={tenant.status === "active" ? "default" : "secondary"}
+                                variant={tenant.status === "active" ? "primary" : "secondary"}
                                 className="capitalize"
                             >
                                 {tenant.status}
