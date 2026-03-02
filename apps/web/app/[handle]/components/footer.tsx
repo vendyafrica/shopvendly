@@ -1,6 +1,3 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -8,10 +5,9 @@ import {
   NewTwitterIcon,
   Facebook01Icon,
 } from "@hugeicons/core-free-icons";
-import { Button } from "@shopvendly/ui/components/button";
 import { Bricolage_Grotesque } from "next/font/google";
-import { Input } from "@shopvendly/ui/components/input";
 import { getRootUrl } from "@/utils/misc";
+import { FooterSubscribeForm } from "./footer-subscribe-form.client";
 
 const geistSans = Bricolage_Grotesque({
   variable: "--font-bricolage-grotesque",
@@ -27,15 +23,6 @@ interface StorefrontFooterProps {
 }
 
 export function StorefrontFooter({ store }: StorefrontFooterProps) {
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [subscribed, setSubscribed] = useState(false);
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubscribed(true);
-    setPhoneNumber("");
-  };
-
   const storeName = store.name ?? "Store";
   const storeDescription = store.description ?? "Curated collections.";
 
@@ -141,27 +128,7 @@ export function StorefrontFooter({ store }: StorefrontFooterProps) {
             <h4 className={`${geistSans.className} text-sm font-medium tracking-wider mb-4 text-muted-foreground`}>
               Updates
             </h4>
-            {subscribed ? (
-              <p className="text-sm text-foreground">Thanks for subscribing!</p>
-            ) : (
-              <form onSubmit={handleSubscribe} className="space-y-3">
-                <Input
-                  suppressHydrationWarning
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="Your phone number"
-                  required
-                  className="w-full px-4 py-3 text-sm rounded border border-border bg-background text-foreground transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                />
-                <Button
-                  suppressHydrationWarning
-                  type="submit"
-                  className="w-full h-9 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded transition-colors duration-200"
-                >
-                  Subscribe
-                </Button>
-              </form>
-            )}
+            <FooterSubscribeForm />
           </div>
         </div>
 

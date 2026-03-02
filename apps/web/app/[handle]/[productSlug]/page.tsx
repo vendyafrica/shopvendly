@@ -4,6 +4,7 @@ import { StorefrontFooter } from "@/app/[handle]/components/footer";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { Suspense } from "react";
 
 const siteUrl = process.env.WEB_URL || "https://shopvendly.store";
 
@@ -189,9 +190,17 @@ export default async function ProductPage({ params }: PageProps) {
         suppressHydrationWarning
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-26 pb-8 md:pt-30 md:pb-12">
-        <ProductDetails product={product} storeCategories={storeCategories} />
-      </div>
+      <Suspense
+        fallback={
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-26 pb-8 md:pt-30 md:pb-12">
+            <div className="h-[70vh] rounded-md bg-neutral-100 animate-pulse" />
+          </div>
+        }
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-26 pb-8 md:pt-30 md:pb-12">
+          <ProductDetails product={product} storeCategories={storeCategories} />
+        </div>
+      </Suspense>
       <ProductGridReveal products={products.map((p) => ({ ...p, rating: p.rating ?? 0 }))} />
       <StorefrontFooter store={store} />
     </main>

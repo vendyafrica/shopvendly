@@ -12,7 +12,7 @@ interface StorefrontSearchProps {
     onSubmitted?: () => void;
 }
 
-export function StorefrontSearch({ isHomePage, onSubmitted }: StorefrontSearchProps) {
+export function StorefrontSearch({ storeSlug, isHomePage, onSubmitted }: StorefrontSearchProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [query, setQuery] = useState(searchParams?.get("q") || "");
@@ -26,7 +26,9 @@ export function StorefrontSearch({ isHomePage, onSubmitted }: StorefrontSearchPr
         } else {
             params.delete("q");
         }
-        router.push(`/?${params.toString()}`);
+        const basePath = storeSlug ? `/${storeSlug}` : "/";
+        const queryString = params.toString();
+        router.push(queryString ? `${basePath}?${queryString}` : basePath);
         onSubmitted?.();
     };
 

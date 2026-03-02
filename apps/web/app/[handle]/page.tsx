@@ -3,6 +3,7 @@ import { StorefrontFooter } from "./components/footer";
 import { Hero } from "./components/hero";
 import { StorefrontViewTracker } from "./components/StorefrontViewTracker";
 import { OneTapLogin } from "@/features/marketplace/components/one-tap-login";
+import { Suspense } from "react";
 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -130,11 +131,15 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
 
   return (
     <div className="min-h-screen">
-      <StorefrontViewTracker storeSlug={handle} />
-      <OneTapLogin storeSlug={handle} />
+      <Suspense fallback={null}>
+        <StorefrontViewTracker storeSlug={handle} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <OneTapLogin storeSlug={handle} />
+      </Suspense>
 
       <Hero store={store} />
-      <div className="w-full">
+      <div id="storefront-main-content" className="w-full">
         <div className="px-3 sm:px-6 lg:px-8">
           <div className="my-8">
             <StorefrontContentTabs

@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import MarketplaceLayout from "../m/layout";
 import { StorefrontHeader } from "./components/header";
-import { NavigationOverlayProvider } from "./components/navigation-overlay";
+import { HeaderSkeleton } from "./components/skeletons";
 import { headers } from "next/headers";
 
 const DEFAULT_STORE_LOGO = "/store-logo.jpg";
@@ -49,12 +50,12 @@ export default async function StorefrontLayout({ children, params }: LayoutProps
 
   return (
     <MarketplaceLayout>
-      <NavigationOverlayProvider>
-        <div className="relative min-h-screen bg-background text-foreground antialiased">
+      <div className="relative min-h-screen bg-background text-foreground antialiased">
+        <Suspense fallback={<HeaderSkeleton />}>
           <StorefrontHeader initialStore={initialStore} />
-          <main className="flex flex-col w-full">{children}</main>
-        </div>
-      </NavigationOverlayProvider>
+        </Suspense>
+        <main className="flex flex-col w-full">{children}</main>
+      </div>
     </MarketplaceLayout>
   );
 }

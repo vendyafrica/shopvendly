@@ -15,16 +15,27 @@ interface Category {
 
 const API_BASE = ""; 
 
-export function Categories() {
+interface CategoriesProps {
+    storeSlug?: string;
+    initialCategories?: Category[];
+}
+
+export function Categories({ storeSlug, initialCategories = [] }: CategoriesProps) {
     const params = useParams();
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [loading, setLoading] = useState(true);
+    const derivedSlug = storeSlug || (params?.handle as string) || (params?.s as string) || "";
+    const [categories, setCategories] = useState<Category[]>(initialCategories);
+    const [loading, setLoading] = useState(initialCategories.length === 0);
     const [activeCategory, setActiveCategory] = useState<string>("all");
     const [isSearchOpen, setIsSearchOpen] = useState(false);
 
     useEffect(() => {
+        if (initialCategories.length > 0) {
+            setLoading(false);
+            return;
+        }
+
         const fetchCategories = async () => {
-            const slug = params?.s as string;
+            const slug = derivedSlug;
 
             if (!slug) {
                 setLoading(false);
@@ -43,7 +54,7 @@ export function Categories() {
             }
         };
         fetchCategories();
-    }, [params?.s]);
+    }, [derivedSlug, initialCategories]);
 
     if (loading) {
         return (
@@ -69,7 +80,7 @@ export function Categories() {
                         <div className="flex gap-6 sm:gap-8 min-w-max">
                             {/* All/Featured link */}
                             <Link
-                                href={`/${params?.s}`}
+                                href={`/${derivedSlug}`}
                                 onClick={() => setActiveCategory("all")}
                                 className={`
                                     shrink-0 py-4 text-sm font-medium transition-colors relative
@@ -89,7 +100,7 @@ export function Categories() {
                             {categories.map((category) => (
                                 <Link
                                     key={category.slug}
-                                    href={`/${params?.s}/categories/${category.slug}`}
+                                    href={`/${derivedSlug}/categories/${category.slug}`}
                                     onClick={() => setActiveCategory(category.slug)}
                                     className={`
                                         shrink-0 py-4 text-sm font-medium transition-colors relative whitespace-nowrap
@@ -111,7 +122,7 @@ export function Categories() {
                     {/* Desktop search */}
                     <div className="hidden sm:flex items-center min-w-[260px] max-w-[340px]">
                         <StorefrontSearch
-                            storeSlug={params?.s as string}
+                            storeSlug={derivedSlug}
                             isHomePage={false}
                         />
                     </div>
@@ -128,7 +139,7 @@ export function Categories() {
                     {isSearchOpen && (
                         <div className="sm:hidden pb-3">
                             <StorefrontSearch
-                                storeSlug={params?.s as string}
+                                storeSlug={derivedSlug}
                                 isHomePage={false}
                                 onSubmitted={() => setIsSearchOpen(false)}
                             />

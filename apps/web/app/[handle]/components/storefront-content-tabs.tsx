@@ -1,8 +1,6 @@
-"use client";
-
+import { Suspense } from "react";
 import { ProductGrid } from "./product-grid";
-import { InspirationGrid } from "./inspiration-grid";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shopvendly/ui/components/tabs";
+import { StorefrontContentTabsClient } from "./storefront-content-tabs.client";
 
 type StorefrontProduct = {
   id: string;
@@ -45,23 +43,15 @@ export function StorefrontContentTabs({
   }
 
   return (
-    <Tabs defaultValue="products" className="w-full gap-6">
-      <TabsList variant="line" className="w-full justify-start rounded-none p-0">
-        <TabsTrigger value="products" className="h-10 px-4 text-sm">
-          All Products
-        </TabsTrigger>
-        <TabsTrigger value="inspiration" className="h-10 px-4 text-sm">
-          Inspiration
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="products" className="pt-2">
-        <ProductGrid products={products} />
-      </TabsContent>
-
-      <TabsContent value="inspiration" className="pt-2">
-        <InspirationGrid videos={inspirationVideos} />
-      </TabsContent>
-    </Tabs>
+    <Suspense
+      fallback={
+        <>
+          <h3 className="text-lg font-semibold my-8 text-foreground">All Products</h3>
+          <ProductGrid products={products} />
+        </>
+      }
+    >
+      <StorefrontContentTabsClient products={products} inspirationVideos={inspirationVideos} />
+    </Suspense>
   );
 }
