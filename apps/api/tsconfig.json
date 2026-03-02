@@ -1,6 +1,7 @@
 {
   "extends": "../../packages/typescript-config/base.json",
   "compilerOptions": {
+
     "lib": [
       "ES2022",
       "DOM",
@@ -8,8 +9,9 @@
     ],
     "outDir": "./dist",
     "baseUrl": ".",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
     "paths": {
       "@shopvendly/db": [
         "../../packages/db/src/index.ts"

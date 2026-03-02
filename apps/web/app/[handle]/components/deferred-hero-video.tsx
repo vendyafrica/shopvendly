@@ -8,18 +8,22 @@ const VIDEO_MIME_MAP: Record<string, string> = {
   ".ogg": "video/ogg",
 };
 
-function guessMimeType(url: string) {
+function guessMimeType(url: string): string | undefined {
   const clean = url.split("?")[0]?.split("#")[0] ?? url;
-  const ext = clean.slice(clean.lastIndexOf("."));
-  return VIDEO_MIME_MAP[ext.toLowerCase()] || "video/mp4";
+  const extIndex = clean.lastIndexOf(".");
+  if (extIndex === -1) return undefined;
+  const ext = clean.slice(extIndex).toLowerCase();
+  return VIDEO_MIME_MAP[ext];
 }
 
 export function DeferredHeroVideo({
   src,
   className,
+  fallbackPoster,
 }: {
   src: string;
   className?: string;
+  fallbackPoster?: string;
 }) {
   const type = guessMimeType(src);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -56,12 +60,13 @@ export function DeferredHeroVideo({
       loop
       playsInline
       preload="auto"
+      poster={fallbackPoster}
       className={className}
       src={src}
       // Adding a key forces React to replace the node if the src changes
       key={src}
     >
-      <source src={src} type={type} />
+      {type ? <source src={src} type={type} /> : <source src={src} type="video/mp4" />}
     </video>
   );
 }

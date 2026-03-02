@@ -31,33 +31,41 @@ type StorefrontProduct = {
     ratingCount?: number;
 };
 
+function toCanonicalUploadThingUrl(rawUrl: string) {
+    try {
+        const parsed = new URL(rawUrl);
+        const fileId = parsed.pathname.split("/").filter(Boolean).pop();
+        if (!fileId) return rawUrl;
+
+        const isUploadThingHost = parsed.hostname.endsWith(".ufs.sh") || parsed.hostname === "utfs.io";
+        if (!isUploadThingHost) return rawUrl;
+
+        return `https://utfs.io/f/${fileId}`;
+    } catch {
+        return rawUrl;
+    }
+}
+
 function resolveMediaUrl(entry?: ProductMedia | null): string | null {
     if (!entry?.media) {
-        console.log("[resolveMediaUrl] No media object found");
         return null;
     }
 
     const { blobUrl, blobPathname } = entry.media;
-    console.log("[resolveMediaUrl] blobUrl:", blobUrl, "blobPathname:", blobPathname);
+
+    if (blobPathname) {
+        if (/^https?:\/\//i.test(blobPathname)) {
+            return toCanonicalUploadThingUrl(blobPathname);
+        }
+
+        return `https://utfs.io/f/${blobPathname.replace(/^\/+/, "")}`;
+    }
 
     if (blobUrl) {
-        console.log("[resolveMediaUrl] Using blobUrl:", blobUrl);
-        return blobUrl;
+        return toCanonicalUploadThingUrl(blobUrl);
     }
 
-    if (!blobPathname) {
-        console.log("[resolveMediaUrl] No blobPathname available");
-        return null;
-    }
-
-    if (/^https?:\/\//i.test(blobPathname)) {
-        console.log("[resolveMediaUrl] blobPathname is already a URL:", blobPathname);
-        return blobPathname;
-    }
-
-    const constructedUrl = `https://utfs.io/f/${blobPathname.replace(/^\/+/, "")}`;
-    console.log("[resolveMediaUrl] Constructed URL from blobPathname:", constructedUrl);
-    return constructedUrl;
+    return null;
 }
 
 function resolveMediaContentType(entry?: ProductMedia | null): string | null {

@@ -80,7 +80,7 @@ const tenantAdminItems: SidebarNavItem[] = [
   },
   {
     title: "Customers",
-    url: "/accountustomers",
+    url: "/customers",
     icon: CustomerServiceIcon,
   },
 ];
@@ -103,7 +103,7 @@ const superAdminItems: SidebarNavItem[] = [
   },
   {
     title: "Categories",
-    url: "/accountategories",
+    url: "/categories",
     icon: GroupLayersIcon,
   },
   {

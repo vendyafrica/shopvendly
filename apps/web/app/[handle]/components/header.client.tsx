@@ -196,7 +196,7 @@ export default function StorefrontHeaderClient({
             href={`/${store.slug}`}
             aria-busy={isPending(`/${store.slug}`)}
             onClick={handleNav(`/${store.slug}`)}
-            className={`${geistSans.className} text-neutral-900 font-semibold text-xl sm:text-2xl tracking-tight hover:text-neutral-700 transition-colors ${
+            className={`${geistSans.className} text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)] font-semibold text-xl sm:text-2xl tracking-tight hover:text-white/85 transition-colors ${
               isPending(`/${store.slug}`) ? "opacity-70" : ""
             }`}
           >
@@ -204,7 +204,7 @@ export default function StorefrontHeaderClient({
           </Link>
 
           {/* Nav links */}
-          <nav className="hidden md:flex items-center gap-5 text-sm font-medium tracking-tight text-neutral-700">
+          <nav className="hidden md:flex items-center gap-5 text-sm font-medium tracking-tight text-white">
             {[
               { label: "New Arrival", href: `/${store.slug}#new-arrivals` },
               { label: "Sale", href: `/${store.slug}#sale` },
@@ -213,7 +213,7 @@ export default function StorefrontHeaderClient({
                 key={link.label}
                 href={link.href}
                 onClick={handleNav(link.href)}
-                className="hover:text-neutral-900 transition-colors"
+                className="text-white hover:text-white/80 transition-colors"
               >
                 {link.label}
               </Link>
@@ -238,7 +238,7 @@ export default function StorefrontHeaderClient({
               href={`/${store.slug}/cart`}
               aria-busy={isPending(`/${store.slug}/cart`)}
               onClick={handleNav(`/${store.slug}/cart`)}
-              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-black/10 transition-colors ${
+              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/15 transition-colors ${
                 isPending(`/${store.slug}/cart`) ? "opacity-60" : ""
               }`}
               aria-label="Cart"
@@ -246,7 +246,7 @@ export default function StorefrontHeaderClient({
               <HugeiconsIcon
                 icon={ShoppingBag01Icon}
                 size={20}
-                className="text-neutral-900"
+                className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]"
               />
               {isPending(`/${store.slug}/cart`) && (
                 <span
@@ -268,7 +268,7 @@ export default function StorefrontHeaderClient({
               href="/wishlist"
               aria-busy={isPending("/wishlist")}
               onClick={handleNav("/wishlist")}
-              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-black/10 transition-colors ${
+              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/15 transition-colors ${
                 isPending("/wishlist") ? "opacity-60" : ""
               }`}
               aria-label="Wishlist"
@@ -276,7 +276,7 @@ export default function StorefrontHeaderClient({
               <HugeiconsIcon
                 icon={FavouriteIcon}
                 size={20}
-                className="text-neutral-900"
+                className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]"
               />
               {isPending("/wishlist") && (
                 <span
@@ -296,13 +296,13 @@ export default function StorefrontHeaderClient({
             <button
               type="button"
               onClick={() => setMobileMenuOpen((open) => !open)}
-              className="inline-flex md:hidden h-11 w-11 items-center justify-center rounded-full hover:bg-black/10 transition-colors"
+              className="inline-flex md:hidden h-11 w-11 items-center justify-center rounded-full hover:bg-white/15 transition-colors"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
             >
               <MenuToggleIcon
                 open={mobileMenuOpen}
-                className="h-5 w-5 text-neutral-900"
+                className="h-5 w-5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]"
               />
             </button>
             {/* Sign In */}

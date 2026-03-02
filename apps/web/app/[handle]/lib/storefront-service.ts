@@ -1,5 +1,4 @@
 import { db, stores, products, productRatings, eq, and, isNull, instagramAccounts, inArray, sql } from "@shopvendly/db";
-import { cache } from "react";
 
 const DEFAULT_STORE_LOGO = "/store-logo.jpg";
 
@@ -8,7 +7,7 @@ const DEFAULT_STORE_LOGO = "/store-logo.jpg";
  * Handles public store data queries (no auth required)
  */
 
-const findStoreBySlugCached = cache(async (slug: string) => {
+async function findStoreBySlugFresh(slug: string) {
     const store = await db.query.stores.findFirst({
         where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
     });
@@ -24,7 +23,7 @@ const findStoreBySlugCached = cache(async (slug: string) => {
     }
 
     return { ...store, logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO };
-});
+}
 
 function slugifyName(name: string): string {
     return name.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
@@ -57,7 +56,7 @@ export const storefrontService = {
      * Find store by slug
      */
     async findStoreBySlug(slug: string) {
-        return findStoreBySlugCached(slug);
+        return findStoreBySlugFresh(slug);
     },
 
     /**
