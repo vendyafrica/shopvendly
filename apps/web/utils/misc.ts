@@ -28,6 +28,11 @@ export function getStorefrontUrl(storeSlug: string, path: string = "") {
 
     const formattedPath = path && !path.startsWith("/") ? `/${path}` : path;
 
+    if (typeof window !== "undefined") {
+        const origin = window.location.origin.replace(/\/$/, "");
+        return `${origin}/${storeSlug}${formattedPath}`;
+    }
+
     if (appUrl) {
         return `${appUrl}/${storeSlug}${formattedPath}`;
     }

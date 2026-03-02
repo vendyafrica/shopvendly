@@ -1,9 +1,11 @@
 import { StorefrontContentTabs } from "./components/storefront-content-tabs";
 import { StorefrontFooter } from "./components/footer";
 import { Hero } from "./components/hero";
+import { StorefrontHeader } from "./components/header";
 import { StorefrontViewTracker } from "./components/StorefrontViewTracker";
 import { OneTapLogin } from "@/features/marketplace/components/one-tap-login";
 import { Suspense } from "react";
+import { Categories } from "./components/categories";
 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -27,6 +29,12 @@ type StorefrontProduct = {
   currency: string;
   image: string | null;
   contentType?: string | null;
+};
+
+type StorefrontCategory = {
+  slug: string;
+  name: string;
+  image: string | null;
 };
 
 type StorefrontTikTokVideo = {
@@ -56,17 +64,21 @@ const getApiBaseUrl = async () => {
 };
 
 interface StorefrontPageProps {
-  params: Promise<{
-    handle: string;
-  }>;
+  params: Promise<{ handle: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
+
+const capitalizeStoreName = (name?: string | null) => {
+  if (!name) return "Store";
+  return name.charAt(0).toUpperCase() + name.slice(1);
+};
 
 export async function generateMetadata({ params }: StorefrontPageProps): Promise<Metadata> {
   const { handle } = await params;
   const baseUrl = await getApiBaseUrl();
   const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
-  const store = storeRes.ok ? (await storeRes.json()) as StorefrontStore : null;
+  const store = storeRes.ok ? ((await storeRes.json()) as StorefrontStore) : null;
+
   if (!store) {
     return {
       title: "Store not found | ShopVendly",
@@ -75,15 +87,21 @@ export async function generateMetadata({ params }: StorefrontPageProps): Promise
     };
   }
 
-  const title = `${store.name} | Shop on ShopVendly`;
-  const description = store.description || `Shop ${store.name} with trusted payments and delivery on ShopVendly.`;
+  const capitalizedName = capitalizeStoreName(store.name);
+  const title = `${capitalizedName} | ${store.description ?? "Shop on ShopVendly"}`;
+  const description =
+    store.description ||
+    `Shop ${capitalizedName} with trusted payments and delivery on ShopVendly.`;
   const ogImage = store.heroMedia?.[0] || store.logoUrl || "/og-image.png";
+  const iconUrl = store.logoUrl || ogImage;
 
   return {
     title,
     description,
-    alternates: {
-      canonical: `/${store.slug}`,
+    alternates: { canonical: `/${store.slug}` },
+    icons: {
+      icon: [{ url: iconUrl }],
+      shortcut: [{ url: iconUrl }],
     },
     openGraph: {
       title,
@@ -103,34 +121,42 @@ export async function generateMetadata({ params }: StorefrontPageProps): Promise
 
 export default async function StorefrontHomePage({ params, searchParams }: StorefrontPageProps) {
   const { handle } = await params;
-
   const resolvedSearchParams = await searchParams;
   const search = resolvedSearchParams?.q;
   const query = Array.isArray(search) ? search[0] : search;
 
   const baseUrl = await getApiBaseUrl();
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
-  const store = storeRes.ok ? (await storeRes.json()) as StorefrontStore : null;
 
-  if (!store) {
-    notFound();
-  }
+  // All three fetches run in parallel — no serial waterfalls
+  const [storeRes, categoriesRes, inspirationRes] = await Promise.all([
+    fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } }),
+    fetch(`${baseUrl}/api/storefront/${handle}/categories`, { next: { revalidate: 60 } }),
+    fetch(`${baseUrl}/api/storefront/${handle}/inspiration`, { next: { revalidate: 30 } }),
+  ]);
+
+  const store = storeRes.ok ? ((await storeRes.json()) as StorefrontStore) : null;
+  if (!store) notFound();
 
   const productUrl = new URL(`${baseUrl}/api/storefront/${handle}/products`);
-
   if (query) productUrl.searchParams.set("q", query);
   const productsRes = await fetch(productUrl.toString(), { next: { revalidate: 30 } });
-  const products = productsRes.ok ? (await productsRes.json()) as StorefrontProduct[] : [];
 
-  const inspirationRes = await fetch(`${baseUrl}/api/storefront/${handle}/inspiration`, { next: { revalidate: 30 } });
-  const inspirationPayload = inspirationRes.ok
-    ? (await inspirationRes.json()) as { connected?: boolean; videos?: StorefrontTikTokVideo[] }
-    : { connected: false, videos: [] };
+  const [products, categories, inspirationPayload] = await Promise.all([
+    productsRes.ok ? (productsRes.json() as Promise<StorefrontProduct[]>) : Promise.resolve([]),
+    categoriesRes.ok ? (categoriesRes.json() as Promise<StorefrontCategory[]>) : Promise.resolve([]),
+    inspirationRes.ok
+      ? (inspirationRes.json() as Promise<{ connected?: boolean; videos?: StorefrontTikTokVideo[] }>)
+      : Promise.resolve({ connected: false, videos: [] }),
+  ]);
+
   const showInspirationTab = Boolean(inspirationPayload?.connected);
-  const inspirationVideos = Array.isArray(inspirationPayload?.videos) ? inspirationPayload.videos : [];
+  const inspirationVideos = Array.isArray(inspirationPayload?.videos)
+    ? inspirationPayload.videos
+    : [];
 
   return (
     <div className="min-h-screen">
+      {/* Async trackers — fire and forget, don't block render */}
       <Suspense fallback={null}>
         <StorefrontViewTracker storeSlug={handle} />
       </Suspense>
@@ -138,8 +164,21 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
         <OneTapLogin storeSlug={handle} />
       </Suspense>
 
+      {/*
+        StorefrontHeader is a Server Component that receives the already-fetched
+        store object — no second fetch, no client waterfall.
+      */}
+      <StorefrontHeader initialStore={{ name: store.name, slug: store.slug, logoUrl: store.logoUrl ?? undefined }} />
+
       <Hero store={store} />
-      <div id="storefront-main-content" className="w-full">
+
+      <div className="mt-5">
+        <Suspense fallback={null}>
+          <Categories storeSlug={store.slug} initialCategories={categories} />
+        </Suspense>
+      </div>
+
+      <div id="storefront-main-content" className="w-full pt-3">
         <div className="px-3 sm:px-6 lg:px-8">
           <div className="my-8">
             <StorefrontContentTabs
@@ -151,6 +190,7 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
         </div>
         <div className="my-20" />
       </div>
+
       <StorefrontFooter store={store} />
     </div>
   );

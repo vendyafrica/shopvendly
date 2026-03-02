@@ -17,6 +17,7 @@ interface StoreAvatarProps {
     logoUrl?: string | null;
     instagramAvatarUrl?: string | null;
     size?: "sm" | "md" | "lg";
+    shape?: "circle" | "square";
     className?: string;
 }
 
@@ -31,6 +32,7 @@ export function StoreAvatar({
     logoUrl,
     instagramAvatarUrl,
     size = "md",
+    shape = "circle",
     className = "",
 }: StoreAvatarProps) {
     const avatarUrl = instagramAvatarUrl || logoUrl || DEFAULT_STORE_LOGO;
@@ -68,15 +70,27 @@ export function StoreAvatar({
         lg: "h-12 w-12 text-base",
     };
 
+    const shapeClasses = {
+        circle: {
+            root: "",
+            media: "",
+        },
+        square: {
+            root: "rounded-md after:rounded-md after:border-0",
+            media: "rounded-md",
+        },
+    } as const;
+
     return (
-        <Avatar className={`${sizeClasses[size]} ${className}`}>
+        <Avatar className={`${sizeClasses[size]} ${shapeClasses[shape].root} ${className}`}>
             {avatarUrl && (
                 <AvatarImage
                     src={avatarUrl}
                     alt={`${displayName} logo`}
+                    className={shapeClasses[shape].media}
                 />
             )}
-            <AvatarFallback className="bg-neutral-100 text-neutral-700 font-semibold">
+            <AvatarFallback className={`bg-neutral-100 text-neutral-700 font-semibold ${shapeClasses[shape].media}`}>
                 {initials}
             </AvatarFallback>
         </Avatar>
@@ -130,7 +144,7 @@ export function StoreAvatarSimple({
 
     return (
         <div
-            className={`relative rounded-full overflow-hidden bg-neutral-100 flex items-center justify-center ${className}`}
+            className={`relative rounded-none overflow-hidden bg-neutral-100 flex items-center justify-center ${className}`}
             style={{ width: size, height: size }}
         >
             {avatarUrl ? (

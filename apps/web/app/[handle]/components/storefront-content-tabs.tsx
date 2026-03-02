@@ -36,7 +36,6 @@ export function StorefrontContentTabs({
   if (!showInspirationTab) {
     return (
       <>
-        <h3 className="text-lg font-semibold my-8 text-foreground">All Products</h3>
         <ProductGrid products={products} />
       </>
     );
@@ -46,7 +45,6 @@ export function StorefrontContentTabs({
     <Suspense
       fallback={
         <>
-          <h3 className="text-lg font-semibold my-8 text-foreground">All Products</h3>
           <ProductGrid products={products} />
         </>
       }

@@ -324,10 +324,13 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                             <StoreAvatar
                                 storeName={product.store.name}
                                 logoUrl={product.store.logoUrl}
-                                size="sm"
+                                shape="square"
+                                size="md"
                             />
                             <div>
-                                <p className={` ${geistSans.className} text-base tracking-wide font-medium text-neutral-900 group-hover:underline`}>{product.store.name}</p>
+                                <p className={` ${geistSans.className} text-lg tracking-wide font-semibold text-neutral-900 group-hover:underline`}>
+                                    {product.store.name ? `${product.store.name.charAt(0).toUpperCase()}${product.store.name.slice(1)}` : product.store.name}
+                                </p>
                             </div>
                         </Link>
                     </div>
@@ -335,7 +338,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                     {/* Product Name & Rating */}
                     <div className="mb-6">
                         <h1 className="text-[26px] lg:text-[28px] font-semibold text-neutral-900 leading-snug tracking-tight mb-2">
-                            {product.name}
+                            {product.name ? `${product.name.charAt(0).toUpperCase()}${product.name.slice(1)}` : product.name}
                         </h1>
 
                         <div className="flex flex-col gap-2 mb-5">
@@ -365,14 +368,11 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                 <span className="text-sm font-medium text-neutral-900 ml-2">
                                     {Number.isFinite(averageRating) ? averageRating.toFixed(1) : "0.0"}
                                 </span>
-                                <span className="text-sm text-neutral-600 ml-1">
-                                    ({ratingCount || 0} ratings)
-                                </span>
                             </div>
                             {userRating ? (
                                 <span className="text-xs text-neutral-600">You rated this {userRating}★</span>
                             ) : (
-                                <span className="text-xs text-neutral-500">Tap to rate</span>
+                                <span className="text-xs text-neutral-500"></span>
                             )}
                         </div>
 

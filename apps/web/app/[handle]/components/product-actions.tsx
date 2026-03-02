@@ -116,7 +116,7 @@ export function ProductActions({ product }: ProductActionsProps) {
       <div className="pt-2">
         <Button
           onClick={handleAddToCart}
-          className="w-full h-14 rounded-none bg-neutral-900 text-white hover:bg-black uppercase text-xs tracking-widest font-semibold transition-colors mb-3"
+          className="w-full h-12 rounded-md bg-neutral-900 text-white hover:bg-black uppercase text-xs tracking-widest font-semibold transition-colors mb-3"
           disabled={isAdded}
         >
           {isAdded ? (
@@ -132,7 +132,7 @@ export function ProductActions({ product }: ProductActionsProps) {
         <div className="grid grid-cols-1 gap-3">
           <Button
             onClick={handleToggleWishlist}
-            className={`w-full h-14 rounded-none bg-neutral-50 text-neutral-900 hover:bg-neutral-100 uppercase text-xs tracking-widest font-semibold transition-colors border border-neutral-200 flex items-center justify-center gap-2.5 ${
+            className={`w-full h-12 rounded-md bg-neutral-50 text-neutral-900 hover:bg-neutral-100 uppercase text-xs tracking-widest font-semibold transition-colors border border-neutral-200 flex items-center justify-center gap-2.5 ${
               wishlisted
                 ? "border-neutral-900 text-neutral-900 bg-neutral-100"
                 : ""
