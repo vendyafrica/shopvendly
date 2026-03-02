@@ -82,6 +82,7 @@ export default function TransactionsPage() {
                 totalAmount: o.totalAmount,
                 currency: o.currency,
                 createdAt: o.createdAt,
+                items: o.items,
             }));
 
             setOrders(transformed);

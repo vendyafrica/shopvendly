@@ -77,6 +77,7 @@ export function IntegrationsPanel({
     const run = async () => {
       try {
         setSyncError(null);
+        setSyncPostsError(null);
         const res = await fetch("/api/integrations/instagram/sync", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -86,12 +87,37 @@ export function IntegrationsPanel({
           const text = await res.text();
           throw new Error(text || "Instagram sync failed");
         }
-        if (!cancelled) setIsConnectedFromApi(true);
+
+        const statusRes = await fetch(`/api/integrations/instagram/status?storeId=${storeId}`);
+        const statusJson = await statusRes.json().catch(() => ({} as { imported?: boolean }));
+        const alreadyImported = Boolean(statusJson?.imported);
+
+        if (!alreadyImported) {
+          const importRes = await fetch("/api/integrations/instagram/import", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ storeId }),
+          });
+
+          if (!importRes.ok) {
+            const importText = await importRes.text();
+            throw new Error(importText || "Instagram auto-import failed");
+          }
+        }
+
+        if (!cancelled) {
+          setIsConnectedFromApi(true);
+          setSyncPostsSuccess(true);
+        }
       } catch (e) {
-        if (!cancelled)
+        if (!cancelled) {
           setSyncError(
             e instanceof Error ? e.message : "Instagram sync failed",
           );
+          setSyncPostsError(
+            e instanceof Error ? e.message : "Instagram auto-import failed",
+          );
+        }
       }
     };
 
@@ -193,7 +219,7 @@ export function IntegrationsPanel({
     setSyncPostsError(null);
     setSyncPostsSuccess(false);
     try {
-      const res = await fetch("/api/integrations/instagram/sync-posts", {
+      const res = await fetch("/api/integrations/instagram/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ storeId: bootstrap.storeId }),

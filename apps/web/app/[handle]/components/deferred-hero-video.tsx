@@ -35,7 +35,10 @@ export function DeferredHeroVideo({
     if (!videoEl) return;
 
     const onLoaded = () => console.info("[HeroVideo] loadedmetadata", { src, duration: videoEl.duration });
-    const onCanPlay = () => console.info("[HeroVideo] canplay", { src });
+    const onCanPlay = () => {
+      console.info("[HeroVideo] canplay", { src });
+      videoEl.play().catch(() => {});
+    };
     const onPlay = () => console.info("[HeroVideo] play", { src });
     const onError = () => console.error("[HeroVideo] error", { src, error: videoEl.error });
 

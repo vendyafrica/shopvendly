@@ -113,8 +113,8 @@ export default function StorefrontHeaderClient({
     if (store?.slug) {
       router.prefetch(`/${store.slug}`);
       router.prefetch(`/${store.slug}/cart`);
+      router.prefetch(`/${store.slug}/wishlist`);
     }
-    router.prefetch("/wishlist");
   }, [store?.slug, router]);
 
   const normalizedPathname = pathname?.replace(/\/$/, "") || "/";
@@ -192,9 +192,18 @@ export default function StorefrontHeaderClient({
   const isPending = (href: string) => pendingHref === href;
 
   const overlayActive = isHomePath && isOverlay;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "");
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/$/, "");
+  const adminOrigin = appUrl
+    ? appUrl
+    : rootDomain
+      ? `${typeof window !== "undefined" ? window.location.protocol : "https:"}//${rootDomain}`
+      : getRootUrl();
   const sellerLoginUrl = store.slug
-    ? getRootUrl(`/admin/${store.slug}/login`)
-    : getRootUrl("/admin/login");
+    ? `${adminOrigin}/admin/${store.slug}/login`
+    : `${adminOrigin}/admin/login`;
 
   const searchClasses =
     "w-[420px] max-w-full h-11 rounded-full border border-neutral-200 bg-white px-5 text-sm text-neutral-900 shadow-sm placeholder:text-neutral-500 focus-within:border-primary/50 focus-within:ring-[3px] focus-within:ring-primary/10 ";
@@ -255,11 +264,8 @@ export default function StorefrontHeaderClient({
             {/* Cart */}
             <Link
               href={`/${store.slug}/cart`}
-              aria-busy={isPending(`/${store.slug}/cart`)}
               onClick={handleNav(`/${store.slug}/cart`)}
-              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
-                isPending(`/${store.slug}/cart`) ? "opacity-60" : ""
-              }`}
+              className="relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors"
               aria-label="Cart"
             >
               <HugeiconsIcon
@@ -267,14 +273,6 @@ export default function StorefrontHeaderClient({
                 size={20}
                 className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]"
               />
-              {isPending(`/${store.slug}/cart`) && (
-                <span
-                  className="pointer-events-none absolute inset-0 flex items-center justify-center"
-                  aria-hidden
-                >
-                  <span className="h-4 w-4 rounded-full border-2 border-neutral-800/60 border-t-transparent animate-spin" />
-                </span>
-              )}
               {storeItemCount > 0 && (
                 <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-primary-foreground bg-primary ring-2 ring-white">
                   {storeItemCount > 99 ? "99+" : storeItemCount}
@@ -284,12 +282,9 @@ export default function StorefrontHeaderClient({
 
             {/* Wishlist */}
             <Link
-              href="/wishlist"
-              aria-busy={isPending("/wishlist")}
-              onClick={handleNav("/wishlist")}
-              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
-                isPending("/wishlist") ? "opacity-60" : ""
-              }`}
+              href={`/${store.slug}/wishlist`}
+              onClick={handleNav(`/${store.slug}/wishlist`)}
+              className="relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors"
               aria-label="Wishlist"
             >
               <HugeiconsIcon
@@ -297,16 +292,8 @@ export default function StorefrontHeaderClient({
                 size={20}
                 className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]"
               />
-              {isPending("/wishlist") && (
-                <span
-                  className="pointer-events-none absolute inset-0 flex items-center justify-center"
-                  aria-hidden
-                >
-                  <span className="h-4 w-4 rounded-full border-2 border-neutral-800/60 border-t-transparent animate-spin" />
-                </span>
-              )}
               {wishlistCount > 0 && (
-                <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-primary-foreground bg-primary ring-2 ring-white">
+                <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-white bg-neutral-900 ring-2 ring-white">
                   {wishlistCount > 99 ? "99+" : wishlistCount}
                 </span>
               )}
@@ -352,12 +339,22 @@ export default function StorefrontHeaderClient({
   }
 
   return (
-    <header
-      aria-busy={Boolean(pendingHref)}
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-        isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
-      }`}
-    >
+    <>
+      {/* Screen-level loading overlay */}
+      {pendingHref && (
+        <div className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-sm flex items-center justify-center transition-opacity duration-200">
+          <div className="flex flex-col items-center gap-3">
+            <span className="h-8 w-8 rounded-full border-3 border-neutral-300 border-t-neutral-900 animate-spin" />
+            <span className="text-sm font-medium text-neutral-600 uppercase tracking-widest">Loading...</span>
+          </div>
+        </div>
+      )}
+      <header
+        aria-busy={Boolean(pendingHref)}
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+          isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+        }`}
+      >
       <div className="relative">
         <div className="bg-white/95 backdrop-blur border-b border-black/5">
           <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10">
@@ -436,10 +433,7 @@ export default function StorefrontHeaderClient({
                 <Link
                   href={`/${store.slug}/cart`}
                   onClick={handleNav(`/${store.slug}/cart`)}
-                  aria-busy={isPending(`/${store.slug}/cart`)}
-                  className={`relative inline-flex h-11 w-11 items-center cursor-pointer justify-center rounded-full transition-colors hover:bg-black/5 ${
-                    isPending(`/${store.slug}/cart`) ? "opacity-60" : ""
-                  }`}
+                  className="relative inline-flex h-11 w-11 items-center cursor-pointer justify-center rounded-full transition-colors hover:bg-black/5"
                   aria-label="Cart"
                 >
                   <HugeiconsIcon
@@ -447,14 +441,6 @@ export default function StorefrontHeaderClient({
                     size={20}
                     className="text-neutral-900"
                   />
-                  {isPending(`/${store.slug}/cart`) && (
-                    <span
-                      className="pointer-events-none absolute inset-0 flex items-center justify-center"
-                      aria-hidden
-                    >
-                      <span className="h-4 w-4 rounded-full border-2 border-foreground/60 border-t-transparent animate-spin" />
-                    </span>
-                  )}
                   {storeItemCount > 0 && (
                     <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-white bg-neutral-900 ring-2 ring-white">
                       {storeItemCount > 99 ? "99+" : storeItemCount}
@@ -464,12 +450,9 @@ export default function StorefrontHeaderClient({
 
                 {/* Wishlist */}
                 <Link
-                  href="/wishlist"
-                  onClick={handleNav("/wishlist")}
-                  aria-busy={isPending("/wishlist")}
-                  className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-black/5 ${
-                    isPending("/wishlist") ? "opacity-60" : ""
-                  }`}
+                  href={`/${store.slug}/wishlist`}
+                  onClick={handleNav(`/${store.slug}/wishlist`)}
+                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-black/5"
                   aria-label="Wishlist"
                 >
                   <HugeiconsIcon
@@ -477,12 +460,9 @@ export default function StorefrontHeaderClient({
                     size={20}
                     className="text-neutral-900"
                   />
-                  {isPending("/wishlist") && (
-                    <span
-                      className="pointer-events-none absolute inset-0 flex items-center justify-center"
-                      aria-hidden
-                    >
-                      <span className="h-4 w-4 rounded-full border-2 border-foreground/60 border-t-transparent animate-spin" />
+                  {wishlistCount > 0 && (
+                    <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-white bg-neutral-900 ring-2 ring-white">
+                      {wishlistCount > 99 ? "99+" : wishlistCount}
                     </span>
                   )}
                 </Link>
@@ -501,5 +481,6 @@ export default function StorefrontHeaderClient({
         </div>
       </div>
     </header>
+    </>
   );
 }

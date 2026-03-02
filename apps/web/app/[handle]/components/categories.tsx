@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { Badge } from "@shopvendly/ui/components/badge";
 import type { VariantProps } from "class-variance-authority";
 import { badgeVariants } from "@shopvendly/ui/components/badge";
@@ -114,20 +113,20 @@ export function Categories({ storeSlug, initialCategories = [] }: CategoriesProp
               return (
                 <Badge
                   key={filter.slug}
-                  asChild
+                  asChild={false}
                   variant={filter.variant}
                   appearance={isActive ? "outline" : "ghost"}
                   shape="circle"
                   size="lg"
                   className={getBadgeClassName(isActive)}
                 >
-                  <Link
-                    href={filter.href}
+                  <button
+                    type="button"
                     onClick={() => setActiveCategory(filter.slug)}
                     className="whitespace-nowrap"
                   >
                     {filter.name}
-                  </Link>
+                  </button>
                 </Badge>
               );
             })}
@@ -142,20 +141,20 @@ export function Categories({ storeSlug, initialCategories = [] }: CategoriesProp
                   return (
                     <Badge
                       key={category.slug}
-                      asChild
+                      asChild={false}
                       variant={variant}
                       appearance={isActive ? "outline" : "ghost"}
                       shape="circle"
                       size="lg"
                       className={getBadgeClassName(isActive)}
                     >
-                      <Link
-                        href={`/${derivedSlug}/categories/${category.slug}`}
+                      <button
+                        type="button"
                         onClick={() => setActiveCategory(category.slug)}
                         className="whitespace-nowrap"
                       >
                         {formatCategoryName(category.name)}
-                      </Link>
+                      </button>
                     </Badge>
                   );
                 })}
