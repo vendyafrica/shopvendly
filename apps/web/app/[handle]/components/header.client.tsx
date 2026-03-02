@@ -342,7 +342,7 @@ export default function StorefrontHeaderClient({
     <>
       {/* Screen-level loading overlay */}
       {pendingHref && (
-        <div className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-sm flex items-center justify-center transition-opacity duration-200">
+        <div className="fixed inset-0 z-100 bg-white/80 backdrop-blur-sm flex items-center justify-center transition-opacity duration-200">
           <div className="flex flex-col items-center gap-3">
             <span className="h-8 w-8 rounded-full border-3 border-neutral-300 border-t-neutral-900 animate-spin" />
             <span className="text-sm font-medium text-neutral-600 uppercase tracking-widest">Loading...</span>
