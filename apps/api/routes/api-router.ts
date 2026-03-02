@@ -1,21 +1,18 @@
 import { Router } from "express";
-import type { Router as ExpressRouter } from "express";
-import { createRequire } from "node:module";
 
-const require = createRequire(import.meta.url);
+// Standard ESM static imports allow Vercel to trace and bundle these files
+import { storefrontOrdersRouter } from "../features/orders/routes/storefront-orders.js";
+import { tenantOrdersRouter } from "../features/orders/routes/tenant-orders.js";
+import { orderSimulationsRouter } from "../features/orders/routes/order-simulations.js";
+import { paystackPaymentsRouter } from "../features/payments/routes/paystack-payments.js";
+import { storefrontPaymentsRouter } from "../features/payments/routes/storefront-payments.js";
+import { paystackWebhookRouter } from "../features/payments/routes/paystack-webhook.js";
+import { whatsappRouter } from "../features/messaging/routes/whatsapp.js";
+import { whatsappDeliveryRouter } from "../features/messaging/routes/whatsapp-delivery.js";
+import { whatsappTemplatesRouter } from "../features/messaging/routes/whatsapp-templates.js";
+import { instagramWebhookRouter } from "../features/social/routes/instagram-webhooks.js";
 
-const { storefrontOrdersRouter } = require("../features/orders/routes/storefront-orders.js") as typeof import("../features/orders/routes/storefront-orders.js");
-const { tenantOrdersRouter } = require("../features/orders/routes/tenant-orders.js") as typeof import("../features/orders/routes/tenant-orders.js");
-const { orderSimulationsRouter } = require("../features/orders/routes/order-simulations.js") as typeof import("../features/orders/routes/order-simulations.js");
-const { paystackPaymentsRouter } = require("../features/payments/routes/paystack-payments.js") as typeof import("../features/payments/routes/paystack-payments.js");
-const { storefrontPaymentsRouter } = require("../features/payments/routes/storefront-payments.js") as typeof import("../features/payments/routes/storefront-payments.js");
-const { paystackWebhookRouter } = require("../features/payments/routes/paystack-webhook.js") as typeof import("../features/payments/routes/paystack-webhook.js");
-const { whatsappRouter } = require("../features/messaging/routes/whatsapp.js") as typeof import("../features/messaging/routes/whatsapp.js");
-const { whatsappDeliveryRouter } = require("../features/messaging/routes/whatsapp-delivery.js") as typeof import("../features/messaging/routes/whatsapp-delivery.js");
-const { whatsappTemplatesRouter } = require("../features/messaging/routes/whatsapp-templates.js") as typeof import("../features/messaging/routes/whatsapp-templates.js");
-const { instagramWebhookRouter } = require("../features/social/routes/instagram-webhooks.js") as typeof import("../features/social/routes/instagram-webhooks.js");
-
-export const apiRouter: ExpressRouter = Router();
+export const apiRouter:Router = Router();
 
 apiRouter.use(storefrontOrdersRouter);
 apiRouter.use(storefrontPaymentsRouter);

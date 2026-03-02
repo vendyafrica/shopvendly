@@ -1,9 +1,9 @@
-import express, { Request, Response, Router } from "express";
+import express, { Request, Response, Application } from "express";
 import cors from "cors";
 import { apiRouter } from "./routes/api-router.js";
 import type { RawBodyRequest } from "./shared/types/raw-body.js";
 
-export function createApp():Router {
+export function createApp():Application {
   const app = express();
 
   app.set("trust proxy", true);
@@ -32,7 +32,7 @@ export function createApp():Router {
 
   app.use(
     express.json({
-      verify: (req, _res, buf) => {
+     verify: (req: Request, _res: Response, buf: Buffer) => {
         (req as RawBodyRequest).rawBody = buf;
       },
     })

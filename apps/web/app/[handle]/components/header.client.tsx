@@ -257,7 +257,7 @@ export default function StorefrontHeaderClient({
               href={`/${store.slug}/cart`}
               aria-busy={isPending(`/${store.slug}/cart`)}
               onClick={handleNav(`/${store.slug}/cart`)}
-              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-black/30 backdrop-blur-sm hover:bg-black/45 transition-colors ${
+              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
                 isPending(`/${store.slug}/cart`) ? "opacity-60" : ""
               }`}
               aria-label="Cart"
@@ -287,7 +287,7 @@ export default function StorefrontHeaderClient({
               href="/wishlist"
               aria-busy={isPending("/wishlist")}
               onClick={handleNav("/wishlist")}
-              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-black/30 backdrop-blur-sm hover:bg-black/45 transition-colors ${
+              className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
                 isPending("/wishlist") ? "opacity-60" : ""
               }`}
               aria-label="Wishlist"
@@ -314,7 +314,7 @@ export default function StorefrontHeaderClient({
             {/* Mobile menu toggle */}
             <DropdownMenu open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <DropdownMenuTrigger
-                className="inline-flex md:hidden h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-black/30 backdrop-blur-sm hover:bg-black/45 transition-colors"
+                className="inline-flex md:hidden h-11 w-11 items-center justify-center rounded-full transition-colors"
                 aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={mobileMenuOpen}
               >
@@ -327,7 +327,7 @@ export default function StorefrontHeaderClient({
               <DropdownMenuContent
                 align="end"
                 sideOffset={8}
-                className="w-56 rounded-xl border border-white/20 bg-white/95 p-1 text-neutral-900 shadow-xl backdrop-blur-sm"
+                className="w-56 rounded-xl bg-white/95 p-1 text-neutral-900 shadow-xl "
               >
                 <DropdownMenuItem
                   onClick={() => navigateTo(sellerLoginUrl)}
