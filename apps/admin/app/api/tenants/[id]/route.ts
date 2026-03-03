@@ -49,7 +49,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await req.json();
-    const { status, plan } = body;
+    const { status, plan, fullName } = body;
 
     try {
         await db
@@ -57,6 +57,7 @@ export async function PATCH(
             .set({
                 ...(status ? { status } : {}),
                 ...(plan ? { plan } : {}),
+                ...(fullName ? { fullName } : {}),
             })
             .where(eq(tenants.id, id));
 

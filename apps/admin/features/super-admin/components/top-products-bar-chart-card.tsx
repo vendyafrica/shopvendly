@@ -36,6 +36,15 @@ export function TopProductsBarChartCard({
         },
     } satisfies ChartConfig;
 
+    const chartData = [...data];
+    while (chartData.length < 5) {
+        chartData.push({
+            product: `empty-${chartData.length}`,
+            sales: 0,
+            fill: "transparent",
+        });
+    }
+
     return (
         <Card className={cn("w-full border-border/70 shadow-sm", className)}>
             <CardHeader className="space-y-1 pb-2">
@@ -49,7 +58,7 @@ export function TopProductsBarChartCard({
                 <ChartContainer config={chartConfig} className="aspect-auto h-[260px] w-full md:h-[320px]">
                     <BarChart
                         accessibilityLayer
-                        data={data}
+                        data={chartData}
                         layout="vertical"
                         margin={{
                             left: 0,
@@ -57,6 +66,7 @@ export function TopProductsBarChartCard({
                             top: 8,
                             bottom: 8,
                         }}
+                        barSize={32}
                     >
                         <YAxis
                             dataKey="product"
@@ -65,11 +75,20 @@ export function TopProductsBarChartCard({
                             tickMargin={10}
                             axisLine={false}
                             width={120}
-                            tick={{ fontSize: 12 }}
+                            tick={(props) => {
+                                const { x, y, payload } = props;
+                                const isHidden = payload.value.toString().startsWith("empty-");
+                                if (isHidden) return <g></g>;
+                                return (
+                                    <text x={x} y={y} dy={4} textAnchor="end" fill="currentColor" fontSize={12}>
+                                        {payload.value}
+                                    </text>
+                                );
+                            }}
                         />
                         <XAxis type="number" hide />
                         <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                        <Bar dataKey="sales" fill="var(--color-sales)" radius={4} />
+                        <Bar dataKey="sales" fill="hsl(var(--primary))" radius={4} />
                     </BarChart>
                 </ChartContainer>
             </CardContent>

@@ -46,7 +46,6 @@ export default function PaymentsPage() {
         <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold tracking-tight">Payments</h1>
                 <p className="text-sm text-muted-foreground">
                     Global payments history across all stores
                 </p>

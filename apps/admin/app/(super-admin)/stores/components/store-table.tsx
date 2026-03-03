@@ -14,14 +14,16 @@ import { Button } from "@shopvendly/ui/components/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuTrigger,
 } from "@shopvendly/ui/components/dropdown-menu";
 import { Input } from "@shopvendly/ui/components/input";
-import { MoreHorizontalIcon, StarIcon } from "@hugeicons/core-free-icons";
+import { MoreHorizontalIcon, StarIcon, Edit02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { format } from "date-fns";
+import { useRouter } from "next/navigation";
 
 export interface Store {
     id: string;
@@ -43,9 +45,18 @@ interface StoreTableProps {
 }
 
 export function StoreTable({ stores, isLoading }: StoreTableProps) {
+    const router = useRouter();
     const [deliveryPhones, setDeliveryPhones] = React.useState<Record<string, string>>({});
     const [savingStoreId, setSavingStoreId] = React.useState<string | null>(null);
     const [saveMessage, setSaveMessage] = React.useState<string | null>(null);
+
+    const [activeCell, setActiveCell] = React.useState<{ id: string; field: "name" } | null>(null);
+    const [drafts, setDrafts] = React.useState<Record<string, string>>({});
+    const [localStores, setLocalStores] = React.useState(stores);
+
+    React.useEffect(() => {
+        setLocalStores(stores);
+    }, [stores]);
 
     React.useEffect(() => {
         setDeliveryPhones(
@@ -82,6 +93,40 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
         }
     };
 
+    const handleInlineSave = async (storeId: string, field: "name") => {
+        const draftValue = drafts[storeId];
+        if (!draftValue || !draftValue.trim()) {
+            setActiveCell(null);
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/stores/${encodeURIComponent(storeId)}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ [field]: draftValue.trim() }),
+            });
+
+            if (!res.ok) throw new Error("Failed to save");
+
+            // Optimistically update local UI while router refreshes
+            setLocalStores((prev) =>
+                prev.map((s) => (s.id === storeId ? { ...s, [field]: draftValue.trim() } : s))
+            );
+
+            setDrafts((prev) => {
+                const next = { ...prev };
+                delete next[storeId];
+                return next;
+            });
+            setActiveCell(null);
+            router.refresh();
+        } catch (error) {
+            alert(error instanceof Error ? error.message : "Failed to save");
+            setActiveCell(null);
+        }
+    };
+
     if (isLoading) {
         return <div className="p-8 text-center text-muted-foreground">Loading stores...</div>;
     }
@@ -103,89 +148,102 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
                         <TableHead>Contact</TableHead>
                         <TableHead>Delivery Partner</TableHead>
                         <TableHead>Created At</TableHead>
-                        <TableHead className="w-[70px]"></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {stores.map((store) => (
-                        <TableRow key={store.id}>
-                            <TableCell className="font-medium">
-                                <div className="flex flex-col">
-                                    <span>{store.name}</span>
-                                    <span className="text-xs text-muted-foreground">/{store.slug}</span>
-                                </div>
-                            </TableCell>
-                            <TableCell>{store.tenantName}</TableCell>
-                            <TableCell>
-                                {store.customDomain ? (
-                                    <Badge variant="outline">{store.customDomain}</Badge>
-                                ) : (
-                                    <span className="text-muted-foreground text-sm">-</span>
-                                )}
-                            </TableCell>
-                            <TableCell>
-                                <div className="flex items-center gap-1">
-                                    <HugeiconsIcon icon={StarIcon} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                    <span>{store.storeRating || 0}</span>
-                                </div>
-                            </TableCell>
-                            <TableCell>
-                                <Badge
-                                    variant={store.status ? "primary" : "secondary"}
-                                    className="capitalize"
-                                >
-                                    {store.status ? "Active" : "Inactive"}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <div className="flex flex-col text-sm">
-                                    <span>{store.storeContactPhone || "-"}</span>
-                                </div>
-                            </TableCell>
-                            <TableCell>
-                                <div className="flex min-w-[250px] items-center gap-2">
-                                    <Input
-                                        value={deliveryPhones[store.id] ?? ""}
-                                        onChange={(event) =>
-                                            setDeliveryPhones((prev) => ({
-                                                ...prev,
-                                                [store.id]: event.target.value,
-                                            }))
-                                        }
-                                        placeholder="+2567..."
-                                        className="h-9"
-                                    />
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        onClick={() => void handleSaveDeliveryProvider(store.id)}
-                                        disabled={savingStoreId === store.id}
+                    {localStores.map((store) => {
+                        const isEditingName = activeCell?.id === store.id && activeCell.field === "name";
+                        const nameValue = drafts[store.id] ?? store.name;
+
+                        return (
+                            <TableRow key={store.id}>
+                                <TableCell className="font-medium align-top">
+                                    {isEditingName ? (
+                                        <Input
+                                            autoFocus
+                                            value={nameValue}
+                                            onChange={(e) => setDrafts(prev => ({ ...prev, [store.id]: e.target.value }))}
+                                            onBlur={() => handleInlineSave(store.id, "name")}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") handleInlineSave(store.id, "name");
+                                                if (e.key === "Escape") {
+                                                    setDrafts(prev => { const next = { ...prev }; delete next[store.id]; return next; });
+                                                    setActiveCell(null);
+                                                }
+                                            }}
+                                            className="h-9 w-full min-w-[150px]"
+                                        />
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveCell({ id: store.id, field: "name" })}
+                                            className="group flex flex-col capitalize text-left hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors w-full"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span>{nameValue}</span>
+                                                <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity shrink-0" />
+                                            </div>
+                                        </button>
+                                    )}
+                                </TableCell>
+                                <TableCell className="capitalize">{store.tenantName}</TableCell>
+                                <TableCell>
+                                    {store.customDomain ? (
+                                        <Badge variant="outline">{store.customDomain}</Badge>
+                                    ) : (
+                                        <span className="text-muted-foreground text-sm">-</span>
+                                    )}
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-1">
+                                        <HugeiconsIcon icon={StarIcon} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                        <span>{store.storeRating || 0}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge
+                                        variant={store.status ? "primary" : "secondary"}
+                                        className="capitalize"
                                     >
-                                        {savingStoreId === store.id ? "Saving..." : "Save"}
-                                    </Button>
-                                </div>
-                            </TableCell>
-                            <TableCell>
-                                {format(new Date(store.createdAt), "MMM d, yyyy")}
-                            </TableCell>
-                            <TableCell>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger>
-                                        <Button variant="ghost" className="h-8 w-8 p-0">
-                                            <HugeiconsIcon icon={MoreHorizontalIcon} className="h-4 w-4" />
+                                        {store.status ? "Active" : "Inactive"}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex flex-col text-sm">
+                                        <span>{store.storeContactPhone || "-"}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex min-w-[250px] items-center gap-2">
+                                        <Input
+                                            value={deliveryPhones[store.id] ?? ""}
+                                            onChange={(event) =>
+                                                setDeliveryPhones((prev) => ({
+                                                    ...prev,
+                                                    [store.id]: event.target.value,
+                                                }))
+                                            }
+                                            placeholder="+2567..."
+                                            className="h-9"
+                                        />
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={() => void handleSaveDeliveryProvider(store.id)}
+                                            disabled={savingStoreId === store.id}
+                                        >
+                                            {savingStoreId === store.id ? "Saving..." : "Save"}
                                         </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                        <DropdownMenuItem>View Storefront</DropdownMenuItem>
-                                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </TableCell>
-                        </TableRow>
-                    ))}
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    {format(new Date(store.createdAt), "MMM d, yyyy")}
+                                </TableCell>
+                            </TableRow>
+                        );
+                    })}
                 </TableBody>
             </Table>
-        </div>
+        </div >
     );
 }

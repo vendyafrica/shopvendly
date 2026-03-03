@@ -49,7 +49,6 @@ export default function StoresPage() {
         <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold tracking-tight">Stores</h1>
                 <p className="text-sm text-muted-foreground">
                     Overview of all stores and their performance
                 </p>

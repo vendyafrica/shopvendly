@@ -14,7 +14,7 @@ import { signOut } from "../../../lib/auth";
 import { useRouter } from "next/navigation";
 
 export function AdminHeader({
-    title = "admin",
+    title = "Admin",
     user,
 }: {
     title?: string;

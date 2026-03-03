@@ -51,14 +51,8 @@ export default function TenantsPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Tenants</h1>
-                    <p className="text-muted-foreground">
-                        Manage all tenants registered on the platform.
-                    </p>
-                </div>
-                <Button onClick={() => setIsDialogOpen(true)}>Add Tenant</Button>
+            <div className="flex items-end justify-end">
+                <Button className="px-8" onClick={() => setIsDialogOpen(true)}>Add Tenant</Button>
             </div>
 
             <TenantStats stats={stats} isLoading={isLoading} />

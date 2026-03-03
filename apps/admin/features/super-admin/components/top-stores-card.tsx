@@ -51,6 +51,16 @@ export function TopStoresCard({
         storeName: s.storeName ?? "—",
     }));
 
+    while (chartData.length < 5) {
+        chartData.push({
+            storeId: `empty-${chartData.length}`,
+            storeName: `empty-${chartData.length}`,
+            revenue: 0,
+            visits: 0,
+            orders: 0,
+        });
+    }
+
     return (
         <Card className={cn("w-full border-border/70 shadow-sm", className)}>
             <CardHeader className="pb-0">
@@ -83,6 +93,16 @@ export function TopStoresCard({
                             tickMargin={10}
                             axisLine={false}
                             width={100}
+                            tick={(props) => {
+                                const { x, y, payload } = props;
+                                const isHidden = payload.value.toString().startsWith("empty-");
+                                if (isHidden) return <g></g>;
+                                return (
+                                    <text x={x} y={y} dy={4} textAnchor="end" fill="currentColor" fontSize={12}>
+                                        {payload.value}
+                                    </text>
+                                );
+                            }}
                         />
                         <XAxis type="number" hide />
                         <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />

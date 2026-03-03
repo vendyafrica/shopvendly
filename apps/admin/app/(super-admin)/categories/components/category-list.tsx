@@ -53,11 +53,11 @@ export function CategoryList({ categories, onAddSubCategory, onEdit }: CategoryL
         <Accordion className="w-full space-y-4">
             {categories.map((category) => (
                 <AccordionItem key={category.id} value={category.id} className="border rounded-lg px-4">
-                    <div className="flex items-center justify-between py-2">
-                        <AccordionTrigger className="hover:no-underline py-2">
+                    <div className="flex items-center justify-between w-full relative">
+                        <AccordionTrigger className="hover:no-underline py-4 flex-1 justify-start gap-2">
                             <span className="font-medium text-lg">{category.name}</span>
                         </AccordionTrigger>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 absolute right-0">
                             <Badge variant="secondary" className="mr-2">
                                 {category.slug}
                             </Badge>
@@ -80,27 +80,39 @@ export function CategoryList({ categories, onAddSubCategory, onEdit }: CategoryL
                     </div>
                     <AccordionContent className="pb-4 pt-1 pl-4 border-l-2 border-muted ml-2">
                         {category.children && category.children.length > 0 ? (
-                            <div className="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-2">
-                                {category.children.map((child) => (
-                                    <div
-                                        key={child.id}
-                                        className="flex items-center justify-between p-3 rounded-md border bg-card hover:bg-accent/50 transition-colors"
-                                    >
-                                        <div className="flex flex-col">
-                                            <span className="font-medium">{child.name}</span>
-                                            <span className="text-xs text-muted-foreground">{child.slug}</span>
-                                        </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8"
-                                            onClick={() => onEdit(child)}
+                            <>
+                                <div className="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-2">
+                                    {category.children.map((child) => (
+                                        <div
+                                            key={child.id}
+                                            className="flex items-center justify-between p-3 rounded-md border bg-card hover:bg-accent/50 transition-colors"
                                         >
-                                            <HugeiconsIcon icon={MoreHorizontalIcon} className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">{child.name}</span>
+                                                <span className="text-xs text-muted-foreground">{child.slug}</span>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => onEdit(child)}
+                                            >
+                                                <HugeiconsIcon icon={MoreHorizontalIcon} className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="mt-4">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onAddSubCategory(category.id)}
+                                    >
+                                        <HugeiconsIcon icon={PlusSignIcon} className="mr-2 h-3 w-3" />
+                                        Add Sub-category
+                                    </Button>
+                                </div>
+                            </>
                         ) : (
                             <div className="py-4 text-sm text-muted-foreground flex flex-col items-start gap-2">
                                 <p>No sub-categories yet.</p>

@@ -33,6 +33,22 @@ export function RevenueAreaChartCard({
         },
     } satisfies ChartConfig;
 
+    const chartData = [...data];
+
+    // If there's only 1 point, we'll pad it with some dummy points from previous days
+    // so the line chart doesn't just display a single dot in the middle.
+    if (chartData.length === 1 && chartData[0]?.date) {
+        const singleDate = new Date(chartData[0].date);
+        for (let i = 1; i <= 4; i++) {
+            const prevDate = new Date(singleDate);
+            prevDate.setDate(singleDate.getDate() - i);
+            chartData.unshift({
+                date: prevDate.toISOString().split("T")[0] as string,
+                total: 0,
+            });
+        }
+    }
+
     return (
         <Card className={cn("w-full border-border/70 shadow-sm", className)}>
             <CardHeader className="space-y-1 pb-2">
@@ -43,7 +59,7 @@ export function RevenueAreaChartCard({
                 <ChartContainer config={chartConfig} className="aspect-auto h-[260px] w-full md:h-[320px]">
                     <AreaChart
                         accessibilityLayer
-                        data={data}
+                        data={chartData}
                         margin={{
                             left: 18,
                             right: 18,

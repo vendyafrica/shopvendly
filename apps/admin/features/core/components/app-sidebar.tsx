@@ -118,11 +118,6 @@ const superAdminItems: SidebarNavItem[] = [
     icon: UserGroupIcon,
   },
   {
-    title: "Invite",
-    url: "/invite",
-    icon: UserShield02Icon,
-  },
-  {
     title: "Payments",
     url: "/payments",
     icon: Payment02Icon,
@@ -307,17 +302,6 @@ export function AppSidebar({
                 </SidebarMenuButton>
               );
             })()}
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<a href="#" />}>
-              <div>
-                <HugeiconsIcon icon={UserShield02Icon} className="size-4" />
-              </div>
-              <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-medium">Admin User</span>
-                <span className="">admin@vendly.com</span>
-              </div>
-            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

@@ -91,15 +91,9 @@ export default function CategoriesPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
-                    <p className="text-muted-foreground">
-                        Organize the platform structure with main categories and sub-categories.
-                    </p>
-                </div>
+            <div className="flex items-end justify-end">
                 <Button onClick={() => handleCreateClick(null)}>
-                    <HugeiconsIcon icon={PlusSignIcon} className="mr-2 h-4 w-4" />
+                    <HugeiconsIcon icon={PlusSignIcon} className="mr-1 h-4 w-4" />
                     New Main Category
                 </Button>
             </div>
