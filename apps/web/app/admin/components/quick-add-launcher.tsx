@@ -40,7 +40,7 @@ export function QuickAddLauncher({ tenantId: tenantIdProp, className, label = "A
               priceAmount: data.priceAmount,
               currency: data.currency,
               quantity: data.quantity,
-              source: "quick-add",
+              source: "manual",
               status: "ready",
               media,
             }),

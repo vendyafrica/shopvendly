@@ -267,6 +267,13 @@
       "when": 1772550001000,
       "tag": "0037_delivery_dispatch_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1772567158495,
+      "tag": "0038_medical_captain_cross",
+      "breakpoints": true
     }
   ]
 }
