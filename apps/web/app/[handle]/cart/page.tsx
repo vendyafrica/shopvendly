@@ -106,7 +106,7 @@ export default function StoreCartPage() {
                             Looks like you haven&apos;t added anything from this store to your bag yet.
                         </p>
                         <Link href={`/${storeSlug || ""}`}>
-                            <Button className="h-14 rounded-none px-8 uppercase text-xs tracking-widest font-semibold transition-colors">
+                            <Button className="h-12 rounded-none px-8 uppercase text-xs tracking-widest font-semibold transition-colors">
                                 Continue Shopping
                             </Button>
                         </Link>
