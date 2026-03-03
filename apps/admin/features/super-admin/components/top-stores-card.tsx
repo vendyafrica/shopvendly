@@ -8,16 +8,7 @@ import {
 } from "@shopvendly/ui/components/chart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
 import { cn } from "@shopvendly/ui/lib/utils";
-import { Bar, BarChart, LabelList, XAxis, YAxis } from "recharts";
-
-function NameLabel({ x, y, value }: { x?: number; y?: number; value?: string }) {
-    if (x == null || y == null || !value) return null;
-    return (
-        <text x={x} y={y - 10} fill="hsl(var(--foreground))" fontSize={12} fontWeight={600}>
-            {value}
-        </text>
-    );
-}
+import { Bar, BarChart, XAxis, YAxis } from "recharts";
 
 export type StoreData = {
     storeId: string;
@@ -55,6 +46,11 @@ export function TopStoresCard({
         },
     } satisfies ChartConfig;
 
+    const chartData = stores.map((s) => ({
+        ...s,
+        storeName: s.storeName ?? "—",
+    }));
+
     return (
         <Card className={cn("w-full border-border/70 shadow-sm", className)}>
             <CardHeader className="pb-0">
@@ -70,44 +66,32 @@ export function TopStoresCard({
                 <ChartContainer config={chartConfig} className="h-[260px] w-full md:h-[340px]">
                     <BarChart
                         accessibilityLayer
-                        data={stores.map((s) => ({
-                            ...s,
-                            storeName: s.storeName ?? "—",
-                        }))}
+                        data={chartData}
                         layout="vertical"
                         margin={{
                             left: 0,
-                            right: 32,
-                            top: 16,
+                            right: 0,
+                            top: 8,
                             bottom: 0,
                         }}
-                        barSize={18}
-                        barGap={12}
-                        barCategoryGap={24}
+                        barSize={32}
                     >
+                        <YAxis
+                            dataKey="storeName"
+                            type="category"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                            width={100}
+                        />
                         <XAxis type="number" hide />
-                        <YAxis dataKey="storeName" type="category" hide />
                         <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                         <Bar
                             dataKey={dataKey as string}
-                            radius={10}
+                            layout="vertical"
+                            radius={5}
                             fill="hsl(var(--primary))"
-                            fillOpacity={0.85}
-                            stroke="hsl(var(--primary))"
-                            strokeWidth={1}
-                        >
-                            <LabelList dataKey="storeName" content={<NameLabel />} />
-                            <LabelList
-                                dataKey={dataKey as string}
-                                position="right"
-                                offset={8}
-                                className="fill-muted-foreground"
-                                fontSize={12}
-                                formatter={(val: unknown) =>
-                                    typeof val === "number" ? val.toLocaleString() : ""
-                                }
-                            />
-                        </Bar>
+                        />
                     </BarChart>
                 </ChartContainer>
             </CardContent>

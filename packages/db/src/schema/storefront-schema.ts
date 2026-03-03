@@ -30,6 +30,7 @@ export const stores = pgTable(
         storeContactPhone: text("store_contact_phone"),
         storeContactEmail: text("store_contact_email"),
         storeAddress: text("store_address"),
+        deliveryProviderPhone: text("delivery_provider_phone"),
         
         heroMedia: text("hero_media").array().default([]),
 

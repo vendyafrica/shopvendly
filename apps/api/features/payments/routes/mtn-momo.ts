@@ -1,8 +1,9 @@
 import type { Request, Response, Router as ExpressRouter } from "express";
 import { Router } from "express";
 import { z } from "zod";
- import { and, db, eq, isNull, orders, stores } from "@shopvendly/db";
+import { and, db, eq, isNull, orders, stores } from "@shopvendly/db";
 import { mtnMomoCollections, requestToPayInputSchema } from "../modules/mtn-momo-service.js";
+import { handlePaidOrderTransition } from "../services/payment-order-transition.js";
 
 export const mtnMomoRouter: ExpressRouter = Router();
 
@@ -26,13 +27,17 @@ async function updatePaymentAndOrderFromMtnStatus(referenceId: string) {
   // Best-effort: if the client used `externalId = order.id` (initiate endpoint does), we can update by that.
   const externalId = (mtnStatus as { externalId?: unknown }).externalId;
   if (typeof externalId === "string") {
-    await db
-      .update(orders)
-      .set({
-        paymentStatus: normalized,
-        updatedAt: new Date(),
-      })
-      .where(and(eq(orders.id, externalId), isNull(orders.deletedAt)));
+    if (normalized === "paid") {
+      await handlePaidOrderTransition({ orderId: externalId, paymentMethod: "mtn_momo" });
+    } else {
+      await db
+        .update(orders)
+        .set({
+          paymentStatus: normalized,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(orders.id, externalId), isNull(orders.deletedAt)));
+    }
   }
 
   return { mtnStatus, normalized };

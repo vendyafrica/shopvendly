@@ -23,6 +23,7 @@ export async function GET(
                 slug: stores.slug,
                 status: stores.status,
                 description: stores.description,
+                deliveryProviderPhone: stores.deliveryProviderPhone,
               
                 createdAt: stores.createdAt,
                 tenantName: tenants.fullName,
@@ -81,14 +82,14 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await req.json();
-    const { status, domainVerified } = body;
+    const { status, deliveryProviderPhone } = body;
 
     try {
         await db
             .update(stores)
             .set({
                 ...(status !== undefined ? { status } : {}),
-                ...(domainVerified !== undefined ? { domainVerified } : {}),
+                ...(deliveryProviderPhone !== undefined ? { deliveryProviderPhone } : {}),
             })
             .where(eq(stores.id, id));
 

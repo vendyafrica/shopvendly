@@ -60,6 +60,8 @@ async function postMetaMessage(payload: Record<string, unknown>) {
 function normalizeTemplateComponents(input: TemplateMessageInput) {
   return input.components?.map((component) => ({
     type: component.type,
+    ...(component.sub_type ? { sub_type: component.sub_type } : {}),
+    ...(component.index ? { index: component.index } : {}),
     parameters: component.parameters?.map((parameter) => {
       if (typeof parameter === "object" && parameter !== null && "type" in parameter) {
         return parameter;

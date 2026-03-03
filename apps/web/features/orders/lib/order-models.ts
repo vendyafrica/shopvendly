@@ -18,8 +18,14 @@ export const createOrderSchema = z.object({
   customerName: z.string().min(1).max(255),
   customerEmail: z.string().email(),
   customerPhone: z.string().optional(),
-  paymentMethod: z.enum(["card", "mpesa", "mtn_momo", "paypal", "paystack", "cash_on_delivery"]).default("cash_on_delivery"),
+  paymentMethod: z.enum(["card", "mpesa", "mtn_momo", "mobile_money", "paystack", "cash_on_delivery"]).default("cash_on_delivery"),
   notes: z.string().optional(),
+  deliveryAddress: z.string().optional(),
+  shippingAddress: z
+    .object({
+      street: z.string().optional(),
+    })
+    .optional(),
   items: z.array(orderItemInputSchema).min(1),
 });
 
@@ -29,7 +35,21 @@ export type CreateOrderInput = z.infer<typeof createOrderSchema>;
  * Update order status (from admin/seller)
  */
 export const updateOrderStatusSchema = z.object({
-  status: z.enum(["pending", "processing", "completed", "cancelled", "refunded"]).optional(),
+  status: z
+    .enum([
+      "pending",
+      "pending_seller_acceptance",
+      "awaiting_payment",
+      "processing",
+      "paid_processing",
+      "ready",
+      "out_for_delivery",
+      "completed",
+      "cancelled",
+      "delivery_exception",
+      "refunded",
+    ])
+    .optional(),
   paymentStatus: z.enum(["pending", "paid", "failed", "refunded"]).optional(),
 });
 
@@ -39,7 +59,21 @@ export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
  * Order query filters
  */
 export const orderQuerySchema = z.object({
-  status: z.enum(["pending", "processing", "completed", "cancelled", "refunded"]).optional(),
+  status: z
+    .enum([
+      "pending",
+      "pending_seller_acceptance",
+      "awaiting_payment",
+      "processing",
+      "paid_processing",
+      "ready",
+      "out_for_delivery",
+      "completed",
+      "cancelled",
+      "delivery_exception",
+      "refunded",
+    ])
+    .optional(),
   paymentStatus: z.enum(["pending", "paid", "failed", "refunded"]).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),

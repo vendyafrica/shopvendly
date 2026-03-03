@@ -15,8 +15,6 @@ import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { useCart } from "@/features/cart/context/cart-context";
 import { useAppSession } from "@/contexts/app-session-context";
-import { signInWithOneTap } from "@shopvendly/auth/react";
-import { trackStorefrontEvents } from "@/app/[handle]/lib/storefront-tracking";
 import { Bricolage_Grotesque } from "next/font/google";
 
 const geistSans = Bricolage_Grotesque({
@@ -25,8 +23,6 @@ const geistSans = Bricolage_Grotesque({
 });
 
 const API_BASE = "";
-
-type CheckoutMode = "pay_now_mobile_money" | "pay_on_delivery";
 
 const capitalizeFirst = (value?: string | null) => {
     if (!value) return value;
@@ -49,8 +45,7 @@ function CheckoutContent() {
     const [fullName, setFullName] = useState("");
     const [address, setAddress] = useState("");
     const [phone, setPhone] = useState("");
-    const [checkoutMode, setCheckoutMode] = useState<CheckoutMode>("pay_now_mobile_money");
-    const paymentMethod = checkoutMode === "pay_now_mobile_money" ? "mtn_momo" : "cash_on_delivery";
+    const paymentMethod = "cash_on_delivery";
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -125,30 +120,6 @@ function CheckoutContent() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!session?.user?.id) {
-            void trackStorefrontEvents(
-                store.slug,
-                [{ eventType: "signin_prompt_shown" }]
-            );
-
-            try {
-                await signInWithOneTap({ callbackURL: window.location.href });
-                void trackStorefrontEvents(
-                    store.slug,
-                    [{ eventType: "signin_success" }]
-                );
-            } catch (err) {
-                void trackStorefrontEvents(
-                    store.slug,
-                    [{ eventType: err instanceof Error && err.name === "IdentityCredentialError" ? "signin_dismissed" : "signin_error" }]
-                );
-                if (!(err instanceof Error && err.name === "IdentityCredentialError")) {
-                    console.error("One Tap failed", err);
-                }
-            }
-            return;
-        }
-
         setIsSubmitting(true);
         setError(null);
 
@@ -182,81 +153,6 @@ function CheckoutContent() {
             const data = await res.json();
             const orderId = "order" in data ? data.order?.id : data.id;
             if (!orderId) throw new Error("Missing order ID");
-
-            if (checkoutMode === "pay_on_delivery") {
-                await clearStoreFromCart(store.id);
-                setIsSuccess(true);
-                setTimeout(() => {
-                    const target = store?.slug ? `${window.location.origin}/${store.slug}` : `${window.location.origin}/`;
-                    window.location.assign(target);
-                }, 1500);
-                return;
-            }
-
-            const normalizedPhone = phone.replace(/\D/g, "");
-            if (!normalizedPhone) throw new Error("Phone number is required for mobile money.");
-
-            const collectRes = await fetch(`/api/checkout`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    amount: Math.round(storeTotal),
-                    currency: "UGX",
-                    phone_number: normalizedPhone,
-                    provider: "iotec",
-                    description: `Order ${orderId}`,
-                    metadata: { orderId, storeSlug: store.slug },
-                }),
-            });
-
-            const collectData = await collectRes.json().catch(() => ({}));
-            if (!collectRes.ok || (collectData as { error?: { message?: string } }).error) {
-                throw new Error((collectData as { error?: { message?: string } }).error?.message || "Failed to initiate payment");
-            }
-
-            const reference = (collectData as { data?: { reference?: string } }).data?.reference;
-            if (!reference) throw new Error("Missing transaction reference");
-
-            let attempts = 0;
-            const maxAttempts = 60;
-            let completed = false;
-
-            while (attempts < maxAttempts) {
-                attempts += 1;
-                await new Promise((resolve) => setTimeout(resolve, attempts === 1 ? 3000 : 5000));
-
-                const statusRes = await fetch(`/api/checkout/status`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ reference }),
-                });
-
-                const statusData = await statusRes.json().catch(() => ({}));
-                const paymentStatus = (statusData as { data?: { status?: string } }).data?.status;
-
-                if (paymentStatus === "completed") {
-                    completed = true;
-                    break;
-                }
-
-                if (paymentStatus === "failed") {
-                    throw new Error("Payment failed. Please try again.");
-                }
-            }
-
-            if (!completed) {
-                throw new Error("Payment verification timed out. Please try again.");
-            }
-
-            const markPaidRes = await fetch(`/api/storefront/orders/${orderId}/pay`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({}),
-            });
-
-            if (!markPaidRes.ok) {
-                throw new Error("Payment captured but order update failed. Please contact support.");
-            }
 
             await clearStoreFromCart(store.id);
             setIsSuccess(true);
@@ -367,29 +263,9 @@ function CheckoutContent() {
 
                                 <div className="space-y-4 rounded-2xl border border-neutral-200 bg-neutral-50/60 p-5 sm:p-6 shadow-sm">
                                     <h2 className={`${geistSans.className} text-lg uppercase tracking-widest font-semibold`}>Payment</h2>
-                                    <div className="grid gap-2">
-                                        <button
-                                            type="button"
-                                            className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition-colors ${checkoutMode === "pay_now_mobile_money" ? "border-neutral-900 bg-white" : "border-neutral-200 bg-white"}`}
-                                            onClick={() => setCheckoutMode("pay_now_mobile_money")}
-                                        >
-                                            <span className="font-medium">Pay now (Mobile Money)</span>
-                                            <p className="text-xs text-neutral-500">Pay immediately via mobile money prompt.</p>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition-colors ${checkoutMode === "pay_on_delivery" ? "border-neutral-900 bg-white" : "border-neutral-200 bg-white"}`}
-                                            onClick={() => setCheckoutMode("pay_on_delivery")}
-                                        >
-                                            <span className="font-medium">Pay on delivery</span>
-                                            <p className="text-xs text-neutral-500">Place order now and receive a WhatsApp payment link.</p>
-                                        </button>
-                                    </div>
                                     <div className="p-4 rounded-xl border border-neutral-200 bg-white">
                                         <p className="text-sm text-neutral-600 leading-relaxed">
-                                            {checkoutMode === "pay_now_mobile_money"
-                                                ? "Pay with mobile money (UGX). After placing the order, confirm the payment prompt on your phone to complete checkout."
-                                                : "Order is placed as pending. You'll receive a WhatsApp payment link to complete payment later."}
+                                            Place order now. The seller will confirm availability, then you&apos;ll receive a WhatsApp payment link to complete payment.
                                         </p>
                                     </div>
 
@@ -414,9 +290,7 @@ function CheckoutContent() {
                                             </>
                                         ) : (
                                             <span>
-                                                {checkoutMode === "pay_now_mobile_money"
-                                                    ? `Pay ${currency} ${storeTotal.toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0 })}`
-                                                    : "Place order"}
+                                                Place order
                                             </span>
                                         )}
                                     </Button>

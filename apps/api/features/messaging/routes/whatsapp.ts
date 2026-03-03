@@ -4,15 +4,13 @@ import type { Router as ExpressRouter } from "express";
 import type { RawBodyRequest } from "../../../shared/types/raw-body.js";
 import { orderService } from "../../orders/services/order-service.js";
 import { enqueueInboundMessage, enqueueTextMessage, hasDedupeKey } from "../../messaging/services/whatsapp/message-queue.js";
+import { handlePaidOrderTransition } from "../../payments/services/payment-order-transition.js";
 import {
   notifyCustomerOrderAccepted,
-  notifyCustomerPreparing,
   notifyCustomerOrderReady,
   notifyCustomerOutForDelivery,
   notifyCustomerOrderDelivered,
   notifyCustomerOrderDeclined,
-  notifySellerCustomerDetails,
-  notifySellerOrderDetails,
   notifySellerMarkReady,
   notifySellerOutForDelivery,
   notifySellerOrderCompleted,
@@ -184,28 +182,13 @@ whatsappRouter.post("/webhooks/whatsapp", async (req, res) => {
         dedupeKey: inboundDedupeKey ?? undefined,
       });
 
-      // Simulated: mark payment as paid
-      await orderService.updateOrderStatusByOrderId(buyerOrder.id, { paymentStatus: "paid", status: "processing" });
-
-      await enqueueTextMessage({
-        to: from,
-        body: `✅ Payment received for order ${buyerOrder.orderNumber}. The seller is preparing it now.`,
-        tenantId: buyerOrder.tenantId,
-        orderId: buyerOrder.id,
-        dedupeKey: `customer:paid:ack:${buyerOrder.id}:${from}`,
-      });
-
-      // Notify seller about the paid order
       try {
-        const full = await orderService.getOrderById(buyerOrder.id);
-        if (full) {
-          const sellerPhone = await orderService.getTenantPhoneByTenantId(full.tenantId);
-          await notifySellerCustomerDetails({ sellerPhone, order: full });
-          await notifySellerOrderDetails({ sellerPhone, order: full });
-          await notifyCustomerPreparing({ order: full });
-        }
+        await handlePaidOrderTransition({
+          orderId: buyerOrder.id,
+          includeSellerContext: true,
+        });
       } catch (err) {
-        console.error("[WhatsAppWebhook] Failed to notify seller after I PAID", err);
+        console.error("[WhatsAppWebhook] Failed paid-order transition after I PAID", err);
       }
 
       return res.sendStatus(200);
@@ -253,12 +236,12 @@ whatsappRouter.post("/webhooks/whatsapp", async (req, res) => {
     const order = maybeOrderNumber
       ? await orderService.getOrderByOrderNumberForTenant(tenantId, maybeOrderNumber.toUpperCase())
       : action === "ready"
-        ? await orderService.getLatestOrderForTenantByStatus(tenantId, ["processing"])
+        ? await orderService.getLatestOrderForTenantByStatus(tenantId, ["processing", "paid_processing"])
         : action === "out"
           ? await orderService.getLatestOrderForTenantByStatus(tenantId, ["ready"])
           : action === "delivered"
             ? await orderService.getLatestOrderForTenantByStatus(tenantId, ["out_for_delivery"])
-            : await orderService.getLatestOrderForTenantByStatus(tenantId, ["pending"]);
+            : await orderService.getLatestOrderForTenantByStatus(tenantId, ["pending_seller_acceptance", "pending"]);
 
     if (!order) {
       await enqueueInboundMessage({
@@ -289,7 +272,7 @@ whatsappRouter.post("/webhooks/whatsapp", async (req, res) => {
     const sellerPhone = await orderService.getTenantPhoneByTenantId(tenantId);
 
     if (action === "accept") {
-      await orderService.updateOrderStatus(order.id, tenantId, { status: "processing" });
+      await orderService.updateOrderStatus(order.id, tenantId, { status: "awaiting_payment" });
 
       // Seller accepted: notify buyer that order has been accepted.
       try {

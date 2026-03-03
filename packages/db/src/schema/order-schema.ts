@@ -30,7 +30,7 @@ export const orders = pgTable(
         customerEmail: text("customer_email").notNull(),
         customerPhone: text("customer_phone"),
 
-        status: text("status").notNull().default("pending"),
+        status: text("status").notNull().default("pending_seller_acceptance"),
         paymentMethod: text("payment_method").notNull().default("cash_on_delivery"),
         paymentStatus: text("payment_status").notNull().default("pending"),
 
@@ -40,6 +40,11 @@ export const orders = pgTable(
 
         notes: text("notes"),
         deliveryAddress: text("delivery_address"),
+        deliveryProvider: text("delivery_provider"),
+        deliveryProviderDispatchId: text("delivery_provider_dispatch_id"),
+        deliveryStatus: text("delivery_status"),
+        deliveryAssignedAt: timestamp("delivery_assigned_at"),
+        deliveryCompletedAt: timestamp("delivery_completed_at"),
 
         createdAt: timestamp("created_at").defaultNow().notNull(),
         updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
@@ -49,6 +54,7 @@ export const orders = pgTable(
         index("orders_tenant_store_idx").on(table.tenantId, table.storeId),
         index("orders_status_idx").on(table.status),
         index("orders_payment_status_idx").on(table.paymentStatus),
+        index("orders_delivery_status_idx").on(table.deliveryStatus),
         index("orders_created_at_idx").on(table.createdAt),
         index("orders_tenant_created_idx").on(table.tenantId, table.createdAt),
         index("orders_tenant_status_created_idx").on(table.tenantId, table.status, table.createdAt),
@@ -119,6 +125,17 @@ export type NewOrder = typeof orders.$inferInsert;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type NewOrderItem = typeof orderItems.$inferInsert;
 
-export type OrderStatus = "pending" | "processing" | "ready" | "out_for_delivery" | "completed" | "cancelled" | "refunded";
-export type PaymentMethod = "card" | "mpesa" | "mtn_momo" | "paystack" | "cash_on_delivery";
+export type OrderStatus =
+    | "pending"
+    | "pending_seller_acceptance"
+    | "awaiting_payment"
+    | "processing"
+    | "paid_processing"
+    | "ready"
+    | "out_for_delivery"
+    | "completed"
+    | "cancelled"
+    | "delivery_exception"
+    | "refunded";
+export type PaymentMethod = "card" | "mpesa" | "mtn_momo" | "mobile_money" | "paystack" | "cash_on_delivery";
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";

@@ -1,15 +1,9 @@
 import crypto from "crypto";
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
-import { db, eq } from "@shopvendly/db";
-import { orders } from "@shopvendly/db";
 import type { RawBodyRequest } from "../../../shared/types/raw-body.js";
 import { orderService } from "../../orders/services/order-service.js";
-import {
-  notifyCustomerOrderReceived,
-  notifyCustomerPreparing,
-  notifySellerNewOrder,
-} from "../../messaging/services/notifications.js";
+import { handlePaidOrderTransition } from "../services/payment-order-transition.js";
 
 export const paystackWebhookRouter: ExpressRouter = Router();
 
@@ -98,26 +92,7 @@ paystackWebhookRouter.post("/webhooks/paystack", async (req, res) => {
       return res.status(200).json({ received: true });
     }
 
-    await db
-      .update(orders)
-      .set({
-        paymentStatus: "paid",
-        status: "processing",
-        paymentMethod: "paystack",
-        updatedAt: new Date(),
-      })
-      .where(eq(orders.id, orderId));
-
-    const full = await orderService.getOrderById(orderId);
-    if (full) {
-      const sellerPhone = await orderService.getTenantPhoneByTenantId(full.tenantId);
-
-      await Promise.allSettled([
-        notifyCustomerOrderReceived({ order: full }),
-        notifyCustomerPreparing({ order: full }),
-        notifySellerNewOrder({ sellerPhone, order: full }),
-      ]);
-    }
+    await handlePaidOrderTransition({ orderId, paymentMethod: "paystack" });
 
     console.info("[PaystackWebhook] Order marked paid + WhatsApp queued", { orderId });
   } catch (err) {

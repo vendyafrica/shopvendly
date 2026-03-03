@@ -253,6 +253,20 @@
       "when": 1772047010132,
       "tag": "0035_fearless_saracen",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1772550000000,
+      "tag": "0036_delivery_provider_phone",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1772550001000,
+      "tag": "0037_delivery_dispatch_tracking",
+      "breakpoints": true
     }
   ]
 }

@@ -17,6 +17,7 @@ export async function GET() {
                 name: stores.name,
                 slug: stores.slug,
                 status: stores.status,
+                deliveryProviderPhone: stores.deliveryProviderPhone,
                 createdAt: stores.createdAt,
                 tenantName: tenants.fullName
             })

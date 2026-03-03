@@ -33,13 +33,33 @@ export const createOrderSchema = z.object({
   customerPhone: z.string().optional(),
   paymentMethod: z.enum(["card", "mpesa", "mtn_momo", "mobile_money", "paystack", "cash_on_delivery"]).default("cash_on_delivery"),
   notes: z.string().optional(),
+  deliveryAddress: z.string().optional(),
+  shippingAddress: z
+    .object({
+      street: z.string().optional(),
+    })
+    .optional(),
   items: z.array(orderItemInputSchema).min(1),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 
 export const updateOrderStatusSchema = z.object({
-  status: z.enum(["pending", "processing", "ready", "out_for_delivery", "completed", "cancelled", "refunded"]).optional(),
+  status: z
+    .enum([
+      "pending",
+      "pending_seller_acceptance",
+      "awaiting_payment",
+      "processing",
+      "paid_processing",
+      "ready",
+      "out_for_delivery",
+      "completed",
+      "cancelled",
+      "delivery_exception",
+      "refunded",
+    ])
+    .optional(),
   paymentStatus: z.enum(["pending", "paid", "failed", "refunded"]).optional(),
   paymentMethod: z.enum(["card", "mpesa", "mtn_momo", "mobile_money", "paystack", "cash_on_delivery"]).optional(),
 });
@@ -51,6 +71,7 @@ export type OrderWithItems = Awaited<ReturnType<typeof orderService.getOrderById
 export const orderService = {
   async createOrder(storeSlug: string, input: CreateOrderInput) {
     const normalizedPaymentMethod = input.paymentMethod === "mobile_money" ? "mtn_momo" : input.paymentMethod;
+    const deliveryAddress = input.deliveryAddress || input.shippingAddress?.street || null;
 
     const store = await db.query.stores.findFirst({
       where: and(eq(stores.slug, storeSlug), isNull(stores.deletedAt)),
@@ -123,8 +144,9 @@ export const orderService = {
         customerPhone: input.customerPhone,
         paymentMethod: normalizedPaymentMethod,
         paymentStatus: "pending",
-        status: "pending",
+        status: "pending_seller_acceptance",
         notes: input.notes,
+        deliveryAddress,
         subtotal,
         totalAmount,
         currency,
@@ -284,7 +306,22 @@ export const orderService = {
     return order;
   },
 
-  async getLatestOrderForTenantByStatus(tenantId: string, statuses: Array<"pending" | "processing" | "ready" | "out_for_delivery" | "completed" | "cancelled" | "refunded">) {
+  async getLatestOrderForTenantByStatus(
+    tenantId: string,
+    statuses: Array<
+      | "pending"
+      | "pending_seller_acceptance"
+      | "awaiting_payment"
+      | "processing"
+      | "paid_processing"
+      | "ready"
+      | "out_for_delivery"
+      | "completed"
+      | "cancelled"
+      | "delivery_exception"
+      | "refunded"
+    >
+  ) {
     const order = await db.query.orders.findFirst({
       where: and(eq(orders.tenantId, tenantId), inArray(orders.status, statuses), isNull(orders.deletedAt)),
       orderBy: (o, { desc }) => [desc(o.createdAt)],

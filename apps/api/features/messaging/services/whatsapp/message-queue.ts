@@ -3,6 +3,8 @@ import { whatsappClient } from "./whatsapp-client.js";
 
 export type TemplateComponent = {
   type: string;
+  sub_type?: string;
+  index?: string;
   parameters?: Array<Record<string, unknown>>;
 };
 

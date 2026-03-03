@@ -15,6 +15,9 @@ export const orderService = {
      * Create a new order from storefront
      */
     async createOrder(storeSlug: string, input: CreateOrderInput): Promise<OrderWithItems> {
+        const normalizedPaymentMethod = input.paymentMethod === "mobile_money" ? "mtn_momo" : input.paymentMethod;
+        const deliveryAddress = input.deliveryAddress || input.shippingAddress?.street || null;
+
         // Find store by slug
         const store = await db.query.stores.findFirst({
             where: and(eq(stores.slug, storeSlug), isNull(stores.deletedAt)),
@@ -91,10 +94,11 @@ export const orderService = {
                 customerName: input.customerName,
                 customerEmail: input.customerEmail,
                 customerPhone: input.customerPhone,
-                paymentMethod: input.paymentMethod,
+                paymentMethod: normalizedPaymentMethod,
                 paymentStatus: "pending",
-                status: "pending",
+                status: "pending_seller_acceptance",
                 notes: input.notes,
+                deliveryAddress,
                 subtotal,
                 totalAmount,
                 currency,
@@ -261,7 +265,7 @@ export const orderService = {
             .where(
                 and(
                     eq(orders.tenantId, tenantId),
-                    eq(orders.status, "pending"),
+                    inArray(orders.status, ["pending", "pending_seller_acceptance", "awaiting_payment"]),
                     isNull(orders.deletedAt)
                 )
             );

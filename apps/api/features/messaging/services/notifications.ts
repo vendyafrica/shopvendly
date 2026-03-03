@@ -52,9 +52,44 @@ export async function notifySellerCswOpener(params: { sellerPhone: string | null
   );
 }
 
+export async function notifyDeliveryPartnerNewOrder(params: { order: OrderLike }): Promise<boolean> {
+  const { order } = params;
+  const to = normalizeToWhatsApp(order.store?.deliveryProviderPhone, "delivery provider", {
+    orderId: order.id,
+    storeId: order.storeId,
+  });
+  if (!to) return false;
+
+  const sellerPhone = await orderService.getTenantPhoneByTenantId(order.tenantId);
+
+  const key = `delivery_partner:new_order:${order.id}:${to}`;
+  await sendOnce(key, () =>
+    enqueueTemplateMessage({
+      input: templateSend.deliveryPartnerNewOrder(to, {
+        providerName: order.store?.name || "Delivery Partner",
+        orderId: order.orderNumber,
+        orderItems: formatItemsSummary(order.items),
+        total: String(order.totalAmount),
+        sellerPhone: sellerPhone || "N/A",
+        buyerName: order.customerName,
+        buyerPhone: order.customerPhone || "N/A",
+        deliveryAddress: order.deliveryAddress || "N/A",
+      }),
+      tenantId: order.tenantId,
+      orderId: order.id,
+      dedupeKey: key,
+    })
+  );
+
+  return true;
+}
+
 type OrderLike = (typeof orders.$inferSelect) & {
   items?: Array<OrderItem> | null;
-  store?: { name?: string | null } | null;
+  store?: {
+    name?: string | null;
+    deliveryProviderPhone?: string | null;
+  } | null;
 };
 
 function formatItemsSummary(items: Array<OrderItem> | null | undefined): string {
@@ -71,6 +106,19 @@ function formatCustomerDetails(order: OrderLike): string {
   if (order.deliveryAddress) parts.push(`Address: ${order.deliveryAddress}`);
   if (order.notes) parts.push(`Note: ${order.notes}`);
   return parts.join(". ");
+}
+
+function buildPaymentLink(order: OrderLike) {
+  const query = new URLSearchParams({
+    amount: String(order.totalAmount ?? ""),
+    currency: order.currency ?? "UGX",
+    orderNumber: order.orderNumber ?? "",
+  });
+
+  const payLink = `${getWebBaseUrl()}/pay/${order.id}?${query.toString()}`;
+  const payLinkToken = `${order.id}?${query.toString()}`;
+
+  return { payLink, payLinkToken };
 }
 
 async function sendOnce(key: string, fn: () => Promise<unknown>) {
@@ -262,12 +310,18 @@ export async function notifyCustomerOrderAccepted(params: { order: OrderLike }) 
   const to = normalizeToWhatsApp(order.customerPhone, "customer", { orderId: order.id, orderNumber: order.orderNumber });
   if (!to) return;
 
+  const { payLink, payLinkToken } = buildPaymentLink(order);
+
   const key = `customer:accepted:${order.id}:${to}`;
   await sendOnce(key, () =>
     enqueueTemplateMessage({
-      input: templateSend.buyerOrderReady(to, {
+      input: templateSend.buyerPaymentLink(to, {
         buyerName: order.customerName,
         storeName: order.store?.name || "the store",
+        orderId: order.orderNumber,
+        total: String(order.totalAmount),
+        payLink,
+        payLinkToken,
       }),
       tenantId: order.tenantId,
       orderId: order.id,
@@ -285,18 +339,19 @@ export async function notifyCustomerPendingPaymentLink(params: { order: OrderLik
   });
   if (!to) return;
 
-  const query = new URLSearchParams({
-    amount: String(order.totalAmount ?? ""),
-    currency: order.currency ?? "UGX",
-    orderNumber: order.orderNumber ?? "",
-  });
-  const payLink = `${getWebBaseUrl()}/pay/${order.id}?${query.toString()}`;
+  const { payLink, payLinkToken } = buildPaymentLink(order);
 
   const key = `customer:pending_payment_link:${order.id}:${to}`;
   await sendOnce(key, () =>
-    enqueueTextMessage({
-      to,
-      body: `🧾 Order ${order.orderNumber} has been placed. Complete payment here: ${payLink}`,
+    enqueueTemplateMessage({
+      input: templateSend.buyerPaymentLink(to, {
+        buyerName: order.customerName,
+        storeName: order.store?.name || "the store",
+        orderId: order.orderNumber,
+        total: String(order.totalAmount),
+        payLink,
+        payLinkToken,
+      }),
       tenantId: order.tenantId,
       orderId: order.id,
       dedupeKey: key,

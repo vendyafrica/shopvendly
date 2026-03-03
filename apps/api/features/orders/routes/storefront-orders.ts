@@ -4,7 +4,6 @@ import { createOrderSchema, orderService } from "../services/order-service.js";
 import { capturePosthogEvent } from "../../../shared/utils/posthog.js";
 import {
   notifyCustomerOrderReceived,
-  notifyCustomerPendingPaymentLink,
   notifySellerNewOrder,
 } from "../../messaging/services/notifications.js";
 
@@ -30,14 +29,11 @@ storefrontOrdersRouter.post("/storefront/:slug/orders", async (req, res, next) =
       },
     });
 
-    if (order.paymentMethod === "cash_on_delivery") {
-      const sellerPhone = await orderService.getTenantPhoneByTenantId(order.tenantId);
-      await Promise.allSettled([
-        notifySellerNewOrder({ sellerPhone, order }),
-        notifyCustomerOrderReceived({ order }),
-        notifyCustomerPendingPaymentLink({ order }),
-      ]);
-    }
+    const sellerPhone = await orderService.getTenantPhoneByTenantId(order.tenantId);
+    await Promise.allSettled([
+      notifySellerNewOrder({ sellerPhone, order }),
+      notifyCustomerOrderReceived({ order }),
+    ]);
 
     return res.status(201).json({ order });
   } catch (err) {
