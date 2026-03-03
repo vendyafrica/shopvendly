@@ -40,7 +40,7 @@ export default function StoreCartPage() {
     if (!isLoaded) {
         return (
             <div className="min-h-screen bg-white pt-24 pb-24">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+                <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-24 space-y-6">
                     <div className="h-6 w-40 bg-neutral-100 rounded-full animate-pulse" />
                     <div className="grid lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
                         <div className="space-y-4">
@@ -89,7 +89,7 @@ export default function StoreCartPage() {
     if (storeItems.length === 0) {
         return (
             <div className="min-h-screen bg-white pt-24">
-                <div className="max-w-2xl mx-auto px-4 py-8">
+                <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-24 py-8">
                     <div className="flex items-center gap-2 mb-10">
                         <button onClick={handleBack} className="p-2 -ml-2 hover:bg-neutral-100 transition-colors">
                             <HugeiconsIcon icon={ArrowLeft01Icon} className="h-5 w-5" />
@@ -118,7 +118,7 @@ export default function StoreCartPage() {
 
     return (
         <div className="min-h-screen bg-white pt-24 pb-24">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-24">
                 <div className="rounded-2xl border border-neutral-200 bg-white/90 shadow-sm p-4 sm:p-6 lg:p-8 space-y-8">
                     <div className="flex flex-wrap items-center gap-3 pb-2 border-b border-neutral-200">
                         <button onClick={handleBack} className="p-2 -ml-1 rounded-full text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors">
@@ -191,7 +191,7 @@ export default function StoreCartPage() {
                                                         }}
                                                         className="w-9 h-full flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition-colors"
                                                     >
-                                                        {item.quantity <= 1 ? <HugeiconsIcon icon={Delete02Icon} size={14} /> : <HugeiconsIcon icon={MinusSignIcon} size={14} />}
+                                                        <HugeiconsIcon icon={item.quantity <= 1 ? Delete02Icon : MinusSignIcon} size={14} className="text-neutral-500 hover:text-red-600 transition-colors" />
                                                     </button>
                                                     <span className="flex-1 text-center text-sm font-semibold tabular-nums">{item.quantity}</span>
                                                     <button
@@ -205,7 +205,7 @@ export default function StoreCartPage() {
 
                                             <button
                                                 onClick={() => removeItem(item.id)}
-                                                className="text-xs uppercase tracking-widest text-neutral-400 hover:text-red-600 transition-colors underline underline-offset-4 self-end"
+                                                className="text-xs tracking-widest text-neutral-400 hover:text-red-600 transition-colors underline underline-offset-4 self-end"
                                                 aria-label="Remove item"
                                             >
                                                 Remove
@@ -235,18 +235,17 @@ export default function StoreCartPage() {
                                 <span className={`${geistSans.className} uppercase tracking-widest font-semibold`}>Total</span>
                                 <div className="text-right">
                                     <span className="block text-xl font-semibold text-neutral-900">{currency} {storeSubtotal.toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0, maximumFractionDigits: currency === "USD" ? 2 : 0 })}</span>
-                                    <span className="text-[10px] text-neutral-500 uppercase tracking-widest mt-1">VAT Included</span>
                                 </div>
                             </div>
 
                             <Link href={`/${storeSlug || ""}/checkout?storeId=${storeId}`} className="mt-auto">
                                 <Button className="w-full h-12 rounded-md uppercase text-xs tracking-widest font-semibold transition-colors">
-                                    Secure Checkout
+                                    Continue to Checkout
                                 </Button>
                             </Link>
 
                             <div className="mt-4 text-center">
-                                <p className="text-xs text-neutral-500">Taxes and shipping calculated at checkout.</p>
+                                <p className="text-xs text-neutral-500">Shipping calculated at checkout.</p>
                             </div>
                         </div>
                     </div>

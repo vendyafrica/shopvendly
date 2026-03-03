@@ -337,7 +337,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
                     {/* Product Name & Rating */}
                     <div className="mb-6">
-                        <h1 className="text-[26px] lg:text-[28px] font-semibold text-neutral-900 leading-snug tracking-tight mb-2">
+                        <h1 className="text-[26px] lg:text-[28px] capitalize font-semibold text-neutral-800 leading-snug tracking-tight mb-2">
                             {product.name ? `${product.name.charAt(0).toUpperCase()}${product.name.slice(1)}` : product.name}
                         </h1>
 
@@ -378,7 +378,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
                         <div className="flex items-center gap-3">
                             <span className="text-2xl font-bold text-neutral-900">
-                                {product.currency} {product.price.toLocaleString(undefined, {
+                                <sub className="text-sm text-muted-foreground">{product.currency}</sub> {product.price.toLocaleString(undefined, {
                                     minimumFractionDigits: product.currency === "USD" ? 2 : 0,
                                     maximumFractionDigits: product.currency === "USD" ? 2 : 0,
                                 })}
@@ -394,7 +394,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                         <div className="border-t border-neutral-100 pt-5">
                             <h2 className="text-sm font-medium mb-3 uppercase tracking-widest text-neutral-900">Description / Details</h2>
                             <div className="text-sm leading-relaxed text-neutral-600">
-                                <p>{product.description}</p>
+                                <p className="capitalize">{product.description}</p>
                             </div>
                         </div>
                     )}

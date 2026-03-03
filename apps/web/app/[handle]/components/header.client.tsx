@@ -440,7 +440,7 @@ export default function StorefrontHeaderClient({
                       className="text-neutral-900"
                     />
                     {storeItemCount > 0 && (
-                      <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-white bg-neutral-900 ring-2 ring-white">
+                      <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-white bg-primary ring-2 ring-white">
                         {storeItemCount > 99 ? "99+" : storeItemCount}
                       </span>
                     )}
@@ -459,7 +459,7 @@ export default function StorefrontHeaderClient({
                       className="text-neutral-900"
                     />
                     {wishlistCount > 0 && (
-                      <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-white bg-neutral-900 ring-2 ring-white">
+                      <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-white bg-primary ring-2 ring-white">
                         {wishlistCount > 99 ? "99+" : wishlistCount}
                       </span>
                     )}
@@ -469,7 +469,7 @@ export default function StorefrontHeaderClient({
                   <Link
                     href={sellerLoginUrl}
                     onClick={handleNav(sellerLoginUrl)}
-                    className="hidden sm:inline-flex items-center rounded-full border border-black/10 bg-black/5 text-neutral-900 px-4 py-2 text-sm font-semibold hover:bg-black/10 transition-colors"
+                    className="hidden sm:inline-flex items-center rounded-full border border-black/10 bg-primary text-white px-4 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors"
                   >
                     Sign In
                   </Link>

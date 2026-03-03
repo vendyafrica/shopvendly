@@ -71,7 +71,7 @@ function CheckoutContent() {
     if (!isLoaded) {
         return (
             <div className="min-h-screen bg-white pt-20 pb-24">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-24">
                     <div className="rounded-2xl border border-neutral-200 bg-white/90 shadow-sm p-4 sm:p-6 lg:p-8 space-y-8 animate-pulse">
                         <div className="h-5 w-32 bg-neutral-100 rounded" />
                         <div className="grid lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
@@ -166,6 +166,28 @@ function CheckoutContent() {
         }
     };
 
+    if (isSubmitting && !isSuccess) {
+        return (
+            <div className="fixed inset-0 z-999 flex items-center justify-center text-center px-4 bg-white">
+                <div>
+                    <div className="p-8 rounded-none inline-block mb-8">
+                        <HugeiconsIcon
+                            icon={Loading03Icon}
+                            className="h-10 w-10 text-purple-600 animate-spin"
+                            strokeWidth={1.5}
+                        />
+                    </div>
+                    <h1 className={`${geistSans.className} text-3xl tracking-widest font-semibold mb-4 leading-tight`}>
+                        Processing Order
+                    </h1>
+                    <p className="text-neutral-500 mb-10 max-w-sm mx-auto uppercase tracking-wider text-xs">
+                        Please wait while we confirm your order with {store.name}.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     if (isSuccess) {
         return (
             <div className="min-h-[80vh] flex items-center justify-center text-center px-4 bg-white">
@@ -195,7 +217,7 @@ function CheckoutContent() {
 
     return (
         <div className="min-h-screen bg-white pt-20 pb-24">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-24">
                 <div className="rounded-2xl border border-neutral-200 bg-white/90 shadow-sm overflow-hidden">
                     <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
                         {/* LEFT — CHECKOUT FORM */}
@@ -209,7 +231,7 @@ function CheckoutContent() {
                                         <button onClick={navigateToCart} type="button" className="text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-full p-2 transition-colors">
                                             <HugeiconsIcon icon={ArrowLeft01Icon} className="h-5 w-5" />
                                         </button>
-                                        <span className="text-xs font-semibold text-neutral-400 tracking-widest uppercase">Checkout</span>
+                                        <span className="text-xs font-semibold text-neutral-400 tracking-widest">Checkout</span>
                                         <HugeiconsIcon
                                             icon={ArrowRight01Icon}
                                             className="h-3 w-3 text-neutral-300"
@@ -220,7 +242,7 @@ function CheckoutContent() {
                                     </div>
 
                                     <div className="space-y-5 rounded-2xl border border-neutral-200 bg-neutral-50/60 p-5 sm:p-6 shadow-sm">
-                                        <h2 className={`${geistSans.className} text-lg uppercase tracking-widest font-semibold`}>Shipping Information</h2>
+                                        <h2 className={`${geistSans.className} text-lg tracking-widest font-semibold`}>Shipping Information</h2>
 
                                         <div className="space-y-4">
                                             <Input
@@ -262,7 +284,7 @@ function CheckoutContent() {
                                 </div>
 
                                 <div className="space-y-4 rounded-2xl border border-neutral-200 bg-neutral-50/60 p-5 sm:p-6 shadow-sm">
-                                    <h2 className={`${geistSans.className} text-lg uppercase tracking-widest font-semibold`}>Payment</h2>
+                                    <h2 className={`${geistSans.className} text-lg tracking-widest font-semibold`}>Payment</h2>
                                     <div className="p-4 rounded-xl border border-neutral-200 bg-white">
                                         <p className="text-sm text-neutral-600 leading-relaxed">
                                             Place order now. The seller will confirm availability, then you&apos;ll receive a WhatsApp payment link to complete payment.
@@ -280,19 +302,9 @@ function CheckoutContent() {
                                         className="w-full h-12 rounded-md uppercase text-xs tracking-widest font-semibold transition-colors flex items-center justify-center gap-3"
                                         disabled={isSubmitting}
                                     >
-                                        {isSubmitting ? (
-                                            <>
-                                                <HugeiconsIcon
-                                                    icon={Loading03Icon}
-                                                    className="h-5 w-5 animate-spin"
-                                                />
-                                                Processing Order...
-                                            </>
-                                        ) : (
-                                            <span>
-                                                Place order
-                                            </span>
-                                        )}
+                                        <span>
+                                            Place order
+                                        </span>
                                     </Button>
                                 </div>
                             </form>
@@ -311,27 +323,29 @@ function CheckoutContent() {
                                             key={item.id}
                                             className="group flex gap-4 items-center rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
                                         >
-                                            <div className="relative h-20 w-20 bg-white shrink-0 overflow-hidden rounded-xl border border-neutral-200 shadow-sm">
-                                                {item.product.contentType?.startsWith("video/") || item.product.image?.match(/\.(mp4|webm|mov|ogg)$/i) || ((item.product.image || "").includes(".ufs.sh") && !(item.product.image || "").match(/\.(jpg|jpeg|png|webp|gif)$/i) && !item.product.contentType?.startsWith("image/")) ? (
-                                                    <video
-                                                        src={item.product.image || ""}
-                                                        className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-110"
-                                                        muted
-                                                        playsInline
-                                                        loop
-                                                        autoPlay
-                                                    />
-                                                ) : (
-                                                    <Image
-                                                        src={item.product.image || FALLBACK_PRODUCT_IMAGE}
-                                                        alt={item.product.name}
-                                                        fill
-                                                        sizes="80px"
-                                                        className="object-cover transition-transform duration-200 group-hover:scale-110"
-                                                        unoptimized={(item.product.image || "").includes(".ufs.sh")}
-                                                    />
-                                                )}
-                                                <span className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-neutral-900 text-white text-[10px] font-bold flex items-center justify-center z-10 border border-neutral-50">
+                                            <div className="relative h-20 w-20 shrink-0">
+                                                <div className="relative h-full w-full bg-white overflow-hidden rounded-xl border border-neutral-200 shadow-sm">
+                                                    {item.product.contentType?.startsWith("video/") || item.product.image?.match(/\.(mp4|webm|mov|ogg)$/i) || ((item.product.image || "").includes(".ufs.sh") && !(item.product.image || "").match(/\.(jpg|jpeg|png|webp|gif)$/i) && !item.product.contentType?.startsWith("image/")) ? (
+                                                        <video
+                                                            src={item.product.image || ""}
+                                                            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-110"
+                                                            muted
+                                                            playsInline
+                                                            loop
+                                                            autoPlay
+                                                        />
+                                                    ) : (
+                                                        <Image
+                                                            src={item.product.image || FALLBACK_PRODUCT_IMAGE}
+                                                            alt={item.product.name}
+                                                            fill
+                                                            sizes="80px"
+                                                            className="object-cover transition-transform duration-200 group-hover:scale-110"
+                                                            unoptimized={(item.product.image || "").includes(".ufs.sh")}
+                                                        />
+                                                    )}
+                                                </div>
+                                                <span className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center z-20 border border-neutral-50">
                                                     {item.quantity}
                                                 </span>
                                             </div>
@@ -340,34 +354,41 @@ function CheckoutContent() {
                                                 <p className="font-serif text-base leading-tight">
                                                     {capitalizeFirst(item.product.name)}
                                                 </p>
-                                                <p className="text-[10px] uppercase tracking-widest text-neutral-500">
+                                                {/* <p className="text-[10px] uppercase tracking-widest text-neutral-500">
                                                     Standard Variant
-                                                </p>
+                                                </p> */}
                                             </div>
 
-                                            <p className="text-sm font-semibold whitespace-nowrap text-neutral-900">
-                                                {currency} {(item.product.price * item.quantity).toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0, maximumFractionDigits: currency === "USD" ? 2 : 0 })}
-                                            </p>
+                                            <div className="text-right whitespace-nowrap">
+                                                <sub className="text-[10px] uppercase font-normal text-neutral-500 mr-0.5">{currency}</sub>
+                                                <span className="text-lg font-bold text-neutral-900">
+                                                    {(item.product.price * item.quantity).toLocaleString(undefined, {
+                                                        minimumFractionDigits: currency === "USD" ? 2 : 0,
+                                                        maximumFractionDigits: currency === "USD" ? 2 : 0
+                                                    })}
+                                                </span>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
 
                                 <div className="rounded-xl border border-neutral-200 bg-white p-4 space-y-3 shadow-sm">
                                     <div className="flex justify-between text-sm text-neutral-600">
-                                        <span>Subtotal</span>
+                                        {/* <span>Subtotal</span>
                                         <span className="font-semibold text-neutral-900">
-                                            {currency} {storeSubtotal.toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0, maximumFractionDigits: currency === "USD" ? 2 : 0 })}
-                                        </span>
+                                            <sub className="mr-0.5">{currency}</sub>
+                                            {storeSubtotal.toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0, maximumFractionDigits: currency === "USD" ? 2 : 0 })}
+                                        </span> */}
                                     </div>
                                     <div className="flex justify-between text-sm text-neutral-600">
                                         <span>Shipping</span>
-                                        <span>Calculated next step</span>
+                                        <span>Calculated after order confirmation</span>
                                     </div>
                                     <div className="flex justify-between items-end pt-3 border-t border-neutral-200">
                                         <span className={`${geistSans.className} uppercase tracking-widest font-semibold`}>Total</span>
-                                        <div className="text-right">
-                                            <span className="text-xs text-neutral-500 mr-2">{currency}</span>
-                                            <span className="text-2xl font-semibold text-neutral-900">
+                                        <div className="text-right whitespace-nowrap">
+                                            <sub className="text-xs uppercase font-normal text-neutral-500 mr-1">{currency}</sub>
+                                            <span className="text-2xl font-bold text-neutral-900">
                                                 {storeTotal.toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0, maximumFractionDigits: currency === "USD" ? 2 : 0 })}
                                             </span>
                                         </div>
@@ -387,7 +408,7 @@ export default function CheckoutPage() {
         <Suspense
             fallback={
                 <div className="min-h-screen bg-white pt-20 pb-24">
-                    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-24">
                         <div className="rounded-2xl border border-neutral-200 bg-white/90 shadow-sm p-6 space-y-4 animate-pulse">
                             <div className="h-5 w-32 bg-neutral-100 rounded" />
                             <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-6 lg:gap-8">
