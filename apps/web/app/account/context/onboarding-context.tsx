@@ -223,17 +223,20 @@ export function OnboardingProvider({ children }: ProviderProps) {
                 tenantSlug: string;
                 storeId: string;
                 storeSlug: string;
+                storefrontUrl?: string;
             }>("", {
                 method: "POST",
                 body: JSON.stringify({ data: payloadData }),
             });
 
             if (result.success) {
-                const adminSlug = result.storeSlug || result.tenantSlug || null;
                 localStorage.setItem("vendly_tenant_id", result.tenantId);
                 localStorage.setItem("vendly_tenant_slug", result.tenantSlug);
                 localStorage.setItem("vendly_store_id", result.storeId);
                 localStorage.setItem("vendly_store_slug", result.storeSlug);
+                if (result.storefrontUrl) {
+                    localStorage.setItem("vendly_storefront_url", result.storefrontUrl);
+                }
 
                 clearLS();
 
@@ -245,11 +248,7 @@ export function OnboardingProvider({ children }: ProviderProps) {
                     data: {},
                 }));
 
-                if (adminSlug) {
-                    router.push(`/admin/${adminSlug}`);
-                } else {
-                    router.push(STEP_ROUTES["complete"]);
-                }
+                router.push("/account/success");
                 return true;
             }
 

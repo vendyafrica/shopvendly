@@ -12,6 +12,21 @@ import crypto from "crypto";
 
 export async function POST(req: Request) {
     try {
+        const configuredWebUrl =
+            process.env.WEB_URL ||
+            process.env.NEXT_PUBLIC_WEB_URL ||
+            process.env.NEXT_PUBLIC_APP_URL;
+        const origin = req.headers.get("origin")?.trim();
+        const fallbackProdUrl = "https://shopvendly.store";
+
+        const webBaseUrl = (configuredWebUrl || origin)?.replace(/\/$/, "") || fallbackProdUrl;
+
+        const normalizedWebBaseUrl = webBaseUrl.includes("localhost")
+            ? webBaseUrl
+            : webBaseUrl.startsWith("http")
+            ? webBaseUrl
+            : `https://${webBaseUrl}`;
+
         const session = await auth.api.getSession({
             headers: await headers()
         });
@@ -48,12 +63,14 @@ export async function POST(req: Request) {
                     .where(eq(stores.tenantId, membership.tenantId))
                     .limit(1);
                 if (tenant && store) {
+                    const storefrontUrl = `${normalizedWebBaseUrl}/${store.slug}`;
                     return NextResponse.json({
                         success: true,
                         tenantId: tenant.id,
                         storeId: store.id,
                         storeSlug: store.slug,
                         tenantSlug: tenant.slug,
+                        storefrontUrl,
                         message: "Already onboarded",
                         emailSent: false,
                         emailError: null,
@@ -80,20 +97,6 @@ export async function POST(req: Request) {
         });
 
         // Build URLs with embedded verification token
-        const configuredWebUrl =
-            process.env.WEB_URL ||
-            process.env.NEXT_PUBLIC_WEB_URL ||
-            process.env.NEXT_PUBLIC_APP_URL;
-        const origin = req.headers.get("origin")?.trim();
-        const fallbackProdUrl = "https://shopvendly.store";
-
-        const webBaseUrl = (configuredWebUrl || origin)?.replace(/\/$/, "") || fallbackProdUrl;
-
-        const normalizedWebBaseUrl = webBaseUrl.includes("localhost")
-            ? webBaseUrl
-            : webBaseUrl.startsWith("http")
-            ? webBaseUrl
-            : `https://${webBaseUrl}`;
         const storeSlug = result.storeSlug;
         const verifyBase = `${normalizedWebBaseUrl}/api/auth/verify-seller?token=${token}&email=${encodeURIComponent(session.user.email)}`;
 
@@ -118,7 +121,7 @@ export async function POST(req: Request) {
             console.error("Failed to send welcome email:", err);
         }
 
-        return NextResponse.json({ ...result, emailSent, emailError });
+        return NextResponse.json({ ...result, storefrontUrl, emailSent, emailError });
     } catch (error) {
         console.error("Onboarding error:", error);
         return NextResponse.json(
