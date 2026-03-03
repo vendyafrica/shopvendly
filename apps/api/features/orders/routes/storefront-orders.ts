@@ -2,6 +2,11 @@ import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
 import { createOrderSchema, orderService } from "../services/order-service.js";
 import { capturePosthogEvent } from "../../../shared/utils/posthog.js";
+import {
+  notifyCustomerOrderReceived,
+  notifyCustomerPendingPaymentLink,
+  notifySellerNewOrder,
+} from "../../messaging/services/notifications.js";
 
 export const storefrontOrdersRouter: ExpressRouter = Router();
 
@@ -25,35 +30,16 @@ storefrontOrdersRouter.post("/storefront/:slug/orders", async (req, res, next) =
       },
     });
 
+    if (order.paymentMethod === "cash_on_delivery") {
+      const sellerPhone = await orderService.getTenantPhoneByTenantId(order.tenantId);
+      await Promise.allSettled([
+        notifySellerNewOrder({ sellerPhone, order }),
+        notifyCustomerOrderReceived({ order }),
+        notifyCustomerPendingPaymentLink({ order }),
+      ]);
+    }
+
     return res.status(201).json({ order });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// POST /api/storefront/orders/:orderId/pay
-// Dummy/test payment confirmation — marks the order as paid without a real gateway.
-// Used by the /pay/[orderId] payment page for sandbox testing.
-storefrontOrdersRouter.post("/storefront/orders/:orderId/pay", async (req, res, next) => {
-  try {
-    const { orderId } = req.params;
-
-    const existing = await orderService.getOrderById(orderId);
-    if (!existing) {
-      return res.status(404).json({ error: "Order not found" });
-    }
-
-    if (existing.paymentStatus === "paid") {
-      // Idempotent — already paid
-      return res.status(200).json({ success: true, alreadyPaid: true });
-    }
-
-    await orderService.updateOrderStatusByOrderId(orderId, {
-      paymentStatus: "paid",
-      status: "processing",
-    });
-
-    return res.status(200).json({ success: true });
   } catch (err) {
     next(err);
   }

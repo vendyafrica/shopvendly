@@ -24,7 +24,7 @@ storefrontPaymentsRouter.post("/storefront/orders/:orderId/pay", async (req, res
     }
 
     if (order.paymentStatus !== "paid") {
-      await orderService.updateOrderStatusByOrderId(orderId, { paymentStatus: "paid", status: "processing", paymentMethod: "paystack" });
+      await orderService.updateOrderStatusByOrderId(orderId, { paymentStatus: "paid", status: "processing" });
     }
 
     const full = await orderService.getOrderById(orderId);

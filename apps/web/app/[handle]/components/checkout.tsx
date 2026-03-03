@@ -32,11 +32,14 @@ interface CheckoutProps {
     quantity: number;
 }
 
+type CheckoutMode = "pay_now_mobile_money" | "pay_on_delivery";
+
 export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: CheckoutProps) {
     const [customerName, setCustomerName] = useState("");
     const [customerEmail, setCustomerEmail] = useState("");
     const [customerPhone, setCustomerPhone] = useState("");
-    const paymentMethod = "mpesa" as const;
+    const [checkoutMode, setCheckoutMode] = useState<CheckoutMode>("pay_now_mobile_money");
+    const paymentMethod = checkoutMode === "pay_now_mobile_money" ? "mtn_momo" : "cash_on_delivery";
     const [notes, setNotes] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -86,6 +89,17 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
             }
 
             const data = await response.json();
+
+            if (checkoutMode === "pay_on_delivery") {
+                setIsSuccess(true);
+                setSuccessStage("processing");
+                setTimeout(() => {
+                    if (storeSlug) {
+                        window.location.assign(`${window.location.origin}/${storeSlug}`);
+                    }
+                }, 1200);
+                return;
+            }
 
             const normalizedPhone = customerPhone.replace(/\D/g, "");
             if (!normalizedPhone) {
@@ -194,14 +208,14 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                             <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-12 w-12 text-green-600" />
                         </div>
                         <h2 className="text-2xl font-semibold mb-2">
-                            {paymentMethod === "mpesa"
+                            {checkoutMode === "pay_now_mobile_money"
                                 ? "Payment Confirmed!"
                                 : successStage === "paid"
                                     ? "Order Placed!"
                                     : "Processing Order"}
                         </h2>
                         <p className="text-muted-foreground mb-6">
-                            {paymentMethod === "mpesa"
+                            {checkoutMode === "pay_now_mobile_money"
                                 ? "Your mobile money payment was confirmed. The seller is now processing your order."
                                 : successStage === "paid"
                                     ? "Check your WhatsApp for payment instructions and order updates."
@@ -283,8 +297,30 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                         </div>
                     </div>
 
+                    <div className="space-y-2">
+                        <Label>Payment option</Label>
+                        <div className="grid gap-2">
+                            <button
+                                type="button"
+                                className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${checkoutMode === "pay_now_mobile_money" ? "border-foreground bg-muted/50" : "border-border"}`}
+                                onClick={() => setCheckoutMode("pay_now_mobile_money")}
+                            >
+                                <span className="font-medium">Pay now (Mobile Money)</span>
+                                <p className="text-xs text-muted-foreground">Pay immediately via mobile money prompt.</p>
+                            </button>
+                            <button
+                                type="button"
+                                className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${checkoutMode === "pay_on_delivery" ? "border-foreground bg-muted/50" : "border-border"}`}
+                                onClick={() => setCheckoutMode("pay_on_delivery")}
+                            >
+                                <span className="font-medium">Pay on delivery</span>
+                                <p className="text-xs text-muted-foreground">Place order now and receive a WhatsApp payment link.</p>
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                        Payment method: <span className="font-medium text-foreground">Mobile Money (Iotec via DGateway)</span>
+                        Payment method: <span className="font-medium text-foreground">{checkoutMode === "pay_now_mobile_money" ? "Mobile Money (Iotec via DGateway)" : "Pay on delivery"}</span>
                     </div>
 
                     {/* Notes */}
@@ -320,7 +356,9 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                                 Placing Order...
                             </>
                         ) : (
-                            `Pay ${product.currency} ${totalAmount.toLocaleString()}`
+                            checkoutMode === "pay_now_mobile_money"
+                                ? `Pay ${product.currency} ${totalAmount.toLocaleString()}`
+                                : "Place order"
                         )}
                     </Button>
                 </form>

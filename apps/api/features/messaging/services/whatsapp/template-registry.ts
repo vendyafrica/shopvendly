@@ -1,12 +1,12 @@
 import type { TemplateMessageInput } from "./message-queue.js";
 
 export const TEMPLATE_NAMES = [
-  "seller_new_order",
-  "buyer_order_received",
-  "buyer_order_ready",
-  "buyer_out_for_delivery",
-  "buyer_order_delivered",
-  "buyer_order_declined",
+  "seller_new_order_action_v10",
+  "buyer_order_received_v10",
+  "buyer_order_ready_v10",
+  "buyer_out_for_delivery_v10",
+  "buyer_order_delivered_v10",
+  "buyer_order_declined_v10",
 ] as const;
 
 type BuyerOrderBase = {
@@ -37,6 +37,16 @@ type OutForDelivery = {
 
 type BuildTemplateArgs<T> = T;
 
+type NamedTextParam = { type: "text"; text: string; parameter_name: string };
+
+function namedTextParam(name: string, value: string | number | null | undefined): NamedTextParam {
+  return {
+    type: "text",
+    parameter_name: name,
+    text: String(value ?? ""),
+  };
+}
+
 function bodyText(text: string): TemplateMessageInput {
   return {
     to: "",
@@ -59,19 +69,19 @@ export const templateSend = {
     const location = args.customerLocation ?? "N/A";
     return {
       to,
-      templateName: "seller_new_order",
+      templateName: "seller_new_order_action_v10",
       languageCode: "en_US",
       components: [
         {
           type: "body",
           parameters: [
-            { text: args.sellerName ?? "Vendly" },
-            { text: orderId },
-            { text: summary },
-            { text: args.buyerName ?? "Buyer" },
-            { text: buyer },
-            { text: location },
-            { text: String(args.total ?? "") },
+            namedTextParam("seller_name", args.sellerName ?? "Vendly"),
+            namedTextParam("order_id", orderId),
+            namedTextParam("order_items", summary),
+            namedTextParam("buyer_name", args.buyerName ?? "Buyer"),
+            namedTextParam("customer_phone", buyer),
+            namedTextParam("customer_location", location),
+            namedTextParam("total", args.total ?? ""),
           ],
         },
       ],
@@ -81,15 +91,15 @@ export const templateSend = {
   buyerOrderReceived(to: string, args: BuildTemplateArgs<BuyerOrderBase & WithLink>): TemplateMessageInput {
     return {
       to,
-      templateName: "buyer_order_received",
+      templateName: "buyer_order_received_v10",
       languageCode: "en_US",
       components: [
         {
           type: "body",
           parameters: [
-            { text: args.buyerName ?? "Customer" },
-            { text: args.storeName ?? "the store" },
-            { text: args.sellerWhatsappLink ?? "" },
+            namedTextParam("buyer_name", args.buyerName ?? "Customer"),
+            namedTextParam("store_name", args.storeName ?? "the store"),
+            namedTextParam("seller_whatsapp_link", args.sellerWhatsappLink ?? ""),
           ],
         },
       ],
@@ -99,14 +109,14 @@ export const templateSend = {
   buyerOrderReady(to: string, args: BuildTemplateArgs<BuyerOrderBase>): TemplateMessageInput {
     return {
       to,
-      templateName: "buyer_order_ready",
+      templateName: "buyer_order_ready_v10",
       languageCode: "en_US",
       components: [
         {
           type: "body",
           parameters: [
-            { text: args.buyerName ?? "Customer" },
-            { text: args.storeName ?? "the store" },
+            namedTextParam("buyer_name", args.buyerName ?? "Customer"),
+            namedTextParam("store_name", args.storeName ?? "the store"),
           ],
         },
       ],
@@ -116,15 +126,15 @@ export const templateSend = {
   buyerOutForDelivery(to: string, args: BuildTemplateArgs<BuyerOrderBase & OutForDelivery>): TemplateMessageInput {
     return {
       to,
-      templateName: "buyer_out_for_delivery",
+      templateName: "buyer_out_for_delivery_v10",
       languageCode: "en_US",
       components: [
         {
           type: "body",
           parameters: [
-            { text: args.buyerName ?? "Customer" },
-            { text: args.storeName ?? "the store" },
-            { text: args.riderDetails ?? "Vendly Rider" },
+            namedTextParam("buyer_name", args.buyerName ?? "Customer"),
+            namedTextParam("store_name", args.storeName ?? "the store"),
+            namedTextParam("rider_details", args.riderDetails ?? "Vendly Rider"),
           ],
         },
       ],
@@ -134,14 +144,14 @@ export const templateSend = {
   buyerOrderDelivered(to: string, args: BuildTemplateArgs<BuyerOrderBase>): TemplateMessageInput {
     return {
       to,
-      templateName: "buyer_order_delivered",
+      templateName: "buyer_order_delivered_v10",
       languageCode: "en_US",
       components: [
         {
           type: "body",
           parameters: [
-            { text: args.buyerName ?? "Customer" },
-            { text: args.storeName ?? "the store" },
+            namedTextParam("buyer_name", args.buyerName ?? "Customer"),
+            namedTextParam("store_name", args.storeName ?? "the store"),
           ],
         },
       ],
@@ -151,15 +161,15 @@ export const templateSend = {
   buyerOrderDeclined(to: string, args: BuildTemplateArgs<BuyerOrderBase & WithLink>): TemplateMessageInput {
     return {
       to,
-      templateName: "buyer_order_declined",
+      templateName: "buyer_order_declined_v10",
       languageCode: "en_US",
       components: [
         {
           type: "body",
           parameters: [
-            { text: args.buyerName ?? "Customer" },
-            { text: args.storeName ?? "the store" },
-            { text: args.sellerWhatsappLink ?? "" },
+            namedTextParam("buyer_name", args.buyerName ?? "Customer"),
+            namedTextParam("store_name", args.storeName ?? "the store"),
+            namedTextParam("seller_whatsapp_link", args.sellerWhatsappLink ?? ""),
           ],
         },
       ],

@@ -27,6 +27,14 @@ function normalizeToWhatsApp(phone: string | null | undefined, label: string, co
   return to.replace(/^\+/, "");
 }
 
+function getWebBaseUrl() {
+  const configured = process.env.WEB_URL || process.env.NEXT_PUBLIC_APP_URL;
+  if (configured) {
+    return configured.replace(/\/$/, "");
+  }
+  return process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://shopvendly.store";
+}
+
 export async function notifySellerCswOpener(params: { sellerPhone: string | null; tenantId: string }) {
   const { sellerPhone, tenantId } = params;
   const to = normalizeToWhatsApp(sellerPhone, "seller", { tenantId });
@@ -261,6 +269,34 @@ export async function notifyCustomerOrderAccepted(params: { order: OrderLike }) 
         buyerName: order.customerName,
         storeName: order.store?.name || "the store",
       }),
+      tenantId: order.tenantId,
+      orderId: order.id,
+      dedupeKey: key,
+    })
+  );
+}
+
+export async function notifyCustomerPendingPaymentLink(params: { order: OrderLike }) {
+  const { order } = params;
+  const to = normalizeToWhatsApp(order.customerPhone, "customer", {
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    paymentStatus: order.paymentStatus,
+  });
+  if (!to) return;
+
+  const query = new URLSearchParams({
+    amount: String(order.totalAmount ?? ""),
+    currency: order.currency ?? "UGX",
+    orderNumber: order.orderNumber ?? "",
+  });
+  const payLink = `${getWebBaseUrl()}/pay/${order.id}?${query.toString()}`;
+
+  const key = `customer:pending_payment_link:${order.id}:${to}`;
+  await sendOnce(key, () =>
+    enqueueTextMessage({
+      to,
+      body: `🧾 Order ${order.orderNumber} has been placed. Complete payment here: ${payLink}`,
       tenantId: order.tenantId,
       orderId: order.id,
       dedupeKey: key,

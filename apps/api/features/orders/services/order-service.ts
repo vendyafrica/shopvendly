@@ -31,7 +31,7 @@ export const createOrderSchema = z.object({
   customerName: z.string().min(1).max(255),
   customerEmail: z.string().email(),
   customerPhone: z.string().optional(),
-  paymentMethod: z.enum(["card", "mpesa", "paystack", "cash_on_delivery"]).default("cash_on_delivery"),
+  paymentMethod: z.enum(["card", "mpesa", "mtn_momo", "mobile_money", "paystack", "cash_on_delivery"]).default("cash_on_delivery"),
   notes: z.string().optional(),
   items: z.array(orderItemInputSchema).min(1),
 });
@@ -41,7 +41,7 @@ export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 export const updateOrderStatusSchema = z.object({
   status: z.enum(["pending", "processing", "ready", "out_for_delivery", "completed", "cancelled", "refunded"]).optional(),
   paymentStatus: z.enum(["pending", "paid", "failed", "refunded"]).optional(),
-  paymentMethod: z.enum(["card", "mpesa", "paystack", "cash_on_delivery"]).optional(),
+  paymentMethod: z.enum(["card", "mpesa", "mtn_momo", "mobile_money", "paystack", "cash_on_delivery"]).optional(),
 });
 
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
@@ -50,6 +50,8 @@ export type OrderWithItems = Awaited<ReturnType<typeof orderService.getOrderById
 
 export const orderService = {
   async createOrder(storeSlug: string, input: CreateOrderInput) {
+    const normalizedPaymentMethod = input.paymentMethod === "mobile_money" ? "mtn_momo" : input.paymentMethod;
+
     const store = await db.query.stores.findFirst({
       where: and(eq(stores.slug, storeSlug), isNull(stores.deletedAt)),
     });
@@ -119,7 +121,7 @@ export const orderService = {
         customerName: input.customerName,
         customerEmail: input.customerEmail,
         customerPhone: input.customerPhone,
-        paymentMethod: input.paymentMethod,
+        paymentMethod: normalizedPaymentMethod,
         paymentStatus: "pending",
         status: "pending",
         notes: input.notes,
@@ -180,6 +182,10 @@ export const orderService = {
   },
 
   async updateOrderStatus(orderId: string, tenantId: string, input: UpdateOrderStatusInput) {
+    const normalizedInput = input.paymentMethod === "mobile_money"
+      ? { ...input, paymentMethod: "mtn_momo" as const }
+      : input;
+
     const existing = await db.query.orders.findFirst({
       where: and(eq(orders.id, orderId), eq(orders.tenantId, tenantId), isNull(orders.deletedAt)),
     });
@@ -191,7 +197,7 @@ export const orderService = {
     const [updated] = await db
       .update(orders)
       .set({
-        ...input,
+        ...normalizedInput,
         updatedAt: new Date(),
       })
       .where(and(eq(orders.id, orderId), eq(orders.tenantId, tenantId), isNull(orders.deletedAt)))
@@ -316,10 +322,14 @@ export const orderService = {
   },
 
   async updateOrderStatusByOrderId(orderId: string, input: UpdateOrderStatusInput) {
+    const normalizedInput = input.paymentMethod === "mobile_money"
+      ? { ...input, paymentMethod: "mtn_momo" as const }
+      : input;
+
     const [updated] = await db
       .update(orders)
       .set({
-        ...input,
+        ...normalizedInput,
         updatedAt: new Date(),
       })
       .where(and(eq(orders.id, orderId), isNull(orders.deletedAt)))

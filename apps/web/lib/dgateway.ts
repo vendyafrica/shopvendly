@@ -1,6 +1,8 @@
 const API_URL = process.env.DGATEWAY_API_URL || "https://dgatewayapi.desispay.com";
 const API_KEY = process.env.DGATEWAY_API_KEY || "";
 const API_TIMEOUT_MS = 20000;
+const MAX_RETRIES = 2;
+const RETRY_DELAYS_MS = [800, 1500] as const;
 
 export interface CollectParams extends Record<string, unknown> {
   amount: number;
@@ -26,6 +28,22 @@ type DGatewayResponse = {
   };
 };
 
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getRetryDelay(attempt: number): number {
+  const index = Math.min(attempt, RETRY_DELAYS_MS.length - 1);
+  return RETRY_DELAYS_MS[index] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1] ?? 1500;
+}
+
+function isRetriableUpstreamFailure(status: number, response: DGatewayResponse) {
+  if (status >= 500) return true;
+
+  const message = response.error?.message?.toLowerCase() || "";
+  return message.includes("tls handshake timeout") || message.includes("timeout");
+}
+
 async function postDGateway(path: string, body: Record<string, unknown>): Promise<DGatewayResponse> {
   if (!API_KEY) {
     return {
@@ -36,59 +54,89 @@ async function postDGateway(path: string, body: Record<string, unknown>): Promis
     };
   }
 
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}${path}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Api-Key": API_KEY,
-      },
-      body: JSON.stringify(body),
-      cache: "no-store",
-      signal: AbortSignal.timeout(API_TIMEOUT_MS),
-    });
-  } catch (error) {
-    const isTimeout = error instanceof Error && error.name === "TimeoutError";
-    return {
-      error: {
-        code: isTimeout ? "UPSTREAM_TIMEOUT" : "NETWORK_ERROR",
-        message: isTimeout
-          ? "Payment provider request timed out. Please try again."
-          : "Payment provider is unreachable. Please try again.",
-        status: isTimeout ? 504 : 502,
-      },
-    };
-  }
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
+    let res: Response;
 
-  const json = (await res.json().catch(() => ({
-    error: {
-      code: "PROVIDER_ERROR",
-      message: "Invalid response from DGateway",
-    },
-  }))) as DGatewayResponse;
+    try {
+      res = await fetch(`${API_URL}${path}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Api-Key": API_KEY,
+        },
+        body: JSON.stringify(body),
+        cache: "no-store",
+        signal: AbortSignal.timeout(API_TIMEOUT_MS),
+      });
+    } catch (error) {
+      const isTimeout = error instanceof Error && error.name === "TimeoutError";
+      const hasRetriesLeft = attempt < MAX_RETRIES;
 
-  if (!res.ok && json.error) {
-    return {
-      ...json,
-      error: {
-        ...json.error,
-        status: json.error.status ?? res.status,
-      },
-    };
-  }
+      if (hasRetriesLeft) {
+        await wait(getRetryDelay(attempt));
+        continue;
+      }
 
-  if (!res.ok && !json.error) {
-    return {
+      return {
+        error: {
+          code: isTimeout ? "UPSTREAM_TIMEOUT" : "NETWORK_ERROR",
+          message: isTimeout
+            ? "Payment provider request timed out. Please try again."
+            : "Payment provider is unreachable. Please try again.",
+          status: isTimeout ? 504 : 502,
+        },
+      };
+    }
+
+    const json = (await res.json().catch(() => ({
       error: {
         code: "PROVIDER_ERROR",
-        message: "Failed to process payment request",
-        status: res.status,
+        message: "Invalid response from DGateway",
       },
-    };
+    }))) as DGatewayResponse;
+
+    if (!res.ok && json.error) {
+      const hasRetriesLeft = attempt < MAX_RETRIES;
+      if (hasRetriesLeft && isRetriableUpstreamFailure(res.status, json)) {
+        await wait(getRetryDelay(attempt));
+        continue;
+      }
+
+      return {
+        ...json,
+        error: {
+          ...json.error,
+          status: json.error.status ?? res.status,
+        },
+      };
+    }
+
+    if (!res.ok && !json.error) {
+      const hasRetriesLeft = attempt < MAX_RETRIES;
+      if (hasRetriesLeft && res.status >= 500) {
+        await wait(getRetryDelay(attempt));
+        continue;
+      }
+
+      return {
+        error: {
+          code: "PROVIDER_ERROR",
+          message: "Failed to process payment request",
+          status: res.status,
+        },
+      };
+    }
+
+    return json;
   }
 
-  return json;
+  return {
+    error: {
+      code: "PROVIDER_ERROR",
+      message: "Failed to process payment request",
+      status: 502,
+    },
+  };
 }
 
 export async function collectPayment(params: CollectParams) {

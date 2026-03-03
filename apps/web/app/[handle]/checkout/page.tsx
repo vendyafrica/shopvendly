@@ -26,6 +26,8 @@ const geistSans = Bricolage_Grotesque({
 
 const API_BASE = "";
 
+type CheckoutMode = "pay_now_mobile_money" | "pay_on_delivery";
+
 const capitalizeFirst = (value?: string | null) => {
     if (!value) return value;
     const trimmed = value.trim();
@@ -47,6 +49,8 @@ function CheckoutContent() {
     const [fullName, setFullName] = useState("");
     const [address, setAddress] = useState("");
     const [phone, setPhone] = useState("");
+    const [checkoutMode, setCheckoutMode] = useState<CheckoutMode>("pay_now_mobile_money");
+    const paymentMethod = checkoutMode === "pay_now_mobile_money" ? "mtn_momo" : "cash_on_delivery";
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -153,7 +157,7 @@ function CheckoutContent() {
                 customerName: fullName,
                 customerEmail: email,
                 customerPhone: phone,
-                paymentMethod: "mpesa",
+                paymentMethod,
                 shippingAddress: {
                     street: address,
                     country: "Uganda",
@@ -178,6 +182,16 @@ function CheckoutContent() {
             const data = await res.json();
             const orderId = "order" in data ? data.order?.id : data.id;
             if (!orderId) throw new Error("Missing order ID");
+
+            if (checkoutMode === "pay_on_delivery") {
+                await clearStoreFromCart(store.id);
+                setIsSuccess(true);
+                setTimeout(() => {
+                    const target = store?.slug ? `${window.location.origin}/${store.slug}` : `${window.location.origin}/`;
+                    window.location.assign(target);
+                }, 1500);
+                return;
+            }
 
             const normalizedPhone = phone.replace(/\D/g, "");
             if (!normalizedPhone) throw new Error("Phone number is required for mobile money.");
@@ -247,7 +261,8 @@ function CheckoutContent() {
             await clearStoreFromCart(store.id);
             setIsSuccess(true);
             setTimeout(() => {
-                window.location.assign(`${window.location.origin}/`);
+                const target = store?.slug ? `${window.location.origin}/${store.slug}` : `${window.location.origin}/`;
+                window.location.assign(target);
             }, 1500);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -352,9 +367,29 @@ function CheckoutContent() {
 
                                 <div className="space-y-4 rounded-2xl border border-neutral-200 bg-neutral-50/60 p-5 sm:p-6 shadow-sm">
                                     <h2 className={`${geistSans.className} text-lg uppercase tracking-widest font-semibold`}>Payment</h2>
+                                    <div className="grid gap-2">
+                                        <button
+                                            type="button"
+                                            className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition-colors ${checkoutMode === "pay_now_mobile_money" ? "border-neutral-900 bg-white" : "border-neutral-200 bg-white"}`}
+                                            onClick={() => setCheckoutMode("pay_now_mobile_money")}
+                                        >
+                                            <span className="font-medium">Pay now (Mobile Money)</span>
+                                            <p className="text-xs text-neutral-500">Pay immediately via mobile money prompt.</p>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition-colors ${checkoutMode === "pay_on_delivery" ? "border-neutral-900 bg-white" : "border-neutral-200 bg-white"}`}
+                                            onClick={() => setCheckoutMode("pay_on_delivery")}
+                                        >
+                                            <span className="font-medium">Pay on delivery</span>
+                                            <p className="text-xs text-neutral-500">Place order now and receive a WhatsApp payment link.</p>
+                                        </button>
+                                    </div>
                                     <div className="p-4 rounded-xl border border-neutral-200 bg-white">
                                         <p className="text-sm text-neutral-600 leading-relaxed">
-                                            Pay with mobile money (UGX). After placing the order, confirm the payment prompt on your phone to complete checkout.
+                                            {checkoutMode === "pay_now_mobile_money"
+                                                ? "Pay with mobile money (UGX). After placing the order, confirm the payment prompt on your phone to complete checkout."
+                                                : "Order is placed as pending. You'll receive a WhatsApp payment link to complete payment later."}
                                         </p>
                                     </div>
 
@@ -378,7 +413,11 @@ function CheckoutContent() {
                                                 Processing Order...
                                             </>
                                         ) : (
-                                            <span>Pay {currency} {storeTotal.toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0 })}</span>
+                                            <span>
+                                                {checkoutMode === "pay_now_mobile_money"
+                                                    ? `Pay ${currency} ${storeTotal.toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0 })}`
+                                                    : "Place order"}
+                                            </span>
                                         )}
                                     </Button>
                                 </div>
