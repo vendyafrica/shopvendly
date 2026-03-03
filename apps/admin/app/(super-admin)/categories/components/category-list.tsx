@@ -54,7 +54,8 @@ export function CategoryList({ categories, onAddSubCategory, onEdit }: CategoryL
             {categories.map((category) => (
                 <AccordionItem key={category.id} value={category.id} className="border rounded-lg px-4">
                     <div className="flex items-center justify-between w-full relative">
-                        <AccordionTrigger className="hover:no-underline py-4 flex-1 justify-start gap-2">
+                        <AccordionTrigger className="hover:no-underline py-4 flex-1 justify-start items-center gap-2">
+                            <HugeiconsIcon icon={Folder01Icon} className="h-4 w-4 text-muted-foreground" />
                             <span className="font-medium text-lg">{category.name}</span>
                         </AccordionTrigger>
                         <div className="flex items-center gap-2 absolute right-0">
