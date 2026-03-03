@@ -47,6 +47,8 @@ const STATUS_STYLES: Record<ProductTableRow["status"], { label: string; badgeCla
   "sold-out": { label: "Sold out", badgeClass: "bg-rose-50 text-rose-700 border-rose-200" },
 };
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 type EditableField = "name" | "priceAmount" | "quantity" | "status";
 type DraftMap = Record<string, Partial<Record<EditableField, string>>>;
 
@@ -390,6 +392,14 @@ export default function ProductsPage() {
 
   const handleInlineSave = React.useCallback(
     (productId: string) => {
+      if (!UUID_REGEX.test(productId)) {
+        alert("This product is still syncing. Please try again in a moment.");
+        if (bootstrap?.storeId) {
+          invalidate(bootstrap.storeId);
+        }
+        return;
+      }
+
       const draft = drafts[productId];
       if (!draft) return;
 
@@ -443,7 +453,7 @@ export default function ProductsPage() {
         }
       );
     },
-    [bootstrap?.storeId, drafts, hasInvalidDraft, updateProductMutation, updateProductCache]
+    [bootstrap?.storeId, drafts, hasInvalidDraft, invalidate, updateProductMutation, updateProductCache]
   );
 
   const handleAddProductSelect = React.useCallback((mode: "single" | "multiple") => {
@@ -472,11 +482,16 @@ export default function ProductsPage() {
     setIsPublishing(true);
 
     try {
+      if (!bootstrap?.storeId) {
+        throw new Error("Store context missing");
+      }
+
       const res = await fetch("/api/products/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: selectedIds, action: "publish" }),
+        body: JSON.stringify({ storeId: bootstrap.storeId, ids: selectedIds, action: "publish" }),
       });
+
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.error || "Publish failed");

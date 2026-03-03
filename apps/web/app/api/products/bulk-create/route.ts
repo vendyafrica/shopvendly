@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { productService } from "@/features/products/lib/product-service";
 import { getTenantMembership } from "@/app/admin/lib/tenant-membership";
+import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
 import { db } from "@shopvendly/db/db";
 import { stores } from "@shopvendly/db/schema";
 import { eq, and, isNull } from "@shopvendly/db";
@@ -28,17 +29,29 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const membership = await getTenantMembership(session.user.id, { includeTenant: true });
+        const body = await request.json();
+        const { storeId, items } = bulkCreateSchema.parse(body);
+
+        const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "write");
+        if (!access.store) {
+            return NextResponse.json({ error: "Store not found" }, { status: 404 });
+        }
+
+        if (!access.isAuthorized) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        const membership = await getTenantMembership(session.user.id, {
+            tenantId: access.store.tenantId,
+            includeTenant: true,
+        });
 
         if (!membership || !membership.tenant) {
             return NextResponse.json({ error: "No tenant found" }, { status: 404 });
         }
 
-        const { tenantId, tenant } = membership;
-        const tenantSlug = tenant.slug; // safe after guard above
-
-        const body = await request.json();
-        const { storeId, items } = bulkCreateSchema.parse(body);
+        const tenantId = access.store.tenantId;
+        const tenantSlug = membership.tenant.slug;
 
         const store = await db.query.stores.findFirst({
             where: and(eq(stores.id, storeId), eq(stores.tenantId, tenantId), isNull(stores.deletedAt)),
@@ -79,7 +92,7 @@ export async function POST(request: NextRequest) {
             ).then(async (product) => {
                 // Attach media
                 await productService.attachMediaUrls(
-                    membership.tenantId,
+                    tenantId,
                     product.id,
                     [{ url: item.url, pathname: item.pathname, contentType: item.contentType }]
                 );

@@ -48,13 +48,35 @@ export function Step1Info() {
     const normalizedPhone = normalizePhone(countryCode, phoneNumber);
     if (!normalizedPhone) return setError("Please enter a valid phone number.");
 
+    setFormState("loading");
+
+    try {
+      const checkRes = await fetch("/api/onboarding/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "phone", value: normalizedPhone }),
+      });
+      const checkData = await checkRes.json();
+
+      if (!checkData.available) {
+        setFormState("idle");
+        return setError("This phone number is already registered.");
+      }
+    } catch (err) {
+      console.error("Failed to check phone number availability", err);
+      // Proceed if check fails to avoid completely blocking users, or handle it as an error
+      // Let's block them as it prevents server errors down the line if it IS taken, 
+      // but if the endpoint is down, it could be bad. We'll show an error.
+      setFormState("idle");
+      return setError("Could not verify phone number. Please try again.");
+    }
+
     savePersonalDraft({
       fullName: fullName.trim(),
       phoneNumber: normalizedPhone,
       countryCode,
     });
 
-    setFormState("loading");
     navigateToStep("step2");
   };
 

@@ -123,6 +123,8 @@ export default function StorefrontHeaderClient({
     normalizedPathname === slugPath || normalizedPathname === "/";
 
   useEffect(() => {
+    setPendingHref(null); // Clear pending href on navigation complete
+
     lastScrollYRef.current = window.scrollY;
     setIsOverlay(isHomePath && window.scrollY < 120);
 
@@ -212,11 +214,10 @@ export default function StorefrontHeaderClient({
     return (
       <header
         aria-busy={Boolean(pendingHref)}
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-          isVisible
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${isVisible
             ? "translate-y-0 opacity-100"
             : "-translate-y-full opacity-0"
-        }`}
+          }`}
       >
         <div className="mx-auto max-w-[1440px] px-4 sm:px-6 md:px-10 py-5 flex items-center gap-4 sm:gap-6 md:gap-8">
           {/* Store name */}
@@ -224,9 +225,8 @@ export default function StorefrontHeaderClient({
             href={`/${store.slug}`}
             aria-busy={isPending(`/${store.slug}`)}
             onClick={handleNav(`/${store.slug}`)}
-            className={`${geistSans.className} text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)] font-semibold text-xl sm:text-2xl tracking-tight hover:text-white/85 transition-colors ${
-              isPending(`/${store.slug}`) ? "opacity-70" : ""
-            }`}
+            className={`${geistSans.className} text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)] font-semibold text-xl sm:text-2xl tracking-tight hover:text-white/85 transition-colors ${isPending(`/${store.slug}`) ? "opacity-70" : ""
+              }`}
           >
             {store.name}
           </Link>
@@ -351,136 +351,134 @@ export default function StorefrontHeaderClient({
       )}
       <header
         aria-busy={Boolean(pendingHref)}
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-          isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
-        }`}
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+          }`}
       >
-      <div className="relative">
-        <div className="bg-white/95 backdrop-blur border-b border-black/5">
-          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10">
-            <div className="flex items-center gap-4 sm:gap-6 md:gap-8 h-[82px]">
-              {/* Store name */}
-              <div className="min-w-[140px] sm:min-w-[180px] flex items-center gap-3">
-                <Link
-                  href={`/${store.slug}`}
-                  onClick={handleNav(`/${store.slug}`)}
-                  aria-busy={isPending(`/${store.slug}`)}
-                  className={`${geistSans.className} text-neutral-900 hover:text-neutral-800 font-semibold text-2xl tracking-tight transition-colors ${
-                    isPending(`/${store.slug}`) ? "opacity-70" : ""
-                  }`}
-                >
-                  {store.name}
-                </Link>
-              </div>
-
-              {/* Nav links */}
-              <nav className="hidden md:flex items-center gap-5 text-sm font-medium tracking-tight">
-                {[
-                  { label: "New Arrival", href: `/${store.slug}#new-arrivals` },
-                  { label: "Sale", href: `/${store.slug}#sale` },
-                ].map((link) => (
+        <div className="relative">
+          <div className="bg-white/95 backdrop-blur border-b border-black/5">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10">
+              <div className="flex items-center gap-4 sm:gap-6 md:gap-8 h-[82px]">
+                {/* Store name */}
+                <div className="min-w-[140px] sm:min-w-[180px] flex items-center gap-3">
                   <Link
-                    key={link.label}
-                    href={link.href}
-                    onClick={handleNav(link.href)}
-                    className="text-neutral-900 hover:text-neutral-800 transition-colors"
+                    href={`/${store.slug}`}
+                    onClick={handleNav(`/${store.slug}`)}
+                    aria-busy={isPending(`/${store.slug}`)}
+                    className={`${geistSans.className} text-neutral-900 hover:text-neutral-800 font-semibold text-2xl tracking-tight transition-colors ${isPending(`/${store.slug}`) ? "opacity-70" : ""
+                      }`}
                   >
-                    {link.label}
+                    {store.name}
                   </Link>
-                ))}
-              </nav>
+                </div>
 
-              {/* Search */}
-              <div className="hidden lg:flex flex-1 justify-center items-center">
-                <Input
-                  type="text"
-                  aria-label="Search products"
-                  placeholder="What are you looking for?"
-                  className={searchClasses}
-                />
-              </div>
+                {/* Nav links */}
+                <nav className="hidden md:flex items-center gap-5 text-sm font-medium tracking-tight">
+                  {[
+                    { label: "New Arrival", href: `/${store.slug}#new-arrivals` },
+                    { label: "Sale", href: `/${store.slug}#sale` },
+                  ].map((link) => (
+                    <Link
+                      key={link.label}
+                      href={link.href}
+                      onClick={handleNav(link.href)}
+                      className="text-neutral-900 hover:text-neutral-800 transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </nav>
 
-              {/* Icons */}
-              <div className="flex items-center gap-1 sm:gap-2 ml-auto">
-                {/* Mobile menu toggle */}
-                <DropdownMenu open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                  <DropdownMenuTrigger
-                    className="inline-flex md:hidden h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-black/5"
-                    aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-                    aria-expanded={mobileMenuOpen}
+                {/* Search */}
+                <div className="hidden lg:flex flex-1 justify-center items-center">
+                  <Input
+                    type="text"
+                    aria-label="Search products"
+                    placeholder="What are you looking for?"
+                    className={searchClasses}
+                  />
+                </div>
+
+                {/* Icons */}
+                <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+                  {/* Mobile menu toggle */}
+                  <DropdownMenu open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                    <DropdownMenuTrigger
+                      className="inline-flex md:hidden h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-black/5"
+                      aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                      aria-expanded={mobileMenuOpen}
+                    >
+                      <HugeiconsIcon
+                        icon={UserCircleIcon}
+                        size={20}
+                        className="text-neutral-900"
+                      />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      sideOffset={8}
+                      className="w-56 rounded-xl border border-black/10 bg-white p-1 text-neutral-900 shadow-xl"
+                    >
+                      <DropdownMenuItem
+                        onClick={() => navigateTo(sellerLoginUrl)}
+                        className="rounded-lg px-3 py-2 text-sm font-medium"
+                      >
+                        Sign in to admin
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Cart */}
+                  <Link
+                    href={`/${store.slug}/cart`}
+                    onClick={handleNav(`/${store.slug}/cart`)}
+                    className="relative inline-flex h-11 w-11 items-center cursor-pointer justify-center rounded-full transition-colors hover:bg-black/5"
+                    aria-label="Cart"
                   >
                     <HugeiconsIcon
-                      icon={UserCircleIcon}
+                      icon={ShoppingBag01Icon}
                       size={20}
                       className="text-neutral-900"
                     />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    sideOffset={8}
-                    className="w-56 rounded-xl border border-black/10 bg-white p-1 text-neutral-900 shadow-xl"
+                    {storeItemCount > 0 && (
+                      <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-white bg-neutral-900 ring-2 ring-white">
+                        {storeItemCount > 99 ? "99+" : storeItemCount}
+                      </span>
+                    )}
+                  </Link>
+
+                  {/* Wishlist */}
+                  <Link
+                    href={`/${store.slug}/wishlist`}
+                    onClick={handleNav(`/${store.slug}/wishlist`)}
+                    className="relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-black/5"
+                    aria-label="Wishlist"
                   >
-                    <DropdownMenuItem
-                      onClick={() => navigateTo(sellerLoginUrl)}
-                      className="rounded-lg px-3 py-2 text-sm font-medium"
-                    >
-                      Sign in to admin
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    <HugeiconsIcon
+                      icon={FavouriteIcon}
+                      size={20}
+                      className="text-neutral-900"
+                    />
+                    {wishlistCount > 0 && (
+                      <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-white bg-neutral-900 ring-2 ring-white">
+                        {wishlistCount > 99 ? "99+" : wishlistCount}
+                      </span>
+                    )}
+                  </Link>
 
-                {/* Cart */}
-                <Link
-                  href={`/${store.slug}/cart`}
-                  onClick={handleNav(`/${store.slug}/cart`)}
-                  className="relative inline-flex h-11 w-11 items-center cursor-pointer justify-center rounded-full transition-colors hover:bg-black/5"
-                  aria-label="Cart"
-                >
-                  <HugeiconsIcon
-                    icon={ShoppingBag01Icon}
-                    size={20}
-                    className="text-neutral-900"
-                  />
-                  {storeItemCount > 0 && (
-                    <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-white bg-neutral-900 ring-2 ring-white">
-                      {storeItemCount > 99 ? "99+" : storeItemCount}
-                    </span>
-                  )}
-                </Link>
-
-                {/* Wishlist */}
-                <Link
-                  href={`/${store.slug}/wishlist`}
-                  onClick={handleNav(`/${store.slug}/wishlist`)}
-                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-black/5"
-                  aria-label="Wishlist"
-                >
-                  <HugeiconsIcon
-                    icon={FavouriteIcon}
-                    size={20}
-                    className="text-neutral-900"
-                  />
-                  {wishlistCount > 0 && (
-                    <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-white bg-neutral-900 ring-2 ring-white">
-                      {wishlistCount > 99 ? "99+" : wishlistCount}
-                    </span>
-                  )}
-                </Link>
-
-                {/* Sign In */}
-                <Link
-                  href={sellerLoginUrl}
-                  onClick={handleNav(sellerLoginUrl)}
-                  className="hidden sm:inline-flex items-center rounded-full border border-black/10 bg-black/5 text-neutral-900 px-4 py-2 text-sm font-semibold hover:bg-black/10 transition-colors"
-                >
-                  Sign In
-                </Link>
+                  {/* Sign In */}
+                  <Link
+                    href={sellerLoginUrl}
+                    onClick={handleNav(sellerLoginUrl)}
+                    className="hidden sm:inline-flex items-center rounded-full border border-black/10 bg-black/5 text-neutral-900 px-4 py-2 text-sm font-semibold hover:bg-black/10 transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
     </>
   );
 }

@@ -16,6 +16,8 @@
         "INSTAGRAM_APP_SECRET",
         "INSTAGRAM_WEBHOOK_VERIFY_TOKEN",
         "RESEND_API_KEY",
+        "DGATEWAY_API_URL",
+        "DGATEWAY_API_KEY",
         "V0_API_URL",
         "ROOT_DOMAIN",
         "VERCEL_API_TOKEN",

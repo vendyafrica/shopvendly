@@ -28,10 +28,30 @@ export function Step2Store() {
     }
   }, [isHydrated, data.store]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError(null);
     if (!storeName.trim()) return setError("Please enter your store name.");
     if (!storeLocation.trim()) return setError("Please enter your store location.");
+
+    setIsLoading(true);
+
+    try {
+      const checkRes = await fetch("/api/onboarding/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "storeName", value: storeName.trim() }),
+      });
+      const checkData = await checkRes.json();
+
+      if (!checkData.available) {
+        setIsLoading(false);
+        return setError("This store name is already taken. Please choose another one.");
+      }
+    } catch (err) {
+      console.error("Failed to check store name availability", err);
+      setIsLoading(false);
+      return setError("Could not verify store name. Please try again.");
+    }
 
     saveStoreDraft({
       storeName: storeName.trim(),
@@ -39,7 +59,6 @@ export function Step2Store() {
       storeDescription: storeDescription.trim(),
     });
 
-    setIsLoading(true);
     navigateToStep("step3");
   };
 

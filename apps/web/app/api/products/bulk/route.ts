@@ -1,13 +1,14 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { getTenantMembership } from "@/app/admin/lib/tenant-membership";
+import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
 import { db } from "@shopvendly/db/db";
 import { products } from "@shopvendly/db/schema";
 import { eq, inArray, and } from "@shopvendly/db";
 import { z } from "zod";
 
 const bulkUpdateSchema = z.object({
+    storeId: z.string().uuid(),
     // Allow strings, then filter to UUIDs to be lenient with temporary client IDs
     ids: z.array(z.string(), { message: "ids must be strings" }),
     action: z.enum(["publish", "archive", "delete"]),
@@ -26,14 +27,17 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const membership = await getTenantMembership(session.user.id);
+        const body = await request.json();
+        const { storeId, ids, action } = bulkUpdateSchema.parse(body);
 
-        if (!membership) {
-            return NextResponse.json({ error: "No tenant found" }, { status: 404 });
+        const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "write");
+        if (!access.store) {
+            return NextResponse.json({ error: "Store not found" }, { status: 404 });
         }
 
-        const body = await request.json();
-        const { ids, action } = bulkUpdateSchema.parse(body);
+        if (!access.isAuthorized) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
 
         const validIds = ids.filter(isUuid);
         if (validIds.length === 0) {
@@ -49,7 +53,8 @@ export async function POST(request: NextRequest) {
                 .set({ status: "active", updatedAt: new Date() })
                 .where(and(
                     inArray(products.id, validIds),
-                    eq(products.tenantId, membership.tenantId)
+                    eq(products.tenantId, access.store.tenantId),
+                    eq(products.storeId, storeId)
                 ));
         } else if (action === "archive") {
             // Assuming we have an archive status? Or draft? Schema says: "draft", "ready", "active", "sold-out"
@@ -63,7 +68,8 @@ export async function POST(request: NextRequest) {
                 .set({ deletedAt: new Date(), updatedAt: new Date() })
                 .where(and(
                     inArray(products.id, validIds),
-                    eq(products.tenantId, membership.tenantId)
+                    eq(products.tenantId, access.store.tenantId),
+                    eq(products.storeId, storeId)
                 ));
         }
 

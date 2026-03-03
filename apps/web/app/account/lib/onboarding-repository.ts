@@ -117,6 +117,23 @@ class OnboardingRepository {
     });
     return !!membership;
   }
+
+  async isPhoneTaken(phoneNumber: string): Promise<boolean> {
+    const existing = await db.query.tenants.findFirst({
+      where: eq(tenants.phoneNumber, phoneNumber),
+    });
+    return !!existing;
+  }
+
+  async isStoreNameTaken(name: string): Promise<boolean> {
+    // using eq for case-insensitive check if it's ilike needed, but usually exact match is fine, or compare lowercase. 
+    // Drizzle has ilike, let's use sql lower? Or just exact for now. 
+    // Let's use ilike from "drizzle-orm"
+    const existing = await db.query.stores.findFirst({
+      where: (stores, { ilike }) => ilike(stores.name, name),
+    });
+    return !!existing;
+  }
 }
 
 export const onboardingRepository = new OnboardingRepository();

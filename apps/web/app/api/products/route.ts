@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { productService } from "@/features/products/lib/product-service";
 import { getTenantMembership } from "@/app/admin/lib/tenant-membership";
+import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
 import { productQuerySchema, createProductSchema } from "@/features/products/lib/product-models";
 import { db } from "@shopvendly/db/db";
 import { stores } from "@shopvendly/db/schema";
@@ -23,22 +24,41 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const membership = await getTenantMembership(session.user.id);
-
-        if (!membership) {
-            return NextResponse.json({ error: "No tenant found" }, { status: 404 });
-        }
-
         const { searchParams } = new URL(request.url);
+        const storeId = searchParams.get("storeId") || undefined;
         const filters = productQuerySchema.parse({
-            storeId: searchParams.get("storeId") || undefined,
+            storeId,
             source: searchParams.get("source") || undefined,
             page: searchParams.get("page") || 1,
             limit: searchParams.get("limit") || 20,
             search: searchParams.get("search") || undefined,
         });
 
-        const result = await productService.listProducts(membership.tenantId, filters);
+        let tenantId: string;
+
+        if (storeId) {
+            const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
+
+            if (!access.store) {
+                return NextResponse.json({ error: "Store not found" }, { status: 404 });
+            }
+
+            if (!access.isAuthorized) {
+                return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+            }
+
+            tenantId = access.store.tenantId;
+        } else {
+            const membership = await getTenantMembership(session.user.id);
+
+            if (!membership) {
+                return NextResponse.json({ error: "No tenant found" }, { status: 404 });
+            }
+
+            tenantId = membership.tenantId;
+        }
+
+        const result = await productService.listProducts(tenantId, filters);
         return NextResponse.json(result);
     } catch (error) {
         console.error("Error listing products:", error);
@@ -58,12 +78,6 @@ export async function POST(request: NextRequest) {
 
         if (!session?.user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const membership = await getTenantMembership(session.user.id, { includeTenant: true });
-
-        if (!membership || !membership.tenant) {
-            return NextResponse.json({ error: "No tenant found" }, { status: 404 });
         }
 
         // Check if it's multipart form data or JSON
@@ -101,17 +115,36 @@ export async function POST(request: NextRequest) {
             input = createProductSchema.parse(body);
         }
 
+        const access = await resolveTenantAdminAccessByStoreId(session.user.id, input.storeId, "write");
+
+        if (!access.store) {
+            return NextResponse.json({ error: "Store not found" }, { status: 404 });
+        }
+
+        if (!access.isAuthorized) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        const membership = await getTenantMembership(session.user.id, {
+            tenantId: access.store.tenantId,
+            includeTenant: true,
+        });
+
+        if (!membership || !membership.tenant) {
+            return NextResponse.json({ error: "No tenant found" }, { status: 404 });
+        }
+
         let currency = input.currency;
         if (!currency) {
             const store = await db.query.stores.findFirst({
-                where: and(eq(stores.id, input.storeId), eq(stores.tenantId, membership.tenantId), isNull(stores.deletedAt)),
+                where: and(eq(stores.id, input.storeId), eq(stores.tenantId, access.store.tenantId), isNull(stores.deletedAt)),
                 columns: { defaultCurrency: true },
             });
             currency = store?.defaultCurrency || "UGX";
         }
 
         const product = await productService.createProduct(
-            membership.tenantId,
+            access.store.tenantId,
             membership.tenant.slug,
             { ...input, currency } as Parameters<typeof productService.createProduct>[2],
             files
@@ -120,12 +153,12 @@ export async function POST(request: NextRequest) {
         // If specific media URLs were passed (client-side upload)
         if (input.media && input.media.length > 0) {
             await productService.attachMediaUrls(
-                membership.tenantId,
+                access.store.tenantId,
                 product.id,
                 input.media
             );
             // Refresh product with media
-            const productWithMedia = await productService.getProductWithMedia(product.id, membership.tenantId);
+            const productWithMedia = await productService.getProductWithMedia(product.id, access.store.tenantId);
             return NextResponse.json(productWithMedia, { status: 201 });
         }
 

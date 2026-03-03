@@ -32,6 +32,24 @@ async function authorizeTenantUpload(req: Request, tenantId: string) {
   return { userId: session.user.id, tenantId };
 }
 
+function handleUploadMiddlewareError(endpoint: string, err: unknown): never {
+  console.error(`[uploadthing:${endpoint}] middleware error`, err);
+
+  if (err instanceof UploadThingError) {
+    throw err;
+  }
+
+  throw new UploadThingError("Upload failed. Please re-login and try again.");
+}
+
+async function withUploadGuard<T>(endpoint: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    handleUploadMiddlewareError(endpoint, err);
+  }
+}
+
 function assertTenantFileSizeLimits(files: readonly { size: number; type: string }[]) {
   for (const file of files) {
     if (file.type.startsWith("image/") && file.size > IMAGE_RUNTIME_LIMIT_BYTES) {
@@ -58,20 +76,20 @@ export const ourFileRouter: FileRouter = {
     },
   })
     .input(routeInputSchema)
-    .middleware(async ({ req, input, files }) => {
-      assertTenantFileSizeLimits(files);
-      return authorizeTenantUpload(req, input.tenantId);
-    })
-    .onUploadComplete(async ({ metadata, file }) => {
-      return {
-        uploadedBy: metadata.userId,
-        tenantId: metadata.tenantId,
-        url: file.ufsUrl,
-        key: file.key,
-        contentType: file.type,
-        name: file.name,
-      };
-    }),
+    .middleware(async ({ req, input, files }) =>
+      withUploadGuard("productMedia", async () => {
+        assertTenantFileSizeLimits(files);
+        return await authorizeTenantUpload(req, input.tenantId);
+      })
+    )
+    .onUploadComplete(async ({ metadata, file }) => ({
+      uploadedBy: String(metadata.userId),
+      tenantId: String(metadata.tenantId),
+      url: file.ufsUrl,
+      key: file.key,
+      contentType: file.type,
+      name: file.name,
+    })),
 
   storeHeroMedia: f({
     image: {
@@ -86,20 +104,20 @@ export const ourFileRouter: FileRouter = {
     },
   })
     .input(routeInputSchema)
-    .middleware(async ({ req, input, files }) => {
-      assertTenantFileSizeLimits(files);
-      return authorizeTenantUpload(req, input.tenantId);
-    })
-    .onUploadComplete(async ({ metadata, file }) => {
-      return {
-        uploadedBy: metadata.userId,
-        tenantId: metadata.tenantId,
-        url: file.ufsUrl,
-        key: file.key,
-        contentType: file.type,
-        name: file.name,
-      };
-    }),
+    .middleware(async ({ req, input, files }) =>
+      withUploadGuard("storeHeroMedia", async () => {
+        assertTenantFileSizeLimits(files);
+        return await authorizeTenantUpload(req, input.tenantId);
+      })
+    )
+    .onUploadComplete(async ({ metadata, file }) => ({
+      uploadedBy: String(metadata.userId),
+      tenantId: String(metadata.tenantId),
+      url: file.ufsUrl,
+      key: file.key,
+      contentType: file.type,
+      name: file.name,
+    })),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

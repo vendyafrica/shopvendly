@@ -25,7 +25,6 @@ const geistSans = Bricolage_Grotesque({
 });
 
 const API_BASE = "";
-const PAYMENTS_API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
 const capitalizeFirst = (value?: string | null) => {
     if (!value) return value;
@@ -33,36 +32,6 @@ const capitalizeFirst = (value?: string | null) => {
     if (!trimmed) return value;
     return `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}`;
 };
-
-type PaystackPopup = {
-    resumeTransaction: (accessCode: string, callback?: (resp: { status: string; reference: string }) => void) => void;
-    newTransaction: (config: {
-        key: string;
-        email: string;
-        amount: number;
-        currency: string;
-        ref: string;
-        onSuccess: (resp: { reference: string }) => void;
-        onCancel: () => void;
-    }) => void;
-};
-
-const loadPaystackPopup = (): Promise<new () => PaystackPopup> =>
-    new Promise((resolve, reject) => {
-        if (typeof window !== "undefined" && (window as unknown as Record<string, unknown>).PaystackPop) {
-            resolve((window as unknown as Record<string, unknown>).PaystackPop as new () => PaystackPopup);
-            return;
-        }
-        const script = document.createElement("script");
-        script.src = "https://js.paystack.co/v2/inline.js";
-        script.onload = () => {
-            const pop = (window as unknown as Record<string, unknown>).PaystackPop;
-            if (pop) resolve(pop as new () => PaystackPopup);
-            else reject(new Error("Paystack InlineJS failed to load"));
-        };
-        script.onerror = () => reject(new Error("Failed to load Paystack InlineJS"));
-        document.head.appendChild(script);
-    });
 
 function CheckoutContent() {
     const router = useRouter();
@@ -184,7 +153,7 @@ function CheckoutContent() {
                 customerName: fullName,
                 customerEmail: email,
                 customerPhone: phone,
-                paymentMethod: "paystack",
+                paymentMethod: "mpesa",
                 shippingAddress: {
                     street: address,
                     country: "Uganda",
@@ -210,52 +179,70 @@ function CheckoutContent() {
             const orderId = "order" in data ? data.order?.id : data.id;
             if (!orderId) throw new Error("Missing order ID");
 
-            const callbackUrl = `${window.location.origin}/`;
-            const initRes = await fetch(`${PAYMENTS_API_BASE}/api/payments/paystack/initialize`, {
+            const normalizedPhone = phone.replace(/\D/g, "");
+            if (!normalizedPhone) throw new Error("Phone number is required for mobile money.");
+
+            const collectRes = await fetch(`/api/checkout`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    email,
                     amount: Math.round(storeTotal),
-                    currency,
-                    orderId,
-                    callbackUrl,
+                    currency: "UGX",
+                    phone_number: normalizedPhone,
+                    provider: "iotec",
+                    description: `Order ${orderId}`,
+                    metadata: { orderId, storeSlug: store.slug },
                 }),
             });
 
-            if (!initRes.ok) {
-                const initJson = await initRes.json().catch(() => ({}));
-                throw new Error((initJson as { error?: string }).error || "Failed to initialize Paystack");
+            const collectData = await collectRes.json().catch(() => ({}));
+            if (!collectRes.ok || (collectData as { error?: { message?: string } }).error) {
+                throw new Error((collectData as { error?: { message?: string } }).error?.message || "Failed to initiate payment");
             }
 
-            const { access_code, reference } = await initRes.json() as {
-                access_code: string;
-                reference: string;
-            };
+            const reference = (collectData as { data?: { reference?: string } }).data?.reference;
+            if (!reference) throw new Error("Missing transaction reference");
 
-            const PaystackPop = await loadPaystackPopup();
-            const popup = new PaystackPop();
+            let attempts = 0;
+            const maxAttempts = 60;
+            let completed = false;
 
-            await new Promise<void>((resolve, reject) => {
-                const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
+            while (attempts < maxAttempts) {
+                attempts += 1;
+                await new Promise((resolve) => setTimeout(resolve, attempts === 1 ? 3000 : 5000));
 
-                if (publicKey) {
-                    popup.newTransaction({
-                        key: publicKey,
-                        email,
-                        amount: Math.round(storeTotal),
-                        currency,
-                        ref: reference,
-                        onSuccess: () => resolve(),
-                        onCancel: () => reject(new Error("Payment cancelled")),
-                    });
-                } else {
-                    popup.resumeTransaction(access_code, (resp) => {
-                        if (resp.status === "success") resolve();
-                        else reject(new Error("Payment not completed"));
-                    });
+                const statusRes = await fetch(`/api/checkout/status`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ reference }),
+                });
+
+                const statusData = await statusRes.json().catch(() => ({}));
+                const paymentStatus = (statusData as { data?: { status?: string } }).data?.status;
+
+                if (paymentStatus === "completed") {
+                    completed = true;
+                    break;
                 }
+
+                if (paymentStatus === "failed") {
+                    throw new Error("Payment failed. Please try again.");
+                }
+            }
+
+            if (!completed) {
+                throw new Error("Payment verification timed out. Please try again.");
+            }
+
+            const markPaidRes = await fetch(`/api/storefront/orders/${orderId}/pay`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({}),
             });
+
+            if (!markPaidRes.ok) {
+                throw new Error("Payment captured but order update failed. Please contact support.");
+            }
 
             await clearStoreFromCart(store.id);
             setIsSuccess(true);
@@ -367,7 +354,7 @@ function CheckoutContent() {
                                     <h2 className={`${geistSans.className} text-lg uppercase tracking-widest font-semibold`}>Payment</h2>
                                     <div className="p-4 rounded-xl border border-neutral-200 bg-white">
                                         <p className="text-sm text-neutral-600 leading-relaxed">
-                                            All transactions are secure and encrypted. You will be redirected to Paystack to complete your purchase securely.
+                                            Pay with mobile money (UGX). After placing the order, confirm the payment prompt on your phone to complete checkout.
                                         </p>
                                     </div>
 
