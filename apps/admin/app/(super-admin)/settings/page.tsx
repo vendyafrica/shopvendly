@@ -22,14 +22,38 @@ type ImportJob = {
 export default function SettingsPage() {
     const [email, setEmail] = React.useState("");
     const [instagramProfileUrl, setInstagramProfileUrl] = React.useState("");
+    const [deliveryProviderPhone, setDeliveryProviderPhone] = React.useState("");
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [isImporting, setIsImporting] = React.useState(false);
+    const [isSavingDeliveryProvider, setIsSavingDeliveryProvider] = React.useState(false);
 
     const [error, setError] = React.useState<string | null>(null);
     const [success, setSuccess] = React.useState<string | null>(null);
     const [importError, setImportError] = React.useState<string | null>(null);
     const [importSuccess, setImportSuccess] = React.useState<string | null>(null);
+    const [deliveryProviderError, setDeliveryProviderError] = React.useState<string | null>(null);
+    const [deliveryProviderSuccess, setDeliveryProviderSuccess] = React.useState<string | null>(null);
     const [importJob, setImportJob] = React.useState<ImportJob | null>(null);
+
+    React.useEffect(() => {
+        const loadCurrentDeliveryProvider = async () => {
+            try {
+                const res = await fetch("/api/stores", { cache: "no-store" });
+                if (!res.ok) return;
+
+                const stores = (await res.json().catch(() => [])) as Array<{ deliveryProviderPhone?: string | null }>;
+                const firstConfigured = stores.find((store) => Boolean(store.deliveryProviderPhone?.trim()))?.deliveryProviderPhone;
+
+                if (firstConfigured) {
+                    setDeliveryProviderPhone(firstConfigured);
+                }
+            } catch {
+                // no-op: settings page remains usable even if prefill fails
+            }
+        };
+
+        void loadCurrentDeliveryProvider();
+    }, []);
 
     const onInviteSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -57,6 +81,35 @@ export default function SettingsPage() {
             setError(err instanceof Error ? err.message : "Failed to send invite.");
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const onGlobalDeliveryProviderSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setDeliveryProviderError(null);
+        setDeliveryProviderSuccess(null);
+        setIsSavingDeliveryProvider(true);
+
+        try {
+            const res = await fetch("/api/stores", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    deliveryProviderPhone: deliveryProviderPhone.trim() || null,
+                }),
+            });
+
+            const data = (await res.json().catch(() => ({}))) as { error?: string };
+            if (!res.ok) {
+                setDeliveryProviderError(data.error || "Failed to update delivery provider number.");
+                return;
+            }
+
+            setDeliveryProviderSuccess("Global delivery provider number saved for all stores.");
+        } catch (err: unknown) {
+            setDeliveryProviderError(err instanceof Error ? err.message : "Failed to update delivery provider number.");
+        } finally {
+            setIsSavingDeliveryProvider(false);
         }
     };
 
@@ -169,6 +222,44 @@ export default function SettingsPage() {
                     </div>
                     <Button type="submit" disabled={isSubmitting}>
                         {isSubmitting ? "Sending Invite..." : "Send Invite"}
+                    </Button>
+                </form>
+            </section>
+
+            <section className="space-y-6 rounded-xl border border-border/40 bg-card p-6 shadow-sm">
+                <div>
+                    <h2 className="text-xl font-semibold leading-none tracking-tight mb-2">Global Delivery Provider Number</h2>
+                    <p className="text-sm text-muted-foreground">
+                        Set one delivery provider phone number to be used for all stores.
+                    </p>
+                </div>
+
+                {deliveryProviderSuccess && (
+                    <div className="rounded-md border border-green-500/50 bg-green-500/10 px-4 py-3 text-sm text-green-700">
+                        {deliveryProviderSuccess}
+                    </div>
+                )}
+
+                {deliveryProviderError && (
+                    <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                        {deliveryProviderError}
+                    </div>
+                )}
+
+                <form onSubmit={onGlobalDeliveryProviderSubmit} className="space-y-4 max-w-md">
+                    <div className="space-y-2">
+                        <Label htmlFor="delivery-provider-phone">Delivery provider phone</Label>
+                        <Input
+                            id="delivery-provider-phone"
+                            type="tel"
+                            value={deliveryProviderPhone}
+                            onChange={(e) => setDeliveryProviderPhone(e.target.value)}
+                            placeholder="+2567XXXXXXXX"
+                            disabled={isSavingDeliveryProvider}
+                        />
+                    </div>
+                    <Button type="submit" disabled={isSavingDeliveryProvider}>
+                        {isSavingDeliveryProvider ? "Saving..." : "Save Number"}
                     </Button>
                 </form>
             </section>

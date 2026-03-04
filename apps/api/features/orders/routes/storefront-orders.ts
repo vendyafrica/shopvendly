@@ -6,6 +6,7 @@ import {
   notifyCustomerOrderReceived,
   notifySellerNewOrder,
 } from "../../messaging/services/notifications.js";
+import { dispatchDeliveryProviderForOrder } from "../../payments/services/delivery-dispatch.js";
 
 export const storefrontOrdersRouter: ExpressRouter = Router();
 
@@ -33,6 +34,7 @@ storefrontOrdersRouter.post("/storefront/:slug/orders", async (req, res, next) =
     await Promise.allSettled([
       notifySellerNewOrder({ sellerPhone, order }),
       notifyCustomerOrderReceived({ order }),
+      dispatchDeliveryProviderForOrder(order.id),
     ]);
 
     return res.status(201).json({ order });

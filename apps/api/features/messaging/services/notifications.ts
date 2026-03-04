@@ -64,17 +64,18 @@ export async function notifyDeliveryPartnerNewOrder(params: { order: OrderLike }
 
   const key = `delivery_partner:new_order:${order.id}:${to}`;
   await sendOnce(key, () =>
-    enqueueTemplateMessage({
-      input: templateSend.deliveryPartnerNewOrder(to, {
-        providerName: order.store?.name || "Delivery Partner",
-        orderId: order.orderNumber,
-        orderItems: formatItemsSummary(order.items),
-        total: String(order.totalAmount),
-        sellerPhone: sellerPhone || "N/A",
-        buyerName: order.customerName,
-        buyerPhone: order.customerPhone || "N/A",
-        deliveryAddress: order.deliveryAddress || "N/A",
-      }),
+    enqueueTextMessage({
+      to,
+      body: [
+        `🚚 New delivery request ${order.orderNumber || order.id}`,
+        `Items: ${formatItemsSummary(order.items)}`,
+        `Total: ${order.currency || "UGX"} ${String(order.totalAmount)}`,
+        `Seller contact (pickup): ${sellerPhone || "N/A"}`,
+        `Buyer: ${order.customerName}`,
+        `Buyer phone: ${order.customerPhone || "N/A"}`,
+        `Delivery address: ${order.deliveryAddress || "N/A"}`,
+        "Manual flow: call seller for pickup directions, deliver to buyer, collect cash, then remit to seller.",
+      ].join("\n"),
       tenantId: order.tenantId,
       orderId: order.id,
       dedupeKey: key,
@@ -142,16 +143,16 @@ export async function notifySellerNewOrder(params: {
 
   const key = `seller:new_order:${order.id}:${to}`;
   await sendOnce(key, () =>
-    enqueueTemplateMessage({
-      input: templateSend.sellerNewOrder(to, {
-        sellerName: order.store?.name || "Vendly",
-        orderId: order.orderNumber,
-        orderItems: formatItemsSummary(order.items),
-        buyerName: order.customerName,
-        customerPhone: order.customerPhone || "N/A",
-        customerLocation: order.deliveryAddress || "N/A",
-        total: String(order.totalAmount),
-      }),
+    enqueueTextMessage({
+      to,
+      body: [
+        `🛍️ New order ${order.orderNumber || order.id}`,
+        `Items: ${formatItemsSummary(order.items)}`,
+        `Buyer: ${order.customerName}`,
+        `Buyer phone: ${order.customerPhone || "N/A"}`,
+        `Delivery address: ${order.deliveryAddress || "N/A"}`,
+        `Total: ${order.currency || "UGX"} ${String(order.totalAmount)}`,
+      ].join("\n"),
       tenantId: order.tenantId,
       orderId: order.id,
       dedupeKey: key,
@@ -286,18 +287,11 @@ export async function notifyCustomerOrderReceived(params: { order: OrderLike }) 
   const to = normalizeToWhatsApp(order.customerPhone, "customer", { orderId: order.id, orderNumber: order.orderNumber });
   if (!to) return;
 
-  const sellerPhone = await orderService.getTenantPhoneByTenantId(order.tenantId);
-  const sellerDigits = normalizeToWhatsApp(sellerPhone, "seller", { tenantId: order.tenantId, orderId: order.id });
-  const sellerWhatsappLink = sellerDigits ? `https://wa.me/${sellerDigits}` : "https://wa.me/256700000000";
-
   const key = `customer:received:${order.id}:${to}`;
   await sendOnce(key, () =>
-    enqueueTemplateMessage({
-      input: templateSend.buyerOrderReceived(to, {
-        buyerName: order.customerName,
-        storeName: order.store?.name || "the store",
-        sellerWhatsappLink,
-      }),
+    enqueueTextMessage({
+      to,
+      body: `✅ We have received your order ${order.orderNumber || ""}. ${order.store?.name || "The seller"} is now working on it and will prepare delivery updates shortly.`,
       tenantId: order.tenantId,
       orderId: order.id,
       dedupeKey: key,

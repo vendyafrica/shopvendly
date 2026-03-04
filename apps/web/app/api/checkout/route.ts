@@ -1,36 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { collectPayment } from "@/lib/dgateway";
+import { NextResponse } from "next/server";
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
-    const body = await request.json();
-    const { amount, currency, phone_number, provider, description, metadata } = body ?? {};
-
-    if (!amount || !currency || !phone_number) {
-      return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "amount, currency and phone_number are required" } },
-        { status: 400 }
-      );
-    }
-
-    const result = await collectPayment({
-      amount: Number(amount),
-      currency: String(currency).toUpperCase(),
-      phone_number: String(phone_number),
-      provider: provider || "iotec",
-      description,
-      metadata,
-    });
-
-    if (result.error) {
-      const status = result.error.status ?? 400;
-      return NextResponse.json(result, { status });
-    }
-
-    return NextResponse.json(result);
+    return NextResponse.json(
+      { error: { code: "PAYMENT_DISABLED", message: "Online checkout payments are currently disabled." } },
+      { status: 410 }
+    );
   } catch {
     return NextResponse.json(
-      { error: { code: "SERVER_ERROR", message: "Failed to initiate payment" } },
+      { error: { code: "PAYMENT_DISABLED", message: "Online checkout payments are currently disabled." } },
       { status: 500 }
     );
   }

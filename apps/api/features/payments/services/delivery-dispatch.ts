@@ -3,7 +3,7 @@ import { notifyDeliveryPartnerNewOrder } from "../../messaging/services/notifica
 import { orderService } from "../../orders/services/order-service.js";
 
 export type DeliveryDispatchPayload = {
-  provider: "whatsapp_template";
+  provider: "whatsapp_text";
   order: {
     id: string;
     orderNumber: string | null;
@@ -33,7 +33,7 @@ export type DeliveryDispatchResult = {
 };
 
 function buildDeliveryDispatchPayload(params: {
-  provider: "whatsapp_template";
+  provider: "whatsapp_text";
   sellerPhone: string | null;
   order: NonNullable<Awaited<ReturnType<typeof orderService.getOrderById>>>;
 }): DeliveryDispatchPayload {
@@ -78,7 +78,7 @@ export async function dispatchDeliveryProviderForOrder(orderId: string): Promise
     };
   }
 
-  const provider = "whatsapp_template" as const;
+  const provider = "whatsapp_text" as const;
   const dispatchId = `wa:${order.id}`;
   const sellerPhone = await orderService.getTenantPhoneByTenantId(order.tenantId);
   const payload = buildDeliveryDispatchPayload({ provider, sellerPhone, order });

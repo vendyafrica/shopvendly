@@ -18,8 +18,6 @@ import { getStorefrontUrl } from "@/utils/misc";
 
 const API_BASE = ""; // Force relative for same-origin internal API
 
-type CheckoutMode = "pay_now_mobile_money" | "pay_on_delivery";
-
 function CheckoutContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -34,8 +32,7 @@ function CheckoutContent() {
     const [fullName, setFullName] = useState("");
     const [address, setAddress] = useState("");
     const [phone, setPhone] = useState("");
-    const [checkoutMode, setCheckoutMode] = useState<CheckoutMode>("pay_now_mobile_money");
-    const paymentMethod = checkoutMode === "pay_now_mobile_money" ? "mtn_momo" : "cash_on_delivery";
+    const paymentMethod = "cash_on_delivery";
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -108,80 +105,6 @@ function CheckoutContent() {
             const data = await res.json();
             const orderId = "order" in data ? data.order?.id : data.id;
             if (!orderId) throw new Error("Missing order ID");
-
-            if (checkoutMode === "pay_on_delivery") {
-                await clearStoreFromCart(store.id);
-                setIsSuccess(true);
-                setTimeout(() => {
-                    window.location.assign(getStorefrontUrl(store.slug));
-                }, 1200);
-                return;
-            }
-
-            const normalizedPhone = phone.replace(/\D/g, "");
-            if (!normalizedPhone) throw new Error("Phone number is required for mobile money.");
-
-            const collectRes = await fetch(`/api/checkout`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    amount: Math.round(storeTotal),
-                    currency: "UGX",
-                    phone_number: normalizedPhone,
-                    provider: "iotec",
-                    description: `Order ${orderId}`,
-                    metadata: { orderId, storeSlug: store.slug },
-                }),
-            });
-
-            const collectData = await collectRes.json().catch(() => ({}));
-            if (!collectRes.ok || (collectData as { error?: { message?: string } }).error) {
-                throw new Error((collectData as { error?: { message?: string } }).error?.message || "Failed to initiate payment");
-            }
-
-            const reference = (collectData as { data?: { reference?: string } }).data?.reference;
-            if (!reference) throw new Error("Missing transaction reference");
-
-            let attempts = 0;
-            const maxAttempts = 60;
-            let completed = false;
-
-            while (attempts < maxAttempts) {
-                attempts += 1;
-                await new Promise((resolve) => setTimeout(resolve, attempts === 1 ? 3000 : 5000));
-
-                const statusRes = await fetch(`/api/checkout/status`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ reference }),
-                });
-
-                const statusData = await statusRes.json().catch(() => ({}));
-                const paymentStatus = (statusData as { data?: { status?: string } }).data?.status;
-
-                if (paymentStatus === "completed") {
-                    completed = true;
-                    break;
-                }
-
-                if (paymentStatus === "failed") {
-                    throw new Error("Payment failed. Please try again.");
-                }
-            }
-
-            if (!completed) {
-                throw new Error("Payment verification timed out. Please try again.");
-            }
-
-            const markPaidRes = await fetch(`/api/storefront/orders/${orderId}/pay`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({}),
-            });
-
-            if (!markPaidRes.ok) {
-                throw new Error("Payment captured but order update failed. Please contact support.");
-            }
 
             await clearStoreFromCart(store.id);
             setIsSuccess(true);
@@ -264,29 +187,8 @@ function CheckoutContent() {
                             onChange={(e) => setAddress(e.target.value)}
                         />
 
-                        <div className="grid gap-2">
-                            <button
-                                type="button"
-                                className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${checkoutMode === "pay_now_mobile_money" ? "border-neutral-900 bg-neutral-100" : "border-neutral-200 bg-white"}`}
-                                onClick={() => setCheckoutMode("pay_now_mobile_money")}
-                            >
-                                <span className="font-medium">Pay now (Mobile Money)</span>
-                                <p className="text-xs text-neutral-500">Pay immediately via mobile money prompt.</p>
-                            </button>
-                            <button
-                                type="button"
-                                className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${checkoutMode === "pay_on_delivery" ? "border-neutral-900 bg-neutral-100" : "border-neutral-200 bg-white"}`}
-                                onClick={() => setCheckoutMode("pay_on_delivery")}
-                            >
-                                <span className="font-medium">Pay on delivery</span>
-                                <p className="text-xs text-neutral-500">Place order now and receive a WhatsApp payment link.</p>
-                            </button>
-                        </div>
-
                         <div className="p-3 rounded-lg bg-neutral-50 border text-sm text-neutral-600">
-                            {checkoutMode === "pay_now_mobile_money"
-                                ? "We’ll prompt payment on your phone right after order creation."
-                                : "We’ll place your order as pending and send a WhatsApp payment link."}
+                            Payment method: Cash on delivery. Seller and delivery provider will coordinate delivery by phone/WhatsApp.
                         </div>
 
                         {error && (
@@ -307,7 +209,7 @@ function CheckoutContent() {
                                     Processing…
                                 </>
                             ) : (
-                                <span>{checkoutMode === "pay_now_mobile_money" ? `Pay ${currency} ${storeTotal}` : "Place Order"}</span>
+                                <span>Place Order</span>
                             )}
                         </Button>
                     </form>

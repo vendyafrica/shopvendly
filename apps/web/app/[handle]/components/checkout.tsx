@@ -32,18 +32,14 @@ interface CheckoutProps {
     quantity: number;
 }
 
-type CheckoutMode = "pay_now_mobile_money" | "pay_on_delivery";
-
 export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: CheckoutProps) {
     const [customerName, setCustomerName] = useState("");
     const [customerEmail, setCustomerEmail] = useState("");
     const [customerPhone, setCustomerPhone] = useState("");
-    const [checkoutMode, setCheckoutMode] = useState<CheckoutMode>("pay_now_mobile_money");
-    const paymentMethod = checkoutMode === "pay_now_mobile_money" ? "mtn_momo" : "cash_on_delivery";
+    const paymentMethod = "cash_on_delivery";
     const [notes, setNotes] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
-    const [successStage, setSuccessStage] = useState<"paid" | "processing">("paid");
     const [error, setError] = useState<string | null>(null);
 
     const totalAmount = product.price * quantity;
@@ -53,7 +49,6 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
         setCustomerEmail("");
         setCustomerPhone("");
         setIsSuccess(false);
-        setSuccessStage("paid");
         setError(null);
     };
 
@@ -88,96 +83,7 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                 throw new Error(data.error || "Failed to place order");
             }
 
-            const data = await response.json();
-
-            if (checkoutMode === "pay_on_delivery") {
-                setIsSuccess(true);
-                setSuccessStage("processing");
-                setTimeout(() => {
-                    if (storeSlug) {
-                        window.location.assign(`${window.location.origin}/${storeSlug}`);
-                    }
-                }, 1200);
-                return;
-            }
-
-            const normalizedPhone = customerPhone.replace(/\D/g, "");
-            if (!normalizedPhone) {
-                throw new Error("Phone number is required for mobile money payment.");
-            }
-
-            const initRes = await fetch(`/api/checkout`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    amount: Math.round(totalAmount),
-                    currency: "UGX",
-                    phone_number: normalizedPhone,
-                    provider: "iotec",
-                    description: `Order ${data.order?.id ?? ""}`,
-                    metadata: { orderId: data.order?.id ?? "", storeSlug },
-                }),
-            });
-
-            if (!initRes.ok) {
-                const initData = await initRes.json().catch(() => ({}));
-                throw new Error((initData as { error?: { message?: string } }).error?.message || "Failed to initialize payment");
-            }
-
-            const collectJson = await initRes.json() as { data?: { reference?: string } };
-            const reference = collectJson.data?.reference;
-            if (!reference) {
-                throw new Error("Missing transaction reference");
-            }
-
-            let attempts = 0;
-            const maxAttempts = 60;
-            let completed = false;
-
-            while (attempts < maxAttempts) {
-                attempts += 1;
-                await new Promise((resolve) => setTimeout(resolve, attempts === 1 ? 3000 : 5000));
-
-                const statusRes = await fetch(`/api/checkout/status`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ reference }),
-                });
-
-                const statusData = await statusRes.json().catch(() => ({}));
-                const paymentStatus = (statusData as { data?: { status?: string } }).data?.status;
-
-                if (paymentStatus === "completed") {
-                    completed = true;
-                    break;
-                }
-
-                if (paymentStatus === "failed") {
-                    throw new Error("Payment failed. Please try again.");
-                }
-            }
-
-            if (!completed) {
-                throw new Error("Payment verification timed out. Please try again.");
-            }
-
-            const orderId = data.order?.id ?? "";
-            if (!orderId) {
-                throw new Error("Missing order ID");
-            }
-
-            const markPaidRes = await fetch(`/api/storefront/orders/${orderId}/pay`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({}),
-            });
-
-            if (!markPaidRes.ok) {
-                throw new Error("Payment captured but order update failed. Please contact support.");
-            }
-
             setIsSuccess(true);
-            setSuccessStage("paid");
             setTimeout(() => {
                 if (storeSlug) {
                     window.location.assign(`${window.location.origin}/${storeSlug}`);
@@ -207,19 +113,9 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                         <div className="mb-4 rounded-full bg-green-100 p-3">
                             <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-12 w-12 text-green-600" />
                         </div>
-                        <h2 className="text-2xl font-semibold mb-2">
-                            {checkoutMode === "pay_now_mobile_money"
-                                ? "Payment Confirmed!"
-                                : successStage === "paid"
-                                    ? "Order Placed!"
-                                    : "Processing Order"}
-                        </h2>
+                        <h2 className="text-2xl font-semibold mb-2">Order Placed!</h2>
                         <p className="text-muted-foreground mb-6">
-                            {checkoutMode === "pay_now_mobile_money"
-                                ? "Your mobile money payment was confirmed. The seller is now processing your order."
-                                : successStage === "paid"
-                                    ? "Check your WhatsApp for payment instructions and order updates."
-                                    : "Your order is now being processed by the seller."}
+                            Your order has been received and is being worked on. Delivery coordination will continue by phone/WhatsApp.
                         </p>
                         <Button onClick={handleClose} className="w-full">
                             Continue Shopping
@@ -292,35 +188,13 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                                 required
                             />
                             <p className="text-xs text-muted-foreground">
-                                Required for mobile money. Enter with country code and no plus sign.
+                                Enter with country code so seller and delivery provider can reach you.
                             </p>
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label>Payment option</Label>
-                        <div className="grid gap-2">
-                            <button
-                                type="button"
-                                className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${checkoutMode === "pay_now_mobile_money" ? "border-foreground bg-muted/50" : "border-border"}`}
-                                onClick={() => setCheckoutMode("pay_now_mobile_money")}
-                            >
-                                <span className="font-medium">Pay now (Mobile Money)</span>
-                                <p className="text-xs text-muted-foreground">Pay immediately via mobile money prompt.</p>
-                            </button>
-                            <button
-                                type="button"
-                                className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${checkoutMode === "pay_on_delivery" ? "border-foreground bg-muted/50" : "border-border"}`}
-                                onClick={() => setCheckoutMode("pay_on_delivery")}
-                            >
-                                <span className="font-medium">Pay on delivery</span>
-                                <p className="text-xs text-muted-foreground">Place order now and receive a WhatsApp payment link.</p>
-                            </button>
-                        </div>
-                    </div>
-
                     <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                        Payment method: <span className="font-medium text-foreground">{checkoutMode === "pay_now_mobile_money" ? "Mobile Money (Iotec via DGateway)" : "Pay on delivery"}</span>
+                        Payment method: <span className="font-medium text-foreground">Cash on delivery</span>
                     </div>
 
                     {/* Notes */}
@@ -356,9 +230,7 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                                 Placing Order...
                             </>
                         ) : (
-                            checkoutMode === "pay_now_mobile_money"
-                                ? `Pay ${product.currency} ${totalAmount.toLocaleString()}`
-                                : "Place order"
+                            "Place order"
                         )}
                     </Button>
                 </form>
