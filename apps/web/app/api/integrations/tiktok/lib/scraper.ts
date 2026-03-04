@@ -8,6 +8,7 @@ export type ScrapedTikTokPost = {
   videoDescription: string | null;
   duration: number | null;
   coverImageUrl: string | null;
+  videoUrl: string | null;
   embedLink: string | null;
   shareUrl: string | null;
   createdAtSource: Date | null;
@@ -86,9 +87,10 @@ async function fetchApifyTikTokItems(params: {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      profiles: [params.profileUrl, params.handle, `@${params.handle}`],
+      profiles: [params.profileUrl],
       profileUrls: [params.profileUrl],
       usernames: [params.handle],
+      resultsPerPage: params.maxPosts,
       resultsLimit: params.maxPosts,
       maxItems: params.maxPosts,
       maxPosts: params.maxPosts,
@@ -173,12 +175,28 @@ function normalizeScrapedPost(item: Record<string, unknown>, index: number): Scr
     pickString(item, ["embedLink", "embed_link", "embedUrl", "embed_url"])
   );
 
+  const videoMeta = item.videoMeta;
+  const videoUrlRaw =
+    typeof videoMeta === "object" && videoMeta !== null
+      ? pickString(videoMeta as Record<string, unknown>, ["downloadAddr", "playAddr", "url"])
+      : pickString(item, ["videoUrl", "video_url", "playAddr", "downloadAddr"]);
+
+  // We should also look into item.video if videoMeta is not present
+  const videoObj = item.video;
+  const videoUrlSecondary =
+    typeof videoObj === "object" && videoObj !== null
+      ? pickString(videoObj as Record<string, unknown>, ["downloadAddr", "playAddr", "url"])
+      : null;
+
+  const finalVideoUrl = videoUrlRaw || videoUrlSecondary;
+
   return {
     sourcePostId,
     title,
     videoDescription,
     duration: asNumber(item.duration),
     coverImageUrl,
+    videoUrl: finalVideoUrl,
     shareUrl,
     embedLink,
     createdAtSource: normalizeCreatedAt(item.createTime ?? item.create_time ?? item.createdAt),
@@ -205,7 +223,9 @@ async function copyCoverImage(params: {
       ? "webp"
       : contentType.includes("gif")
         ? "gif"
-        : "jpg";
+        : contentType.includes("mp4") || contentType.includes("video")
+          ? "mp4"
+          : "jpg";
 
   const uploadResult = await mediaService.uploadSingle(
     {
@@ -257,24 +277,35 @@ export async function scrapeTikTokPosts(params: {
 
   const downloadedPosts = await Promise.all(
     normalized.map(async (post) => {
-      if (!post.coverImageUrl) {
-        return post;
+      let updatedPost = { ...post };
+
+      if (post.coverImageUrl) {
+        try {
+          const storedCoverUrl = await copyCoverImage({
+            tenantId: params.tenantId,
+            sourceUrl: post.coverImageUrl,
+            sourcePostId: post.sourcePostId,
+          });
+          updatedPost.coverImageUrl = storedCoverUrl;
+        } catch (err) {
+          console.error(`Failed to download TikTok cover for ${post.sourcePostId}:`, err);
+        }
       }
 
-      try {
-        const storedCoverUrl = await copyCoverImage({
-          tenantId: params.tenantId,
-          sourceUrl: post.coverImageUrl,
-          sourcePostId: post.sourcePostId,
-        });
-
-        return {
-          ...post,
-          coverImageUrl: storedCoverUrl,
-        };
-      } catch {
-        return post;
+      if (post.videoUrl) {
+        try {
+          const storedVideoUrl = await copyCoverImage({
+            tenantId: params.tenantId,
+            sourceUrl: post.videoUrl,
+            sourcePostId: `${post.sourcePostId}-video`,
+          });
+          updatedPost.videoUrl = storedVideoUrl;
+        } catch (err) {
+          console.error(`Failed to download TikTok video for ${post.sourcePostId}:`, err);
+        }
       }
+
+      return updatedPost;
     })
   );
 

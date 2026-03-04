@@ -2,7 +2,7 @@ import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@shopvendly/db/db";
-import { tiktokAccounts, tiktokPosts } from "@shopvendly/db/schema";
+import { tiktokPosts } from "@shopvendly/db/schema";
 import { and, eq, count } from "@shopvendly/db";
 import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
 
@@ -16,10 +16,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get("storeId");
 
-    let storeLinked = false;
     let importedCount = 0;
-    let profileUrl: string | null = null;
-    let username: string | null = null;
     let lastImportedAt: Date | null = null;
 
     if (storeId) {
@@ -30,46 +27,39 @@ export async function GET(request: NextRequest) {
 
       const tenantId = access.store.tenantId;
 
-      const linkedAccount = await db.query.tiktokAccounts.findFirst({
+      const [postsCount] = await db
+        .select({ value: count() })
+        .from(tiktokPosts)
+        .where(
+          and(
+            eq(tiktokPosts.storeId, storeId),
+            eq(tiktokPosts.tenantId, tenantId)
+          )
+        );
+
+      importedCount = Number(postsCount?.value ?? 0);
+
+      const [latestPost] = await db.query.tiktokPosts.findMany({
         where: and(
-          eq(tiktokAccounts.storeId, storeId),
-          eq(tiktokAccounts.tenantId, tenantId),
-          eq(tiktokAccounts.isActive, true)
+          eq(tiktokPosts.storeId, storeId),
+          eq(tiktokPosts.tenantId, tenantId)
         ),
         columns: {
-          id: true,
-          profileUrl: true,
-          username: true,
-          lastImportedAt: true,
+          createdAtSource: true,
         },
+        orderBy: (fields, { desc }) => [desc(fields.createdAtSource)],
+        limit: 1,
       });
 
-      storeLinked = !!linkedAccount;
-      profileUrl = linkedAccount?.profileUrl ?? null;
-      username = linkedAccount?.username ?? null;
-      lastImportedAt = linkedAccount?.lastImportedAt ?? null;
-
-      if (linkedAccount) {
-        const [postsCount] = await db
-          .select({ value: count() })
-          .from(tiktokPosts)
-          .where(
-            and(
-              eq(tiktokPosts.storeId, storeId),
-              eq(tiktokPosts.tenantId, tenantId)
-            )
-          );
-
-        importedCount = Number(postsCount?.value ?? 0);
-      }
+      lastImportedAt = latestPost?.createdAtSource ?? null;
     }
+
+    const storeLinked = importedCount > 0;
 
     return NextResponse.json({
       connected: storeLinked,
       storeLinked,
       importedCount,
-      profileUrl,
-      username,
       lastImportedAt,
     });
   } catch (error) {

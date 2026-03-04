@@ -37,6 +37,7 @@ type StorefrontTikTokVideo = {
   video_description?: string;
   duration?: number;
   cover_image_url?: string;
+  video_url?: string;
   embed_link?: string;
   share_url?: string;
 };

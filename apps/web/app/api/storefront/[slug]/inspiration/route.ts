@@ -13,6 +13,7 @@ type TikTokVideo = {
   video_description?: string;
   duration?: number;
   cover_image_url?: string;
+  video_url?: string;
   embed_link?: string;
   share_url?: string;
   created_at?: string;
@@ -27,24 +28,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    const linkedResult = await db.execute(sql`
-      select user_id, display_name, username, avatar_url
-      from tiktok_accounts
-      where store_id = ${store.id}
-        and is_active = true
-      order by updated_at desc
-      limit 1
-    `);
-
-    const linkedTikTok = (linkedResult.rows?.[0] ?? null) as
-      | {
-          user_id: string;
-          display_name?: string | null;
-          username?: string | null;
-          avatar_url?: string | null;
-        }
-      | null;
-
     const { searchParams } = new URL(request.url);
     const maxCountParam = Number(searchParams.get("maxCount") || "25");
     const maxCount = Number.isFinite(maxCountParam)
@@ -58,6 +41,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         video_description,
         duration,
         cover_image_url,
+        video_url,
         embed_link,
         share_url,
         created_at_source,
@@ -75,6 +59,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       video_description?: string | null;
       duration?: number | null;
       cover_image_url?: string | null;
+      video_url?: string | null;
       embed_link?: string | null;
       share_url?: string | null;
       created_at_source?: Date | string | null;
@@ -85,9 +70,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({
       connected: hasVideos,
       profile: {
-        displayName: linkedTikTok?.display_name ?? null,
-        username: linkedTikTok?.username ?? null,
-        avatarUrl: linkedTikTok?.avatar_url ?? null,
+        displayName: null,
+        username: null,
+        avatarUrl: null,
       },
       videos: videos.map(
         (video): TikTokVideo => ({
@@ -96,6 +81,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           video_description: video.video_description ?? undefined,
           duration: video.duration ?? undefined,
           cover_image_url: video.cover_image_url ?? undefined,
+          video_url: video.video_url ?? undefined,
           embed_link: video.embed_link ?? undefined,
           share_url: video.share_url ?? undefined,
           created_at: video.created_at_source ? new Date(video.created_at_source).toISOString() : undefined,

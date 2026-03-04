@@ -16,6 +16,7 @@ type TikTokVideo = {
   title?: string;
   video_description?: string;
   cover_image_url?: string;
+  video_url?: string;
   embed_link?: string;
   share_url?: string;
   username?: string;
@@ -91,7 +92,16 @@ export function InspirationGrid({ videos }: InspirationGridProps) {
               onClick={() => openVideo(index)}
               aria-label={`Play: ${label}`}
             >
-              {video.cover_image_url ? (
+              {video.video_url ? (
+                <video
+                  src={video.video_url}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                />
+              ) : video.cover_image_url ? (
                 <Image
                   src={video.cover_image_url}
                   alt={label}
@@ -132,8 +142,19 @@ export function InspirationGrid({ videos }: InspirationGridProps) {
           <div className="flex flex-col md:flex-row h-full overflow-hidden" style={{ height: "100%" }}>
 
             {/* LEFT — video panel, fluid width */}
-            <div className="relative flex-1 overflow-hidden bg-black min-h-[40vh] md:min-h-0">
-              {selectedVideo?.embed_link ? (
+            <div className="relative flex-1 overflow-hidden bg-black min-h-[40vh] md:min-h-0 flex items-center justify-center">
+              {selectedVideo?.video_url ? (
+                <video
+                  key={selectedVideo.id}
+                  src={selectedVideo.video_url}
+                  className="w-full h-full max-h-full max-w-full object-contain"
+                  controls
+                  autoPlay
+                  loop
+                  muted={false}
+                  playsInline
+                />
+              ) : selectedVideo?.embed_link ? (
                 <iframe
                   key={selectedVideo.id}
                   src={getEmbedSrc(selectedVideo)}
@@ -146,7 +167,7 @@ export function InspirationGrid({ videos }: InspirationGridProps) {
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-white/40 text-sm">
-                  No embed available.
+                  No video available.
                 </div>
               )}
             </div>

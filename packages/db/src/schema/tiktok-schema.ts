@@ -63,7 +63,6 @@ export const tiktokPosts = pgTable(
       .notNull()
       .references(() => stores.id, { onDelete: "cascade" }),
     accountId: uuid("account_id")
-      .notNull()
       .references(() => tiktokAccounts.id, { onDelete: "cascade" }),
     sourcePostId: text("source_post_id").notNull(),
     title: text("title"),
@@ -72,6 +71,7 @@ export const tiktokPosts = pgTable(
     coverImageUrl: text("cover_image_url"),
     embedLink: text("embed_link"),
     shareUrl: text("share_url"),
+    videoUrl: text("video_url"),
     sortOrder: integer("sort_order").default(0).notNull(),
     createdAtSource: timestamp("created_at_source"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
