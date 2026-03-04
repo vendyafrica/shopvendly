@@ -9,18 +9,8 @@ import {
     TableHeader,
     TableRow,
 } from "@shopvendly/ui/components/table";
-import { Badge } from "@shopvendly/ui/components/badge";
-import { Button } from "@shopvendly/ui/components/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuTrigger,
-} from "@shopvendly/ui/components/dropdown-menu";
 import { Input } from "@shopvendly/ui/components/input";
-import { MoreHorizontalIcon, StarIcon, Edit02Icon } from "@hugeicons/core-free-icons";
+import { Edit02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
@@ -30,6 +20,7 @@ export interface Store {
     name: string;
     slug: string;
     tenantName: string;
+    tenantPhone?: string | null;
     storeRating: number;
     status: boolean;
     deliveryProviderPhone: string | null;
@@ -46,11 +37,12 @@ interface StoreTableProps {
 
 export function StoreTable({ stores, isLoading }: StoreTableProps) {
     const router = useRouter();
-    const [deliveryPhones, setDeliveryPhones] = React.useState<Record<string, string>>({});
-    const [savingStoreId, setSavingStoreId] = React.useState<string | null>(null);
-    const [saveMessage, setSaveMessage] = React.useState<string | null>(null);
+    const [saveMessage ] = React.useState<string | null>(null);
 
-    const [activeCell, setActiveCell] = React.useState<{ id: string; field: "name" } | null>(null);
+    const [activeCell, setActiveCell] = React.useState<{
+        id: string;
+        field: "name" | "slug" | "deliveryProviderPhone";
+    } | null>(null);
     const [drafts, setDrafts] = React.useState<Record<string, string>>({});
     const [localStores, setLocalStores] = React.useState(stores);
 
@@ -58,42 +50,7 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
         setLocalStores(stores);
     }, [stores]);
 
-    React.useEffect(() => {
-        setDeliveryPhones(
-            Object.fromEntries(
-                stores.map((store) => [store.id, store.deliveryProviderPhone || ""])
-            )
-        );
-    }, [stores]);
-
-    const handleSaveDeliveryProvider = async (storeId: string) => {
-        setSavingStoreId(storeId);
-        setSaveMessage(null);
-
-        try {
-            const deliveryProviderPhone = (deliveryPhones[storeId] || "").trim();
-            const res = await fetch(`/api/stores/${encodeURIComponent(storeId)}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    deliveryProviderPhone: deliveryProviderPhone || null,
-                }),
-            });
-
-            if (!res.ok) {
-                const json = (await res.json().catch(() => null)) as { error?: string } | null;
-                throw new Error(json?.error || "Failed to save delivery provider number");
-            }
-
-            setSaveMessage("Delivery provider number saved.");
-        } catch (error) {
-            setSaveMessage(error instanceof Error ? error.message : "Failed to save delivery provider number");
-        } finally {
-            setSavingStoreId(null);
-        }
-    };
-
-    const handleInlineSave = async (storeId: string, field: "name") => {
+    const handleInlineSave = async (storeId: string, field: "name" | "slug" | "deliveryProviderPhone") => {
         const draftValue = drafts[storeId];
         if (!draftValue || !draftValue.trim()) {
             setActiveCell(null);
@@ -143,8 +100,6 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
                         <TableHead>Store Name</TableHead>
                         <TableHead>Tenant</TableHead>
                         <TableHead>Domain</TableHead>
-                        <TableHead>Rating</TableHead>
-                        <TableHead>Status</TableHead>
                         <TableHead>Contact</TableHead>
                         <TableHead>Delivery Partner</TableHead>
                         <TableHead>Created At</TableHead>
@@ -177,64 +132,82 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
                                         <button
                                             type="button"
                                             onClick={() => setActiveCell({ id: store.id, field: "name" })}
-                                            className="group flex flex-col capitalize text-left hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors w-full"
+                                            className="group flex items-center gap-2 capitalize text-left hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors w-full"
                                         >
-                                            <div className="flex items-center gap-2">
-                                                <span>{nameValue}</span>
-                                                <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity shrink-0" />
-                                            </div>
+                                            <span>{nameValue}</span>
+                                            <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity shrink-0" />
                                         </button>
                                     )}
                                 </TableCell>
                                 <TableCell className="capitalize">{store.tenantName}</TableCell>
                                 <TableCell>
-                                    {store.customDomain ? (
-                                        <Badge variant="outline">{store.customDomain}</Badge>
+                                    {activeCell?.id === store.id && activeCell.field === "slug" ? (
+                                        <Input
+                                            autoFocus
+                                            value={drafts[store.id] ?? store.slug}
+                                            onChange={(e) => setDrafts(prev => ({ ...prev, [store.id]: e.target.value }))}
+                                            onBlur={() => handleInlineSave(store.id, "slug")}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") handleInlineSave(store.id, "slug");
+                                                if (e.key === "Escape") {
+                                                    setDrafts(prev => { const next = { ...prev }; delete next[store.id]; return next; });
+                                                    setActiveCell(null);
+                                                }
+                                            }}
+                                            className="h-9 w-full min-w-[200px]"
+                                        />
                                     ) : (
-                                        <span className="text-muted-foreground text-sm">-</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveCell({ id: store.id, field: "slug" })}
+                                            className="group inline-flex items-center gap-2 text-left hover:bg-muted/50 px-1 py-0.5 -ml-1 rounded-md transition-colors"
+                                        >
+                                            <a
+                                                href={`https://shopvendly.store/${store.slug}`}
+                                                className="text-sm text-primary underline-offset-4 group-hover:underline"
+                                                target="_blank"
+                                                rel="noreferrer"
+                                            >
+                                                {`https://shopvendly.store/${store.slug}`}
+                                            </a>
+                                            <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity shrink-0" />
+                                        </button>
                                     )}
                                 </TableCell>
                                 <TableCell>
-                                    <div className="flex items-center gap-1">
-                                        <HugeiconsIcon icon={StarIcon} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                        <span>{store.storeRating || 0}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge
-                                        variant={store.status ? "primary" : "secondary"}
-                                        className="capitalize"
-                                    >
-                                        {store.status ? "Active" : "Inactive"}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>
                                     <div className="flex flex-col text-sm">
-                                        <span>{store.storeContactPhone || "-"}</span>
+                                        <span>{store.tenantPhone || store.storeContactPhone || "-"}</span>
                                     </div>
                                 </TableCell>
-                                <TableCell>
-                                    <div className="flex min-w-[250px] items-center gap-2">
+                                <TableCell className="font-medium align-top">
+                                    {activeCell?.id === store.id && activeCell.field === "deliveryProviderPhone" ? (
                                         <Input
-                                            value={deliveryPhones[store.id] ?? ""}
-                                            onChange={(event) =>
-                                                setDeliveryPhones((prev) => ({
-                                                    ...prev,
-                                                    [store.id]: event.target.value,
-                                                }))
-                                            }
+                                            autoFocus
+                                            value={drafts[store.id] ?? store.deliveryProviderPhone ?? ""}
+                                            onChange={(e) => setDrafts(prev => ({ ...prev, [store.id]: e.target.value }))}
+                                            onBlur={() => handleInlineSave(store.id, "deliveryProviderPhone")}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") handleInlineSave(store.id, "deliveryProviderPhone");
+                                                if (e.key === "Escape") {
+                                                    setDrafts(prev => { const next = { ...prev }; delete next[store.id]; return next; });
+                                                    setActiveCell(null);
+                                                }
+                                            }}
                                             placeholder="+2567..."
-                                            className="h-9"
+                                            className="h-9 w-full min-w-[150px]"
                                         />
-                                        <Button
+                                    ) : (
+                                        <button
                                             type="button"
-                                            size="sm"
-                                            onClick={() => void handleSaveDeliveryProvider(store.id)}
-                                            disabled={savingStoreId === store.id}
+                                            onClick={() => setActiveCell({ id: store.id, field: "deliveryProviderPhone" })}
+                                            className="group flex flex-col text-left hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors w-full"
                                         >
-                                            {savingStoreId === store.id ? "Saving..." : "Save"}
-                                        </Button>
-                                    </div>
+                                            <div className="flex items-center gap-2">
+                                                <span>{store.deliveryProviderPhone || "-"}</span>
+                                                <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity shrink-0" />
+                                            </div>
+                                        </button>
+                                    )}
                                 </TableCell>
                                 <TableCell>
                                     {format(new Date(store.createdAt), "MMM d, yyyy")}

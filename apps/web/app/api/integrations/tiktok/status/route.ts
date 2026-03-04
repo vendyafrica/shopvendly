@@ -2,8 +2,9 @@ import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@shopvendly/db/db";
-import { account, stores, tenantMemberships } from "@shopvendly/db/schema";
-import { and, eq, sql } from "@shopvendly/db";
+import { tiktokAccounts, tiktokPosts } from "@shopvendly/db/schema";
+import { and, eq, count } from "@shopvendly/db";
+import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,51 +16,64 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get("storeId");
 
-    const tiktokAccount = await db.query.account.findFirst({
-      where: and(eq(account.userId, session.user.id), eq(account.providerId, "tiktok")),
-      columns: {
-        accessToken: true,
-        scope: true,
-      },
-    });
-
-    const scopes = tiktokAccount?.scope
-      ? tiktokAccount.scope.split(",").map((scope) => scope.trim()).filter(Boolean)
-      : [];
-
     let storeLinked = false;
+    let importedCount = 0;
+    let profileUrl: string | null = null;
+    let username: string | null = null;
+    let lastImportedAt: Date | null = null;
+
     if (storeId) {
-      const membership = await db.query.tenantMemberships.findFirst({
-        where: eq(tenantMemberships.userId, session.user.id),
+      const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
+      if (!access.store || !access.isAuthorized) {
+        return NextResponse.json({ connected: false, storeLinked: false, importedCount: 0 }, { status: 404 });
+      }
+
+      const tenantId = access.store.tenantId;
+
+      const linkedAccount = await db.query.tiktokAccounts.findFirst({
+        where: and(
+          eq(tiktokAccounts.storeId, storeId),
+          eq(tiktokAccounts.tenantId, tenantId),
+          eq(tiktokAccounts.isActive, true)
+        ),
+        columns: {
+          id: true,
+          profileUrl: true,
+          username: true,
+          lastImportedAt: true,
+        },
       });
 
-      if (membership) {
-        const store = await db.query.stores.findFirst({
-          where: and(eq(stores.id, storeId), eq(stores.tenantId, membership.tenantId)),
-          columns: { id: true },
-        });
+      storeLinked = !!linkedAccount;
+      profileUrl = linkedAccount?.profileUrl ?? null;
+      username = linkedAccount?.username ?? null;
+      lastImportedAt = linkedAccount?.lastImportedAt ?? null;
 
-        if (store) {
-          const linked = await db.execute(sql`
-            select id
-            from tiktok_accounts
-            where store_id = ${storeId}
-              and tenant_id = ${membership.tenantId}
-              and is_active = true
-            limit 1
-          `);
-          storeLinked = Array.isArray(linked.rows) && linked.rows.length > 0;
-        }
+      if (linkedAccount) {
+        const [postsCount] = await db
+          .select({ value: count() })
+          .from(tiktokPosts)
+          .where(
+            and(
+              eq(tiktokPosts.storeId, storeId),
+              eq(tiktokPosts.tenantId, tenantId)
+            )
+          );
+
+        importedCount = Number(postsCount?.value ?? 0);
       }
     }
 
     return NextResponse.json({
-      connected: Boolean(tiktokAccount?.accessToken),
-      scopes,
+      connected: storeLinked,
       storeLinked,
+      importedCount,
+      profileUrl,
+      username,
+      lastImportedAt,
     });
   } catch (error) {
     console.error("TikTok status check error:", error);
-    return NextResponse.json({ connected: false, scopes: [], storeLinked: false }, { status: 500 });
+    return NextResponse.json({ connected: false, storeLinked: false, importedCount: 0 }, { status: 500 });
   }
 }

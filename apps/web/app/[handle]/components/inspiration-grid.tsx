@@ -27,6 +27,15 @@ interface InspirationGridProps {
   videos: TikTokVideo[];
 }
 
+const aspectVariants = [
+  "aspect-[3/4]",
+  "aspect-[4/5]",
+  "aspect-[1/1]",
+  "aspect-[4/5]",
+  "aspect-[3/4]",
+  "aspect-[5/6]",
+];
+
 export function InspirationGrid({ videos }: InspirationGridProps) {
   const [playerOpen, setPlayerOpen] = React.useState(false);
   const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
@@ -70,14 +79,15 @@ export function InspirationGrid({ videos }: InspirationGridProps) {
   return (
     <>
       {/* Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-[2px]">
+      <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-2 sm:gap-4 lg:gap-5 px-1 sm:px-4 lg:px-6 xl:px-8 [column-fill:balance]">
         {videos.map((video, index) => {
           const label = video.title || video.video_description || `Inspiration ${index + 1}`;
+          const aspectClass = aspectVariants[index % aspectVariants.length];
           return (
             <button
               key={video.id}
               type="button"
-              className="group relative block aspect-square overflow-hidden bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className={`group relative mb-3 block w-full break-inside-avoid overflow-hidden rounded-lg bg-muted ${aspectClass} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:mb-4 lg:mb-5`}
               onClick={() => openVideo(index)}
               aria-label={`Play: ${label}`}
             >

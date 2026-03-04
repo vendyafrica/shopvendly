@@ -82,7 +82,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await req.json();
-    const { status, deliveryProviderPhone, name } = body;
+    const { status, deliveryProviderPhone, name, slug } = body;
 
     try {
         await db
@@ -91,6 +91,7 @@ export async function PATCH(
                 ...(status !== undefined ? { status } : {}),
                 ...(deliveryProviderPhone !== undefined ? { deliveryProviderPhone } : {}),
                 ...(name !== undefined ? { name } : {}),
+                ...(slug !== undefined ? { slug } : {}),
             })
             .where(eq(stores.id, id));
 

@@ -2,8 +2,9 @@ import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@shopvendly/db/db";
-import { account, products } from "@shopvendly/db/schema";
+import { account, instagramAccounts, products } from "@shopvendly/db/schema";
 import { eq, and } from "@shopvendly/db";
+import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,6 +16,17 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const storeId = searchParams.get("storeId");
 
+    let membershipTenantId: string | null = null;
+
+    if (storeId) {
+      const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
+      if (!access.store || !access.isAuthorized) {
+        return NextResponse.json({ connected: false, imported: false }, { status: 404 });
+      }
+
+      membershipTenantId = access.store.tenantId;
+    }
+
     // Check better-auth account link
     const instagramAuthAccount = await db.query.account.findFirst({
       where: and(
@@ -23,7 +35,21 @@ export async function GET(req: NextRequest) {
       ),
     });
 
-    const isConnected = !!instagramAuthAccount?.accessToken;
+    let hasTenantInstagramAccount = false;
+
+    if (membershipTenantId) {
+      const instagramAccount = await db.query.instagramAccounts.findFirst({
+        where: and(
+          eq(instagramAccounts.tenantId, membershipTenantId),
+          eq(instagramAccounts.userId, session.user.id)
+        ),
+        columns: { id: true },
+      });
+
+      hasTenantInstagramAccount = Boolean(instagramAccount);
+    }
+
+    const isConnected = !!instagramAuthAccount?.accessToken && hasTenantInstagramAccount;
     let isImported = false;
 
     if (isConnected && storeId) {

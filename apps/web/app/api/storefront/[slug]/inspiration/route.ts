@@ -3,24 +3,8 @@ import { storefrontService } from "@/app/[handle]/lib/storefront-service";
 import { db } from "@shopvendly/db/db";
 import { sql } from "@shopvendly/db";
 
-const VIDEO_FIELDS = [
-  "id",
-  "title",
-  "video_description",
-  "duration",
-  "cover_image_url",
-  "embed_link",
-  "share_url",
-].join(",");
-
 type RouteParams = {
   params: Promise<{ slug: string }>;
-};
-
-type TikTokError = {
-  code?: string;
-  message?: string;
-  log_id?: string;
 };
 
 type TikTokVideo = {
@@ -31,15 +15,7 @@ type TikTokVideo = {
   cover_image_url?: string;
   embed_link?: string;
   share_url?: string;
-};
-
-type TikTokVideoListResponse = {
-  data?: {
-    videos?: TikTokVideo[];
-    cursor?: number;
-    has_more?: boolean;
-  };
-  error?: TikTokError;
+  created_at?: string;
 };
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
@@ -69,62 +45,47 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
       | null;
 
-    if (!linkedTikTok?.user_id) {
-      return NextResponse.json({ connected: false, videos: [] });
-    }
-
-    const linkedAuthResult = await db.execute(sql`
-      select access_token
-      from account
-      where user_id = ${linkedTikTok.user_id}
-        and provider_id = 'tiktok'
-      limit 1
-    `);
-
-    const linkedAuthAccount = (linkedAuthResult.rows?.[0] ?? null) as
-      | { access_token?: string | null }
-      | null;
-
-    if (!linkedAuthAccount?.access_token) {
+    if (!linkedTikTok) {
       return NextResponse.json({ connected: false, videos: [] });
     }
 
     const { searchParams } = new URL(request.url);
-    const maxCountParam = Number(searchParams.get("maxCount") || "12");
+    const maxCountParam = Number(searchParams.get("maxCount") || "25");
     const maxCount = Number.isFinite(maxCountParam)
-      ? Math.min(Math.max(maxCountParam, 1), 20)
-      : 12;
+      ? Math.min(Math.max(maxCountParam, 1), 25)
+      : 25;
 
-    const response = await fetch(
-      `https://open.tiktokapis.com/v2/video/list/?fields=${encodeURIComponent(VIDEO_FIELDS)}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${linkedAuthAccount.access_token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ max_count: maxCount }),
-        cache: "no-store",
-      }
-    );
+    const postsResult = await db.execute(sql`
+      select
+        source_post_id,
+        title,
+        video_description,
+        duration,
+        cover_image_url,
+        embed_link,
+        share_url,
+        created_at_source,
+        sort_order
+      from tiktok_posts
+      where store_id = ${store.id}
+        and tenant_id = ${store.tenantId}
+      order by sort_order asc, created_at_source desc nulls last
+      limit ${maxCount}
+    `);
 
-    const text = await response.text();
-    let result: TikTokVideoListResponse;
-    try {
-      result = JSON.parse(text) as TikTokVideoListResponse;
-    } catch {
-      return NextResponse.json({ error: "TikTok returned non-JSON inspiration response" }, { status: 502 });
-    }
+    const videos = (postsResult.rows ?? []) as Array<{
+      source_post_id: string;
+      title?: string | null;
+      video_description?: string | null;
+      duration?: number | null;
+      cover_image_url?: string | null;
+      embed_link?: string | null;
+      share_url?: string | null;
+      created_at_source?: Date | string | null;
+    }>;
 
-    if (!response.ok || (result.error?.code && result.error.code !== "ok")) {
-      return NextResponse.json(
-        {
-          error: result.error?.message || "Failed to fetch TikTok inspiration feed",
-          code: result.error?.code || "tiktok_inspiration_error",
-          upstreamStatus: response.status,
-        },
-        { status: 502 }
-      );
+    if (!videos.length) {
+      return NextResponse.json({ connected: false, videos: [] });
     }
 
     return NextResponse.json({
@@ -134,9 +95,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         username: linkedTikTok.username,
         avatarUrl: linkedTikTok.avatar_url,
       },
-      videos: result.data?.videos ?? [],
-      cursor: result.data?.cursor ?? null,
-      hasMore: Boolean(result.data?.has_more),
+      videos: videos.map(
+        (video): TikTokVideo => ({
+          id: video.source_post_id,
+          title: video.title ?? undefined,
+          video_description: video.video_description ?? undefined,
+          duration: video.duration ?? undefined,
+          cover_image_url: video.cover_image_url ?? undefined,
+          embed_link: video.embed_link ?? undefined,
+          share_url: video.share_url ?? undefined,
+          created_at: video.created_at_source ? new Date(video.created_at_source).toISOString() : undefined,
+        })
+      ),
+      cursor: null,
+      hasMore: false,
     });
   } catch (error) {
     console.error("Storefront TikTok inspiration error:", error);

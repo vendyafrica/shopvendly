@@ -2,31 +2,16 @@ import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@shopvendly/db/db";
-import { account, stores, tenantMemberships } from "@shopvendly/db/schema";
-import { and, eq, sql } from "@shopvendly/db";
+import { tiktokAccounts, tiktokPosts } from "@shopvendly/db/schema";
+import { and, eq, desc } from "@shopvendly/db";
 import { z } from "zod";
+import { scrapeTikTokPosts, MAX_TIKTOK_IMPORT_POSTS } from "../lib/scraper";
+import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
 
 const bodySchema = z.object({
   storeId: z.string().uuid(),
+  profileUrl: z.string().min(1),
 });
-
-const USER_INFO_FIELDS = ["open_id", "avatar_url", "display_name", "username"].join(",");
-
-type TikTokUserInfoResponse = {
-  data?: {
-    user?: {
-      open_id?: string;
-      avatar_url?: string;
-      display_name?: string;
-      username?: string;
-    };
-  };
-  error?: {
-    code?: string;
-    message?: string;
-    log_id?: string;
-  };
-};
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,144 +20,109 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const membership = await db.query.tenantMemberships.findFirst({
-      where: eq(tenantMemberships.userId, session.user.id),
-    });
-
-    if (!membership) {
-      return NextResponse.json({ error: "No tenant found" }, { status: 404 });
-    }
-
     const body = await request.json();
-    const { storeId } = bodySchema.parse(body);
+    const { storeId, profileUrl } = bodySchema.parse(body);
 
-    const store = await db.query.stores.findFirst({
-      where: and(eq(stores.id, storeId), eq(stores.tenantId, membership.tenantId)),
-      columns: { id: true, tenantId: true },
-    });
-
-    if (!store) {
+    const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "write");
+    if (!access.store || !access.isAuthorized) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    const linkedTikTokAuth = await db.query.account.findFirst({
-      where: and(eq(account.userId, session.user.id), eq(account.providerId, "tiktok")),
-      columns: {
-        accountId: true,
-        accessToken: true,
-      },
+    const tenantId = access.store.tenantId;
+
+    const scraped = await scrapeTikTokPosts({
+      profileInput: profileUrl,
+      tenantId,
+      maxPosts: MAX_TIKTOK_IMPORT_POSTS,
     });
 
-    if (!linkedTikTokAuth?.accessToken) {
-      return NextResponse.json({ error: "TikTok not connected" }, { status: 400 });
-    }
+    const existingAccount = await db.query.tiktokAccounts.findFirst({
+      where: and(eq(tiktokAccounts.storeId, storeId), eq(tiktokAccounts.tenantId, tenantId)),
+      columns: { id: true },
+    });
 
-    const profileResponse = await fetch(
-      `https://open.tiktokapis.com/v2/user/info/?fields=${encodeURIComponent(USER_INFO_FIELDS)}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${linkedTikTokAuth.accessToken}`,
-        },
-        cache: "no-store",
+    const accountValues = {
+      tenantId,
+      storeId,
+      userId: session.user.id,
+      providerAccountId: scraped.handle,
+      displayName: `@${scraped.handle}`,
+      username: scraped.handle,
+      avatarUrl: null,
+      profileUrl: scraped.profileUrl,
+      isActive: true,
+      lastSyncedAt: new Date(),
+      lastImportedAt: new Date(),
+    };
+
+    let accountId: string;
+    if (existingAccount) {
+      const [updated] = await db
+        .update(tiktokAccounts)
+        .set(accountValues)
+        .where(eq(tiktokAccounts.id, existingAccount.id))
+        .returning({ id: tiktokAccounts.id });
+
+      if (!updated) {
+        throw new Error("Failed to update TikTok account");
       }
-    );
 
-    const text = await profileResponse.text();
-    let profilePayload: TikTokUserInfoResponse;
-    try {
-      profilePayload = JSON.parse(text) as TikTokUserInfoResponse;
-    } catch {
-      return NextResponse.json({ error: "TikTok returned non-JSON profile response" }, { status: 502 });
-    }
-
-    if (!profileResponse.ok || (profilePayload.error?.code && profilePayload.error.code !== "ok")) {
-      return NextResponse.json(
-        {
-          error: profilePayload.error?.message || "Failed to fetch TikTok profile",
-          code: profilePayload.error?.code || "tiktok_profile_error",
-        },
-        { status: 502 }
-      );
-    }
-
-    const tiktokUser = profilePayload.data?.user;
-    const providerAccountId = tiktokUser?.open_id || linkedTikTokAuth.accountId;
-
-    if (!providerAccountId) {
-      return NextResponse.json({ error: "TikTok account id missing" }, { status: 502 });
-    }
-
-    const existingResult = await db.execute(sql`
-      select id, display_name, username, avatar_url
-      from tiktok_accounts
-      where store_id = ${storeId}
-        and tenant_id = ${membership.tenantId}
-      limit 1
-    `);
-
-    const existing = (existingResult.rows?.[0] ?? null) as
-      | {
-          id: string;
-          display_name?: string | null;
-          username?: string | null;
-          avatar_url?: string | null;
-        }
-      | null;
-
-    if (existing) {
-      await db.execute(sql`
-        update tiktok_accounts
-        set
-          user_id = ${session.user.id},
-          provider_account_id = ${providerAccountId},
-          display_name = ${tiktokUser?.display_name ?? existing.display_name ?? null},
-          username = ${tiktokUser?.username ?? existing.username ?? null},
-          avatar_url = ${tiktokUser?.avatar_url ?? existing.avatar_url ?? null},
-          is_active = true,
-          last_synced_at = now(),
-          updated_at = now()
-        where id = ${existing.id}
-      `);
+      accountId = updated.id;
     } else {
-      await db.execute(sql`
-        insert into tiktok_accounts (
-          tenant_id,
-          store_id,
-          user_id,
-          provider_account_id,
-          display_name,
-          username,
-          avatar_url,
-          is_active,
-          last_synced_at,
-          created_at,
-          updated_at
-        ) values (
-          ${membership.tenantId},
-          ${storeId},
-          ${session.user.id},
-          ${providerAccountId},
-          ${tiktokUser?.display_name ?? null},
-          ${tiktokUser?.username ?? null},
-          ${tiktokUser?.avatar_url ?? null},
-          true,
-          now(),
-          now(),
-          now()
-        )
-      `);
+      const [created] = await db.insert(tiktokAccounts).values(accountValues).returning({ id: tiktokAccounts.id });
+
+      if (!created) {
+        throw new Error("Failed to create TikTok account");
+      }
+
+      accountId = created.id;
     }
+
+    await db.delete(tiktokPosts).where(and(eq(tiktokPosts.storeId, storeId), eq(tiktokPosts.tenantId, tenantId)));
+
+    const postsToInsert = scraped.posts.slice(0, MAX_TIKTOK_IMPORT_POSTS).map((post, index) => ({
+      tenantId,
+      storeId,
+      accountId,
+      sourcePostId: post.sourcePostId,
+      title: post.title,
+      videoDescription: post.videoDescription,
+      duration: post.duration,
+      coverImageUrl: post.coverImageUrl,
+      embedLink: post.embedLink,
+      shareUrl: post.shareUrl,
+      sortOrder: index,
+      createdAtSource: post.createdAtSource,
+    }));
+
+    let importedCount = 0;
+    for (const post of postsToInsert) {
+      const [inserted] = await db
+        .insert(tiktokPosts)
+        .values(post)
+        .onConflictDoNothing()
+        .returning({ id: tiktokPosts.id });
+
+      if (inserted) {
+        importedCount += 1;
+      }
+    }
+
+    const [latestPost] = await db
+      .select({ createdAtSource: tiktokPosts.createdAtSource })
+      .from(tiktokPosts)
+      .where(and(eq(tiktokPosts.storeId, storeId), eq(tiktokPosts.tenantId, tenantId)))
+      .orderBy(desc(tiktokPosts.createdAtSource))
+      .limit(1);
 
     return NextResponse.json({
       ok: true,
       storeId,
-      profile: {
-        openId: providerAccountId,
-        displayName: tiktokUser?.display_name ?? null,
-        username: tiktokUser?.username ?? null,
-        avatarUrl: tiktokUser?.avatar_url ?? null,
-      },
+      profileUrl: scraped.profileUrl,
+      handle: scraped.handle,
+      importedCount,
+      targetCount: postsToInsert.length,
+      lastImportedAt: latestPost?.createdAtSource ?? new Date(),
     });
   } catch (error) {
     console.error("TikTok sync error:", error);

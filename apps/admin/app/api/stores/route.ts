@@ -1,6 +1,6 @@
 import { db } from "@shopvendly/db/db";
 import { stores, tenants } from "@shopvendly/db/schema";
-import { eq, desc } from "@shopvendly/db";
+import { and, desc, eq, isNull } from "@shopvendly/db";
 import { NextResponse } from "next/server";
 import { checkSuperAdminApi } from "@/lib/auth-guard";
 import { z } from "zod";
@@ -22,13 +22,26 @@ export async function GET() {
                 name: stores.name,
                 slug: stores.slug,
                 status: stores.status,
+                storeContactPhone: stores.storeContactPhone,
                 deliveryProviderPhone: stores.deliveryProviderPhone,
                 createdAt: stores.createdAt,
-                tenantName: tenants.fullName
+                tenantName: tenants.fullName,
+                tenantPhone: tenants.phoneNumber,
             })
             .from(stores)
             .leftJoin(tenants, eq(stores.tenantId, tenants.id))
             .orderBy(desc(stores.createdAt));
+
+        await Promise.all(
+            data
+                .filter((store) => !store.storeContactPhone && store.tenantPhone)
+                .map((store) =>
+                    db
+                        .update(stores)
+                        .set({ storeContactPhone: store.tenantPhone })
+                        .where(and(eq(stores.id, store.id), isNull(stores.storeContactPhone)))
+                )
+        );
 
         return NextResponse.json(data);
     } catch (error) {
