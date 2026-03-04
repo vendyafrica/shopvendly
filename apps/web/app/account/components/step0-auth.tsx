@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@shopvendly/ui/components/button";
 import { Field, FieldGroup, FieldLabel } from "@shopvendly/ui/components/field";
@@ -12,6 +12,27 @@ import { getRootUrl } from "@/utils/misc";
 export function Step0Auth() {
   const [email, setEmail] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
+
+  useEffect(() => {
+    // Check for claim token params from store assignment email
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const claimToken = params.get("claimToken");
+      const claimEmail = params.get("claimEmail");
+      const claimRedirect = params.get("claimRedirect");
+
+      if (claimToken && claimEmail) {
+        // Store claim params in localStorage to survive OAuth redirect
+        localStorage.setItem("vendly_claim_token", claimToken);
+        localStorage.setItem("vendly_claim_email", claimEmail);
+        if (claimRedirect) {
+          localStorage.setItem("vendly_claim_redirect", claimRedirect);
+        }
+        // Pre-fill email field
+        setEmail(claimEmail);
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();

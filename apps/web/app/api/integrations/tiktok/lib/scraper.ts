@@ -162,10 +162,15 @@ function normalizeScrapedPost(item: Record<string, unknown>, index: number): Scr
 
   const title = pickString(item, ["title"]);
   const videoDescription = pickString(item, ["text", "desc", "description", "video_description"]);
+
+  // Broader mapping for cover image
   const coverImageUrl =
-    pickString(item, ["cover", "coverUrl", "thumbnail", "thumbnailUrl", "image", "imageUrl"]) ??
+    pickString(item, ["cover", "coverUrl", "thumbnail", "thumbnailUrl", "image", "imageUrl", "origin_cover", "dynamic_cover", "cover_url"]) ??
     (item.covers && typeof item.covers === "object"
       ? pickString(item.covers as Record<string, unknown>, ["default", "origin", "dynamic", "url"])
+      : null) ??
+    (item.video && typeof item.video === "object"
+      ? pickString(item.video as Record<string, unknown>, ["cover", "origin_cover", "dynamic_cover", "cover_url", "thumbnail"])
       : null);
 
   const shareUrl = pickString(item, ["webVideoUrl", "url", "shareUrl", "share_url", "permalink"]);
@@ -178,14 +183,14 @@ function normalizeScrapedPost(item: Record<string, unknown>, index: number): Scr
   const videoMeta = item.videoMeta;
   const videoUrlRaw =
     typeof videoMeta === "object" && videoMeta !== null
-      ? pickString(videoMeta as Record<string, unknown>, ["downloadAddr", "playAddr", "url"])
-      : pickString(item, ["videoUrl", "video_url", "playAddr", "downloadAddr"]);
+      ? pickString(videoMeta as Record<string, unknown>, ["downloadAddr", "playAddr", "url", "download_addr", "play_addr"])
+      : pickString(item, ["videoUrl", "video_url", "playAddr", "downloadAddr", "play_url", "download_url", "play_addr", "download_addr"]);
 
   // We should also look into item.video if videoMeta is not present
   const videoObj = item.video;
   const videoUrlSecondary =
     typeof videoObj === "object" && videoObj !== null
-      ? pickString(videoObj as Record<string, unknown>, ["downloadAddr", "playAddr", "url"])
+      ? pickString(videoObj as Record<string, unknown>, ["downloadAddr", "playAddr", "url", "download_addr", "play_addr", "play_url", "download_url"])
       : null;
 
   const finalVideoUrl = videoUrlRaw || videoUrlSecondary;
@@ -277,7 +282,7 @@ export async function scrapeTikTokPosts(params: {
 
   const downloadedPosts = await Promise.all(
     normalized.map(async (post) => {
-      let updatedPost = { ...post };
+      const updatedPost = { ...post };
 
       if (post.coverImageUrl) {
         try {
@@ -288,7 +293,8 @@ export async function scrapeTikTokPosts(params: {
           });
           updatedPost.coverImageUrl = storedCoverUrl;
         } catch (err) {
-          console.error(`Failed to download TikTok cover for ${post.sourcePostId}:`, err);
+          console.error(`[TikTok Scraper] Failed to download cover for ${post.sourcePostId}:`, err);
+          updatedPost.coverImageUrl = null;
         }
       }
 
@@ -301,7 +307,8 @@ export async function scrapeTikTokPosts(params: {
           });
           updatedPost.videoUrl = storedVideoUrl;
         } catch (err) {
-          console.error(`Failed to download TikTok video for ${post.sourcePostId}:`, err);
+          console.error(`[TikTok Scraper] Failed to download video for ${post.sourcePostId}:`, err);
+          updatedPost.videoUrl = null;
         }
       }
 

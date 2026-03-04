@@ -11,19 +11,32 @@ type ImportJob = {
     id: string;
     status: "running" | "completed" | "failed";
     profileUrl: string;
+
     foundCount: number;
     processedCount: number;
     importedCount: number;
     skippedCount: number;
+    storeId?: string;
     storeSlug?: string;
     error?: string;
 };
 
+type UnclaimedStore = {
+    id: string;
+    name: string;
+    slug: string;
+};
+
 export default function SettingsPage() {
     const [email, setEmail] = React.useState("");
+    const [sellerEmail, setSellerEmail] = React.useState("");
+    const [selectedStoreId, setSelectedStoreId] = React.useState("");
+    const [unclaimedStores, setUnclaimedStores] = React.useState<UnclaimedStore[]>([]);
     const [instagramProfileUrl, setInstagramProfileUrl] = React.useState("");
     const [deliveryProviderPhone, setDeliveryProviderPhone] = React.useState("");
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [isAssigningStore, setIsAssigningStore] = React.useState(false);
+    const [isLoadingUnclaimedStores, setIsLoadingUnclaimedStores] = React.useState(false);
     const [isImporting, setIsImporting] = React.useState(false);
     const [isSavingDeliveryProvider, setIsSavingDeliveryProvider] = React.useState(false);
 
@@ -31,9 +44,35 @@ export default function SettingsPage() {
     const [success, setSuccess] = React.useState<string | null>(null);
     const [importError, setImportError] = React.useState<string | null>(null);
     const [importSuccess, setImportSuccess] = React.useState<string | null>(null);
+    const [assignStoreError, setAssignStoreError] = React.useState<string | null>(null);
+    const [assignStoreSuccess, setAssignStoreSuccess] = React.useState<string | null>(null);
     const [deliveryProviderError, setDeliveryProviderError] = React.useState<string | null>(null);
     const [deliveryProviderSuccess, setDeliveryProviderSuccess] = React.useState<string | null>(null);
     const [importJob, setImportJob] = React.useState<ImportJob | null>(null);
+
+    const loadUnclaimedStores = React.useCallback(async () => {
+        setIsLoadingUnclaimedStores(true);
+        try {
+            const res = await fetch("/api/super-admin/unclaimed-stores", { cache: "no-store" });
+            const data = (await res.json().catch(() => [])) as Array<UnclaimedStore> | { error?: string };
+
+            if (!res.ok || !Array.isArray(data)) {
+                throw new Error(Array.isArray(data) ? "Failed to fetch unclaimed stores." : data.error || "Failed to fetch unclaimed stores.");
+            }
+
+            setUnclaimedStores(data);
+            setSelectedStoreId((prev) => {
+                if (prev && data.some((store) => store.id === prev)) {
+                    return prev;
+                }
+                return data[0]?.id ?? "";
+            });
+        } catch (err: unknown) {
+            setAssignStoreError(err instanceof Error ? err.message : "Failed to fetch unclaimed stores.");
+        } finally {
+            setIsLoadingUnclaimedStores(false);
+        }
+    }, []);
 
     React.useEffect(() => {
         const loadCurrentDeliveryProvider = async () => {
@@ -53,7 +92,50 @@ export default function SettingsPage() {
         };
 
         void loadCurrentDeliveryProvider();
-    }, []);
+        void loadUnclaimedStores();
+    }, [loadUnclaimedStores]);
+
+    const onAssignStoreSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setAssignStoreError(null);
+        setAssignStoreSuccess(null);
+        setIsAssigningStore(true);
+
+        try {
+            const res = await fetch("/api/super-admin/assign-store", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email: sellerEmail,
+                    storeId: selectedStoreId,
+                }),
+            });
+
+            const data = (await res.json().catch(() => ({}))) as {
+                error?: string;
+                emailSent?: boolean;
+                emailError?: string | null;
+            };
+
+            if (!res.ok) {
+                setAssignStoreError(data.error || "Failed to assign store.");
+                return;
+            }
+
+            const baseMessage = data.emailSent
+                ? "Store assigned and claim email sent successfully."
+                : "Store assigned, but email could not be sent.";
+            const fullMessage = data.emailError ? `${baseMessage} (${data.emailError})` : baseMessage;
+
+            setAssignStoreSuccess(fullMessage);
+            setSellerEmail("");
+            await loadUnclaimedStores();
+        } catch (err: unknown) {
+            setAssignStoreError(err instanceof Error ? err.message : "Failed to assign store.");
+        } finally {
+            setIsAssigningStore(false);
+        }
+    };
 
     const onInviteSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -160,6 +242,10 @@ export default function SettingsPage() {
                         `Import complete. Store /${jobData.storeSlug} ready with ${jobData.importedCount ?? 0} imported posts (${jobData.skippedCount ?? 0} skipped).`
                     );
                     setInstagramProfileUrl("");
+                    await loadUnclaimedStores();
+                    if (jobData.storeId) {
+                        setSelectedStoreId(jobData.storeId);
+                    }
                     completed = true;
                     break;
                 }
@@ -186,6 +272,79 @@ export default function SettingsPage() {
                     Manage your super admin account settings and system preferences.
                 </p>
             </div>
+
+            <section className="space-y-6 rounded-xl border border-border/40 bg-card p-6 shadow-sm">
+                <div>
+                    <h2 className="text-xl font-semibold leading-none tracking-tight mb-2">Assign Store to Seller</h2>
+                    <p className="text-sm text-muted-foreground">
+                        Enter seller email and choose an unclaimed store to send a claim link. The seller will complete onboarding, update store details, and continue to admin.
+                    </p>
+                </div>
+
+                {assignStoreSuccess && (
+                    <div className="rounded-md border border-green-500/50 bg-green-500/10 px-4 py-3 text-sm text-green-700">
+                        {assignStoreSuccess}
+                    </div>
+                )}
+
+                {assignStoreError && (
+                    <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                        {assignStoreError}
+                    </div>
+                )}
+
+                <form onSubmit={onAssignStoreSubmit} className="space-y-4 max-w-2xl">
+                    <div className="space-y-2">
+                        <Label htmlFor="seller-email">Seller email</Label>
+                        <Input
+                            id="seller-email"
+                            type="email"
+                            value={sellerEmail}
+                            onChange={(e) => setSellerEmail(e.target.value)}
+                            placeholder="seller@example.com"
+                            required
+                            disabled={isAssigningStore}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="unclaimed-store">Unclaimed store</Label>
+                        <select
+                            id="unclaimed-store"
+                            value={selectedStoreId}
+                            onChange={(e) => setSelectedStoreId(e.target.value)}
+                            required
+                            disabled={isAssigningStore || isLoadingUnclaimedStores || unclaimedStores.length === 0}
+                            className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {unclaimedStores.length === 0 ? (
+                                <option value="">No unclaimed stores available</option>
+                            ) : null}
+                            {unclaimedStores.map((store) => (
+                                <option key={store.id} value={store.id}>
+                                    {store.name} ({store.slug})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <Button type="submit" disabled={isAssigningStore || isLoadingUnclaimedStores || unclaimedStores.length === 0}>
+                            {isAssigningStore ? "Assigning..." : "Assign & Send Claim Email"}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={isLoadingUnclaimedStores}
+                            onClick={() => {
+                                void loadUnclaimedStores();
+                            }}
+                        >
+                            {isLoadingUnclaimedStores ? "Refreshing..." : "Refresh Stores"}
+                        </Button>
+                    </div>
+                </form>
+            </section>
 
             <section className="space-y-6 rounded-xl border border-border/40 bg-card p-6 shadow-sm">
                 <div>

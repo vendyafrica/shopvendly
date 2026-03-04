@@ -126,25 +126,98 @@ export function OnboardingProvider({ children }: ProviderProps) {
     // Rehydrate from localStorage after client mount (SSR can't access localStorage)
     useEffect(() => {
         if (typeof window === "undefined") return;
-        const data = readLS();
-        const storedStep = readLSStep();
-        const search = new URLSearchParams(window.location.search);
-        const stepParam = search.get("step");
-        const map: Record<string, OnboardingStep> = {
-            "0": "step0",
-            "1": "step1",
-            "2": "step2",
-            "3": "step3",
+        
+        const validateClaimToken = async () => {
+            const claimToken = localStorage.getItem("vendly_claim_token");
+            const claimEmail = localStorage.getItem("vendly_claim_email");
+
+            if (claimToken && claimEmail) {
+                try {
+                    setState(prev => ({ ...prev, isLoading: true }));
+                    
+                    const res = await fetch("/api/auth/validate-claim-token", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({ token: claimToken, email: claimEmail }),
+                    });
+
+                    const result = await res.json();
+
+                    if (res.ok && result.success) {
+                        // Store the claimed store info
+                        localStorage.setItem("vendly_store_id", result.storeId);
+                        localStorage.setItem("vendly_store_slug", result.storeSlug);
+                        localStorage.setItem("vendly_tenant_id", result.tenantId);
+                        
+                        // Clear claim tokens
+                        localStorage.removeItem("vendly_claim_token");
+                        localStorage.removeItem("vendly_claim_email");
+                        localStorage.removeItem("vendly_claim_redirect");
+                        
+                        // Pre-populate store name in onboarding data
+                        const prefilledData: OnboardingData = {
+                            store: {
+                                storeName: result.storeName || "",
+                                storeDescription: "",
+                                storeLocation: "",
+                            },
+                        };
+                        writeLS(prefilledData, "step1");
+                        
+                        setState(prev => ({
+                            ...prev,
+                            data: prefilledData,
+                            currentStep: "step1",
+                            isHydrated: true,
+                            isLoading: false,
+                        }));
+                        
+                        // Navigate to step 1 to continue onboarding
+                        router.push("/account?step=1");
+                        return;
+                    } else {
+                        console.error("Claim token validation failed:", result.error);
+                        // Clear invalid tokens
+                        localStorage.removeItem("vendly_claim_token");
+                        localStorage.removeItem("vendly_claim_email");
+                        localStorage.removeItem("vendly_claim_redirect");
+                    }
+                } catch (error) {
+                    console.error("Error validating claim token:", error);
+                    localStorage.removeItem("vendly_claim_token");
+                    localStorage.removeItem("vendly_claim_email");
+                    localStorage.removeItem("vendly_claim_redirect");
+                }
+            }
         };
-        const stepFromParam = stepParam ? map[stepParam] : undefined;
-        const currentStep = stepFromParam ?? storedStep;
-        setState(prev => ({
-            ...prev,
-            data,
-            currentStep,
-            isHydrated: true,
-        }));
-    }, []);
+
+        // Run claim token validation first
+        void validateClaimToken().then(() => {
+            // Then do normal hydration if no claim token was processed
+            const claimToken = localStorage.getItem("vendly_claim_token");
+            if (!claimToken) {
+                const data = readLS();
+                const storedStep = readLSStep();
+                const search = new URLSearchParams(window.location.search);
+                const stepParam = search.get("step");
+                const map: Record<string, OnboardingStep> = {
+                    "0": "step0",
+                    "1": "step1",
+                    "2": "step2",
+                    "3": "step3",
+                };
+                const stepFromParam = stepParam ? map[stepParam] : undefined;
+                const currentStep = stepFromParam ?? storedStep;
+                setState(prev => ({
+                    ...prev,
+                    data,
+                    currentStep,
+                    isHydrated: true,
+                }));
+            }
+        });
+    }, [router]);
 
     // Persist state → localStorage whenever it changes (after hydration only)
     useEffect(() => {

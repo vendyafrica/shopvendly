@@ -53,10 +53,15 @@ export async function GET(req: Request) {
     });
 
     if (!user) {
-      await db.delete(verification).where(eq(verification.id, record.id));
-      return NextResponse.redirect(
-        new URL("/login?error=user-not-found", req.url)
-      );
+      // User doesn't exist yet (e.g., store assignment invite for new seller)
+      // Redirect to onboarding with token params so they can sign up and claim
+      const onboardingUrl = new URL("/account", req.url);
+      onboardingUrl.searchParams.set("claimToken", token);
+      onboardingUrl.searchParams.set("claimEmail", email);
+      if (redirectTo !== "/") {
+        onboardingUrl.searchParams.set("claimRedirect", redirectTo);
+      }
+      return NextResponse.redirect(onboardingUrl);
     }
 
     // Mark email as verified

@@ -75,7 +75,7 @@ async function runTiktokImportJob(jobId: string, userId: string, storeId: string
       videoDescription: post.videoDescription,
       duration: post.duration,
       coverImageUrl: post.coverImageUrl,
-      videoUrl: post.videoUrl, // mp4 video url
+      videoUrl: post.videoUrl,
       embedLink: post.embedLink,
       shareUrl: post.shareUrl,
       sortOrder: baseSortOrder + index,
@@ -85,7 +85,18 @@ async function runTiktokImportJob(jobId: string, userId: string, storeId: string
     touchJob(jobId, { targetCount: postsToInsert.length });
 
     let importedCount = 0;
+    let skippedNoVideo = 0;
     for (const post of postsToInsert) {
+      if (!post.videoUrl && !post.coverImageUrl) {
+        console.warn(`[TikTok Import] Skipping post ${post.sourcePostId}: missing both video_url and cover_image_url`);
+        skippedNoVideo += 1;
+        continue;
+      }
+
+      if (!post.videoUrl) {
+        console.info(`[TikTok Import] Post ${post.sourcePostId} has cover but no video_url - will render as static image`);
+      }
+
       const [inserted] = await db
         .insert(tiktokPosts)
         .values(post)
@@ -96,6 +107,10 @@ async function runTiktokImportJob(jobId: string, userId: string, storeId: string
         importedCount += 1;
         touchJob(jobId, { importedCount });
       }
+    }
+
+    if (skippedNoVideo > 0) {
+      console.warn(`[TikTok Import] Skipped ${skippedNoVideo} posts with no video or cover image`);
     }
 
     const [latestPost] = await db
