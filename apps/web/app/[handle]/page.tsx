@@ -122,11 +122,7 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
 
   const baseUrl = await getApiBaseUrl();
 
-  const [storeRes, inspirationRes] = await Promise.all([
-    fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } }),
-    fetch(`${baseUrl}/api/storefront/${handle}/inspiration`, { cache: "no-store" }),
-  ]);
-
+  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
   const store = storeRes.ok ? ((await storeRes.json()) as StorefrontStore) : null;
   if (!store) notFound();
 
@@ -134,17 +130,13 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
   if (query) productUrl.searchParams.set("q", query);
   const productsRes = await fetch(productUrl.toString(), { next: { revalidate: 30 } });
 
-  const [products, inspirationPayload] = await Promise.all([
-    productsRes.ok ? (productsRes.json() as Promise<StorefrontProduct[]>) : Promise.resolve([]),
-    inspirationRes.ok
-      ? (inspirationRes.json() as Promise<{ connected?: boolean; videos?: StorefrontTikTokVideo[] }>)
-      : Promise.resolve({ connected: false, videos: [] }),
-  ]);
-
-  const showInspirationTab = Boolean(inspirationPayload?.connected);
-  const inspirationVideos = Array.isArray(inspirationPayload?.videos)
-    ? inspirationPayload.videos
+  const products = productsRes.ok
+    ? ((await productsRes.json()) as StorefrontProduct[])
     : [];
+
+  // TikTok inspiration is temporarily disabled while we overhaul the experience.
+  const showInspirationTab = false;
+  const inspirationVideos: StorefrontTikTokVideo[] = [];
 
   return (
     <div className="min-h-screen">
