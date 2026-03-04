@@ -138,7 +138,6 @@ export default function ProductsPage() {
   } | null>(null);
   const [activeCell, setActiveCell] = React.useState<{ id: string; field: EditableField } | null>(null);
   const [drafts, setDrafts] = React.useState<DraftMap>({});
-  const [savingId, setSavingId] = React.useState<string | null>(null);
   const [uploadMode, setUploadMode] = React.useState<"single" | "multiple">("single");
   const [handledQuickAdd, setHandledQuickAdd] = React.useState(false);
 
@@ -429,7 +428,6 @@ export default function ProductsPage() {
         return;
       }
 
-      setSavingId(productId);
       updateProductMutation.mutate(
         { id: productId, data: payload },
         {
@@ -446,9 +444,6 @@ export default function ProductsPage() {
           },
           onError: (error) => {
             alert(error instanceof Error ? error.message : "Failed to save product");
-          },
-          onSettled: () => {
-            setSavingId((prev) => (prev === productId ? null : prev));
           },
         }
       );
@@ -580,6 +575,7 @@ export default function ProductsPage() {
     {
       accessorKey: "name",
       header: "Product",
+      size: 260,
       cell: ({ row }) => {
         const product = row.original;
         const field: EditableField = "name";
@@ -606,9 +602,11 @@ export default function ProductsPage() {
                     stopEditing();
                   }}
                   onKeyDown={(event) => {
-                    if (event.key === "Enter") handleInlineSave(product.id);
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      event.currentTarget.blur();
+                    }
                     if (event.key === "Escape") {
-                      // Reset draft on escape
                       setDrafts((prev) => {
                         const next = { ...prev };
                         delete next[product.id];
@@ -638,7 +636,7 @@ export default function ProductsPage() {
     {
       id: "price",
       header: "Price",
-      size: 100,
+      size: 130,
       cell: ({ row }) => {
         const product = row.original;
         const field: EditableField = "priceAmount";
@@ -660,7 +658,10 @@ export default function ProductsPage() {
                   stopEditing();
                 }}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") handleInlineSave(product.id);
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    event.currentTarget.blur();
+                  }
                   if (event.key === "Escape") {
                     setDrafts((prev) => {
                       const next = { ...prev };
@@ -689,7 +690,7 @@ export default function ProductsPage() {
     {
       id: "inventory",
       header: "Inventory",
-      size: 80,
+      size: 90,
       cell: ({ row }) => {
         const product = row.original;
         const field: EditableField = "quantity";
@@ -708,7 +709,10 @@ export default function ProductsPage() {
               stopEditing();
             }}
             onKeyDown={(event) => {
-              if (event.key === "Enter") handleInlineSave(product.id);
+              if (event.key === "Enter") {
+                event.preventDefault();
+                event.currentTarget.blur();
+              }
               if (event.key === "Escape") {
                 setDrafts((prev) => {
                   const next = { ...prev };
@@ -735,7 +739,7 @@ export default function ProductsPage() {
     {
       id: "sales",
       header: "Sales",
-      size: 100,
+      size: 110,
       cell: ({ row }) => (
         <span className="text-sm font-semibold whitespace-nowrap">
           {formatMoney(row.original.salesAmount ?? 0, row.original.currency)}
@@ -749,7 +753,6 @@ export default function ProductsPage() {
       cell: ({ row }) => {
         const product = row.original;
         const field: EditableField = "status";
-        // Get optimistic draft status if it exists, otherwise fall back to product status
         const draftValue = drafts[product.id]?.status;
         const currentStatus = (draftValue ?? product.status) as keyof typeof STATUS_STYLES;
         const badge = STATUS_STYLES[currentStatus];
@@ -760,7 +763,6 @@ export default function ProductsPage() {
             onValueChange={(value) => {
               if (!value) return;
               handleDraftChange(product, field, value);
-              // Optimistically save status change immediately since it's a dropdown change
               setTimeout(() => handleInlineSave(product.id), 0);
             }}
           >
@@ -775,39 +777,6 @@ export default function ProductsPage() {
               ))}
             </SelectContent>
           </Select>
-        );
-      },
-    },
-    {
-      id: "actions",
-      header: "Quick actions",
-      size: 140,
-      cell: ({ row }) => {
-        const product = row.original;
-        const draft = drafts[product.id];
-        const isDirty = !!(draft && Object.keys(draft).length > 0);
-        const invalid = hasInvalidDraft(draft);
-        const isSaving = savingId === product.id;
-
-        return (
-          <div className="flex items-center gap-2 justify-end">
-            <Button
-              size="sm"
-              onClick={() => handleInlineSave(product.id)}
-              disabled={!isDirty || invalid || isSaving}
-            >
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-destructive border-destructive/40"
-              onClick={() => handleDelete(product.id)}
-              disabled={deleteProduct.isPending}
-            >
-              Delete
-            </Button>
-          </div>
         );
       },
     },
@@ -861,9 +830,9 @@ export default function ProductsPage() {
           onDelete={handleDelete}
           onAddSelect={handleAddProductSelect}
           onStatusChange={(productId, newStatus) => {
-            const product = rows.find(r => r.id === productId);
+            const product = rows.find((r) => r.id === productId);
             if (product) {
-              handleDraftChange(product, 'status', newStatus);
+              handleDraftChange(product, "status", newStatus);
               setTimeout(() => handleInlineSave(productId), 0);
             }
           }}
@@ -899,9 +868,7 @@ export default function ProductsPage() {
                 </span>
               )}
             </Button>
-            <AddProductButton
-              onSelect={handleAddProductSelect}
-            />
+            <AddProductButton onSelect={handleAddProductSelect} />
           </div>
         </div>
 
@@ -929,7 +896,6 @@ export default function ProductsPage() {
               columns={columns}
               data={rows}
               rowSelection={rowSelection}
-
               onRowSelectionChange={(updater) => {
                 setRowSelection((prev) =>
                   typeof updater === "function" ? updater(prev) : updater

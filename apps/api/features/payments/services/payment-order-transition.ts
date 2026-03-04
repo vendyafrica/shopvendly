@@ -6,7 +6,7 @@ import {
 } from "../../messaging/services/notifications.js";
 import { dispatchDeliveryProviderForOrder } from "./delivery-dispatch.js";
 
-type PaymentMethodValue = "card" | "mpesa" | "mtn_momo" | "mobile_money" | "paystack" | "cash_on_delivery";
+type PaymentMethodValue = "card" | "mpesa" | "mtn_momo" | "mobile_money" | "paystack" | "cash_on_delivery" | "relworx";
 
 type HandlePaidOrderTransitionParams = {
   orderId: string;

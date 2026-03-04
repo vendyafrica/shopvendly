@@ -33,6 +33,7 @@ export const orders = pgTable(
         status: text("status").notNull().default("pending_seller_acceptance"),
         paymentMethod: text("payment_method").notNull().default("cash_on_delivery"),
         paymentStatus: text("payment_status").notNull().default("pending"),
+        paymentReference: text("payment_reference"),
 
         subtotal: integer("subtotal").notNull().default(0),
         totalAmount: integer("total_amount").notNull().default(0),
@@ -137,5 +138,5 @@ export type OrderStatus =
     | "cancelled"
     | "delivery_exception"
     | "refunded";
-export type PaymentMethod = "card" | "mpesa" | "mtn_momo" | "mobile_money" | "paystack" | "cash_on_delivery";
+export type PaymentMethod = "card" | "mpesa" | "mtn_momo" | "mobile_money" | "paystack" | "cash_on_delivery" | "relworx";
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";

@@ -31,7 +31,7 @@ export const createOrderSchema = z.object({
   customerName: z.string().min(1).max(255),
   customerEmail: z.string().email(),
   customerPhone: z.string().optional(),
-  paymentMethod: z.enum(["card", "mpesa", "mtn_momo", "mobile_money", "paystack", "cash_on_delivery"]).default("cash_on_delivery"),
+  paymentMethod: z.enum(["card", "mpesa", "mtn_momo", "mobile_money", "paystack", "cash_on_delivery", "relworx"]).default("cash_on_delivery"),
   notes: z.string().optional(),
   deliveryAddress: z.string().optional(),
   shippingAddress: z
@@ -61,16 +61,24 @@ export const updateOrderStatusSchema = z.object({
     ])
     .optional(),
   paymentStatus: z.enum(["pending", "paid", "failed", "refunded"]).optional(),
-  paymentMethod: z.enum(["card", "mpesa", "mtn_momo", "mobile_money", "paystack", "cash_on_delivery"]).optional(),
+  paymentMethod: z.enum(["card", "mpesa", "mtn_momo", "mobile_money", "paystack", "cash_on_delivery", "relworx"]).optional(),
 });
 
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
 
 export type OrderWithItems = Awaited<ReturnType<typeof orderService.getOrderById>>;
 
+function normalizePersistedPaymentMethod(method: CreateOrderInput["paymentMethod"] | UpdateOrderStatusInput["paymentMethod"] | undefined) {
+  if (!method) return method;
+  if (method === "mobile_money" || method === "relworx") {
+    return "mtn_momo" as const;
+  }
+  return method;
+}
+
 export const orderService = {
   async createOrder(storeSlug: string, input: CreateOrderInput) {
-    const normalizedPaymentMethod = input.paymentMethod === "mobile_money" ? "mtn_momo" : input.paymentMethod;
+    const normalizedPaymentMethod = normalizePersistedPaymentMethod(input.paymentMethod);
     const deliveryAddress = input.deliveryAddress || input.shippingAddress?.street || null;
 
     const store = await db.query.stores.findFirst({
@@ -204,8 +212,8 @@ export const orderService = {
   },
 
   async updateOrderStatus(orderId: string, tenantId: string, input: UpdateOrderStatusInput) {
-    const normalizedInput = input.paymentMethod === "mobile_money"
-      ? { ...input, paymentMethod: "mtn_momo" as const }
+    const normalizedInput = input.paymentMethod
+      ? { ...input, paymentMethod: normalizePersistedPaymentMethod(input.paymentMethod) }
       : input;
 
     const existing = await db.query.orders.findFirst({
@@ -359,8 +367,8 @@ export const orderService = {
   },
 
   async updateOrderStatusByOrderId(orderId: string, input: UpdateOrderStatusInput) {
-    const normalizedInput = input.paymentMethod === "mobile_money"
-      ? { ...input, paymentMethod: "mtn_momo" as const }
+    const normalizedInput = input.paymentMethod
+      ? { ...input, paymentMethod: normalizePersistedPaymentMethod(input.paymentMethod) }
       : input;
 
     const [updated] = await db
@@ -372,6 +380,15 @@ export const orderService = {
       .where(and(eq(orders.id, orderId), isNull(orders.deletedAt)))
       .returning();
 
+    return updated;
+  },
+
+  async updateOrderPaymentReference(orderId: string, paymentReference: string) {
+    const [updated] = await db
+      .update(orders)
+      .set({ paymentReference, updatedAt: new Date() })
+      .where(and(eq(orders.id, orderId), isNull(orders.deletedAt)))
+      .returning();
     return updated;
   },
 };

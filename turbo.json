@@ -58,7 +58,10 @@
     "NEXT_PUBLIC_GOOGLE_CLIENT_ID",
     "VERCEL_URL",
     "WEB_URL",
-    "NEXT_RUNTIME"
+    "NEXT_RUNTIME",
+    "RELWORX_ACCOUNT_NO",
+    "RELWORX_API_URL",
+    "RELWORX_API_KEY"
   ],
   "tasks": {
     "build": {

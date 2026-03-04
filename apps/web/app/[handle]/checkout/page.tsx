@@ -45,11 +45,13 @@ function CheckoutContent() {
     const [fullName, setFullName] = useState("");
     const [address, setAddress] = useState("");
     const [phone, setPhone] = useState("");
-    const paymentMethod = "cash_on_delivery";
+    const paymentMethod = "relworx";
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [isAwaitingPayment, setIsAwaitingPayment] = useState(false);
+    const [paymentInternalReference, setPaymentInternalReference] = useState<string | null>(null);
 
     useEffect(() => {
         if (session?.user) {
@@ -117,11 +119,38 @@ function CheckoutContent() {
         router.push(`/${resolvedStoreSlug}/cart`);
     };
 
+    const pollPaymentStatus = async (slug: string, orderId: string) => {
+        const maxAttempts = 45;
+        for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+            await new Promise((resolve) => setTimeout(resolve, 4000));
+
+            const statusRes = await fetch(`${API_BASE}/api/storefront/${slug}/payments/relworx/status/${orderId}`);
+            if (!statusRes.ok) {
+                throw new Error("Failed to confirm payment status");
+            }
+
+            const statusData = await statusRes.json();
+            const paymentStatus = statusData?.paymentStatus as string | undefined;
+
+            if (paymentStatus === "paid") {
+                return "paid";
+            }
+
+            if (paymentStatus === "failed") {
+                return "failed";
+            }
+        }
+
+        return "timeout" as const;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         setIsSubmitting(true);
         setError(null);
+        setIsAwaitingPayment(false);
+        setPaymentInternalReference(null);
 
         try {
             const payload = {
@@ -154,6 +183,31 @@ function CheckoutContent() {
             const orderId = "order" in data ? data.order?.id : data.id;
             if (!orderId) throw new Error("Missing order ID");
 
+            setIsAwaitingPayment(true);
+            const initiateRes = await fetch(`${API_BASE}/api/storefront/${store.slug}/payments/relworx/initiate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    orderId,
+                    msisdn: phone,
+                }),
+            });
+
+            const initiateData = await initiateRes.json().catch(() => ({}));
+            if (!initiateRes.ok) {
+                throw new Error(initiateData?.error || initiateData?.message || "Failed to initiate mobile money payment");
+            }
+
+            setPaymentInternalReference(initiateData?.internalReference || null);
+
+            const paymentResult = await pollPaymentStatus(store.slug, orderId);
+            if (paymentResult === "failed") {
+                throw new Error("Payment failed or was cancelled. Please try again.");
+            }
+            if (paymentResult === "timeout") {
+                throw new Error("Payment is still pending. Please complete the mobile money prompt and try again.");
+            }
+
             await clearStoreFromCart(store.id);
             setIsSuccess(true);
             setTimeout(() => {
@@ -163,6 +217,7 @@ function CheckoutContent() {
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
             setIsSubmitting(false);
+            setIsAwaitingPayment(false);
         }
     };
 
@@ -178,11 +233,16 @@ function CheckoutContent() {
                         />
                     </div>
                     <h1 className={`${geistSans.className} text-3xl tracking-widest font-semibold mb-4 leading-tight`}>
-                        Processing Order
+                        {isAwaitingPayment ? "Waiting for Payment" : "Processing Order"}
                     </h1>
                     <p className="text-neutral-500 mb-10 max-w-sm mx-auto uppercase tracking-wider text-xs">
-                        Please wait while we confirm your order with {store.name}.
+                        {isAwaitingPayment
+                            ? `Check your phone and approve the ${currency} mobile money payment prompt.`
+                            : `Please wait while we prepare your payment request with ${store.name}.`}
                     </p>
+                    {paymentInternalReference ? (
+                        <p className="text-neutral-400 uppercase tracking-wider text-[10px]">Ref: {paymentInternalReference}</p>
+                    ) : null}
                 </div>
             </div>
         );
@@ -287,7 +347,7 @@ function CheckoutContent() {
                                     <h2 className={`${geistSans.className} text-lg tracking-widest font-semibold`}>Payment</h2>
                                     <div className="p-4 rounded-xl border border-neutral-200 bg-white">
                                         <p className="text-sm text-neutral-600 leading-relaxed">
-                                            Place order now. The seller will confirm availability, then you&apos;ll receive a WhatsApp payment link to complete payment.
+                                            You will pay now via mobile money. Once payment is successful, your order is confirmed automatically.
                                         </p>
                                     </div>
 
@@ -303,7 +363,7 @@ function CheckoutContent() {
                                         disabled={isSubmitting}
                                     >
                                         <span>
-                                            Place order
+                                            Pay {currency} {storeTotal.toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0, maximumFractionDigits: currency === "USD" ? 2 : 0 })}
                                         </span>
                                     </Button>
                                 </div>
