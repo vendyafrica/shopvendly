@@ -27,14 +27,6 @@ function normalizeToWhatsApp(phone: string | null | undefined, label: string, co
   return to.replace(/^\+/, "");
 }
 
-function getWebBaseUrl() {
-  const configured = process.env.WEB_URL || process.env.NEXT_PUBLIC_APP_URL;
-  if (configured) {
-    return configured.replace(/\/$/, "");
-  }
-  return process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://shopvendly.store";
-}
-
 export async function notifySellerCswOpener(params: { sellerPhone: string | null; tenantId: string }) {
   const { sellerPhone, tenantId } = params;
   const to = normalizeToWhatsApp(sellerPhone, "seller", { tenantId });
@@ -64,18 +56,16 @@ export async function notifyDeliveryPartnerNewOrder(params: { order: OrderLike }
 
   const key = `delivery_partner:new_order:${order.id}:${to}`;
   await sendOnce(key, () =>
-    enqueueTextMessage({
-      to,
-      body: [
-        `🚚 New delivery request ${order.orderNumber || order.id}`,
-        `Items: ${formatItemsSummary(order.items)}`,
-        `Total: ${order.currency || "UGX"} ${String(order.totalAmount)}`,
-        `Seller contact (pickup): ${sellerPhone || "N/A"}`,
-        `Buyer: ${order.customerName}`,
-        `Buyer phone: ${order.customerPhone || "N/A"}`,
-        `Delivery address: ${order.deliveryAddress || "N/A"}`,
-        "Manual flow: call seller for pickup directions, deliver to buyer, collect cash, then remit to seller.",
-      ].join("\n"),
+    enqueueTemplateMessage({
+      input: templateSend.deliveryProviderDispatch(to, {
+        orderId: order.orderNumber || order.id,
+        orderItems: formatItemsSummary(order.items),
+        total: `${order.currency || "UGX"} ${String(order.totalAmount)}`,
+        sellerPhone: sellerPhone || "N/A",
+        buyerName: order.customerName,
+        buyerPhone: order.customerPhone || "N/A",
+        deliveryAddress: order.deliveryAddress || "N/A",
+      }),
       tenantId: order.tenantId,
       orderId: order.id,
       dedupeKey: key,
@@ -109,19 +99,6 @@ function formatCustomerDetails(order: OrderLike): string {
   return parts.join(". ");
 }
 
-function buildPaymentLink(order: OrderLike) {
-  const query = new URLSearchParams({
-    amount: String(order.totalAmount ?? ""),
-    currency: order.currency ?? "UGX",
-    orderNumber: order.orderNumber ?? "",
-  });
-
-  const payLink = `${getWebBaseUrl()}/pay/${order.id}?${query.toString()}`;
-  const payLinkToken = `${order.id}?${query.toString()}`;
-
-  return { payLink, payLinkToken };
-}
-
 async function sendOnce(key: string, fn: () => Promise<unknown>) {
   const result = await fn();
   if (!result) {
@@ -143,16 +120,15 @@ export async function notifySellerNewOrder(params: {
 
   const key = `seller:new_order:${order.id}:${to}`;
   await sendOnce(key, () =>
-    enqueueTextMessage({
-      to,
-      body: [
-        `🛍️ New order ${order.orderNumber || order.id}`,
-        `Items: ${formatItemsSummary(order.items)}`,
-        `Buyer: ${order.customerName}`,
-        `Buyer phone: ${order.customerPhone || "N/A"}`,
-        `Delivery address: ${order.deliveryAddress || "N/A"}`,
-        `Total: ${order.currency || "UGX"} ${String(order.totalAmount)}`,
-      ].join("\n"),
+    enqueueTemplateMessage({
+      input: templateSend.sellerPrepareOrder(to, {
+        orderId: order.orderNumber || order.id,
+        orderItems: formatItemsSummary(order.items),
+        buyerName: order.customerName,
+        customerPhone: order.customerPhone || "N/A",
+        customerLocation: order.deliveryAddress || "N/A",
+        total: `${order.currency || "UGX"} ${String(order.totalAmount)}`,
+      }),
       tenantId: order.tenantId,
       orderId: order.id,
       dedupeKey: key,
@@ -304,47 +280,13 @@ export async function notifyCustomerOrderAccepted(params: { order: OrderLike }) 
   const to = normalizeToWhatsApp(order.customerPhone, "customer", { orderId: order.id, orderNumber: order.orderNumber });
   if (!to) return;
 
-  const { payLink, payLinkToken } = buildPaymentLink(order);
-
   const key = `customer:accepted:${order.id}:${to}`;
   await sendOnce(key, () =>
     enqueueTemplateMessage({
-      input: templateSend.buyerPaymentLink(to, {
-        buyerName: order.customerName,
+      input: templateSend.buyerOrderConfirmed(to, {
+        orderId: order.orderNumber || order.id,
         storeName: order.store?.name || "the store",
-        orderId: order.orderNumber,
-        total: String(order.totalAmount),
-        payLink,
-        payLinkToken,
-      }),
-      tenantId: order.tenantId,
-      orderId: order.id,
-      dedupeKey: key,
-    })
-  );
-}
-
-export async function notifyCustomerPendingPaymentLink(params: { order: OrderLike }) {
-  const { order } = params;
-  const to = normalizeToWhatsApp(order.customerPhone, "customer", {
-    orderId: order.id,
-    orderNumber: order.orderNumber,
-    paymentStatus: order.paymentStatus,
-  });
-  if (!to) return;
-
-  const { payLink, payLinkToken } = buildPaymentLink(order);
-
-  const key = `customer:pending_payment_link:${order.id}:${to}`;
-  await sendOnce(key, () =>
-    enqueueTemplateMessage({
-      input: templateSend.buyerPaymentLink(to, {
-        buyerName: order.customerName,
-        storeName: order.store?.name || "the store",
-        orderId: order.orderNumber,
-        total: String(order.totalAmount),
-        payLink,
-        payLinkToken,
+        total: `${order.currency || "UGX"} ${String(order.totalAmount)}`,
       }),
       tenantId: order.tenantId,
       orderId: order.id,
@@ -361,11 +303,9 @@ export async function notifyCustomerOrderReady(params: { order: OrderLike }) {
 
   const key = `customer:ready:${order.id}:${to}`;
   await sendOnce(key, () =>
-    enqueueTemplateMessage({
-      input: templateSend.buyerOrderReady(to, {
-        buyerName: order.customerName,
-        storeName: order.store?.name || "the store",
-      }),
+    enqueueTextMessage({
+      to,
+      body: `📦 Update for ${order.orderNumber || order.id}: your order is packed and ready for dispatch.`,
       tenantId: order.tenantId,
       orderId: order.id,
       dedupeKey: key,
@@ -382,8 +322,7 @@ export async function notifyCustomerOutForDelivery(params: { order: OrderLike; r
   await sendOnce(key, () =>
     enqueueTemplateMessage({
       input: templateSend.buyerOutForDelivery(to, {
-        buyerName: order.customerName,
-        storeName: order.store?.name || "the store",
+        orderId: order.orderNumber || order.id,
         riderDetails: params.riderDetails || "Vendly Rider (+256700000000)",
       }),
       tenantId: order.tenantId,
@@ -402,7 +341,7 @@ export async function notifyCustomerOrderDelivered(params: { order: OrderLike })
   await sendOnce(key, () =>
     enqueueTemplateMessage({
       input: templateSend.buyerOrderDelivered(to, {
-        buyerName: order.customerName,
+        orderId: order.orderNumber || order.id,
         storeName: order.store?.name || "the store",
       }),
       tenantId: order.tenantId,
@@ -418,18 +357,11 @@ export async function notifyCustomerOrderDeclined(params: { order: OrderLike }) 
   const to = normalizeToWhatsApp(order.customerPhone, "customer", { orderId: order.id, orderNumber: order.orderNumber });
   if (!to) return;
 
-  const sellerPhone = await orderService.getTenantPhoneByTenantId(order.tenantId);
-  const sellerDigits = normalizeToWhatsApp(sellerPhone, "seller", { tenantId: order.tenantId, orderId: order.id });
-  const sellerWhatsappLink = sellerDigits ? `https://wa.me/${sellerDigits}` : "https://wa.me/256700000000";
-
   const key = `customer:declined:${order.id}:${to}`;
   await sendOnce(key, () =>
-    enqueueTemplateMessage({
-      input: templateSend.buyerOrderDeclined(to, {
-        buyerName: order.customerName,
-        storeName: order.store?.name || "the store",
-        sellerWhatsappLink,
-      }),
+    enqueueTextMessage({
+      to,
+      body: `⚠️ Your order ${order.orderNumber || order.id} could not be fulfilled by ${order.store?.name || "the seller"}.`,
       tenantId: order.tenantId,
       orderId: order.id,
       dedupeKey: key,

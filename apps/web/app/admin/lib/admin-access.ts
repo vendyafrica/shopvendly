@@ -2,7 +2,8 @@ import { and, eq, isNull } from "@shopvendly/db";
 import { db } from "@shopvendly/db/db";
 import { stores, superAdmins, tenantMemberships } from "@shopvendly/db/schema";
 
-const TENANT_ADMIN_ROLES = ["owner", "admin"] as const;
+const TENANT_ADMIN_READ_ROLES = ["owner", "admin", "support", "staff"] as const;
+const TENANT_ADMIN_WRITE_ROLES = ["owner", "admin"] as const;
 export type TenantAccessMode = "read" | "write";
 
 export type TenantAdminAccess = {
@@ -40,9 +41,24 @@ function toUnauthorizedAccess(): TenantAdminAccess {
   };
 }
 
+function normalizeRole(role: string | null | undefined): string {
+  return (role ?? "").trim().toLowerCase();
+}
+
+function canAccessTenantRole(role: string, mode: TenantAccessMode): boolean {
+  if (mode === "write") {
+    return TENANT_ADMIN_WRITE_ROLES.includes(
+      role as (typeof TENANT_ADMIN_WRITE_ROLES)[number]
+    );
+  }
+
+  return TENANT_ADMIN_READ_ROLES.includes(role as (typeof TENANT_ADMIN_READ_ROLES)[number]);
+}
+
 async function resolveAccessForStore(
   userId: string,
-  store: StoreAccessContext | null
+  store: StoreAccessContext | null,
+  mode: TenantAccessMode
 ): Promise<TenantAdminAccess> {
   if (!store) {
     return toUnauthorizedAccess();
@@ -60,9 +76,8 @@ async function resolveAccessForStore(
   ]);
 
   const normalizedMembership = membership ?? null;
-  const isTenantAdmin =
-    !!normalizedMembership &&
-    TENANT_ADMIN_ROLES.includes(normalizedMembership.role as (typeof TENANT_ADMIN_ROLES)[number]);
+  const normalizedRole = normalizeRole(normalizedMembership?.role);
+  const isTenantAdmin = !!normalizedMembership && canAccessTenantRole(normalizedRole, mode);
   const isSuperAdmin = !!superAdmin;
   const isAuthorized = isTenantAdmin || isSuperAdmin;
 
@@ -83,7 +98,6 @@ export async function resolveTenantAdminAccess(
   storeSlug: string,
   mode: TenantAccessMode = "read"
 ): Promise<TenantAdminAccess> {
-  void mode;
   const store = await db.query.stores.findFirst({
     where: and(eq(stores.slug, storeSlug), isNull(stores.deletedAt)),
     columns: {
@@ -95,7 +109,37 @@ export async function resolveTenantAdminAccess(
     },
   });
 
-  return resolveAccessForStore(userId, store ?? null);
+  const initialAccess = await resolveAccessForStore(userId, store ?? null, mode);
+
+  if (initialAccess.isAuthorized || !store) {
+    return initialAccess;
+  }
+
+  const [memberships, matchingStores] = await Promise.all([
+    db.query.tenantMemberships.findMany({
+      where: eq(tenantMemberships.userId, userId),
+      columns: { tenantId: true },
+    }),
+    db.query.stores.findMany({
+      where: and(eq(stores.slug, storeSlug), isNull(stores.deletedAt)),
+      columns: {
+        id: true,
+        tenantId: true,
+        name: true,
+        defaultCurrency: true,
+        logoUrl: true,
+      },
+    }),
+  ]);
+
+  const membershipTenantIds = new Set(memberships.map((membership) => membership.tenantId));
+  const storeForUserTenant = matchingStores.find((candidate) => membershipTenantIds.has(candidate.tenantId));
+
+  if (!storeForUserTenant || storeForUserTenant.id === store.id) {
+    return initialAccess;
+  }
+
+  return resolveAccessForStore(userId, storeForUserTenant, mode);
 }
 
 export async function resolveTenantAdminAccessByStoreId(
@@ -103,7 +147,6 @@ export async function resolveTenantAdminAccessByStoreId(
   storeId: string,
   mode: TenantAccessMode = "read"
 ): Promise<TenantAdminAccess> {
-  void mode;
   const store = await db.query.stores.findFirst({
     where: and(eq(stores.id, storeId), isNull(stores.deletedAt)),
     columns: {
@@ -115,5 +158,5 @@ export async function resolveTenantAdminAccessByStoreId(
     },
   });
 
-  return resolveAccessForStore(userId, store ?? null);
+  return resolveAccessForStore(userId, store ?? null, mode);
 }

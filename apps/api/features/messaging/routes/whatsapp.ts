@@ -194,8 +194,57 @@ whatsappRouter.post("/webhooks/whatsapp", async (req, res) => {
       return res.sendStatus(200);
     }
 
+    const commandToken = normalized.split(/\s+/).filter(Boolean)[0] || "";
+    const normalizedCommand = commandToken.replace(/[^a-z]/g, "");
+
     // -----------------------------------------------------------------------
-    // Seller commands: ACCEPT, DECLINE, READY, OUT, DELIVERED
+    // Buyer command: RECEIVED ✅ marks completed + paid
+    // -----------------------------------------------------------------------
+    if (normalizedCommand === "received") {
+      const buyerOrder = await orderService.getLatestOrderByCustomerPhone(from, ["pending", "paid"]);
+      if (!buyerOrder) {
+        await enqueueInboundMessage({
+          from,
+          to: "vendly",
+          messageBody: raw,
+          dedupeKey: inboundDedupeKey ?? undefined,
+        });
+        await enqueueTextMessage({
+          to: from,
+          body: "We could not find an active order to mark as received. Please include your order number if possible.",
+          dedupeKey: `customer:received:missing:${from}`,
+        });
+        return res.sendStatus(200);
+      }
+
+      await enqueueInboundMessage({
+        from,
+        to: "vendly",
+        messageBody: raw,
+        tenantId: buyerOrder.tenantId,
+        orderId: buyerOrder.id,
+        dedupeKey: inboundDedupeKey ?? undefined,
+      });
+
+      await orderService.updateOrderStatusByOrderId(buyerOrder.id, {
+        status: "completed",
+        paymentStatus: "paid",
+      });
+
+      try {
+        const full = await orderService.getOrderById(buyerOrder.id);
+        if (full) {
+          await notifyCustomerOrderDelivered({ order: full });
+        }
+      } catch (err) {
+        console.error("[WhatsAppWebhook] Failed to notify customer (received)", err);
+      }
+
+      return res.sendStatus(200);
+    }
+
+    // -----------------------------------------------------------------------
+    // Seller commands: ACCEPT, DECLINE, READY, OUT, DELIVERED, DONE ✅
     // -----------------------------------------------------------------------
     const tenantId = await orderService.getTenantIdByPhoneNumber(from);
     if (!tenantId) {
@@ -230,7 +279,13 @@ whatsappRouter.post("/webhooks/whatsapp", async (req, res) => {
     }
 
     const parts = normalized.split(/\s+/).filter(Boolean);
-    const action = parts[0];
+    const actionToken = parts[0] || "";
+    const actionNormalized = actionToken.replace(/[^a-z]/g, "");
+    const action = actionNormalized === "done"
+      ? "out"
+      : actionNormalized === "received"
+        ? "delivered"
+        : actionNormalized;
     const maybeOrderNumber = parts.find((p: string) => p.startsWith("ord-"));
 
     const order = maybeOrderNumber
@@ -253,7 +308,7 @@ whatsappRouter.post("/webhooks/whatsapp", async (req, res) => {
       });
       await enqueueTextMessage({
         to: from,
-        body: "No matching order found. Reply like: ACCEPT ORD-0001, DECLINE ORD-0001, READY ORD-0001, OUT ORD-0001, or DELIVERED ORD-0001.",
+        body: "No matching order found. Reply like: ACCEPT ORD-0001, DECLINE ORD-0001, READY ORD-0001, DONE ✅ ORD-0001, OUT ORD-0001, or DELIVERED ORD-0001.",
         tenantId,
         dedupeKey: `seller:no_order:${tenantId}:${from}`,
       });
@@ -357,7 +412,7 @@ whatsappRouter.post("/webhooks/whatsapp", async (req, res) => {
 
     await enqueueTextMessage({
       to: from,
-      body: "Unknown command. Reply: ACCEPT, DECLINE, READY, OUT, or DELIVERED (optionally with order number).",
+      body: "Unknown command. Reply: ACCEPT, DECLINE, READY, DONE ✅, OUT, or DELIVERED (optionally with order number).",
       tenantId,
       dedupeKey: `seller:unknown:${tenantId}:${from}`,
     });
