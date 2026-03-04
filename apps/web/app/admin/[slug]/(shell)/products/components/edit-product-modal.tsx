@@ -352,17 +352,19 @@ export function EditProductModal({
                                                 {f.contentType.startsWith("video/") ? (
                                                     <video
                                                         src={f.previewUrl}
-                                                        className={`h-full w-full object-cover transition-opacity ${f.isUploading ? "opacity-60" : "opacity-100"}`}
+                                                        className={`h-full w-full object-cover transition-opacity bg-muted/30 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
                                                         muted
                                                         playsInline
-                                                        preload="metadata"
+                                                        preload="none"
                                                     />
                                                 ) : (
                                                     <Image
                                                         src={f.previewUrl}
                                                         alt="Preview"
                                                         fill
-                                                        className={`object-cover transition-opacity ${f.isUploading ? "opacity-60" : "opacity-100"}`}
+                                                        unoptimized={f.previewUrl.includes(".ufs.sh") || f.previewUrl.startsWith("blob:")}
+                                                        loading="lazy"
+                                                        className={`object-cover transition-opacity bg-muted/30 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
                                                     />
                                                 )}
                                                 {f.isUploading && (

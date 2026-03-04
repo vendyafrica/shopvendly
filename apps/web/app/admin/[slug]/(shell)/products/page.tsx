@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@shopvendly/ui/components/select";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { SparklesIcon, Edit02Icon } from "@hugeicons/core-free-icons";
+import { SparklesIcon, Edit02Icon, Loading03Icon } from "@hugeicons/core-free-icons";
 
 import { UploadModal } from "./components/upload-modal";
 import { EditProductModal } from "./components/edit-product-modal";
@@ -81,11 +81,13 @@ function ProductThumbnail({
     return (
       <video
         src={url}
-        className="h-full w-full object-cover"
+        className="h-full w-full object-cover bg-muted/30"
         muted
         playsInline
         loop
         autoPlay
+        preload="none"
+        poster=""
       />
     );
   }
@@ -95,9 +97,10 @@ function ProductThumbnail({
       src={url}
       alt={name}
       fill
-      className="object-cover"
+      className="object-cover bg-muted/30"
       unoptimized={url.includes(".ufs.sh")}
       onError={() => setForceVideo(true)}
+      loading="lazy"
     />
   );
 }
@@ -141,6 +144,7 @@ export default function ProductsPage() {
   const [savingId, setSavingId] = React.useState<string | null>(null);
   const [uploadMode, setUploadMode] = React.useState<"single" | "multiple">("single");
   const [handledQuickAdd, setHandledQuickAdd] = React.useState(false);
+  const [isEditingId, setIsEditingId] = React.useState<string | null>(null);
 
   const updateProductMutation = useUpdateProduct(bootstrap?.storeId ?? "");
 
@@ -168,6 +172,7 @@ export default function ProductsPage() {
 
   const handleEdit = async (id: string) => {
     try {
+      setIsEditingId(id);
       const res = await fetch(`/api/products/${id}`);
       if (!res.ok) throw new Error("Failed to load product");
       const product = (await res.json()) as ProductApiRow;
@@ -189,6 +194,8 @@ export default function ProductsPage() {
       setEditModalOpen(true);
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to load product");
+    } finally {
+      setIsEditingId(null);
     }
   };
 
@@ -854,6 +861,14 @@ export default function ProductsPage() {
     <div className="md:p-6 p-0">
       {/* Mobile View */}
       <div className="block md:hidden">
+        {isEditingId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-2">
+              <HugeiconsIcon icon={Loading03Icon} className="size-8 animate-spin text-primary" />
+              <span className="text-sm font-medium text-foreground">Loading product...</span>
+            </div>
+          </div>
+        )}
         <ProductsMobileView
           bootstrap={bootstrap}
           rows={rows}

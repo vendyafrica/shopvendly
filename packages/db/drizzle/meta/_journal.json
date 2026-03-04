@@ -295,6 +295,13 @@
       "when": 1772629145739,
       "tag": "0041_low_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1772655704243,
+      "tag": "0042_quick_killraven",
+      "breakpoints": true
     }
   ]
 }

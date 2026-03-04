@@ -62,11 +62,13 @@ function ProductThumbnail({
         return (
             <video
                 src={url}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover bg-muted/30"
                 muted
                 playsInline
                 loop
                 autoPlay
+                preload="none"
+                poster="" // could use a placeholder image here if available
             />
         );
     }
@@ -76,9 +78,10 @@ function ProductThumbnail({
             src={url}
             alt={name}
             fill
-            className="object-cover"
+            className="object-cover bg-muted/30"
             unoptimized={url.includes(".ufs.sh")}
             onError={() => setForceVideo(true)}
+            loading="lazy"
         />
     );
 }
@@ -273,7 +276,7 @@ export function ProductsMobileView({
                                     className="justify-start gap-3 h-[52px] text-sm font-semibold rounded-xl bg-muted/60 hover:bg-muted/80"
                                     onClick={() => {
                                         setSheetOpen(false);
-                                        onEdit(selectedProduct.id);
+                                        setTimeout(() => onEdit(selectedProduct.id), 250);
                                     }}
                                 >
                                     <HugeiconsIcon icon={Edit02Icon} className="size-[20px] text-foreground" />

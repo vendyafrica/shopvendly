@@ -187,14 +187,14 @@ export default function StorefrontHeaderClient({
   const isPending = (href: string) => pendingHref === href;
   const overlayActive = isHomePath && isOverlay;
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "");
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.trim()
-    .replace(/^https?:\/\//i, "").replace(/\/$/, "");
-  const adminOrigin = appUrl
-    ? appUrl
-    : rootDomain
-      ? `${typeof window !== "undefined" ? window.location.protocol : "https:"}//${rootDomain}`
-      : getRootUrl();
+  const isBrowser = typeof window !== "undefined";
+  const adminOrigin = isBrowser
+    ? window.location.origin
+    : process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "") ||
+    (process.env.NEXT_PUBLIC_ROOT_DOMAIN
+      ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "")}`
+      : getRootUrl());
+
   const sellerLoginUrl = store.slug
     ? `${adminOrigin}/admin/${store.slug}/login`
     : `${adminOrigin}/admin/login`;
@@ -319,8 +319,8 @@ export default function StorefrontHeaderClient({
               onClick={handleClaimStore}
               disabled={isClaiming}
               className={`text-sm font-semibold px-3 py-1.5 rounded-full transition-colors disabled:opacity-50 ${overlay
-                  ? "bg-white/10 text-white hover:bg-white/20"
-                  : "bg-primary/10 text-primary hover:bg-primary/20"
+                ? "bg-white/10 text-white hover:bg-white/20"
+                : "bg-primary/10 text-primary hover:bg-primary/20"
                 }`}
             >
               {claimLabel}
