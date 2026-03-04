@@ -172,15 +172,28 @@ export default function StorefrontHeaderClient({
   const overlayActive = mounted && isHomePath && isOverlay;
 
   const getAdminOrigin = () => {
-    if (typeof window !== "undefined") return window.location.origin;
-
-    const envUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.WEB_URL;
+    // We must always point to the ROOT domain, never the storefront subdomain.
+    // The proxy middleware explicitly blocks /admin paths on subdomains and
+    // redirects them back to /, so window.location.origin is wrong here.
+    const envUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (envUrl) return envUrl.trim().replace(/\/$/, "");
 
     const domain = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
-    if (domain) return `https://${domain.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "")}`;
+    if (typeof window !== "undefined" && domain) {
+      // Strip the subdomain from the current hostname and rebuild root origin.
+      // e.g. "mystore.shopvendly.store" -> "shopvendly.store"
+      const normalizedDomain = domain.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "");
+      const { protocol } = window.location;
+      return `${protocol}//${normalizedDomain}`;
+    }
 
-    return getRootUrl();
+    if (domain) {
+      const normalizedDomain = domain.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "");
+      return `https://${normalizedDomain}`;
+    }
+
+    // Fallback: trust environment
+    return typeof window !== "undefined" ? window.location.origin : getRootUrl();
   };
 
   const adminOrigin = getAdminOrigin();
