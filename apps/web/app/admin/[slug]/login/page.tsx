@@ -31,7 +31,13 @@ export default async function TenantAdminLoginPage({
       redirect(safeNext);
     }
 
-    redirect(`${adminPath}/unauthorized`);
+    await auth.api.revokeSession({
+      headers: headerList,
+      body: { token: session.session.token },
+    });
+
+    const loginUrl = `${adminPath}/login${next ? `?next=${encodeURIComponent(next)}&error=wrong-account` : "?error=wrong-account"}`;
+    redirect(loginUrl);
   }
 
   const redirectTo = next && next.startsWith(adminPath) ? `${origin}${next}` : base;
@@ -46,7 +52,12 @@ export default async function TenantAdminLoginPage({
             Your email has been verified! Sign in below to access your Admin.
           </div>
         )}
-        {error && (
+        {error === "wrong-account" && (
+          <div className="mb-4 rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+            You&apos;re not authorized for this store. Please sign in with the correct Google account.
+          </div>
+        )}
+        {error && error !== "wrong-account" && (
           <div className="mb-4 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-800">
             {error === "link-expired"
               ? "Your verification link has expired. Please request a new one."
@@ -60,3 +71,4 @@ export default async function TenantAdminLoginPage({
     </div>
   );
 }
+

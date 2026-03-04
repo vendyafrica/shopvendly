@@ -574,7 +574,7 @@ export default function ProductsPage() {
           onCheckedChange={(checked) => toggleOne(row.original.id, Boolean(checked))}
         />
       ),
-      size: 32,
+      size: 40,
       enableSorting: false,
     },
     {
@@ -638,6 +638,7 @@ export default function ProductsPage() {
     {
       id: "price",
       header: "Price",
+      size: 100,
       cell: ({ row }) => {
         const product = row.original;
         const field: EditableField = "priceAmount";
@@ -688,6 +689,7 @@ export default function ProductsPage() {
     {
       id: "inventory",
       header: "Inventory",
+      size: 80,
       cell: ({ row }) => {
         const product = row.original;
         const field: EditableField = "quantity";
@@ -733,6 +735,7 @@ export default function ProductsPage() {
     {
       id: "sales",
       header: "Sales",
+      size: 100,
       cell: ({ row }) => (
         <span className="text-sm font-semibold whitespace-nowrap">
           {formatMoney(row.original.salesAmount ?? 0, row.original.currency)}
@@ -742,6 +745,7 @@ export default function ProductsPage() {
     {
       accessorKey: "status",
       header: "Status",
+      size: 120,
       cell: ({ row }) => {
         const product = row.original;
         const field: EditableField = "status";
@@ -777,6 +781,7 @@ export default function ProductsPage() {
     {
       id: "actions",
       header: "Quick actions",
+      size: 140,
       cell: ({ row }) => {
         const product = row.original;
         const draft = drafts[product.id];
@@ -867,7 +872,7 @@ export default function ProductsPage() {
       </div>
 
       {/* Desktop View */}
-      <div className="hidden md:block space-y-6">
+      <div className="hidden md:block space-y-6 overflow-hidden min-w-0">
         {bootstrapError && (
           <div className="bg-destructive/10 text-destructive p-4 rounded-md">{bootstrapError}</div>
         )}
@@ -902,7 +907,7 @@ export default function ProductsPage() {
 
         <SegmentedStatsCard segments={statSegments} />
 
-        <div className="rounded-md border bg-card p-3">
+        <div className="rounded-md border bg-card p-3 overflow-hidden min-w-0">
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -920,6 +925,7 @@ export default function ProductsPage() {
             </div>
           ) : (
             <DataTable
+              className="table-fixed"
               columns={columns}
               data={rows}
               rowSelection={rowSelection}
