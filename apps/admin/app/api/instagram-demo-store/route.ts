@@ -17,6 +17,23 @@ type MediaVariant = {
   mediaType: string;
 };
 
+type ImportJob = {
+  id: string;
+  status: "running" | "completed" | "failed";
+  profileUrl: string;
+  handle?: string;
+  foundCount: number;
+  processedCount: number;
+  importedCount: number;
+  skippedCount: number;
+  storeId?: string;
+  storeSlug?: string;
+  errors: Array<{ sourceId: string; reason: string }>;
+  error?: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
 type NormalizedPost = {
   sourceId: string;
   postUrl: string | null;
@@ -28,6 +45,17 @@ type NormalizedPost = {
 
 const MAX_POSTS = 25;
 const utapi = new UTApi();
+const importJobs = new Map<string, ImportJob>();
+
+function touchJob(jobId: string, patch: Partial<ImportJob>) {
+  const existing = importJobs.get(jobId);
+  if (!existing) return;
+  importJobs.set(jobId, {
+    ...existing,
+    ...patch,
+    updatedAt: Date.now(),
+  });
+}
 
 function sanitizeHandle(raw: string): string {
   return raw.toLowerCase().replace(/[^a-z0-9._]/g, "").replace(/^\.+|\.+$/g, "");
@@ -302,28 +330,17 @@ async function copyToStorage(params: {
   };
 }
 
-export async function POST(req: Request) {
-  const auth = await checkSuperAdminApi(["super_admin"]);
-  if (auth.error) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
-  }
-
+async function runImportJob(jobId: string, profileUrl: string) {
   try {
-    const body = (await req.json()) as { profileUrl?: string };
-    const profileUrl = body?.profileUrl?.trim();
-
-    if (!profileUrl) {
-      return NextResponse.json({ error: "Instagram profile URL is required" }, { status: 400 });
-    }
-
     const handle = extractInstagramHandle(profileUrl);
     if (!handle) {
-      return NextResponse.json({ error: "Invalid Instagram profile URL" }, { status: 400 });
+      throw new Error("Invalid Instagram profile URL");
     }
+    touchJob(jobId, { handle });
 
     const apifyToken = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN;
     if (!apifyToken) {
-      return NextResponse.json({ error: "Missing APIFY_TOKEN" }, { status: 500 });
+      throw new Error("Missing APIFY_TOKEN");
     }
 
     const actorId = process.env.APIFY_INSTAGRAM_ACTOR_ID || "apify/instagram-post-scraper";
@@ -339,8 +356,12 @@ export async function POST(req: Request) {
       .map((item, index) => normalizePost(item, index))
       .filter((item): item is NormalizedPost => Boolean(item));
 
+    touchJob(jobId, {
+      foundCount: normalizedPosts.length,
+    });
+
     if (normalizedPosts.length === 0) {
-      return NextResponse.json({ error: "No importable posts returned from Apify" }, { status: 422 });
+      throw new Error("No importable posts returned from Apify");
     }
 
     const demoEmail = `demo+instagram-${handle}@shopvendly.local`;
@@ -369,6 +390,10 @@ export async function POST(req: Request) {
       tenant = createdTenant;
     }
 
+    if (!tenant) {
+      throw new Error("Failed to resolve demo tenant");
+    }
+
     let store = await db.query.stores.findFirst({
       where: eq(stores.tenantId, tenant.id),
     });
@@ -393,11 +418,25 @@ export async function POST(req: Request) {
       store = createdStore;
     }
 
+    if (!store) {
+      throw new Error("Failed to resolve demo store");
+    }
+
+    const errors: Array<{ sourceId: string; reason: string }> = [];
     let importedCount = 0;
     let skippedCount = 0;
-    const errors: Array<{ sourceId: string; reason: string }> = [];
 
-    for (const post of normalizedPosts) {
+    for (let index = 0; index < normalizedPosts.length; index += 1) {
+      const post = normalizedPosts[index];
+      if (!post) {
+        touchJob(jobId, {
+          processedCount: index + 1,
+          importedCount,
+          skippedCount,
+          errors,
+        });
+        continue;
+      }
       try {
         const existing = await db.query.products.findFirst({
           where: and(
@@ -501,22 +540,85 @@ export async function POST(req: Request) {
           reason: error instanceof Error ? error.message : "Unknown import error",
         });
       }
+
+      touchJob(jobId, {
+        processedCount: index + 1,
+        importedCount,
+        skippedCount,
+        errors,
+      });
     }
 
-    return NextResponse.json({
-      success: true,
+    touchJob(jobId, {
+      status: "completed",
       handle,
       storeId: store.id,
       storeSlug: store.slug,
+      processedCount: normalizedPosts.length,
       importedCount,
       skippedCount,
       errors,
     });
   } catch (error) {
     console.error("Instagram demo store import error:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to import Instagram profile" },
-      { status: 500 }
-    );
+    touchJob(jobId, {
+      status: "failed",
+      error: error instanceof Error ? error.message : "Failed to import Instagram profile",
+    });
   }
+}
+
+export async function GET(req: Request) {
+  const auth = await checkSuperAdminApi(["super_admin"]);
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const jobId = searchParams.get("jobId")?.trim();
+  if (!jobId) {
+    return NextResponse.json({ error: "jobId is required" }, { status: 400 });
+  }
+
+  const job = importJobs.get(jobId);
+  if (!job) {
+    return NextResponse.json({ error: "Job not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(job);
+}
+
+export async function POST(req: Request) {
+  const auth = await checkSuperAdminApi(["super_admin"]);
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const body = (await req.json()) as { profileUrl?: string };
+  const profileUrl = body?.profileUrl?.trim();
+
+  if (!profileUrl) {
+    return NextResponse.json({ error: "Instagram profile URL is required" }, { status: 400 });
+  }
+
+  const jobId = crypto.randomUUID();
+  importJobs.set(jobId, {
+    id: jobId,
+    status: "running",
+    profileUrl,
+    foundCount: 0,
+    processedCount: 0,
+    importedCount: 0,
+    skippedCount: 0,
+    errors: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  });
+
+  void runImportJob(jobId, profileUrl);
+
+  return NextResponse.json({
+    success: true,
+    jobId,
+  }, { status: 202 });
 }

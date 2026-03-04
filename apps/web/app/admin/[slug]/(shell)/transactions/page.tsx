@@ -57,10 +57,11 @@ export default function TransactionsPage() {
         setIsLoading(true);
 
         try {
+            const storeQuery = bootstrap.storeId ? `?storeId=${encodeURIComponent(bootstrap.storeId)}` : "";
             // Fetch orders + stats in parallel to reduce waterfall
             const [ordersResponse, statsResponse] = await Promise.all([
-                fetch(`${API_BASE}/api/orders`),
-                fetch(`${API_BASE}/api/orders/stats`),
+                fetch(`${API_BASE}/api/orders${storeQuery}`),
+                fetch(`${API_BASE}/api/orders/stats${storeQuery}`),
             ]);
 
             if (!ordersResponse.ok) {

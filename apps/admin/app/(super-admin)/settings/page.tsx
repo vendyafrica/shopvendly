@@ -4,16 +4,32 @@ import * as React from "react";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { Label } from "@shopvendly/ui/components/label";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Loading03Icon } from "@hugeicons/core-free-icons";
+
+type ImportJob = {
+    id: string;
+    status: "running" | "completed" | "failed";
+    profileUrl: string;
+    foundCount: number;
+    processedCount: number;
+    importedCount: number;
+    skippedCount: number;
+    storeSlug?: string;
+    error?: string;
+};
 
 export default function SettingsPage() {
     const [email, setEmail] = React.useState("");
     const [instagramProfileUrl, setInstagramProfileUrl] = React.useState("");
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [isImporting, setIsImporting] = React.useState(false);
+
     const [error, setError] = React.useState<string | null>(null);
     const [success, setSuccess] = React.useState<string | null>(null);
     const [importError, setImportError] = React.useState<string | null>(null);
     const [importSuccess, setImportSuccess] = React.useState<string | null>(null);
+    const [importJob, setImportJob] = React.useState<ImportJob | null>(null);
 
     const onInviteSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -48,6 +64,7 @@ export default function SettingsPage() {
         e.preventDefault();
         setImportError(null);
         setImportSuccess(null);
+        setImportJob(null);
         setIsImporting(true);
 
         try {
@@ -59,9 +76,7 @@ export default function SettingsPage() {
 
             const data = (await res.json().catch(() => ({}))) as {
                 error?: string;
-                importedCount?: number;
-                skippedCount?: number;
-                storeSlug?: string;
+                jobId?: string;
             };
 
             if (!res.ok) {
@@ -69,10 +84,41 @@ export default function SettingsPage() {
                 return;
             }
 
-            setImportSuccess(
-                `Import complete. Store /${data.storeSlug} ready with ${data.importedCount ?? 0} imported posts (${data.skippedCount ?? 0} skipped).`
-            );
-            setInstagramProfileUrl("");
+            if (!data.jobId) {
+                setImportError("Import started but no job ID was returned.");
+                return;
+            }
+
+            let completed = false;
+            while (!completed) {
+                const jobRes = await fetch(`/api/instagram-demo-store?jobId=${encodeURIComponent(data.jobId)}`, {
+                    cache: "no-store",
+                });
+                const jobData = (await jobRes.json().catch(() => ({}))) as ImportJob & { error?: string };
+
+                if (!jobRes.ok) {
+                    throw new Error(jobData.error || "Failed to read import progress");
+                }
+
+                setImportJob(jobData);
+
+                if (jobData.status === "completed") {
+                    setImportSuccess(
+                        `Import complete. Store /${jobData.storeSlug} ready with ${jobData.importedCount ?? 0} imported posts (${jobData.skippedCount ?? 0} skipped).`
+                    );
+                    setInstagramProfileUrl("");
+                    completed = true;
+                    break;
+                }
+
+                if (jobData.status === "failed") {
+                    setImportError(jobData.error || "Failed to import Instagram profile.");
+                    completed = true;
+                    break;
+                }
+
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
         } catch (err: unknown) {
             setImportError(err instanceof Error ? err.message : "Failed to import Instagram profile.");
         } finally {
@@ -161,9 +207,29 @@ export default function SettingsPage() {
                         />
                     </div>
                     <Button type="submit" disabled={isImporting}>
-                        {isImporting ? "Importing..." : "Import & Create Demo Store"}
+                        {isImporting ? (
+                            <span className="inline-flex items-center gap-2">
+                                <HugeiconsIcon icon={Loading03Icon} size={16} className="animate-spin" />
+                                Importing...
+                            </span>
+                        ) : "Import & Create Demo Store"}
                     </Button>
                 </form>
+
+                {isImporting && importJob && (
+                    <div className="rounded-md border border-border bg-muted/30 px-4 py-3 text-sm">
+                        <p className="font-medium">Import progress</p>
+                        <p className="text-muted-foreground mt-1">
+                            Found: <span className="font-semibold text-foreground">{importJob.foundCount}</span>
+                            {" · "}
+                            Processed: <span className="font-semibold text-foreground">{importJob.processedCount}</span>
+                            {" · "}
+                            Imported: <span className="font-semibold text-foreground">{importJob.importedCount}</span>
+                            {" · "}
+                            Skipped: <span className="font-semibold text-foreground">{importJob.skippedCount}</span>
+                        </p>
+                    </div>
+                )}
             </section>
         </div>
     );
