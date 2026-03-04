@@ -31,6 +31,7 @@ export interface StoreData {
   name: string;
   slug: string;
   logoUrl?: string;
+  claimable?: boolean;
 }
 
 export interface StorefrontHeaderProps {
@@ -46,6 +47,7 @@ export default function StorefrontHeaderClient({
   const { itemsByStore } = useCart();
   const { items: wishlistItems } = useWishlist();
   const [store, setStore] = useState<StoreData | null>(initialStore ?? null);
+  const [isClaiming, setIsClaiming] = useState(false);
 
   const [storeId, setStoreId] = useState<string | null>(null);
 
@@ -191,6 +193,32 @@ export default function StorefrontHeaderClient({
     router.push(href);
   };
 
+  const handleClaimStore = async () => {
+    if (!store?.slug || isClaiming) return;
+
+    setIsClaiming(true);
+    try {
+      const res = await fetch(`/api/storefront/${store.slug}/claim`, { method: "POST" });
+      const data = (await res.json().catch(() => ({}))) as { error?: string; redirectTo?: string };
+
+      if (res.status === 401) {
+        const loginRedirect = `/login?redirect=${encodeURIComponent(`/${store.slug}`)}`;
+        router.push(loginRedirect);
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to claim this store");
+      }
+
+      router.push(data.redirectTo || "/account");
+    } catch (error) {
+      console.error("Claim store failed:", error);
+    } finally {
+      setIsClaiming(false);
+    }
+  };
+
   const isPending = (href: string) => pendingHref === href;
 
   const overlayActive = isHomePath && isOverlay;
@@ -206,6 +234,10 @@ export default function StorefrontHeaderClient({
   const sellerLoginUrl = store.slug
     ? `${adminOrigin}/admin/${store.slug}/login`
     : `${adminOrigin}/admin/login`;
+  const claimLabel = isClaiming ? "Claiming..." : "Claim Store";
+  const mobileMenuTriggerId = store.slug
+    ? `storefront-${store.slug}-mobile-menu-trigger`
+    : "storefront-mobile-menu-trigger";
 
   const searchClasses =
     "w-[420px] max-w-full h-11 rounded-full border border-neutral-200 bg-white px-5 text-sm text-neutral-900 shadow-sm placeholder:text-neutral-500 focus-within:border-primary/50 focus-within:ring-[3px] focus-within:ring-primary/10 ";
@@ -304,6 +336,7 @@ export default function StorefrontHeaderClient({
                 className="inline-flex md:hidden h-11 w-11 items-center justify-center rounded-full transition-colors"
                 aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={mobileMenuOpen}
+                id={mobileMenuTriggerId}
               >
                 <HugeiconsIcon
                   icon={UserCircleIcon}
@@ -316,6 +349,15 @@ export default function StorefrontHeaderClient({
                 sideOffset={8}
                 className="w-56 rounded-xl bg-white/95 p-1 text-neutral-900 shadow-xl "
               >
+                {store.claimable && (
+                  <DropdownMenuItem
+                    onClick={handleClaimStore}
+                    disabled={isClaiming}
+                    className="rounded-lg px-3 py-2 text-sm font-medium"
+                  >
+                    {claimLabel}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={() => navigateTo(sellerLoginUrl)}
                   className="rounded-lg px-3 py-2 text-sm font-medium"
@@ -325,13 +367,24 @@ export default function StorefrontHeaderClient({
               </DropdownMenuContent>
             </DropdownMenu>
             {/* Sign In */}
-            <Link
-              href={sellerLoginUrl}
-              onClick={handleNav(sellerLoginUrl)}
-              className="hidden sm:inline-flex items-center rounded-full bg-neutral-900 text-white px-4 py-2 text-sm font-semibold hover:bg-neutral-800 transition-colors shadow-sm"
-            >
-              Sign In
-            </Link>
+            {store.claimable ? (
+              <button
+                type="button"
+                onClick={handleClaimStore}
+                disabled={isClaiming}
+                className="hidden sm:inline-flex items-center rounded-full bg-neutral-900 text-white px-4 py-2 text-sm font-semibold hover:bg-neutral-800 transition-colors shadow-sm disabled:opacity-70"
+              >
+                {claimLabel}
+              </button>
+            ) : (
+              <Link
+                href={sellerLoginUrl}
+                onClick={handleNav(sellerLoginUrl)}
+                className="hidden sm:inline-flex items-center rounded-full bg-neutral-900 text-white px-4 py-2 text-sm font-semibold hover:bg-neutral-800 transition-colors shadow-sm"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -406,6 +459,7 @@ export default function StorefrontHeaderClient({
                       className="inline-flex md:hidden h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-black/5"
                       aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
                       aria-expanded={mobileMenuOpen}
+                      id={mobileMenuTriggerId}
                     >
                       <HugeiconsIcon
                         icon={UserCircleIcon}
@@ -418,6 +472,15 @@ export default function StorefrontHeaderClient({
                       sideOffset={8}
                       className="w-56 rounded-xl border border-black/10 bg-white p-1 text-neutral-900 shadow-xl"
                     >
+                      {store.claimable && (
+                        <DropdownMenuItem
+                          onClick={handleClaimStore}
+                          disabled={isClaiming}
+                          className="rounded-lg px-3 py-2 text-sm font-medium"
+                        >
+                          {claimLabel}
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem
                         onClick={() => navigateTo(sellerLoginUrl)}
                         className="rounded-lg px-3 py-2 text-sm font-medium"
@@ -466,13 +529,24 @@ export default function StorefrontHeaderClient({
                   </Link>
 
                   {/* Sign In */}
-                  <Link
-                    href={sellerLoginUrl}
-                    onClick={handleNav(sellerLoginUrl)}
-                    className="hidden sm:inline-flex items-center rounded-full border border-black/10 bg-primary text-white px-4 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors"
-                  >
-                    Sign In
-                  </Link>
+                  {store.claimable ? (
+                    <button
+                      type="button"
+                      onClick={handleClaimStore}
+                      disabled={isClaiming}
+                      className="hidden sm:inline-flex items-center rounded-full border border-black/10 bg-primary text-white px-4 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-70"
+                    >
+                      {claimLabel}
+                    </button>
+                  ) : (
+                    <Link
+                      href={sellerLoginUrl}
+                      onClick={handleNav(sellerLoginUrl)}
+                      className="hidden sm:inline-flex items-center rounded-full border border-black/10 bg-primary text-white px-4 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors"
+                    >
+                      Sign In
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>

@@ -3,6 +3,9 @@ import { z } from "zod";
 import { UploadThingError } from "uploadthing/server";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { getTenantMembership } from "@/app/admin/lib/tenant-membership";
+import { db } from "@shopvendly/db/db";
+import { superAdmins } from "@shopvendly/db/schema";
+import { eq } from "@shopvendly/db";
 
 const f = createUploadthing();
 
@@ -26,6 +29,15 @@ async function authorizeTenantUpload(req: Request, tenantId: string) {
 
   const membership = await getTenantMembership(session.user.id, { tenantId });
   if (!membership) {
+    const isSuperAdmin = await db.query.superAdmins.findFirst({
+      where: eq(superAdmins.userId, session.user.id),
+      columns: { id: true },
+    });
+
+    if (isSuperAdmin) {
+      return { userId: session.user.id, tenantId };
+    }
+
     throw new UploadThingError("Forbidden");
   }
 

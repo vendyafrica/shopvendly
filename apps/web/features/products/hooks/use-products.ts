@@ -40,7 +40,7 @@ export type ProductTableRow = {
 
 // API functions
 async function fetchProducts(storeId: string): Promise<ProductTableRow[]> {
-    const res = await fetch(`/api/products?storeId=${storeId}`, {
+    const res = await fetch(`/api/products?storeId=${storeId}&page=1&limit=100`, {
         cache: "no-store",
         headers: {
             "Pragma": "no-cache",

@@ -7,7 +7,7 @@ import { getTenantMembership } from "@/app/admin/lib/tenant-membership";
 import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
 import { productQuerySchema, createProductSchema } from "@/features/products/lib/product-models";
 import { db } from "@shopvendly/db/db";
-import { stores } from "@shopvendly/db/schema";
+import { stores, tenants } from "@shopvendly/db/schema";
 import { and, eq, isNull } from "@shopvendly/db";
 
 /**
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
             storeId,
             source: searchParams.get("source") || undefined,
             page: searchParams.get("page") || 1,
-            limit: searchParams.get("limit") || 20,
+            limit: searchParams.get("limit") || 1000,
             search: searchParams.get("search") || undefined,
         });
 
@@ -130,7 +130,16 @@ export async function POST(request: NextRequest) {
             includeTenant: true,
         });
 
-        if (!membership || !membership.tenant) {
+        let tenantSlug = membership?.tenant?.slug;
+        if (!tenantSlug && access.isSuperAdmin) {
+            const tenant = await db.query.tenants.findFirst({
+                where: eq(tenants.id, access.store.tenantId),
+                columns: { slug: true },
+            });
+            tenantSlug = tenant?.slug;
+        }
+
+        if (!tenantSlug) {
             return NextResponse.json({ error: "No tenant found" }, { status: 404 });
         }
 
@@ -145,7 +154,7 @@ export async function POST(request: NextRequest) {
 
         const product = await productService.createProduct(
             access.store.tenantId,
-            membership.tenant.slug,
+            tenantSlug,
             { ...input, currency } as Parameters<typeof productService.createProduct>[2],
             files
         );

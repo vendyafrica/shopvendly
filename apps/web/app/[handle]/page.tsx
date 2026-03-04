@@ -17,6 +17,7 @@ type StorefrontStore = {
   slug: string;
   description: string | null;
   logoUrl?: string | null;
+  claimable?: boolean;
   heroMedia?: string[];
   categories?: string[];
 };
@@ -168,7 +169,14 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
         StorefrontHeader is a Server Component that receives the already-fetched
         store object — no second fetch, no client waterfall.
       */}
-      <StorefrontHeader initialStore={{ name: store.name, slug: store.slug, logoUrl: store.logoUrl ?? undefined }} />
+      <StorefrontHeader
+        initialStore={{
+          name: store.name,
+          slug: store.slug,
+          logoUrl: store.logoUrl ?? undefined,
+          claimable: Boolean(store.claimable),
+        }}
+      />
 
       <Hero store={store} />
 

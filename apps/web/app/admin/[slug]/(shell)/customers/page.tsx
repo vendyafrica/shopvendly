@@ -58,8 +58,7 @@ export default async function CustomersPage({
       )
     )
     .groupBy(orders.customerEmail)
-    .orderBy(desc(sql`MAX(${orders.createdAt})`))
-    .limit(100);
+    .orderBy(desc(sql`MAX(${orders.createdAt})`));
 
   const customers: CustomerRow[] = rowsAgg.map((r) => {
     const last = r.lastOrderAt ? new Date(r.lastOrderAt) : null;

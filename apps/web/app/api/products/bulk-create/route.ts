@@ -5,7 +5,7 @@ import { productService } from "@/features/products/lib/product-service";
 import { getTenantMembership } from "@/app/admin/lib/tenant-membership";
 import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
 import { db } from "@shopvendly/db/db";
-import { stores } from "@shopvendly/db/schema";
+import { stores, tenants } from "@shopvendly/db/schema";
 import { eq, and, isNull } from "@shopvendly/db";
 import { z } from "zod";
 
@@ -46,12 +46,19 @@ export async function POST(request: NextRequest) {
             includeTenant: true,
         });
 
-        if (!membership || !membership.tenant) {
-            return NextResponse.json({ error: "No tenant found" }, { status: 404 });
+        const tenantId = access.store.tenantId;
+        let tenantSlug = membership?.tenant?.slug;
+        if (!tenantSlug && access.isSuperAdmin) {
+            const tenant = await db.query.tenants.findFirst({
+                where: eq(tenants.id, tenantId),
+                columns: { slug: true },
+            });
+            tenantSlug = tenant?.slug;
         }
 
-        const tenantId = access.store.tenantId;
-        const tenantSlug = membership.tenant.slug;
+        if (!tenantSlug) {
+            return NextResponse.json({ error: "No tenant found" }, { status: 404 });
+        }
 
         const store = await db.query.stores.findFirst({
             where: and(eq(stores.id, storeId), eq(stores.tenantId, tenantId), isNull(stores.deletedAt)),

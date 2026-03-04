@@ -1,4 +1,4 @@
-import { db, stores, products, productRatings, eq, and, isNull, instagramAccounts, inArray, sql } from "@shopvendly/db";
+import { db, stores, products, productRatings, eq, and, isNull, instagramAccounts, inArray, sql, tenants } from "@shopvendly/db";
 
 const DEFAULT_STORE_LOGO = "/store-logo.jpg";
 
@@ -18,11 +18,18 @@ async function findStoreBySlugFresh(slug: string) {
         where: and(eq(instagramAccounts.tenantId, store.tenantId), eq(instagramAccounts.isActive, true))
     });
 
+    const tenant = await db.query.tenants.findFirst({
+        where: eq(tenants.id, store.tenantId),
+        columns: { status: true, onboardingStep: true },
+    });
+
+    const claimable = tenant?.status === "onboarding" || tenant?.onboardingStep !== "complete";
+
     if (igAccount?.profilePictureUrl) {
-        return { ...store, logoUrl: igAccount.profilePictureUrl };
+        return { ...store, logoUrl: igAccount.profilePictureUrl, claimable };
     }
 
-    return { ...store, logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO };
+    return { ...store, logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO, claimable };
 }
 
 function slugifyName(name: string): string {

@@ -118,6 +118,84 @@ class OnboardingRepository {
     return !!membership;
   }
 
+  async getMembershipWithTenantStore(userId: string) {
+    const membership = await db.query.tenantMemberships.findFirst({
+      where: eq(tenantMemberships.userId, userId),
+    });
+
+    if (!membership) return null;
+
+    const [tenant] = await db
+      .select()
+      .from(tenants)
+      .where(eq(tenants.id, membership.tenantId))
+      .limit(1);
+
+    const [store] = await db
+      .select()
+      .from(stores)
+      .where(eq(stores.tenantId, membership.tenantId))
+      .limit(1);
+
+    if (!tenant || !store) return null;
+
+    return { membership, tenant, store };
+  }
+
+  async completeClaimedTenant(
+    userId: string,
+    email: string,
+    data: Required<OnboardingData>
+  ): Promise<CreateTenantResult> {
+    const existing = await this.getMembershipWithTenantStore(userId);
+
+    if (!existing) {
+      throw new Error("No claimed tenant found");
+    }
+
+    const defaultCurrency = data.personal.countryCode === "254" ? "KES" : "UGX";
+
+    const [tenant] = await db
+      .update(tenants)
+      .set({
+        fullName: data.personal.fullName,
+        phoneNumber: data.personal.phoneNumber,
+        billingEmail: email,
+        onboardingStep: "complete",
+        onboardingData: data,
+        status: "active",
+        updatedAt: new Date(),
+      })
+      .where(eq(tenants.id, existing.tenant.id))
+      .returning();
+
+    const [store] = await db
+      .update(stores)
+      .set({
+        name: data.store.storeName,
+        description: data.store.storeDescription,
+        categories: data.business.categories,
+        defaultCurrency,
+        storeContactEmail: email,
+        storeContactPhone: data.personal.phoneNumber,
+        storeAddress: data.store.storeLocation ?? null,
+        status: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(stores.id, existing.store.id))
+      .returning();
+
+    if (!tenant || !store) {
+      throw new Error("Failed to complete claimed tenant onboarding");
+    }
+
+    return {
+      tenant,
+      store,
+      membership: existing.membership,
+    };
+  }
+
   async isPhoneTaken(phoneNumber: string): Promise<boolean> {
     const existing = await db.query.tenants.findFirst({
       where: eq(tenants.phoneNumber, phoneNumber),

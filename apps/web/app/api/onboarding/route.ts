@@ -5,8 +5,7 @@ import { onboardingService } from "@/app/account/lib/onboarding-service";
 import { onboardingRepository } from "@/app/account/lib/onboarding-repository";
 import type { OnboardingData } from "@/app/account/lib/models";
 import { db } from "@shopvendly/db/db";
-import { verification, tenantMemberships, tenants, stores } from "@shopvendly/db/schema";
-import { eq } from "@shopvendly/db";
+import { verification } from "@shopvendly/db/schema";
 import { sendWelcomeEmail } from "@shopvendly/transactional";
 import crypto from "crypto";
 
@@ -42,48 +41,32 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Missing onboarding data" }, { status: 400 });
         }
 
-        // ── Idempotency: if user already has a tenant, return it ─────
-        const alreadyOnboarded = await onboardingRepository.hasTenant(session.user.id);
-        if (alreadyOnboarded) {
-            // Fetch existing tenant + store to return consistent shape
-            const [membership] = await db
-                .select()
-                .from(tenantMemberships)
-                .where(eq(tenantMemberships.userId, session.user.id))
-                .limit(1);
-            if (membership) {
-                const [tenant] = await db
-                    .select()
-                    .from(tenants)
-                    .where(eq(tenants.id, membership.tenantId))
-                    .limit(1);
-                const [store] = await db
-                    .select()
-                    .from(stores)
-                    .where(eq(stores.tenantId, membership.tenantId))
-                    .limit(1);
-                if (tenant && store) {
-                    const storefrontUrl = `${normalizedWebBaseUrl}/${store.slug}`;
-                    return NextResponse.json({
-                        success: true,
-                        tenantId: tenant.id,
-                        storeId: store.id,
-                        storeSlug: store.slug,
-                        tenantSlug: tenant.slug,
-                        storefrontUrl,
-                        message: "Already onboarded",
-                        emailSent: false,
-                        emailError: null,
-                    });
-                }
+        const membershipBundle = await onboardingRepository.getMembershipWithTenantStore(session.user.id);
+
+        if (membershipBundle) {
+            const isFullyOnboarded =
+                membershipBundle.tenant.status === "active"
+                && membershipBundle.tenant.onboardingStep === "complete";
+
+            if (isFullyOnboarded) {
+                const storefrontUrl = `${normalizedWebBaseUrl}/${membershipBundle.store.slug}`;
+                return NextResponse.json({
+                    success: true,
+                    tenantId: membershipBundle.tenant.id,
+                    storeId: membershipBundle.store.id,
+                    storeSlug: membershipBundle.store.slug,
+                    tenantSlug: membershipBundle.tenant.slug,
+                    storefrontUrl,
+                    message: "Already onboarded",
+                    emailSent: false,
+                    emailError: null,
+                });
             }
         }
 
-        const result = await onboardingService.createFullTenant(
-            session.user.id,
-            session.user.email,
-            data
-        );
+        const result = await onboardingService.createFullTenant(session.user.id, session.user.email, data, {
+            useExistingClaimedTenant: Boolean(membershipBundle),
+        });
 
         // Generate a single-use verification token for the welcome email (24h expiry)
         const token = crypto.randomBytes(32).toString("hex");
