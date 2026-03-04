@@ -328,11 +328,12 @@ function CheckoutContent() {
                                                     {item.product.contentType?.startsWith("video/") || item.product.image?.match(/\.(mp4|webm|mov|ogg)$/i) || ((item.product.image || "").includes(".ufs.sh") && !(item.product.image || "").match(/\.(jpg|jpeg|png|webp|gif)$/i) && !item.product.contentType?.startsWith("image/")) ? (
                                                         <video
                                                             src={item.product.image || ""}
-                                                            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-110"
+                                                            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-110 bg-neutral-100"
                                                             muted
                                                             playsInline
                                                             loop
                                                             autoPlay
+                                                            preload="none"
                                                         />
                                                     ) : (
                                                         <Image
@@ -340,7 +341,7 @@ function CheckoutContent() {
                                                             alt={item.product.name}
                                                             fill
                                                             sizes="80px"
-                                                            className="object-cover transition-transform duration-200 group-hover:scale-110"
+                                                            className="object-cover transition-transform duration-200 group-hover:scale-110 bg-neutral-100"
                                                             unoptimized={(item.product.image || "").includes(".ufs.sh")}
                                                         />
                                                     )}

@@ -142,11 +142,12 @@ export default function StoreCartPage() {
                                         {item.product.contentType?.startsWith("video/") || item.product.image?.match(/\.(mp4|webm|mov|ogg)$/i) || ((item.product.image || "").includes(".ufs.sh") && !(item.product.image || "").match(/\.(jpg|jpeg|png|webp|gif)$/i) && !item.product.contentType?.startsWith("image/")) ? (
                                             <video
                                                 src={item.product.image || ""}
-                                                className="h-full w-full object-cover"
+                                                className="h-full w-full object-cover bg-neutral-100"
                                                 muted
                                                 playsInline
                                                 loop
                                                 autoPlay
+                                                preload="none"
                                             />
                                         ) : (
                                             <Image
@@ -154,7 +155,7 @@ export default function StoreCartPage() {
                                                 alt={item.product.name}
                                                 fill
                                                 sizes="160px"
-                                                className="object-cover"
+                                                className="object-cover bg-neutral-100"
                                                 unoptimized={(item.product.image || "").includes(".ufs.sh")}
                                             />
                                         )}

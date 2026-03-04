@@ -57,10 +57,10 @@ export function InspirationGrid({ videos }: InspirationGridProps) {
               <video
                 src={video.video_url}
                 poster={video.cover_image_url}
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover bg-neutral-100"
                 controls
                 playsInline
-                preload="metadata"
+                preload="none"
               />
             ) : video.cover_image_url ? (
               <Image
@@ -68,7 +68,7 @@ export function InspirationGrid({ videos }: InspirationGridProps) {
                 alt={label}
                 fill
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 17vw"
-                className="object-cover"
+                className="object-cover bg-neutral-100"
               />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-100 dark:bg-neutral-900 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-lg p-4 text-center">

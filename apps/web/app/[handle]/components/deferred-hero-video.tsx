@@ -37,7 +37,7 @@ export function DeferredHeroVideo({
     const onLoaded = () => console.info("[HeroVideo] loadedmetadata", { src, duration: videoEl.duration });
     const onCanPlay = () => {
       console.info("[HeroVideo] canplay", { src });
-      videoEl.play().catch(() => {});
+      videoEl.play().catch(() => { });
     };
     const onPlay = () => console.info("[HeroVideo] play", { src });
     const onError = () => console.error("[HeroVideo] error", { src, error: videoEl.error });
@@ -62,9 +62,9 @@ export function DeferredHeroVideo({
       muted
       loop
       playsInline
-      preload="auto"
+      preload="none"
       poster={fallbackPoster}
-      className={className}
+      className={`${className || ""} bg-neutral-100`}
       src={src}
       // Adding a key forces React to replace the node if the src changes
       key={src}

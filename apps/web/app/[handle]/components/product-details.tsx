@@ -213,18 +213,19 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                         <video
                                             src={media.url}
                                             poster={posterFallback}
-                                            className="h-full w-full object-cover"
+                                            className="h-full w-full object-cover bg-neutral-100"
                                             muted
                                             loop
                                             playsInline
                                             autoPlay
+                                            preload="none"
                                         />
                                     ) : (
                                         <Image
                                             src={media.url}
                                             alt={`${product.name} ${index + 1}`}
                                             fill
-                                            className="object-cover"
+                                            className="object-cover bg-neutral-100"
                                             priority={index === 0}
                                             unoptimized={media.url.includes(".ufs.sh")}
                                             onError={() => handleImageError(media.url)}
@@ -257,18 +258,19 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                             <video
                                                 src={media.url}
                                                 poster={posterFallback}
-                                                className="h-full w-full object-cover"
+                                                className="h-full w-full object-cover bg-neutral-100"
                                                 muted
                                                 loop
                                                 playsInline
                                                 autoPlay
+                                                preload="none"
                                             />
                                         ) : (
                                             <Image
                                                 src={media.url}
                                                 alt={`View ${index + 1}`}
                                                 fill
-                                                className="object-cover"
+                                                className="object-cover bg-neutral-100"
                                                 unoptimized={media.url.includes(".ufs.sh")}
                                                 onError={() => handleImageError(media.url)}
                                             />
@@ -284,11 +286,12 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                     <video
                                         src={currentMedia.url}
                                         poster={posterFallback}
-                                        className="h-full w-full object-cover"
+                                        className="h-full w-full object-cover bg-neutral-100"
                                         muted
                                         loop
                                         autoPlay
                                         playsInline
+                                        preload="none"
                                     />
                                     {/* <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full bg-black/70 text-white text-xs px-2 py-1">
                                         <span aria-hidden>▶</span>
@@ -301,7 +304,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                     alt={product.name}
                                     fill
                                     sizes="(max-width: 1024px) 100vw, 60vw"
-                                    className="object-cover object-center"
+                                    className="object-cover object-center bg-neutral-100"
                                     priority
                                     unoptimized={currentMedia.url.includes(".ufs.sh")}
                                     onError={() => handleImageError(currentMedia.url)}

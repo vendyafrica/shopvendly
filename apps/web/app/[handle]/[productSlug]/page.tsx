@@ -119,12 +119,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ProductPage({ params }: PageProps) {
   const { handle, productSlug } = await params;
   const baseUrl = await getApiBaseUrl();
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
-  const store = storeRes.ok ? (await storeRes.json()) as StorefrontStore : null;
-  const productRes = await fetch(`${baseUrl}/api/storefront/${handle}/products/${productSlug}`, { next: { revalidate: 60 } });
-  const product = productRes.ok ? (await productRes.json()) as StorefrontProduct : null;
-  const productsRes = await fetch(`${baseUrl}/api/storefront/${handle}/products`, { next: { revalidate: 30 } });
-  const products = productsRes.ok ? (await productsRes.json()) as StorefrontProductListItem[] : [];
+
+  // Fetch everything in parallel to minimize wait time
+  const [storeRes, productRes, productsRes] = await Promise.all([
+    fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } }),
+    fetch(`${baseUrl}/api/storefront/${handle}/products/${productSlug}`, { next: { revalidate: 60 } }),
+    fetch(`${baseUrl}/api/storefront/${handle}/products`, { next: { revalidate: 30 } })
+  ]);
+
+  const [store, product, products] = await Promise.all([
+    storeRes.ok ? (storeRes.json() as Promise<StorefrontStore>) : Promise.resolve(null),
+    productRes.ok ? (productRes.json() as Promise<StorefrontProduct>) : Promise.resolve(null),
+    productsRes.ok ? (productsRes.json() as Promise<StorefrontProductListItem[]>) : Promise.resolve([])
+  ]);
 
   if (!store || !product) {
     notFound();

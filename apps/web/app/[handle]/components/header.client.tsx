@@ -70,7 +70,6 @@ export default function StorefrontHeaderClient({
   const [isOverlay, setIsOverlay] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const lastScrollYRef = useRef(0);
-  const [pendingHref, setPendingHref] = useState<string | null>(null);
 
   const resolvedSlug = (() => {
     if (!params) return undefined;
@@ -120,7 +119,6 @@ export default function StorefrontHeaderClient({
     normalizedPathname === slugPath || normalizedPathname === "/";
 
   useEffect(() => {
-    setPendingHref(null);
     lastScrollYRef.current = window.scrollY;
     setIsOverlay(isHomePath && window.scrollY < 120);
 
@@ -145,25 +143,7 @@ export default function StorefrontHeaderClient({
   if (loading) return <HeaderSkeleton />;
   if (!store) return null;
 
-  const handleNav =
-    (href: string) => (event: MouseEvent<HTMLAnchorElement>) => {
-      if (
-        event.metaKey || event.ctrlKey || event.shiftKey ||
-        event.altKey || event.button !== 0
-      ) return;
-      event.preventDefault();
-      setMobileMenuOpen(false);
-      setPendingHref(href);
-      if (href.startsWith("http")) { window.location.href = href; return; }
-      router.push(href);
-    };
 
-  const navigateTo = (href: string) => {
-    setMobileMenuOpen(false);
-    setPendingHref(href);
-    if (href.startsWith("http")) { window.location.href = href; return; }
-    router.push(href);
-  };
 
   const handleClaimStore = async () => {
     if (!store?.slug || isClaiming) return;
@@ -184,7 +164,6 @@ export default function StorefrontHeaderClient({
     }
   };
 
-  const isPending = (href: string) => pendingHref === href;
   const overlayActive = isHomePath && isOverlay;
 
   const isBrowser = typeof window !== "undefined";
@@ -247,7 +226,7 @@ export default function StorefrontHeaderClient({
           className="w-64 rounded-2xl border border-black/8 bg-white p-2 text-neutral-900 shadow-2xl flex flex-col gap-1 z-50"
         >
           <DropdownMenuItem
-            onClick={(e) => { e.preventDefault(); navigateTo(`/${store.slug}/cart`); }}
+            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); router.push(`/${store.slug}/cart`); }}
             className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 cursor-pointer outline-none hover:bg-neutral-100 focus:bg-neutral-100"
           >
             <div className="flex items-center gap-3">
@@ -262,7 +241,7 @@ export default function StorefrontHeaderClient({
           </DropdownMenuItem>
 
           <DropdownMenuItem
-            onClick={(e) => { e.preventDefault(); navigateTo(`/${store.slug}/wishlist`); }}
+            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); router.push(`/${store.slug}/wishlist`); }}
             className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 cursor-pointer outline-none hover:bg-neutral-100 focus:bg-neutral-100"
           >
             <div className="flex items-center gap-3">
@@ -288,7 +267,7 @@ export default function StorefrontHeaderClient({
                 {claimLabel}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={(e) => { e.preventDefault(); navigateTo(sellerLoginUrl); }}
+                onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); if (sellerLoginUrl.startsWith("http")) { window.location.href = sellerLoginUrl; return; } router.push(sellerLoginUrl); }}
                 className="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 outline-none hover:bg-neutral-100 focus:bg-neutral-100 cursor-pointer"
               >
                 Go to admin
@@ -296,7 +275,7 @@ export default function StorefrontHeaderClient({
             </>
           ) : (
             <DropdownMenuItem
-              onClick={(e) => { e.preventDefault(); navigateTo(sellerLoginUrl); }}
+              onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); if (sellerLoginUrl.startsWith("http")) { window.location.href = sellerLoginUrl; return; } router.push(sellerLoginUrl); }}
               className="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 outline-none hover:bg-neutral-100 focus:bg-neutral-100 cursor-pointer"
             >
               Sign in to admin
@@ -327,7 +306,7 @@ export default function StorefrontHeaderClient({
             </button>
             <button
               type="button"
-              onClick={() => navigateTo(sellerLoginUrl)}
+              onClick={() => { if (sellerLoginUrl.startsWith("http")) { window.location.href = sellerLoginUrl; return; } router.push(sellerLoginUrl); }}
               className={`text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${overlay ? "text-white/90 hover:text-white hover:bg-white/10" : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
                 }`}
             >
@@ -337,7 +316,7 @@ export default function StorefrontHeaderClient({
         ) : (
           <button
             type="button"
-            onClick={() => navigateTo(sellerLoginUrl)}
+            onClick={() => { if (sellerLoginUrl.startsWith("http")) { window.location.href = sellerLoginUrl; return; } router.push(sellerLoginUrl); }}
             className={`text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${overlay ? "text-white/90 hover:text-white hover:bg-white/10" : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
               }`}
           >
@@ -350,7 +329,7 @@ export default function StorefrontHeaderClient({
         <button
           type="button"
           className={overlay ? iconBtnOverlay : iconBtnSolid}
-          onClick={() => navigateTo(`/${store.slug}/wishlist`)}
+          onClick={() => router.push(`/${store.slug}/wishlist`)}
           aria-label="Liked Items"
         >
           <HugeiconsIcon
@@ -364,7 +343,7 @@ export default function StorefrontHeaderClient({
         <button
           type="button"
           className={overlay ? iconBtnOverlay : iconBtnSolid}
-          onClick={() => navigateTo(`/${store.slug}/cart`)}
+          onClick={() => router.push(`/${store.slug}/cart`)}
           aria-label="Cart"
         >
           <HugeiconsIcon
@@ -392,15 +371,12 @@ export default function StorefrontHeaderClient({
   // ══════════════════════════════════════════════════════════════════════════
   if (overlayActive) {
     return (
-      <header aria-busy={Boolean(pendingHref)} className={headerTransition}>
+      <header className={headerTransition}>
         <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10 py-5 flex items-center gap-4">
           {/* Store name */}
           <Link
             href={`/${store.slug}`}
-            aria-busy={isPending(`/${store.slug}`)}
-            onClick={handleNav(`/${store.slug}`)}
-            className={`${bricolage.className} text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)] font-semibold text-xl sm:text-2xl tracking-tight hover:opacity-80 transition-opacity shrink-0 ${isPending(`/${store.slug}`) ? "opacity-60" : ""
-              }`}
+            className={`${bricolage.className} text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)] font-semibold text-xl sm:text-2xl tracking-tight hover:opacity-80 transition-opacity shrink-0`}
           >
             {store.name}
           </Link>
@@ -411,7 +387,6 @@ export default function StorefrontHeaderClient({
               <Link
                 key={link.label}
                 href={link.href}
-                onClick={handleNav(link.href)}
                 className="text-white/90 hover:text-white transition-colors drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
               >
                 {link.label}
@@ -438,19 +413,7 @@ export default function StorefrontHeaderClient({
   // ══════════════════════════════════════════════════════════════════════════
   return (
     <>
-      {/* Page-level loading overlay */}
-      {pendingHref && (
-        <div className="fixed inset-0 z-100 bg-white/70 backdrop-blur-sm flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <span className="h-8 w-8 rounded-full border-[3px] border-neutral-200 border-t-neutral-900 animate-spin" />
-            <span className="text-xs font-semibold text-neutral-500 uppercase tracking-widest">
-              Loading…
-            </span>
-          </div>
-        </div>
-      )}
-
-      <header aria-busy={Boolean(pendingHref)} className={headerTransition}>
+      <header className={headerTransition}>
         <div className="bg-white/95 backdrop-blur-md border-b border-black/6 shadow-sm">
           <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10">
             <div className="flex items-center gap-3 sm:gap-4 md:gap-6 h-[72px] sm:h-[80px]">
@@ -458,10 +421,7 @@ export default function StorefrontHeaderClient({
               {/* Store name */}
               <Link
                 href={`/${store.slug}`}
-                onClick={handleNav(`/${store.slug}`)}
-                aria-busy={isPending(`/${store.slug}`)}
-                className={`${bricolage.className} text-neutral-900 hover:text-neutral-700 font-semibold text-xl sm:text-2xl tracking-tight transition-colors shrink-0 ${isPending(`/${store.slug}`) ? "opacity-60" : ""
-                  }`}
+                className={`${bricolage.className} text-neutral-900 hover:text-neutral-700 font-semibold text-xl sm:text-2xl tracking-tight transition-colors shrink-0`}
               >
                 {store.name}
               </Link>
@@ -472,7 +432,6 @@ export default function StorefrontHeaderClient({
                   <Link
                     key={link.label}
                     href={link.href}
-                    onClick={handleNav(link.href)}
                     className="text-neutral-600 hover:text-neutral-900 transition-colors"
                   >
                     {link.label}

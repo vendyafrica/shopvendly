@@ -92,7 +92,7 @@ export function Hero({ store }: HeroProps) {
               alt={`${store.name} hero`}
               fill
               priority
-              className="object-cover"
+              className="object-cover bg-neutral-100"
               sizes="100vw"
               unoptimized
             />
@@ -102,7 +102,7 @@ export function Hero({ store }: HeroProps) {
               alt={`${store.name} hero`}
               fill
               priority
-              className="object-cover"
+              className="object-cover bg-neutral-100"
               sizes="100vw"
               unoptimized={isUploadThingBlobUrl(mediaUrl)}
             />

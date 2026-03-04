@@ -32,7 +32,6 @@ const aspectVariants = [
 export function ProductCard({ title, slug, price, image, contentType, index = 0, storeSlug }: ProductCardProps) {
   const params = useParams();
   const router = useRouter();
-  const [isNavigating, setIsNavigating] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   const paramsObject = typeof params === "object" ? (params as Record<string, string | undefined>) : {};
@@ -46,28 +45,10 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
 
   const prefetchedHref = derivedStoreSlug ? getStorefrontUrl(derivedStoreSlug, `/${slug}`) : `/${slug}`;
 
-  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    if (isNavigating) {
-      event.preventDefault();
-      return;
-    }
-    setIsNavigating(true);
-    // Best-effort prefetch to reduce perceived delay
-    try {
-      if (derivedStoreSlug) {
-        router.prefetch(prefetchedHref);
-      }
-    } catch {
-      // Prefetch is best-effort; ignore errors
-    }
-  };
-
   return (
     <Link
       href={prefetchedHref}
-      onClick={handleClick}
-      className={`group block break-inside-avoid mb-3 sm:mb-4 lg:mb-5 ${isNavigating ? "pointer-events-none opacity-70" : ""}`}
-      aria-busy={isNavigating}
+      className={`group block break-inside-avoid mb-3 sm:mb-4 lg:mb-5`}
     >
       {/* Image Container */}
       <div className={`relative overflow-hidden rounded-lg ${aspectClass} bg-muted`}>
@@ -75,11 +56,12 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
           <video
             src={currentImageUrl}
             poster={FALLBACK_PRODUCT_IMAGE}
-            className="h-full w-full object-cover transition-all duration-700 ease-out group-hover:scale-[1.03]"
+            className="h-full w-full object-cover transition-all duration-700 ease-out group-hover:scale-[1.03] bg-neutral-100"
             muted
             playsInline
             loop
             autoPlay
+            preload="none"
             onError={() => setImageError(true)}
           />
         ) : currentImageUrl ? (
@@ -89,7 +71,7 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
             fill
             priority={index < 4}
             sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-            className="object-cover transition-all duration-700 ease-out group-hover:scale-[1.03]"
+            className="object-cover transition-all duration-700 ease-out group-hover:scale-[1.03] bg-neutral-100"
             unoptimized={currentImageUrl.includes(".ufs.sh") || currentImageUrl.includes("utfs.io") || currentImageUrl.includes(".cdninstagram.com") || currentImageUrl.includes(".fbcdn.net")}
             onError={() => !imageError && setImageError(true)}
           />
@@ -113,12 +95,6 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
 
         {/* Subtle hover overlay */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
-
-        {isNavigating && (
-          <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center">
-            <div className="h-8 w-8 rounded-full border-2 border-neutral-900 border-t-transparent animate-spin" aria-label="Loading" />
-          </div>
-        )}
       </div>
 
       {/* Product Info - Clean and minimal */}
