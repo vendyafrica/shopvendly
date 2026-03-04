@@ -1,6 +1,4 @@
-import { Suspense } from "react";
-import { ProductGrid } from "./product-grid";
-import { StorefrontContentTabsClient } from "./storefront-content-tabs.client";
+import { StorefrontContentSwitcher } from "./storefront-content-switcher.client";
 
 type StorefrontProduct = {
   id: string;
@@ -33,23 +31,11 @@ export function StorefrontContentTabs({
   showInspirationTab,
   inspirationVideos,
 }: StorefrontContentTabsProps) {
-  if (!showInspirationTab) {
-    return (
-      <>
-        <ProductGrid products={products} />
-      </>
-    );
-  }
-
   return (
-    <Suspense
-      fallback={
-        <>
-          <ProductGrid products={products} />
-        </>
-      }
-    >
-      <StorefrontContentTabsClient products={products} inspirationVideos={inspirationVideos} />
-    </Suspense>
+    <StorefrontContentSwitcher
+      products={products}
+      showInspiration={showInspirationTab}
+      inspirationVideos={inspirationVideos}
+    />
   );
 }

@@ -395,7 +395,7 @@ export default async function AdminPage({
           </div>
         </CardContent>
       </Card>
-      
+
       <SegmentedStatsCard segments={statSegments} />
 
       <div className="hidden md:grid grid-cols-1 gap-5 md:grid-cols-7 lg:grid-cols-7">

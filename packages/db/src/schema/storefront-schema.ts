@@ -31,8 +31,10 @@ export const stores = pgTable(
         storeContactEmail: text("store_contact_email"),
         storeAddress: text("store_address"),
         deliveryProviderPhone: text("delivery_provider_phone"),
-        
+
         heroMedia: text("hero_media").array().default([]),
+
+        claimedByEmail: text("claimed_by_email"),
 
         createdAt: timestamp("created_at").defaultNow().notNull(),
         updatedAt: timestamp("updated_at")

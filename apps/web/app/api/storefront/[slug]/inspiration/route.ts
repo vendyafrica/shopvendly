@@ -31,8 +31,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       select user_id, display_name, username, avatar_url
       from tiktok_accounts
       where store_id = ${store.id}
-        and tenant_id = ${store.tenantId}
         and is_active = true
+      order by updated_at desc
       limit 1
     `);
 
@@ -44,10 +44,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           avatar_url?: string | null;
         }
       | null;
-
-    if (!linkedTikTok) {
-      return NextResponse.json({ connected: false, videos: [] });
-    }
 
     const { searchParams } = new URL(request.url);
     const maxCountParam = Number(searchParams.get("maxCount") || "25");
@@ -84,16 +80,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       created_at_source?: Date | string | null;
     }>;
 
-    if (!videos.length) {
-      return NextResponse.json({ connected: false, videos: [] });
-    }
+    const hasVideos = videos.length > 0;
 
     return NextResponse.json({
-      connected: true,
+      connected: hasVideos,
       profile: {
-        displayName: linkedTikTok.display_name,
-        username: linkedTikTok.username,
-        avatarUrl: linkedTikTok.avatar_url,
+        displayName: linkedTikTok?.display_name ?? null,
+        username: linkedTikTok?.username ?? null,
+        avatarUrl: linkedTikTok?.avatar_url ?? null,
       },
       videos: videos.map(
         (video): TikTokVideo => ({

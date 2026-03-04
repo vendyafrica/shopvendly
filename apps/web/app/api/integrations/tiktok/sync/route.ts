@@ -126,6 +126,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("TikTok sync error:", error);
-    return NextResponse.json({ error: "Sync failed" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Sync failed";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

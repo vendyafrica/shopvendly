@@ -1,8 +1,6 @@
 "use client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shopvendly/ui/components/tabs";
-import { ProductGrid } from "./product-grid";
-import { InspirationGrid } from "./inspiration-grid";
+import { StorefrontContentSwitcher } from "./storefront-content-switcher.client";
 
 type StorefrontProduct = {
   id: string;
@@ -34,23 +32,10 @@ export function StorefrontContentTabsClient({
   inspirationVideos,
 }: StorefrontContentTabsClientProps) {
   return (
-    <Tabs defaultValue="products" className="w-full gap-6">
-      <TabsList variant="line" className="w-full justify-start rounded-none p-0">
-        <TabsTrigger value="products" className="h-10 px-4 text-sm">
-          All Products
-        </TabsTrigger>
-        <TabsTrigger value="inspiration" className="h-10 px-4 text-sm">
-          Inspiration
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="products" className="pt-2">
-        <ProductGrid products={products} />
-      </TabsContent>
-
-      <TabsContent value="inspiration" className="pt-2">
-        <InspirationGrid videos={inspirationVideos} />
-      </TabsContent>
-    </Tabs>
+    <StorefrontContentSwitcher
+      products={products}
+      inspirationVideos={inspirationVideos}
+      showInspiration={inspirationVideos.length > 0}
+    />
   );
 }

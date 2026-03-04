@@ -1,11 +1,10 @@
-import { StorefrontContentTabs } from "./components/storefront-content-tabs";
+import { StorefrontContentSwitcher } from "./components/storefront-content-switcher.client";
 import { StorefrontFooter } from "./components/footer";
 import { Hero } from "./components/hero";
 import { StorefrontHeader } from "./components/header";
 import { StorefrontViewTracker } from "./components/StorefrontViewTracker";
 import { OneTapLogin } from "@/features/marketplace/components/one-tap-login";
 import { Suspense } from "react";
-import { Categories } from "./components/categories";
 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -30,12 +29,6 @@ type StorefrontProduct = {
   currency: string;
   image: string | null;
   contentType?: string | null;
-};
-
-type StorefrontCategory = {
-  slug: string;
-  name: string;
-  image: string | null;
 };
 
 type StorefrontTikTokVideo = {
@@ -128,11 +121,9 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
 
   const baseUrl = await getApiBaseUrl();
 
-  // All three fetches run in parallel — no serial waterfalls
-  const [storeRes, categoriesRes, inspirationRes] = await Promise.all([
+  const [storeRes, inspirationRes] = await Promise.all([
     fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } }),
-    fetch(`${baseUrl}/api/storefront/${handle}/categories`, { next: { revalidate: 60 } }),
-    fetch(`${baseUrl}/api/storefront/${handle}/inspiration`, { next: { revalidate: 30 } }),
+    fetch(`${baseUrl}/api/storefront/${handle}/inspiration`, { cache: "no-store" }),
   ]);
 
   const store = storeRes.ok ? ((await storeRes.json()) as StorefrontStore) : null;
@@ -142,9 +133,8 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
   if (query) productUrl.searchParams.set("q", query);
   const productsRes = await fetch(productUrl.toString(), { next: { revalidate: 30 } });
 
-  const [products, categories, inspirationPayload] = await Promise.all([
+  const [products, inspirationPayload] = await Promise.all([
     productsRes.ok ? (productsRes.json() as Promise<StorefrontProduct[]>) : Promise.resolve([]),
-    categoriesRes.ok ? (categoriesRes.json() as Promise<StorefrontCategory[]>) : Promise.resolve([]),
     inspirationRes.ok
       ? (inspirationRes.json() as Promise<{ connected?: boolean; videos?: StorefrontTikTokVideo[] }>)
       : Promise.resolve({ connected: false, videos: [] }),
@@ -180,24 +170,11 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
 
       <Hero store={store} />
 
-      <div className="mt-5">
-        <Suspense fallback={null}>
-          <Categories storeSlug={store.slug} initialCategories={categories} />
-        </Suspense>
-      </div>
-
-      <div id="storefront-main-content" className="w-full pt-3">
-        <div className="px-3 sm:px-6 lg:px-8">
-          <div className="my-8">
-            <StorefrontContentTabs
-              products={products}
-              showInspirationTab={showInspirationTab}
-              inspirationVideos={inspirationVideos}
-            />
-          </div>
-        </div>
-        <div className="my-20" />
-      </div>
+      <StorefrontContentSwitcher
+        products={products}
+        showInspiration={showInspirationTab}
+        inspirationVideos={inspirationVideos}
+      />
 
       <StorefrontFooter store={store} />
     </div>

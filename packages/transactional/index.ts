@@ -1,2 +1,2 @@
 export { default as SellerWelcomeEmail } from './emails/welcome';
-export { default as sendWelcomeEmail, sendAdminVerificationEmail, sendSuperAdminInviteEmail } from './email';
+export { default as sendWelcomeEmail, sendAdminVerificationEmail, sendSuperAdminInviteEmail, sendStoreAssignmentEmail } from './email';

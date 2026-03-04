@@ -11,7 +11,7 @@ import {
   Download01Icon,
   InstagramIcon,
   Loading03Icon,
-  MusicNote02Icon,
+TiktokIcon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
@@ -306,10 +306,10 @@ export function IntegrationsPanel({
       )}
 
       <div className={isCompact ? "grid gap-6" : "grid gap-6 lg:grid-cols-2"}>
-        <div className="rounded-xl border border-border/70 overflow-hidden shadow-sm">
-          <div className="bg-linear-to-r from-purple-600 via-pink-500 to-orange-400 px-6 py-5 flex items-center justify-between">
+        <div className="rounded-md border border-border/70 overflow-hidden shadow-sm">
+          <div className="px-6 py-2 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="mr-3 h-10 w-10 rounded-full bg-pink-100 p-2 text-pink-500">
+              <div className="mr-3 h-10 w-10 rounded-md p-2 text-pink-500">
                 <HugeiconsIcon icon={InstagramIcon} className="h-full w-full" />
               </div>
               <div>
@@ -321,7 +321,7 @@ export function IntegrationsPanel({
             </div>
 
             {connected ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs font-medium text-white">
+              <span className="gap-2 rounded-md px-2 py-1 text-xs font-semibold">
                 <HugeiconsIcon
                   icon={CheckmarkCircle01Icon}
                   className="h-3.5 w-3.5"
@@ -329,7 +329,7 @@ export function IntegrationsPanel({
                 Connected
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-black/20 px-3 py-1 text-xs font-medium text-white/80">
+              <span className="gap-2 rounded-md px-2 py-1 text-xs font-semibold">
                 Not connected
               </span>
             )}
@@ -354,15 +354,15 @@ export function IntegrationsPanel({
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {connected
                     ? "Your Instagram account is connected and syncing."
-                    : "Link your Instagram to start importing products from posts."}
+                    : "Link your Instagram to import products from posts."}
                 </p>
               </div>
               <Button
                 onClick={handleConnect}
                 disabled={isConnecting || !bootstrap?.storeSlug}
-                variant={connected ? "outline" : "default"}
+                variant={connected ? "default" : "outline"}
                 size="sm"
-                className="shrink-0"
+                className="shrink-0 rounded-md"
               >
                 {isConnecting ? (
                   <>
@@ -376,11 +376,7 @@ export function IntegrationsPanel({
                   "Reconnect"
                 ) : (
                   <>
-                    <HugeiconsIcon
-                      icon={CheckmarkCircle01Icon}
-                      className="mr-2 h-3.5 w-3.5"
-                    />
-                    Connect
+                    Connect Instagram
                   </>
                 )}
               </Button>
@@ -536,12 +532,12 @@ export function IntegrationsPanel({
               </div>
             </div>
           )}
-          <div className="bg-linear-to-r from-neutral-900 via-neutral-800 to-neutral-700 px-6 py-5 flex items-center justify-between">
+          <div className="px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
                 <HugeiconsIcon
-                  icon={MusicNote02Icon}
-                  className="h-5 w-5 text-white"
+                  icon={TiktokIcon}
+                  className="h-5 w-5 text-black"
                 />
               </div>
               <div>
@@ -549,7 +545,7 @@ export function IntegrationsPanel({
                 <p className="text-xs text-white/70">
                   Show your TikTok inspiration feed on storefront
                 </p>
-              </div>
+              </div>    
             </div>
 
             {tiktokConnected ? (
@@ -578,7 +574,7 @@ export function IntegrationsPanel({
               </div>
             )}
 
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-2">
               <div className="w-full space-y-3">
                 <p className="text-sm font-medium">
                   {tiktokConnected ? "Profile connected" : "Set your TikTok profile"}
@@ -593,15 +589,15 @@ export function IntegrationsPanel({
                   <Input
                     value={tiktokProfileInput}
                     onChange={(event) => setTikTokProfileInput(event.target.value)}
-                    placeholder="https://www.tiktok.com/@yourhandle or @yourhandle"
-                    className="sm:flex-1"
+                    placeholder="Paste your profile link"
+                    className="sm:flex-1 rounded-md"
                   />
                   <Button
                     onClick={handleTikTokImport}
                     disabled={isTikTokImporting || !bootstrap?.storeId}
                     variant={tiktokConnected ? "outline" : "default"}
                     size="sm"
-                    className="shrink-0"
+                    className="shrink-0 rounded-md"
                   >
                     {isTikTokImporting ? (
                       <>

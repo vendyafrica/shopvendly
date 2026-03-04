@@ -122,4 +122,45 @@ export const sendSuperAdminInviteEmail = async ({ to, invitedByName, inviteUrl }
   return data;
 };
 
+
 export default sendWelcomeEmail;
+
+interface SendStoreAssignmentEmailProps {
+  to: string;
+  storeName: string;
+  onboardingUrl: string;
+}
+
+export const sendStoreAssignmentEmail = async ({
+  to,
+  storeName,
+  onboardingUrl,
+}: SendStoreAssignmentEmailProps) => {
+  console.info("[email] Sending store assignment email", { to, storeName });
+  const { StoreAssignmentEmail } = await import('./emails/store-assignment');
+  const emailHtml = await render(React.createElement(StoreAssignmentEmail, {
+    storeName,
+    onboardingUrl,
+  }));
+
+  let data;
+  try {
+    data = await resend.emails.send({
+      from: 'Vendly <noreply@shopvendly.store>',
+      to,
+      subject: `Your ${storeName} store is ready on Vendly`,
+      html: emailHtml,
+    });
+  } catch (error) {
+    console.error("[email] Store assignment email request failed", { to, error });
+    throw error;
+  }
+
+  if (data.error) {
+    console.error("[email] Store assignment email rejected", { to, error: data.error });
+    throw new Error(`Store assignment email failed: ${data.error.message || JSON.stringify(data.error)}`);
+  }
+
+  console.info("[email] Store assignment email sent", { to, id: data.data?.id ?? null });
+  return data;
+};

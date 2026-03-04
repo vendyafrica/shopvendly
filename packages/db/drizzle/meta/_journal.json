@@ -288,6 +288,13 @@
       "when": 1772624824335,
       "tag": "0040_mysterious_jamie_braddock",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1772629145739,
+      "tag": "0041_low_legion",
+      "breakpoints": true
     }
   ]
 }

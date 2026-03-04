@@ -74,6 +74,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("TikTok status check error:", error);
-    return NextResponse.json({ connected: false, storeLinked: false, importedCount: 0 }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Status check failed";
+    return NextResponse.json(
+      { connected: false, storeLinked: false, importedCount: 0, error: message },
+      { status: 500 }
+    );
   }
 }

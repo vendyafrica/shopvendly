@@ -233,9 +233,9 @@ export async function scrapeTikTokPosts(params: {
     throw new Error("Missing APIFY_TOKEN for TikTok scraping");
   }
 
-  const actorId = process.env.APIFY_TIKTOK_ACTOR_ID;
+  const actorId = process.env.APIFY_TIKTOK_ACTOR_ID || process.env.APIFY_TIKTOK_ID;
   if (!actorId) {
-    throw new Error("Missing APIFY_TIKTOK_ACTOR_ID for TikTok scraping");
+    throw new Error("Missing APIFY_TIKTOK_ACTOR_ID (or APIFY_TIKTOK_ID) for TikTok scraping");
   }
 
   const rawItems = await fetchApifyTikTokItems({

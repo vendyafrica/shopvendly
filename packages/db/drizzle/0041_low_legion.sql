@@ -1,0 +1,1 @@
+ALTER TABLE "stores" ADD COLUMN "claimed_by_email" text;

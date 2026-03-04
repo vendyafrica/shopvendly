@@ -1,9 +1,7 @@
 import { notFound } from "next/navigation";
 import { ProductGrid } from "@/app/[handle]/components/product-grid";
-import { Categories } from "@/app/[handle]/components/categories";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Suspense } from "react";
 
 type StorefrontStore = {
   id: string;
@@ -22,12 +20,6 @@ type StorefrontProduct = {
   currency: string;
   image: string | null;
   contentType?: string | null;
-};
-
-type StorefrontCategory = {
-  slug: string;
-  name: string;
-  image: string | null;
 };
 
 const getApiBaseUrl = async () => {
@@ -107,15 +99,10 @@ export default async function StorefrontCategoryPage({ params, searchParams }: P
   if (query) productUrl.searchParams.set("q", query);
   const productsRes = await fetch(productUrl.toString(), { next: { revalidate: 30 } });
   const products = productsRes.ok ? (await productsRes.json()) as StorefrontProduct[] : [];
-  const categoriesRes = await fetch(`${baseUrl}/api/storefront/${handle}/categories`, { next: { revalidate: 60 } });
-  const categories = categoriesRes.ok ? (await categoriesRes.json()) as StorefrontCategory[] : [];
 
   return (
     <div className="min-h-screen">
       <div className="w-full">
-        <Suspense fallback={null}>
-          <Categories storeSlug={store.slug} initialCategories={categories} />
-        </Suspense>
         <div className="px-8">
           <h3 className="text-lg font-semibold my-8 text-foreground">
             {categorySlug}
