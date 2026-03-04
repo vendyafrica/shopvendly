@@ -48,6 +48,11 @@ export default function StorefrontHeaderClient({
   const [store, setStore] = useState<StoreData | null>(initialStore ?? null);
   const [isClaiming, setIsClaiming] = useState(false);
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!store) return;
@@ -164,20 +169,27 @@ export default function StorefrontHeaderClient({
     }
   };
 
-  const overlayActive = isHomePath && isOverlay;
+  const overlayActive = mounted && isHomePath && isOverlay;
 
-  const isBrowser = typeof window !== "undefined";
-  const adminOrigin = isBrowser
-    ? window.location.origin
-    : process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "") ||
-    (process.env.NEXT_PUBLIC_ROOT_DOMAIN
-      ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "")}`
-      : getRootUrl());
+  const getAdminOrigin = () => {
+    if (typeof window !== "undefined") return window.location.origin;
+
+    const envUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.WEB_URL;
+    if (envUrl) return envUrl.trim().replace(/\/$/, "");
+
+    const domain = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+    if (domain) return `https://${domain.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "")}`;
+
+    return getRootUrl();
+  };
+
+  const adminOrigin = getAdminOrigin();
 
   const sellerLoginUrl = store.slug
     ? `${adminOrigin}/admin/${store.slug}/login`
     : `${adminOrigin}/admin/login`;
   const claimLabel = isClaiming ? "Claiming..." : "Claim Store";
+  const headerVisible = !mounted || isVisible;
 
   // ─── Shared icon button classes ────────────────────────────────────────────
   const iconBtnBase =
@@ -363,31 +375,45 @@ export default function StorefrontHeaderClient({
     { label: "Sale", href: `/${store.slug}#sale` },
   ];
 
-  const headerTransition = `fixed inset-x-0 top-0 z-50 transition-all duration-300 ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+  const headerTransition = `fixed inset-x-0 top-0 z-50 transition-all duration-300 ${headerVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
     }`;
 
   // ══════════════════════════════════════════════════════════════════════════
-  // OVERLAY HEADER (hero image — transparent)
+  // RENDER
   // ══════════════════════════════════════════════════════════════════════════
-  if (overlayActive) {
-    return (
-      <header className={headerTransition}>
-        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10 py-5 flex items-center gap-4">
+  return (
+    <header className={headerTransition}>
+      {/* 
+        Solid background layer - only visible when not in overlay mode.
+        We keep the same header container and just toggle classes/children
+        style to ensure the React component tree (IDs) stays stable.
+      */}
+      <div className={`absolute inset-0 transition-opacity duration-300 ${overlayActive ? "opacity-0 pointer-events-none" : "opacity-100"
+        } bg-white/95 backdrop-blur-md border-b border-black/6 shadow-sm`} />
+
+      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10 h-[72px] sm:h-[80px] flex items-center relative z-10 transition-colors duration-300">
+        <div className="flex items-center gap-3 sm:gap-4 md:gap-6 w-full">
           {/* Store name */}
           <Link
             href={`/${store.slug}`}
-            className={`${bricolage.className} text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)] font-semibold text-xl sm:text-2xl tracking-tight hover:opacity-80 transition-opacity shrink-0`}
+            className={`${bricolage.className} font-semibold text-xl sm:text-2xl tracking-tight transition-all shrink-0 ${overlayActive
+              ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)] hover:opacity-80"
+              : "text-neutral-900 hover:text-neutral-700"
+              }`}
           >
             {store.name}
           </Link>
 
-          {/* Desktop nav links */}
-          <nav className="hidden md:flex items-center gap-5 text-sm font-medium">
+          {/* Nav links */}
+          <nav className="hidden md:flex items-center gap-5 text-sm font-medium shrink-0">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="text-white/90 hover:text-white transition-colors drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
+                className={`transition-colors ${overlayActive
+                  ? "text-white/90 hover:text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
+                  : "text-neutral-600 hover:text-neutral-900"
+                  }`}
               >
                 {link.label}
               </Link>
@@ -396,63 +422,15 @@ export default function StorefrontHeaderClient({
 
           <div className="flex-1" />
 
-          {/* Right side actions */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <DesktopActions overlay />
+          {/* Right actions */}
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            <DesktopActions overlay={overlayActive} />
             <div className="md:hidden flex">
-              <MainMenu overlay />
+              <MainMenu overlay={overlayActive} />
             </div>
           </div>
         </div>
-      </header>
-    );
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // SOLID HEADER (scrolled / non-home pages)
-  // ══════════════════════════════════════════════════════════════════════════
-  return (
-    <>
-      <header className={headerTransition}>
-        <div className="bg-white/95 backdrop-blur-md border-b border-black/6 shadow-sm">
-          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10">
-            <div className="flex items-center gap-3 sm:gap-4 md:gap-6 h-[72px] sm:h-[80px]">
-
-              {/* Store name */}
-              <Link
-                href={`/${store.slug}`}
-                className={`${bricolage.className} text-neutral-900 hover:text-neutral-700 font-semibold text-xl sm:text-2xl tracking-tight transition-colors shrink-0`}
-              >
-                {store.name}
-              </Link>
-
-              {/* Desktop nav links */}
-              <nav className="hidden md:flex items-center gap-5 text-sm font-medium shrink-0">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.label}
-                    href={link.href}
-                    className="text-neutral-600 hover:text-neutral-900 transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </nav>
-
-              <div className="flex-1" />
-
-              {/* Right actions */}
-              <div className="flex items-center gap-1 sm:gap-1.5">
-                <DesktopActions />
-                <div className="md:hidden flex">
-                  <MainMenu />
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </header>
-    </>
+      </div>
+    </header>
   );
 }
