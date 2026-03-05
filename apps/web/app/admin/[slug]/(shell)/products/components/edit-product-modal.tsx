@@ -84,38 +84,41 @@ export function EditProductModal({
             setDescription(product.description || "");
             setPriceAmount(product.priceAmount ? String(product.priceAmount) : "");
             setQuantity(product.quantity ? String(product.quantity) : "");
+            setError(null);
 
-            // Map existing media to display
-            const existingMedia: UploadedFile[] = (product.media || []).map(m => ({
-                url: m.blobUrl,
-                pathname: m.blobPathname || "",
-                contentType: m.contentType || "image/jpeg",
-                previewUrl: m.blobUrl,
-                isUploading: false,
-                isNew: false
-            }));
-
-            // If no media but thumbnail exists, add thumbnail
-            if (existingMedia.length === 0 && product.thumbnailUrl) {
-                existingMedia.push({
-                    url: product.thumbnailUrl,
-                    pathname: "",
-                    contentType: "image/jpeg",
-                    previewUrl: product.thumbnailUrl,
+            // Delay the heavy media array generation so the drawer can animate in smoothly on mobile
+            const timeout = setTimeout(() => {
+                const existingMedia: UploadedFile[] = (product.media || []).map(m => ({
+                    url: m.blobUrl,
+                    pathname: m.blobPathname || "",
+                    contentType: m.contentType || "image/jpeg",
+                    previewUrl: m.blobUrl,
                     isUploading: false,
                     isNew: false
-                });
-            }
+                }));
 
-            setFiles(existingMedia);
-            initialMediaSignatureRef.current = JSON.stringify(
-                existingMedia.map((m) => ({
-                    url: m.url,
-                    pathname: m.pathname,
-                    contentType: m.contentType,
-                }))
-            );
-            setError(null);
+                if (existingMedia.length === 0 && product.thumbnailUrl) {
+                    existingMedia.push({
+                        url: product.thumbnailUrl,
+                        pathname: "",
+                        contentType: "image/jpeg",
+                        previewUrl: product.thumbnailUrl,
+                        isUploading: false,
+                        isNew: false
+                    });
+                }
+
+                setFiles(existingMedia);
+                initialMediaSignatureRef.current = JSON.stringify(
+                    existingMedia.map((m) => ({
+                        url: m.url,
+                        pathname: m.pathname,
+                        contentType: m.contentType,
+                    }))
+                );
+            }, 100); // 100ms is usually enough for a bottom sheet animation to finish 
+
+            return () => clearTimeout(timeout);
         }
     }, [product]);
 
@@ -352,7 +355,7 @@ export function EditProductModal({
                                                 {f.contentType.startsWith("video/") ? (
                                                     <video
                                                         src={f.previewUrl}
-                                                        className={`h-full w-full object-cover transition-opacity bg-muted/30 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
+                                                        className={`h-full w-full object-cover transition-opacity bg-neutral-100 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
                                                         muted
                                                         playsInline
                                                         preload="none"
@@ -364,7 +367,8 @@ export function EditProductModal({
                                                         fill
                                                         unoptimized={f.previewUrl.includes(".ufs.sh") || f.previewUrl.startsWith("blob:")}
                                                         loading="lazy"
-                                                        className={`object-cover transition-opacity bg-muted/30 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
+                                                        sizes="96px"
+                                                        className={`object-cover transition-opacity bg-neutral-100 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
                                                     />
                                                 )}
                                                 {f.isUploading && (
