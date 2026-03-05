@@ -16,7 +16,6 @@ type StorefrontStore = {
   slug: string;
   description: string | null;
   logoUrl?: string | null;
-  claimable?: boolean;
   heroMedia?: string[];
   categories?: string[];
 };
@@ -36,17 +35,6 @@ type StorefrontCollection = {
   name: string;
   slug: string;
   image?: string | null;
-};
-
-type StorefrontTikTokVideo = {
-  id: string;
-  title?: string;
-  video_description?: string;
-  duration?: number;
-  cover_image_url?: string;
-  video_url?: string;
-  embed_link?: string;
-  share_url?: string;
 };
 
 const getApiBaseUrl = async () => {
@@ -154,10 +142,6 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
     ? ((await collectionsRes.json()) as StorefrontCollection[])
     : [];
 
-  // TikTok inspiration is temporarily disabled while we overhaul the experience.
-  const showInspirationTab = false;
-  const inspirationVideos: StorefrontTikTokVideo[] = [];
-
   return (
     <div className="min-h-screen">
       {/* Async trackers — fire and forget, don't block render */}
@@ -177,7 +161,6 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
           name: store.name,
           slug: store.slug,
           logoUrl: store.logoUrl ?? undefined,
-          claimable: Boolean(store.claimable),
         }}
       />
 
@@ -187,8 +170,6 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
         handle={handle}
         collections={collections}
         products={products}
-        showInspiration={showInspirationTab}
-        inspirationVideos={inspirationVideos}
       />
 
       <StorefrontFooter store={store} />

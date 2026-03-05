@@ -427,7 +427,7 @@ export default function SettingsPage() {
                 <div>
                     <h2 className="text-xl font-semibold leading-none tracking-tight mb-2">Instagram Demo Store Import</h2>
                     <p className="text-sm text-muted-foreground">
-                        Paste an Instagram profile URL to import up to 50 posts and auto-create a claimable demo store.
+                        Paste an Instagram profile URL to import up to 50 posts and auto-create a demo store.
                     </p>
                 </div>
 

@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Categories } from "./categories";
+import { useRouter } from "next/navigation";
+import { Tabs, TabsList, TabsTrigger } from "@shopvendly/ui/components/tabs";
+
 import { ProductGrid } from "./product-grid";
-import { InspirationGrid } from "./inspiration-grid";
 
 type StorefrontProduct = {
   id: string;
@@ -21,26 +22,11 @@ type StoreCollection = {
   slug: string;
 };
 
-type TikTokVideo = {
-  id: string;
-  title?: string;
-  video_description?: string;
-  duration?: number;
-  cover_image_url?: string;
-  video_url?: string;
-  embed_link?: string;
-  share_url?: string;
-};
-
-type StorefrontView = "products" | "inspiration";
-
 interface StorefrontContentSwitcherProps {
   handle?: string;
   collections?: StoreCollection[];
   activeCollectionSlug?: string;
   products: StorefrontProduct[];
-  inspirationVideos: TikTokVideo[];
-  showInspiration: boolean;
 }
 
 export function StorefrontContentSwitcher({
@@ -48,38 +34,55 @@ export function StorefrontContentSwitcher({
   collections = [],
   activeCollectionSlug,
   products,
-  inspirationVideos,
-  showInspiration,
 }: StorefrontContentSwitcherProps) {
-  const [activeView, setActiveView] = React.useState<StorefrontView>("products");
+  const router = useRouter();
 
-  React.useEffect(() => {
-    if (!showInspiration && activeView === "inspiration") {
-      setActiveView("products");
-    }
-  }, [showInspiration, activeView]);
+  const tabValue = activeCollectionSlug
+    ? `collection:${activeCollectionSlug}`
+    : "all";
 
   return (
     <>
       <div className="mt-5">
-        <Categories
-          handle={handle}
-          collections={collections}
-          activeCollectionSlug={activeCollectionSlug}
-          activeView={activeView}
-          onChangeView={setActiveView}
-          showInspiration={showInspiration}
-        />
+        <nav
+          id="storefront-categories-rail"
+          className="border-px border-border bg-background sticky top-0 z-10"
+        >
+          <div className="px-3 sm:px-4 lg:px-6 xl:px-8">
+            <div className="overflow-x-auto scrollbar-hide">
+              <Tabs
+                value={tabValue}
+                onValueChange={(value) => {
+                  if (value === "all") {
+                    router.push(`/${handle}`);
+                    return;
+                  }
+
+                  if (value.startsWith("collection:")) {
+                    const slug = value.replace("collection:", "");
+                    router.push(`/${handle}/categories/${slug}`);
+                  }
+                }}
+              >
+                <TabsList variant="line" className="flex min-w-full items-center justify-start gap-2 py-3">
+                  <TabsTrigger value="all">All Products</TabsTrigger>
+
+                  {collections.map((collection) => (
+                    <TabsTrigger key={collection.id} value={`collection:${collection.slug}`}>
+                      {collection.name}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
+        </nav>
       </div>
 
       <div id="storefront-main-content" className="w-full pt-3">
         <div className="px-3 sm:px-6 lg:px-8">
           <div className="my-8">
-            {activeView === "inspiration" && showInspiration ? (
-              <InspirationGrid videos={inspirationVideos} />
-            ) : (
-              <ProductGrid products={products} />
-            )}
+            <ProductGrid products={products} />
           </div>
         </div>
         <div className="my-20" />

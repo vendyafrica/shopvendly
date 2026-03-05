@@ -225,6 +225,7 @@ export default function ProductsPage() {
       priceAmount: number;
       currency: string;
       quantity: number;
+      collectionIds?: string[];
     },
     media: { url: string; pathname: string; contentType: string }[]
   ) => {
@@ -263,6 +264,7 @@ export default function ProductsPage() {
           source: "manual",
           status: "ready",
           media,
+          collectionIds: data.collectionIds,
         }),
       });
 
@@ -915,6 +917,7 @@ export default function ProductsPage() {
         open={uploadModalOpen}
         onOpenChange={setUploadModalOpen}
         tenantId={bootstrap?.tenantId || ""}
+        storeId={bootstrap?.storeId || ""}
         onCreate={handleCreateProduct}
         mode={uploadMode}
       />

@@ -14,6 +14,13 @@ import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { Label } from "@shopvendly/ui/components/label";
 import { Textarea } from "@shopvendly/ui/components/textarea";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@shopvendly/ui/components/select";
 import Image from "next/image";
 import { useTenant } from "@/app/admin/context/tenant-context";
 import { useUpload } from "@/features/media/hooks/use-upload";
@@ -22,6 +29,7 @@ interface UploadModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     tenantId: string;
+    storeId: string;
     onCreate?: (productData: ProductFormData, media: MediaItem[]) => void;
     mode?: "single" | "multiple";
 }
@@ -38,6 +46,7 @@ export interface ProductFormData {
     priceAmount: number;
     currency: string;
     quantity: number;
+    collectionIds?: string[];
 }
 
 interface FilePreview {
@@ -54,6 +63,7 @@ export function UploadModal({
     open,
     onOpenChange,
     tenantId,
+    storeId,
     onCreate,
     mode = "single",
 }: UploadModalProps) {
@@ -73,6 +83,30 @@ export function UploadModal({
     const [description, setDescription] = React.useState("");
     const [priceAmount, setPriceAmount] = React.useState<string>("");
     const [quantity, setQuantity] = React.useState<string>("");
+    const [collections, setCollections] = React.useState<{ id: string, name: string }[]>([]);
+    const [collectionId, setCollectionId] = React.useState<string>("none");
+
+    React.useEffect(() => {
+        if (!open || !storeId) return;
+
+        let active = true;
+        const loadCollections = async () => {
+            try {
+                const params = new URLSearchParams({ storeId });
+                const res = await fetch(`/api/store-collections?${params.toString()}`, { cache: "no-store" });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (active) setCollections(data);
+            } catch {
+                if (active) setCollections([]);
+            }
+        };
+
+        void loadCollections();
+        return () => {
+            active = false;
+        };
+    }, [open, storeId]);
 
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -230,6 +264,7 @@ export function UploadModal({
                 priceAmount: Math.max(0, Math.floor(Number(priceAmount))),
                 currency,
                 quantity: quantity ? Math.max(0, Math.floor(Number(quantity))) : 0,
+                collectionIds: collectionId === "none" ? [] : [collectionId],
             };
 
             onCreate?.(data, media);
@@ -262,6 +297,7 @@ export function UploadModal({
         setDescription("");
         setPriceAmount("");
         setQuantity("");
+        setCollectionId("none");
         onOpenChange(false);
     };
 
@@ -489,6 +525,27 @@ export function UploadModal({
                                         rows={5}
                                         disabled={isSaving}
                                     />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Collection</Label>
+                                    <Select
+                                        value={collectionId}
+                                        onValueChange={(value) => setCollectionId(value ?? "none")}
+                                        disabled={isSaving}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a collection" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">No collection</SelectItem>
+                                            {collections.map((collection) => (
+                                                <SelectItem key={collection.id} value={collection.id}>
+                                                    {collection.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
                         </div>

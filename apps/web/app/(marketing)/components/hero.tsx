@@ -29,13 +29,13 @@ export function Hero() {
               Social commerce Simplified
             </Badge>
           </div>
-          <p className="text-muted-foreground text-sm">Launch and scale your Instagram or TikTok storefront in minutes.</p>
+          <p className="text-muted-foreground text-sm">Launch and scale your Instagram storefront in minutes.</p>
           <h1 className="mt-6 text-4xl font-medium">
             Run your entire social media <br />shop in one place.
           </h1>
           <p className="text-muted-foreground mx-auto mb-6 mt-4 text-balance text-xl">
             Stop juggling DMs, payments, and delivery manually. ShopVendly turns
-            your Instagram and TikTok into a fully managed storefront.
+            your Instagram into a fully managed storefront.
           </p>
 
           <div className="flex flex-col items-center gap-2 *:w-full sm:flex-row sm:justify-center sm:*:w-auto">

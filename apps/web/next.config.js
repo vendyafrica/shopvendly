@@ -36,24 +36,7 @@ const nextConfig = {
         port: "",
         pathname: "/**",
       },
-      {
-        protocol: "https",
-        hostname: "**.tiktokcdn.com",
-        port: "",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "**.tiktokcdn-us.com",
-        port: "",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "**.ttwstatic.com",
-        port: "",
-        pathname: "/**",
-      },
+
       {
         protocol: "https",
         hostname: "**.ufs.sh",

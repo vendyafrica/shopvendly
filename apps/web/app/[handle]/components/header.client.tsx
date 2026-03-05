@@ -31,7 +31,6 @@ export interface StoreData {
   name: string;
   slug: string;
   logoUrl?: string;
-  claimable?: boolean;
 }
 
 export interface StorefrontHeaderProps {
@@ -59,7 +58,6 @@ export default function StorefrontHeaderClient({
   const { itemsByStore } = useCart();
   const { items: wishlistItems } = useWishlist();
   const [store, setStore] = useState<StoreData | null>(initialStore ?? null);
-  const [isClaiming, setIsClaiming] = useState(false);
   const [storeId, setStoreId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -222,25 +220,6 @@ export default function StorefrontHeaderClient({
     );
   }
 
-  const handleClaimStore = async () => {
-    if (!store?.slug || isClaiming) return;
-    setIsClaiming(true);
-    try {
-      const res = await fetch(`/api/storefront/${store.slug}/claim`, { method: "POST" });
-      const data = (await res.json().catch(() => ({}))) as { error?: string; redirectTo?: string };
-      if (res.status === 401) {
-        router.push(`/login?redirect=${encodeURIComponent(`/${store.slug}`)}`);
-        return;
-      }
-      if (!res.ok) throw new Error(data.error || "Failed to claim this store");
-      router.push(data.redirectTo || "/account");
-    } catch (error) {
-      console.error("Claim store failed:", error);
-    } finally {
-      setIsClaiming(false);
-    }
-  };
-
   const overlayActive = mounted && isHomePath && isOverlay;
 
   const getAdminOrigin = () => {
@@ -273,7 +252,6 @@ export default function StorefrontHeaderClient({
   const sellerLoginUrl = store.slug
     ? `${adminOrigin}/admin/${store.slug}/login`
     : `${adminOrigin}/admin/login`;
-  const claimLabel = isClaiming ? "Claiming..." : "Claim Store";
 
   // ─── Shared icon button classes ────────────────────────────────────────────
   const iconBtnBase =
@@ -342,30 +320,12 @@ export default function StorefrontHeaderClient({
 
           <div className="my-1 border-t border-black/5" />
 
-          {store.claimable ? (
-            <>
-              <DropdownMenuItem
-                onClick={(e) => { e.preventDefault(); handleClaimStore(); }}
-                disabled={isClaiming}
-                className="flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-primary outline-none hover:bg-primary/10 focus:bg-primary/10 cursor-pointer disabled:opacity-50"
-              >
-                {claimLabel}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); if (sellerLoginUrl.startsWith("http")) { window.location.href = sellerLoginUrl; return; } router.push(sellerLoginUrl); }}
-                className="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 outline-none hover:bg-neutral-100 focus:bg-neutral-100 cursor-pointer"
-              >
-                Go to admin
-              </DropdownMenuItem>
-            </>
-          ) : (
-            <DropdownMenuItem
-              onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); if (sellerLoginUrl.startsWith("http")) { window.location.href = sellerLoginUrl; return; } router.push(sellerLoginUrl); }}
-              className="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 outline-none hover:bg-neutral-100 focus:bg-neutral-100 cursor-pointer"
-            >
-              Sign in to admin
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); if (sellerLoginUrl.startsWith("http")) { window.location.href = sellerLoginUrl; return; } router.push(sellerLoginUrl); }}
+            className="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 outline-none hover:bg-neutral-100 focus:bg-neutral-100 cursor-pointer"
+          >
+            Sign in to admin
+          </DropdownMenuItem>
 
         </DropdownMenuContent>
       </DropdownMenu>
@@ -376,38 +336,14 @@ export default function StorefrontHeaderClient({
   const DesktopActions = ({ overlay }: { overlay?: boolean }) => {
     return (
       <div className="hidden md:flex items-center gap-1 sm:gap-2">
-        {store.claimable ? (
-          <>
-            <button
-              type="button"
-              onClick={handleClaimStore}
-              disabled={isClaiming}
-              className={`text-sm font-semibold px-3 py-1.5 rounded-full transition-colors disabled:opacity-50 ${overlay
-                ? "bg-white/10 text-white hover:bg-white/20"
-                : "bg-primary/10 text-primary hover:bg-primary/20"
-                }`}
-            >
-              {claimLabel}
-            </button>
-            <button
-              type="button"
-              onClick={() => { if (sellerLoginUrl.startsWith("http")) { window.location.href = sellerLoginUrl; return; } router.push(sellerLoginUrl); }}
-              className={`text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${overlay ? "text-white/90 hover:text-white hover:bg-white/10" : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
-                }`}
-            >
-              Admin
-            </button>
-          </>
-        ) : (
-          <button
-            type="button"
-            onClick={() => { if (sellerLoginUrl.startsWith("http")) { window.location.href = sellerLoginUrl; return; } router.push(sellerLoginUrl); }}
-            className={`text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${overlay ? "text-white/90 hover:text-white hover:bg-white/10" : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
-              }`}
-          >
-            Admin
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => { if (sellerLoginUrl.startsWith("http")) { window.location.href = sellerLoginUrl; return; } router.push(sellerLoginUrl); }}
+          className={`text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${overlay ? "text-white/90 hover:text-white hover:bg-white/10" : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
+            }`}
+        >
+          Admin
+        </button>
 
         <div className={overlay ? "w-px h-5 bg-white/20 mx-1" : "w-px h-5 bg-black/10 mx-1"} />
 

@@ -38,13 +38,11 @@ async function findStoreBySlugFresh(slug: string) {
         columns: { status: true, onboardingStep: true },
     });
 
-    const claimable = tenant?.status === "onboarding" || tenant?.onboardingStep !== "complete";
-
     if (igAccount?.profilePictureUrl) {
-        return { ...store, logoUrl: igAccount.profilePictureUrl, claimable };
+        return { ...store, logoUrl: igAccount.profilePictureUrl };
     }
 
-    return { ...store, logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO, claimable };
+    return { ...store, logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO };
 }
 
 function slugifyName(name: string): string {

@@ -1,5 +1,11 @@
 import { notFound } from "next/navigation";
 import { StorefrontContentSwitcher } from "@/app/[handle]/components/storefront-content-switcher.client";
+import { StorefrontHeader } from "@/app/[handle]/components/header";
+import { StorefrontFooter } from "@/app/[handle]/components/footer";
+import { Hero } from "@/app/[handle]/components/hero";
+import { StorefrontViewTracker } from "@/app/[handle]/components/StorefrontViewTracker";
+import { OneTapLogin } from "@/features/marketplace/components/one-tap-login";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 
@@ -27,16 +33,6 @@ type StorefrontCollection = {
   name: string;
   slug: string;
   image?: string | null;
-};
-
-type StorefrontTikTokVideo = {
-  id: string;
-  title?: string;
-  video_description?: string;
-  duration?: number;
-  cover_image_url?: string;
-  embed_link?: string;
-  share_url?: string;
 };
 
 const getApiBaseUrl = async () => {
@@ -125,27 +121,39 @@ export default async function StorefrontCategoryPage({ params, searchParams }: P
   const activeCollection = collections.find((collection) => collection.slug === categorySlug);
   const displayTitle = activeCollection?.name ?? categorySlug.replace(/-/g, " ");
 
-  const showInspirationTab = false;
-  const inspirationVideos: StorefrontTikTokVideo[] = [];
-
   return (
     <div className="min-h-screen">
-      <div className="w-full">
-        <div className="px-8">
-          <h3 className="text-lg font-semibold my-8 text-foreground">
-            {displayTitle}
-          </h3>
-          <StorefrontContentSwitcher
-            handle={handle}
-            collections={collections}
-            activeCollectionSlug={categorySlug}
-            products={products}
-            showInspiration={showInspirationTab}
-            inspirationVideos={inspirationVideos}
-          />
-        </div>
-        <div className="my-20" />
+      <Suspense fallback={null}>
+        <StorefrontViewTracker storeSlug={handle} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <OneTapLogin storeSlug={handle} />
+      </Suspense>
+
+      <StorefrontHeader
+        initialStore={{
+          name: store.name,
+          slug: store.slug,
+          logoUrl: store.logoUrl ?? undefined,
+        }}
+      />
+
+      <Hero store={store} />
+
+      <div className="px-3 sm:px-6 lg:px-8">
+        <h3 className="text-lg font-semibold my-6 text-foreground">
+          {displayTitle}
+        </h3>
       </div>
+
+      <StorefrontContentSwitcher
+        handle={handle}
+        collections={collections}
+        activeCollectionSlug={categorySlug}
+        products={products}
+      />
+
+      <StorefrontFooter store={store} />
     </div>
   );
 }

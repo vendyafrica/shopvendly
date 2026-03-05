@@ -11,7 +11,6 @@ import {
   Download01Icon,
   InstagramIcon,
   Loading03Icon,
-  TiktokIcon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
@@ -19,7 +18,6 @@ import { Input } from "@shopvendly/ui/components/input";
 import { useTenant } from "@/app/admin/context/tenant-context";
 
 type IntegrationsPanelVariant = "default" | "compact";
-const TIKTOK_IMPORT_TARGET = 25;
 
 export function IntegrationsPanel({
   variant = "default",
@@ -40,14 +38,6 @@ export function IntegrationsPanel({
   const [syncPostsSuccess, setSyncPostsSuccess] = React.useState(false);
   const [syncError, setSyncError] = React.useState<string | null>(null);
   const [isConnectedFromApi, setIsConnectedFromApi] = React.useState(false);
-  const [isTikTokImporting, setIsTikTokImporting] = React.useState(false);
-  const [tiktokProfileInput, setTikTokProfileInput] = React.useState("");
-  const [tiktokImportedCount, setTikTokImportedCount] = React.useState(0);
-  const [tiktokTargetCount, setTikTokTargetCount] = React.useState(TIKTOK_IMPORT_TARGET);
-  const [tiktokSyncSuccess, setTikTokSyncSuccess] = React.useState(false);
-  const [tiktokSyncError, setTiktokSyncError] = React.useState<string | null>(
-    null,
-  );
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
   const [deleteSuccess, setDeleteSuccess] = React.useState(false);
@@ -62,20 +52,11 @@ export function IntegrationsPanel({
         if (data.imported) setSyncPostsSuccess(true);
       })
       .catch((e) => console.error("Failed to check instagram status", e));
-
-    fetch(`/api/integrations/tiktok/status?storeId=${storeId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.profileUrl) setTikTokProfileInput(data.profileUrl);
-        if (typeof data.importedCount === "number") setTikTokImportedCount(data.importedCount);
-      })
-      .catch((e) => console.error("Failed to check tiktok status", e));
   }, [storeId]);
 
   const connected = isConnectedFromApi;
-  const showTikTokIntegration = false;
 
-  React.useEffect(() => { 
+  React.useEffect(() => {
     const shouldSync = paramConnected && Boolean(storeId);
     if (!shouldSync) return;
 
@@ -150,90 +131,7 @@ export function IntegrationsPanel({
     }
   };
 
-  const handleTikTokImport = async () => {
-    if (!bootstrap?.storeId) return;
 
-    const profileUrl = tiktokProfileInput.trim();
-    if (!profileUrl) {
-      setTiktokSyncError("TikTok profile URL or handle is required.");
-      return;
-    }
-
-    setIsTikTokImporting(true);
-    setTiktokSyncError(null);
-    setTikTokSyncSuccess(false);
-    setTikTokImportedCount(0);
-    setTikTokTargetCount(TIKTOK_IMPORT_TARGET);
-
-    const checkJobStatus = async (jobId: string) => {
-      const MAX_RETRIES = 60; // 120 seconds roughly
-      for (let i = 0; i < MAX_RETRIES; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        try {
-          const res = await fetch(`/api/integrations/tiktok/sync?jobId=${jobId}`);
-          if (!res.ok) continue;
-
-          const job = await res.json() as {
-            status: "running" | "completed" | "failed";
-            targetCount?: number;
-            importedCount?: number;
-            error?: string;
-            profileUrl?: string;
-            lastImportedAt?: string;
-          };
-
-          if (typeof job.importedCount === "number") {
-            setTikTokImportedCount(job.importedCount);
-          }
-          if (typeof job.targetCount === "number" && job.targetCount > 0) {
-            setTikTokTargetCount(job.targetCount);
-          }
-
-          if (job.status === "completed") {
-            setTikTokProfileInput(job.profileUrl || profileUrl);
-            setTikTokSyncSuccess(true);
-            return;
-          }
-
-          if (job.status === "failed") {
-            throw new Error(job.error || "TikTok import failed");
-          }
-        } catch (e) {
-          if (e instanceof Error && e.message !== "TikTok import failed") {
-            continue;
-          }
-          throw e;
-        }
-      }
-      throw new Error("TikTok import timed out");
-    };
-
-    try {
-      const res = await fetch("/api/integrations/tiktok/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          storeId: bootstrap.storeId,
-          profileUrl,
-        }),
-      });
-
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        jobId?: string;
-      };
-
-      if (!res.ok || !data.jobId) {
-        throw new Error(data.error || "Failed to start TikTok import");
-      }
-
-      await checkJobStatus(data.jobId);
-    } catch (e) {
-      setTiktokSyncError(e instanceof Error ? e.message : "TikTok import failed");
-    } finally {
-      setIsTikTokImporting(false);
-    }
-  };
 
   const handleSyncPosts = async () => {
     if (!bootstrap?.storeId) return;
@@ -282,12 +180,6 @@ export function IntegrationsPanel({
   };
 
   const isCompact = variant === "compact";
-  const tiktokProgressPercent = Math.min(
-    100,
-    Math.round(
-      (tiktokImportedCount / Math.max(tiktokTargetCount, 1)) * 100,
-    ),
-  );
 
   return (
     <div className={isCompact ? "flex h-full flex-col space-y-4" : "space-y-6"}>
@@ -510,115 +402,7 @@ export function IntegrationsPanel({
           )}
         </div>
 
-        {/* TikTok integration temporarily disabled */}
-        {showTikTokIntegration && (
-          <div className="relative rounded-md border border-border/70 overflow-hidden shadow-sm">
-            {isTikTokImporting && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/85 backdrop-blur-sm p-6">
-                <div className="w-full max-w-sm rounded-md border border-border/60 bg-card p-5 shadow-lg">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <HugeiconsIcon
-                      icon={Loading03Icon}
-                      className="h-4 w-4 animate-spin text-primary"
-                    />
-                    Importing TikTok posts
-                  </div>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Imported {Math.min(tiktokImportedCount, tiktokTargetCount)} of {tiktokTargetCount} posts
-                  </p>
-                  <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-primary transition-all duration-500"
-                      style={{ width: `${tiktokProgressPercent}%` }}
-                    />
-                  </div>
-                  <p className="mt-2 text-[11px] text-muted-foreground">{tiktokProgressPercent}% complete</p>
-                </div>
-              </div>
-            )}
-            <div className="px-6 py-2 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <HugeiconsIcon
-                    icon={TiktokIcon}
-                    className="h-5 w-5 text-black"
-                  />
-                </div>
-                <div>
-                  <p className="font-semibold text-white text-sm">TikTok</p>
-                  <p className="text-xs text-white/70">
-                    Show your TikTok inspiration feed on storefront
-                  </p>
-                </div>
-              </div>
 
-
-            </div>
-
-            <div className="p-6 space-y-5 bg-card">
-              {tiktokSyncError && (
-                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-                  <HugeiconsIcon
-                    icon={AlertCircleIcon}
-                    className="h-4 w-4 shrink-0"
-                  />
-                  {tiktokSyncError}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between gap-2">
-                <div className="w-full space-y-3">
-                  <p className="text-sm font-medium">
-                    Import TikTok Inspiration
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Paste your TikTok profile URL or @handle to download and append the last 25 videos to your storefront Inspiration tab.
-                  </p>
-
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <Input
-                      value={tiktokProfileInput}
-                      onChange={(event) => setTikTokProfileInput(event.target.value)}
-                      placeholder="Paste your profile link"
-                      className="sm:flex-1 rounded-md"
-                    />
-                    <Button
-                      onClick={handleTikTokImport}
-                      disabled={isTikTokImporting || !bootstrap?.storeId}
-                      variant="default"
-                      size="sm"
-                      className="shrink-0 rounded-md"
-                    >
-                      {isTikTokImporting ? (
-                        <>
-                          <HugeiconsIcon
-                            icon={Loading03Icon}
-                            className="mr-2 h-3.5 w-3.5 animate-spin"
-                          />
-                          Importing…
-                        </>
-                      ) : (
-                        <>
-                          <HugeiconsIcon
-                            icon={Download01Icon}
-                            className="mr-2 h-3.5 w-3.5"
-                          />
-                          Import 25 Posts
-                        </>
-                      )}
-                    </Button>
-                  </div>
-
-                  {(tiktokSyncSuccess) && (
-                    <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-xs text-emerald-600">
-                      Successfully imported {tiktokImportedCount} videos to your storefront.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

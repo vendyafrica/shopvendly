@@ -1,7 +1,6 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   MetaIcon,
-  TiktokIcon,
   InstagramIcon,
 } from "@hugeicons/core-free-icons";
 
@@ -22,10 +21,7 @@ export function Integrations() {
               <HugeiconsIcon icon={InstagramIcon} size={24} />
               <span className="font-semibold">Instagram Shopping</span>
             </div>
-            <div className="flex items-center gap-2">
-              <HugeiconsIcon icon={TiktokIcon} size={24} />
-              <span className="font-semibold">TikTok Marketing</span>
-            </div>
+
           </div>
         </div>
       </div>

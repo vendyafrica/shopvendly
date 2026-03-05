@@ -108,8 +108,8 @@ export default function CollectionsPage() {
     if (!storeId) return;
     const res = await fetch(`/api/products?storeId=${storeId}&page=1&limit=200`, { cache: "no-store" });
     if (!res.ok) return;
-    const json = (await res.json()) as { data: Array<{ id: string; productName: string }> };
-    setProducts((json.data || []).map((product) => ({ id: product.id, productName: product.productName })));
+    const json = (await res.json()) as { products: Array<{ id: string; productName: string }> };
+    setProducts((json.products || []).map((product) => ({ id: product.id, productName: product.productName })));
   }, [storeId]);
 
   React.useEffect(() => {
@@ -122,18 +122,18 @@ export default function CollectionsPage() {
 
   const handleCreate = async (name: string, media?: MediaItem) => {
     if (!storeId || !name.trim()) return;
-      const res = await fetch("/api/store-collections", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          storeId,
-          name: name.trim(),
-          image: media?.url ? media.url : null,
-        }),
-      });
+    const res = await fetch("/api/store-collections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        storeId,
+        name: name.trim(),
+        image: media?.url ? media.url : null,
+      }),
+    });
 
-      if (!res.ok) throw new Error("Failed to create collection");
-      await loadCollections();
+    if (!res.ok) throw new Error("Failed to create collection");
+    await loadCollections();
   };
 
   const handleDelete = async (collectionId: string) => {
@@ -166,13 +166,13 @@ export default function CollectionsPage() {
   };
 
   const handleSaveAssignments = async (collectionId: string, productIds: string[]) => {
-    
-      await fetch(`/api/store-collections/${collectionId}/products`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productIds }),
-      });
-      await loadCollections();
+
+    await fetch(`/api/store-collections/${collectionId}/products`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productIds }),
+    });
+    await loadCollections();
   };
 
   const toggleAll = (checked: boolean) => {

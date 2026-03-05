@@ -62,7 +62,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             slug: store.slug,
             description: store.description,
             logoUrl,
-            claimable: Boolean((store as { claimable?: boolean }).claimable),
             heroMedia,
             categories: (store as { categories?: string[] }).categories ?? [],
             rating: rating.rating,
