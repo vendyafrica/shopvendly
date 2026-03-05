@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useState } from "react";
 import { getStorefrontUrl } from "@/utils/misc";
 import { isLikelyVideoMedia } from "@/utils/misc";
@@ -31,7 +31,6 @@ const aspectVariants = [
 
 export function ProductCard({ title, slug, price, image, contentType, index = 0, storeSlug }: ProductCardProps) {
   const params = useParams();
-  const router = useRouter();
   const [imageError, setImageError] = useState(false);
 
   const paramsObject = typeof params === "object" ? (params as Record<string, string | undefined>) : {};
@@ -48,15 +47,15 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
   return (
     <Link
       href={prefetchedHref}
-      className={`group block break-inside-avoid mb-3 sm:mb-4 lg:mb-5`}
+      className="group block break-inside-avoid mb-6 sm:mb-7 transition-transform duration-300 hover:-translate-y-1"
     >
       {/* Image Container */}
-      <div className={`relative overflow-hidden rounded-lg ${aspectClass} bg-muted`}>
+      <div className={`relative overflow-hidden rounded-3xl ${aspectClass} bg-neutral-100`}>
         {isVideo ? (
           <video
             src={currentImageUrl}
             poster={FALLBACK_PRODUCT_IMAGE}
-            className="h-full w-full object-cover transition-all duration-700 ease-out group-hover:scale-[1.03] bg-neutral-100"
+            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
             muted
             playsInline
             loop
@@ -71,7 +70,7 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
             fill
             priority={index < 4}
             sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-            className="object-cover transition-all duration-700 ease-out group-hover:scale-[1.03] bg-neutral-100"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
             unoptimized={currentImageUrl.includes(".ufs.sh") || currentImageUrl.includes("utfs.io") || currentImageUrl.includes(".cdninstagram.com") || currentImageUrl.includes(".fbcdn.net")}
             onError={() => !imageError && setImageError(true)}
           />
@@ -93,18 +92,18 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
           </div>
         )}
 
-        {/* Subtle hover overlay */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
-      </div>
-
-      {/* Product Info - Clean and minimal */}
-      <div className="mt-2 px-0.5 sm:px-0.5">
-        <h3 className="text-[13px] sm:text-sm font-normal text-foreground leading-tight line-clamp-2 mb-1">
-          {title}
-        </h3>
-        <p className="text-xs sm:text-[13px] font-medium text-muted-foreground">
+        {/* Floating price pill */}
+        <div className="pointer-events-none absolute left-4 top-4 inline-flex items-center rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-gray-900 shadow-md backdrop-blur">
           {price}
-        </p>
+        </div>
+
+        {/* Subtle hover overlay */}
+        <div className="absolute inset-0 bg-linear-to-b from-transparent via-black/0 to-black/35 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+        {/* Product Info overlay */}
+        <div className="pointer-events-none absolute inset-x-4 bottom-4 rounded-2xl bg-white/92 px-5 py-4 text-left text-sm font-medium text-gray-900 shadow-xl backdrop-blur transition-all duration-300 opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0">
+          <p className="line-clamp-2 leading-tight">{title}</p>
+        </div>
       </div>
     </Link>
   );
