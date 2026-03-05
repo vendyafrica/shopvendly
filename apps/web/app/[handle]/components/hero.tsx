@@ -14,7 +14,7 @@ interface HeroProps {
 }
 
 const FALLBACK_HERO_MEDIA =
-  "https://utfs.io/f/9yFN4ZxbAeCYIjymxUcYrfE9oTGDCn7j61SeOdhpKX3IUkQq";
+  "https://cdn.cosmos.so/08020ebf-2819-4bb1-ab66-ae3642a73697.mp4";
 const VIDEO_EXTENSIONS = [".mp4", ".webm", ".ogg", ".mov"];
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".svg"];
 
@@ -69,7 +69,7 @@ export function Hero({ store }: HeroProps) {
 
   const shouldUseNativeImg =
     typeof mediaUrl === "string" && isUploadThing && looksLikeImage;
-  const fallbackPoster = store.logoUrl || "/og-image.png";
+  const fallbackPoster = "/og-image.png";
 
   const heroDescription =
     store.description ||

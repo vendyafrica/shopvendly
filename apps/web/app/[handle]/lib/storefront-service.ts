@@ -1,6 +1,6 @@
 import { db, stores, products, productRatings, eq, and, isNull, instagramAccounts, inArray, sql, tenants } from "@shopvendly/db";
 
-const DEFAULT_STORE_LOGO = "/store-logo.jpg";
+const DEFAULT_STORE_LOGO = "/vendly.png";
 
 /**
  * Storefront Service for serverless environment

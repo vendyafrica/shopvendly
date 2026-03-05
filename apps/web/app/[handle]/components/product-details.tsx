@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 
-import { StarIcon } from "@hugeicons/core-free-icons";
+import { StarIcon, ShoppingBag01Icon, FavouriteIcon } from "@hugeicons/core-free-icons";
 import { StoreAvatar } from "@/components/store-avatar";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { trackStorefrontEvents } from "../lib/storefront-tracking";
@@ -34,6 +34,7 @@ interface ProductDetailsProps {
         rating?: number;
         ratingCount?: number;
         userRating?: number | null;
+        availableQuantity?: number | null;
         store: {
             id: string;
             name: string;
@@ -196,9 +197,9 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
     return (
         <div className="min-h-screen bg-white pb-16" suppressHydrationWarning>
-            <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] xl:grid-cols-[1.8fr_1fr] gap-4 lg:gap-6 xl:gap-8 px-4 sm:px-6 lg:px-10 pt-0 lg:pt-0 -mt-4">
+            <div className="max-w-[1520px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)] xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.9fr)] gap-6 lg:gap-10 xl:gap-14 px-4 sm:px-6 lg:px-12 pt-0 lg:pt-0 -mt-4">
                 {/* Left: Gallery */}
-                <div className="flex flex-col gap-3 lg:sticky lg:top-0 lg:self-start lg:h-max">
+                <div className="flex flex-col gap-4 lg:sticky lg:top-20 lg:self-start lg:h-max">
                     {/* Mobile carousel */}
                     <div className="lg:hidden flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide">
                         {mediaItems.map((media, index) => {
@@ -237,7 +238,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                     </div>
 
                     {/* Desktop thumbs + main */}
-                    <div className="hidden lg:flex flex-row gap-6 lg:gap-8 h-[75vh] min-h-[600px] max-h-[900px]">
+                    <div className="hidden lg:flex flex-row gap-6 lg:gap-8 h-[78vh] min-h-[620px] max-h-[920px]">
                         <div className="flex flex-col gap-4 w-20 xl:w-24 shrink-0 overflow-y-auto scrollbar-hide">
                             {mediaItems.map((media, index) => {
                                 const isVideo = isVideoUrl(media.url, media.contentType);
@@ -247,7 +248,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                         onClick={() => setSelectedMediaIndex(index)}
                                         onMouseEnter={() => setSelectedMediaIndex(index)}
                                         className={`
-                                            relative w-full aspect-3/4 overflow-hidden transition-all duration-300 rounded-none
+                                            relative w-full aspect-3/4 overflow-hidden transition-all duration-300 rounded-2xl
                                             ${safeSelectedIndex === index
                                                 ? "ring-1 ring-black opacity-100"
                                                 : "opacity-60 hover:opacity-100"
@@ -280,7 +281,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                             })}
                         </div>
 
-                        <div className="flex-1 relative bg-neutral-100 overflow-hidden h-full rounded-md">
+                        <div className="flex-1 relative bg-neutral-100 overflow-hidden h-full rounded-3xl">
                             {currentIsVideo ? (
                                 <>
                                     <video
@@ -315,92 +316,112 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 </div>
 
                 {/* Right: Product Details */}
-                <div className="flex flex-col pt-1 lg:pt-0 lg:pl-6 max-w-xl w-full lg:max-w-[520px] xl:max-w-[560px]">
+                <div className="flex flex-col pt-1 lg:pt-0 w-full lg:max-w-[600px] xl:max-w-[640px] lg:justify-self-end">
 
-                    {/* Store Info - Header */}
-                    <div className="flex items-center justify-between mb-3 mt-0">
-                        <Link
-                            href={`/${product.store.slug ?? ""}`}
-                            className="flex items-center gap-3 group"
-                            prefetch
-                        >
-                            <StoreAvatar
-                                storeName={product.store.name}
-                                logoUrl={product.store.logoUrl}
-                                shape="square"
-                                size="md"
-                            />
-                            <div>
-                                <p className={` ${geistSans.className} text-lg tracking-wide font-semibold text-neutral-900 group-hover:underline`}>
-                                    {product.store.name ? `${product.store.name.charAt(0).toUpperCase()}${product.store.name.slice(1)}` : product.store.name}
-                                </p>
+                    <div className="rounded-3xl border border-neutral-100 bg-white/90 p-6 lg:p-8 shadow-[0_20px_60px_-45px_rgba(0,0,0,0.2)]">
+                        {/* Store Info - Header */}
+                        <div className="flex items-center justify-between mb-6">
+                            <Link
+                                href={`/${product.store.slug ?? ""}`}
+                                className="flex items-center gap-3 group"
+                                prefetch
+                            >
+                                <StoreAvatar
+                                    storeName={product.store.name}
+                                    logoUrl={product.store.logoUrl}
+                                    shape="square"
+                                    size="md"
+                                />
+                                <div>
+                                    <p className={`${geistSans.className} text-sm uppercase tracking-[0.2em] text-neutral-500`}>Store</p>
+                                    <p className={` ${geistSans.className} text-lg tracking-wide font-semibold text-neutral-900 group-hover:underline`}>
+                                        {product.store.name ? `${product.store.name.charAt(0).toUpperCase()}${product.store.name.slice(1)}` : product.store.name}
+                                    </p>
+                                </div>
+                            </Link>
+                            <div className="hidden md:flex items-center gap-2">
+                                <Link
+                                    href={`/${product.store.slug}/wishlist`}
+                                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100"
+                                    aria-label="Wishlist"
+                                >
+                                    <HugeiconsIcon icon={FavouriteIcon} size={18} />
+                                </Link>
+                                <Link
+                                    href={`/${product.store.slug}/cart`}
+                                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100"
+                                    aria-label="Cart"
+                                >
+                                    <HugeiconsIcon icon={ShoppingBag01Icon} size={18} />
+                                </Link>
                             </div>
-                        </Link>
-                    </div>
+                        </div>
 
-                    {/* Product Name & Rating */}
-                    <div className="mb-6">
-                        <h1 className="text-[26px] lg:text-[28px] capitalize font-semibold text-neutral-800 leading-snug tracking-tight mb-2">
-                            {product.name ? `${product.name.charAt(0).toUpperCase()}${product.name.slice(1)}` : product.name}
-                        </h1>
+                        {/* Product Name & Rating */}
+                        <div className="mb-7">
+                            <h1 className="text-[26px] lg:text-[30px] capitalize font-semibold text-neutral-900 leading-snug tracking-tight mb-3">
+                                {product.name ? `${product.name.charAt(0).toUpperCase()}${product.name.slice(1)}` : product.name}
+                            </h1>
 
-                        <div className="flex flex-col gap-2 mb-5">
-                            <div className="flex items-center gap-1">
-                                {Array.from({ length: 5 }).map((_, idx) => {
-                                    const activeValue = hoverRating ?? userRating ?? Math.round(averageRating);
-                                    const filled = activeValue >= idx + 1;
-                                    return (
-                                        <button
-                                            key={idx}
-                                            type="button"
-                                            onClick={() => handleSubmitRating(idx + 1)}
-                                            onMouseEnter={() => setHoverRating(idx + 1)}
-                                            onMouseLeave={() => setHoverRating(null)}
-                                            disabled={isSubmittingRating}
-                                            className="p-1 rounded-full text-yellow-500 disabled:opacity-50 transition-transform duration-150 hover:-translate-y-0.5 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200"
-                                            aria-label={`Rate ${idx + 1} stars`}
-                                        >
-                                            <HugeiconsIcon
-                                                icon={StarIcon}
-                                                size={18}
-                                                className={filled ? "fill-yellow-400 text-yellow-400" : "text-neutral-300"}
-                                            />
-                                        </button>
-                                    );
-                                })}
-                                <span className="text-sm font-medium text-neutral-900 ml-2">
-                                    {Number.isFinite(averageRating) ? averageRating.toFixed(1) : "0.0"}
+                            <div className="flex flex-col gap-2 mb-6">
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: 5 }).map((_, idx) => {
+                                        const activeValue = hoverRating ?? userRating ?? Math.round(averageRating);
+                                        const filled = activeValue >= idx + 1;
+                                        return (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => handleSubmitRating(idx + 1)}
+                                                onMouseEnter={() => setHoverRating(idx + 1)}
+                                                onMouseLeave={() => setHoverRating(null)}
+                                                disabled={isSubmittingRating}
+                                                className="p-1 rounded-full text-yellow-500 disabled:opacity-50 transition-transform duration-150 hover:-translate-y-0.5 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200"
+                                                aria-label={`Rate ${idx + 1} stars`}
+                                            >
+                                                <HugeiconsIcon
+                                                    icon={StarIcon}
+                                                    size={18}
+                                                    className={filled ? "fill-yellow-400 text-yellow-400" : "text-neutral-300"}
+                                                />
+                                            </button>
+                                        );
+                                    })}
+                                    <span className="text-sm font-medium text-neutral-900 ml-2">
+                                        {Number.isFinite(averageRating) ? averageRating.toFixed(1) : "0.0"}
+                                    </span>
+                                </div>
+                                {userRating ? (
+                                    <span className="text-xs text-neutral-600">You rated this {userRating}★</span>
+                                ) : (
+                                    <span className="text-xs text-neutral-500"></span>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <span className="text-3xl font-semibold text-neutral-900">
+                                    <sub className="text-sm text-muted-foreground">{product.currency}</sub> {product.price.toLocaleString(undefined, {
+                                        minimumFractionDigits: product.currency === "USD" ? 2 : 0,
+                                        maximumFractionDigits: product.currency === "USD" ? 2 : 0,
+                                    })}
                                 </span>
                             </div>
-                            {userRating ? (
-                                <span className="text-xs text-neutral-600">You rated this {userRating}★</span>
-                            ) : (
-                                <span className="text-xs text-neutral-500"></span>
-                            )}
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            <span className="text-2xl font-bold text-neutral-900">
-                                <sub className="text-sm text-muted-foreground">{product.currency}</sub> {product.price.toLocaleString(undefined, {
-                                    minimumFractionDigits: product.currency === "USD" ? 2 : 0,
-                                    maximumFractionDigits: product.currency === "USD" ? 2 : 0,
-                                })}
-                            </span>
+                        {/* Actions */}
+                        <div className="mb-8 w-full">
+                            <ProductActions product={product} />
                         </div>
-                    </div>
-                    {/* Actions */}
-                    <div className="mb-8 w-full max-w-[460px]">
-                        <ProductActions product={product} />
-                    </div>
 
-                    {product.description && (
-                        <div className="border-t border-neutral-100 pt-5">
-                            <h2 className="text-sm font-medium mb-3 uppercase tracking-widest text-neutral-900">Description / Details</h2>
-                            <div className="text-sm leading-relaxed text-neutral-600">
-                                <p className="capitalize">{product.description}</p>
+                        {product.description && (
+                            <div className="border-t border-neutral-100 pt-6">
+                                <h2 className="text-xs font-semibold mb-3 uppercase tracking-[0.2em] text-neutral-600">Description</h2>
+                                <div className="text-sm leading-relaxed text-neutral-600">
+                                    <p className="capitalize">{product.description}</p>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

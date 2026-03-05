@@ -20,6 +20,7 @@ interface ProductActionsProduct {
   images: string[];
   mediaItems?: { url: string; contentType?: string | null }[];
   slug: string;
+  availableQuantity?: number | null;
   store: {
     id: string;
     name: string;
@@ -38,6 +39,8 @@ export function ProductActions({ product }: ProductActionsProps) {
 
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
+  const maxQuantity = product.availableQuantity ?? Number.POSITIVE_INFINITY;
+  const isOutOfStock = maxQuantity <= 0;
 
   const handleToggleWishlist = () => {
     toggleWishlist({
@@ -56,11 +59,13 @@ export function ProductActions({ product }: ProductActionsProps) {
   };
 
   const handleQuantityChange = (delta: number) => {
-    setQuantity((prev) => Math.max(1, prev + delta));
+    setQuantity((prev) => Math.max(1, Math.min(maxQuantity, prev + delta)));
   };
 
   const handleAddToCart = () => {
     if (!product) return;
+
+    if (isOutOfStock) return;
 
     addItem(
       {
@@ -73,6 +78,7 @@ export function ProductActions({ product }: ProductActionsProps) {
           image: product.images[0],
           contentType: product.mediaItems?.[0]?.contentType || undefined,
           slug: product.slug,
+          availableQuantity: product.availableQuantity ?? undefined,
         },
         store: {
           id: product.store.id,
@@ -99,6 +105,7 @@ export function ProductActions({ product }: ProductActionsProps) {
           <button
             onClick={() => handleQuantityChange(-1)}
             className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-600 hover:text-neutral-900 transition-all"
+            disabled={quantity <= 1}
           >
             <HugeiconsIcon icon={MinusSignIcon} size={18} />
           </button>
@@ -106,6 +113,7 @@ export function ProductActions({ product }: ProductActionsProps) {
           <button
             onClick={() => handleQuantityChange(1)}
             className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-600 hover:text-neutral-900 transition-all"
+            disabled={quantity >= maxQuantity}
           >
             <HugeiconsIcon icon={PlusSignIcon} size={18} />
           </button>
@@ -117,7 +125,7 @@ export function ProductActions({ product }: ProductActionsProps) {
         <Button
           onClick={handleAddToCart}
           className="w-full h-12 rounded-md bg-primary text-white hover:bg-primary/90 uppercase text-xs tracking-widest font-semibold transition-colors mb-3"
-          disabled={isAdded}
+          disabled={isAdded || isOutOfStock}
         >
           {isAdded ? (
             <span className="flex items-center gap-2">

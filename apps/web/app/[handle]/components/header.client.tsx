@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, type MouseEvent } from "react";
+import { useState, useEffect, useRef } from "react";
+
 import { useParams, usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -35,6 +36,18 @@ export interface StoreData {
 
 export interface StorefrontHeaderProps {
   initialStore?: StoreData | null;
+}
+
+function Badge({ count, dark = false }: { count: number; dark?: boolean }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      className={`pointer-events-none absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-0.5 text-[10px] font-bold ring-2 ring-white
+        ${dark ? "bg-neutral-900 text-white" : "bg-primary text-white"}`}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
 }
 
 export default function StorefrontHeaderClient({
@@ -122,6 +135,12 @@ export default function StorefrontHeaderClient({
   const slugPath = resolvedSlug ? `/${resolvedSlug}` : "/";
   const isHomePath =
     normalizedPathname === slugPath || normalizedPathname === "/";
+  const isProductPage = resolvedSlug
+    ? normalizedPathname.startsWith(slugPath + "/")
+    : false;
+  const headerVisible = !mounted || isVisible;
+  const headerTransition = `fixed inset-x-0 top-0 z-50 transition-all duration-300 ${headerVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+    }`;
 
   useEffect(() => {
     lastScrollYRef.current = window.scrollY;
@@ -148,7 +167,60 @@ export default function StorefrontHeaderClient({
   if (loading) return <HeaderSkeleton />;
   if (!store) return null;
 
-
+  if (isProductPage) {
+    return (
+      <header className={headerTransition}>
+        <div className="absolute inset-0 bg-white/95" />
+        <div className="mx-auto max-w-[1480px] px-4 sm:px-6 lg:px-12 h-[72px] sm:h-[80px] flex items-center relative z-10">
+          <div className="flex items-center justify-between w-full">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50"
+            >
+              <span aria-hidden>←</span>
+              Back
+            </button>
+            <div className="flex items-center gap-2">
+              <div className="flex md:hidden items-center gap-1">
+                <button
+                  type="button"
+                  className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-neutral-700 shadow-sm hover:bg-neutral-50"
+                  onClick={() => router.push(`/${store.slug}/wishlist`)}
+                  aria-label="Liked Items"
+                >
+                  <HugeiconsIcon icon={FavouriteIcon} size={18} />
+                  <Badge count={wishlistCount} dark />
+                </button>
+                <button
+                  type="button"
+                  className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-neutral-700 shadow-sm hover:bg-neutral-50"
+                  onClick={() => router.push(`/${store.slug}/cart`)}
+                  aria-label="Cart"
+                >
+                  <HugeiconsIcon icon={ShoppingBag01Icon} size={18} />
+                  <Badge count={storeItemCount} dark />
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (sellerLoginUrl.startsWith("http")) {
+                    window.location.href = sellerLoginUrl;
+                    return;
+                  }
+                  router.push(sellerLoginUrl);
+                }}
+                className="inline-flex items-center rounded-full border border-black/10 bg-white px-4 py-1.5 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50"
+              >
+                Admin
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   const handleClaimStore = async () => {
     if (!store?.slug || isClaiming) return;
@@ -202,24 +274,12 @@ export default function StorefrontHeaderClient({
     ? `${adminOrigin}/admin/${store.slug}/login`
     : `${adminOrigin}/admin/login`;
   const claimLabel = isClaiming ? "Claiming..." : "Claim Store";
-  const headerVisible = !mounted || isVisible;
 
   // ─── Shared icon button classes ────────────────────────────────────────────
   const iconBtnBase =
     "relative inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors shrink-0";
   const iconBtnOverlay = `${iconBtnBase} hover:bg-white/10`;
   const iconBtnSolid = `${iconBtnBase} hover:bg-black/5`;
-
-  // ─── Badge ─────────────────────────────────────────────────────────────────
-  const Badge = ({ count, dark = false }: { count: number; dark?: boolean }) =>
-    count > 0 ? (
-      <span
-        className={`pointer-events-none absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-0.5 text-[10px] font-bold ring-2 ring-white
-          ${dark ? "bg-neutral-900 text-white" : "bg-primary text-white"}`}
-      >
-        {count > 99 ? "99+" : count}
-      </span>
-    ) : null;
 
   // ─── Dropdown menu (shared between overlay + solid headers) ────────────────
   const MainMenu = ({ overlay }: { overlay?: boolean }) => {
@@ -360,7 +420,7 @@ export default function StorefrontHeaderClient({
           <HugeiconsIcon
             icon={FavouriteIcon}
             size={20}
-            className={overlay ? "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
+            className={overlay ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
           />
           <Badge count={wishlistCount} dark={!overlay} />
         </button>
@@ -374,7 +434,7 @@ export default function StorefrontHeaderClient({
           <HugeiconsIcon
             icon={ShoppingBag01Icon}
             size={20}
-            className={overlay ? "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
+            className={overlay ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
           />
           <Badge count={storeItemCount} dark={!overlay} />
         </button>
@@ -387,9 +447,6 @@ export default function StorefrontHeaderClient({
     { label: "New Arrival", href: `/${store.slug}#new-arrivals` },
     { label: "Sale", href: `/${store.slug}#sale` },
   ];
-
-  const headerTransition = `fixed inset-x-0 top-0 z-50 transition-all duration-300 ${headerVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
-    }`;
 
   // ══════════════════════════════════════════════════════════════════════════
   // RENDER

@@ -32,9 +32,11 @@ export function ProductGrid({ products }: ProductGridProps) {
         })}`.trim();
     };
 
+    const largeScreenColumns = products.length >= 12 ? " lg:columns-4 xl:columns-4" : " lg:columns-3 xl:columns-3";
+
     return (
         <div className="mx-auto w-full max-w-6xl px-3 sm:px-6 lg:px-10 xl:px-12">
-            <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-3 sm:gap-5 lg:gap-7 [column-fill:balance]">
+            <div className={`columns-2 sm:columns-2 md:columns-3${largeScreenColumns} gap-3 sm:gap-5 lg:gap-7 [column-fill:balance]`}>
                 {products.map((product, index) => (
                     <ProductCard
                         key={product.id}
