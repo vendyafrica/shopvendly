@@ -71,7 +71,9 @@ const capitalizeStoreName = (name?: string | null) => {
 export async function generateMetadata({ params }: StorefrontPageProps): Promise<Metadata> {
   const { handle } = await params;
   const baseUrl = await getApiBaseUrl();
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
+  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, {
+    next: { revalidate: 60, tags: [`storefront:store:${handle}`] }
+  });
   const store = storeRes.ok ? ((await storeRes.json()) as StorefrontStore) : null;
 
   if (!store) {
@@ -122,13 +124,17 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
 
   const baseUrl = await getApiBaseUrl();
 
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
+  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, {
+    next: { revalidate: 60, tags: [`storefront:store:${handle}`] }
+  });
   const store = storeRes.ok ? ((await storeRes.json()) as StorefrontStore) : null;
   if (!store) notFound();
 
   const productUrl = new URL(`${baseUrl}/api/storefront/${handle}/products`);
   if (query) productUrl.searchParams.set("q", query);
-  const productsRes = await fetch(productUrl.toString(), { next: { revalidate: 30 } });
+  const productsRes = await fetch(productUrl.toString(), {
+    next: { revalidate: 30, tags: [`storefront:store:${handle}:products`] }
+  });
 
   const products = productsRes.ok
     ? ((await productsRes.json()) as StorefrontProduct[])
