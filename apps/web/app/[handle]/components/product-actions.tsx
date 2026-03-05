@@ -100,7 +100,14 @@ export function ProductActions({ product }: ProductActionsProps) {
     <div className="w-full mt-1">
       {/* Quantity */}
       <div className="flex items-center justify-between border-b border-neutral-100 pb-5 mb-5">
-        <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Quantity</span>
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Quantity</span>
+          {Number.isFinite(maxQuantity) && maxQuantity > 0 ? (
+            <span className="text-[11px] font-medium text-neutral-400">
+              Only {maxQuantity} left
+            </span>
+          ) : null}
+        </div>
         <div className="flex items-center gap-5">
           <button
             onClick={() => handleQuantityChange(-1)}
