@@ -105,9 +105,72 @@ async function compressVideoClientSide(file: File): Promise<File> {
     }
 }
 
+
+// ─── Image compression ─────────────────────────────────────────────────────
+const IMAGE_COMPRESS_MAX_PX = 1600; // max dimension (width or height)
+const IMAGE_COMPRESS_QUALITY = 0.82; // JPEG/WebP quality
+const IMAGE_COMPRESS_THRESHOLD_BYTES = 300 * 1024; // only compress if > 300 KB
+
+async function compressImageClientSide(file: File): Promise<File> {
+    if (typeof document === "undefined") return file;
+
+    return new Promise((resolve, reject) => {
+        const img = new window.Image();
+        const objectUrl = URL.createObjectURL(file);
+
+        img.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+
+            const { naturalWidth: w, naturalHeight: h } = img;
+            const scale = Math.min(1, IMAGE_COMPRESS_MAX_PX / Math.max(w, h));
+            const targetW = Math.max(2, Math.round(w * scale));
+            const targetH = Math.max(2, Math.round(h * scale));
+
+            const canvas = document.createElement("canvas");
+            canvas.width = targetW;
+            canvas.height = targetH;
+
+            const ctx = canvas.getContext("2d");
+            if (!ctx) { resolve(file); return; }
+
+            ctx.drawImage(img, 0, 0, targetW, targetH);
+
+            const outputType = "image/jpeg";
+            canvas.toBlob(
+                (blob) => {
+                    if (!blob) { resolve(file); return; }
+                    // Only use compressed version if it's actually smaller
+                    if (blob.size >= file.size) { resolve(file); return; }
+                    const baseName = file.name.replace(/\.[^/.]+$/, "");
+                    resolve(new File([blob], `${baseName}.jpg`, {
+                        type: outputType,
+                        lastModified: Date.now(),
+                    }));
+                },
+                outputType,
+                IMAGE_COMPRESS_QUALITY
+            );
+        };
+
+        img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(file); // fail-safe: upload original if we can't read the image
+        };
+
+        img.src = objectUrl;
+    });
+}
+
 async function prepareFileForUpload(file: File, options: UploadOptions): Promise<File> {
-    if (file.type.startsWith("image/") && file.size > IMAGE_MAX_BYTES) {
-        throw new Error("Image file is too large. Maximum image size is 10MB.");
+    if (file.type.startsWith("image/")) {
+        if (file.size > IMAGE_MAX_BYTES) {
+            throw new Error("Image file is too large. Maximum image size is 10MB.");
+        }
+        // Compress any image that's meaningfully large to avoid slow uploads / slow first-load
+        if (file.size > IMAGE_COMPRESS_THRESHOLD_BYTES) {
+            return compressImageClientSide(file);
+        }
+        return file;
     }
 
     if (file.type.startsWith("video/") && file.size > VIDEO_MAX_BYTES) {
@@ -125,6 +188,7 @@ async function prepareFileForUpload(file: File, options: UploadOptions): Promise
 
     return file;
 }
+
 
 export function useUpload() {
     const [isUploading, setIsUploading] = useState(false);

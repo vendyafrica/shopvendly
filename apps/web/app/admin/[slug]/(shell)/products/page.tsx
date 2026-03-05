@@ -872,6 +872,7 @@ export default function ProductsPage() {
         <ProductsMobileView
           bootstrap={bootstrap}
           rows={rows}
+          isLoading={isLoading}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onAddSelect={handleAddProductSelect}

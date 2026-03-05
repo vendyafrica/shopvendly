@@ -62,13 +62,12 @@ function ProductThumbnail({
         return (
             <video
                 src={url}
-                className="h-full w-full object-cover bg-muted/30"
+                className="h-full w-full object-cover bg-neutral-100"
                 muted
                 playsInline
                 loop
                 autoPlay
                 preload="none"
-                poster="" // could use a placeholder image here if available
             />
         );
     }
@@ -78,17 +77,70 @@ function ProductThumbnail({
             src={url}
             alt={name}
             fill
-            className="object-cover bg-muted/30"
+            sizes="(max-width: 640px) 33vw, 128px"
+            className="object-cover bg-neutral-100"
             unoptimized={url.includes(".ufs.sh")}
             onError={() => setForceVideo(true)}
-            loading="lazy"
+            loading="eager"
+            priority={false}
         />
+    );
+}
+
+// ─── Mobile skeleton ────────────────────────────────────────────────────────
+function ProductsMobileSkeleton() {
+    return (
+        <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden">
+            {/* Profile header skeleton */}
+            <div className="px-5 py-6">
+                <div className="flex items-center gap-6 mb-5">
+                    {/* Avatar */}
+                    <div className="size-[84px] shrink-0 rounded-[32px] bg-neutral-200 animate-pulse" />
+                    {/* Stats */}
+                    <div className="flex-1 flex justify-between items-center text-center">
+                        {[0, 1, 2].map((i) => (
+                            <div key={i} className="flex flex-col items-center flex-1 gap-2">
+                                <div className="h-6 w-8 bg-neutral-200 rounded animate-pulse" />
+                                <div className="h-3 w-12 bg-neutral-200 rounded animate-pulse" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                {/* Store name + bio */}
+                <div className="mb-5 space-y-2">
+                    <div className="h-4 w-24 bg-neutral-200 rounded animate-pulse" />
+                    <div className="h-3 w-40 bg-neutral-200 rounded animate-pulse" />
+                </div>
+                {/* Buttons */}
+                <div className="flex gap-2 w-full">
+                    <div className="flex-1 h-8 bg-neutral-200 rounded-md animate-pulse" />
+                    <div className="flex-1 h-8 bg-neutral-200 rounded-md animate-pulse" />
+                </div>
+            </div>
+
+            {/* Grid tab bar */}
+            <div className="flex w-full items-center justify-center border-b pt-3 pb-3">
+                <div className="h-5 w-5 bg-neutral-200 rounded animate-pulse" />
+            </div>
+
+            {/* Product grid */}
+            <div className="grid grid-cols-3 gap-px">
+                {Array.from({ length: 12 }).map((_, i) => (
+                    <div
+                        key={i}
+                        className="relative aspect-square bg-neutral-200 animate-pulse"
+                        style={{ animationDelay: `${(i % 6) * 60}ms` }}
+                    />
+                ))}
+            </div>
+        </div>
     );
 }
 
 interface ProductsMobileViewProps {
     bootstrap: TenantBootstrap | null;
     rows: ProductTableRow[];
+    isLoading?: boolean;
     onEdit: (id: string) => void;
     onDelete: (id: string) => void;
     onAddSelect: (mode: "single" | "multiple") => void;
@@ -99,6 +151,7 @@ interface ProductsMobileViewProps {
 export function ProductsMobileView({
     bootstrap,
     rows,
+    isLoading = false,
     onEdit,
     onDelete,
     onAddSelect,
@@ -106,6 +159,12 @@ export function ProductsMobileView({
 }: ProductsMobileViewProps) {
     const [selectedProduct, setSelectedProduct] = React.useState<ProductTableRow | null>(null);
     const [sheetOpen, setSheetOpen] = React.useState(false);
+
+    const router = useRouter();
+
+    if (isLoading) {
+        return <ProductsMobileSkeleton />;
+    }
 
     const totalProducts = rows.length;
     const activeCount = rows.filter((p) => p.status === "active" || p.status === "ready").length;
@@ -118,7 +177,6 @@ export function ProductsMobileView({
 
     const storeName = bootstrap?.storeName || "My Store";
     const AdminHref = bootstrap?.storeSlug ? `/admin/${bootstrap.storeSlug}` : "/admin";
-    const router = useRouter();
 
     return (
         <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden">
@@ -197,7 +255,7 @@ export function ProductsMobileView({
                     rows.map((product) => (
                         <button
                             key={product.id}
-                            className="relative aspect-square focus:outline-none overflow-hidden group"
+                            className="relative aspect-square focus:outline-none overflow-hidden group bg-neutral-100"
                             onClick={() => handleProductClick(product)}
                         >
                             <ProductThumbnail
