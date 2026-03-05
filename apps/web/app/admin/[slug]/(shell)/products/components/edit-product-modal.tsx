@@ -14,6 +14,13 @@ import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { Label } from "@shopvendly/ui/components/label";
 import { Textarea } from "@shopvendly/ui/components/textarea";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@shopvendly/ui/components/select";
 import Image from "next/image";
 import { useTenant } from "@/app/admin/context/tenant-context";
 import type { ProductApiRow } from "@/features/products/hooks/use-products";
@@ -35,13 +42,20 @@ interface Product {
         contentType?: string;
         blobPathname?: string;
     }[];
+    collectionIds?: string[];
 }
+
+type StoreCollection = {
+    id: string;
+    name: string;
+};
 
 interface EditProductModalProps {
     product: Product | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     tenantId: string;
+    storeId: string;
     onProductUpdated?: (product?: ProductApiRow) => void;
 }
 
@@ -59,6 +73,7 @@ export function EditProductModal({
     open,
     onOpenChange,
     tenantId,
+    storeId,
     onProductUpdated,
 }: EditProductModalProps) {
     const { bootstrap } = useTenant();
@@ -71,6 +86,8 @@ export function EditProductModal({
     const [quantity, setQuantity] = React.useState<string>("");
     const [isSaving, setIsSaving] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
+    const [collections, setCollections] = React.useState<StoreCollection[]>([]);
+    const [collectionId, setCollectionId] = React.useState<string>("none");
 
     // Image management
     const [files, setFiles] = React.useState<UploadedFile[]>([]);
@@ -84,6 +101,7 @@ export function EditProductModal({
             setDescription(product.description || "");
             setPriceAmount(product.priceAmount ? String(product.priceAmount) : "");
             setQuantity(product.quantity ? String(product.quantity) : "");
+            setCollectionId(product.collectionIds?.[0] || "none");
             setError(null);
 
             // Delay the heavy media array generation so the drawer can animate in smoothly on mobile
@@ -121,6 +139,28 @@ export function EditProductModal({
             return () => clearTimeout(timeout);
         }
     }, [product]);
+
+    React.useEffect(() => {
+        if (!open || !storeId) return;
+
+        let active = true;
+        const loadCollections = async () => {
+            try {
+                const params = new URLSearchParams({ storeId });
+                const res = await fetch(`/api/store-collections?${params.toString()}`, { cache: "no-store" });
+                if (!res.ok) return;
+                const data = (await res.json()) as StoreCollection[];
+                if (active) setCollections(data);
+            } catch {
+                if (active) setCollections([]);
+            }
+        };
+
+        void loadCollections();
+        return () => {
+            active = false;
+        };
+    }, [open, storeId]);
 
     const handleUploadFiles = async (selectedFiles: File[]) => {
         const newFiles = selectedFiles.map(file => ({
@@ -253,6 +293,8 @@ export function EditProductModal({
                     contentType: f.contentType,
                 }));
             }
+
+            payload.collectionIds = collectionId === "none" ? [] : [collectionId];
 
             const response = await fetch(`/api/products/${product.id}`, {
                 method: "PATCH",
@@ -460,6 +502,27 @@ export function EditProductModal({
                                         rows={5}
                                         disabled={isSaving}
                                     />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Collection</Label>
+                                    <Select
+                                        value={collectionId}
+                                        onValueChange={(value) => setCollectionId(value ?? "none")}
+                                        disabled={isSaving}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a collection" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">No collection</SelectItem>
+                                            {collections.map((collection) => (
+                                                <SelectItem key={collection.id} value={collection.id}>
+                                                    {collection.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
                         </div>

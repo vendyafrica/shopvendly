@@ -1,4 +1,19 @@
-import { db, stores, products, productRatings, eq, and, isNull, instagramAccounts, inArray, sql, tenants } from "@shopvendly/db";
+import {
+    db,
+    stores,
+    products,
+    productRatings,
+    storeCollections,
+    productCollections,
+    eq,
+    and,
+    isNull,
+    instagramAccounts,
+    inArray,
+    sql,
+    tenants,
+    asc,
+} from "@shopvendly/db";
 
 const DEFAULT_STORE_LOGO = "/vendly.png";
 
@@ -64,6 +79,30 @@ export const storefrontService = {
      */
     async findStoreBySlug(slug: string) {
         return findStoreBySlugFresh(slug);
+    },
+
+    async getStoreCollections(storeId: string, query?: string) {
+        const normalizedQuery = query?.trim().toLowerCase() || "";
+
+        const collections = await db.query.storeCollections.findMany({
+            where: eq(storeCollections.storeId, storeId),
+            columns: {
+                id: true,
+                name: true,
+                slug: true,
+                image: true,
+                sortOrder: true,
+            },
+            orderBy: [asc(storeCollections.name)],
+        });
+
+        if (!normalizedQuery) return collections;
+
+        return collections.filter(
+            (collection) =>
+                collection.name.toLowerCase().includes(normalizedQuery) ||
+                collection.slug.toLowerCase().includes(normalizedQuery)
+        );
     },
 
     /**
@@ -211,20 +250,23 @@ export const storefrontService = {
     },
 
     async getStoreProductsByCategorySlug(storeId: string, categorySlug: string, query?: string) {
+        return this.getStoreProductsByCollectionSlug(storeId, categorySlug, query);
+    },
+
+    async getStoreProductsByCollectionSlug(storeId: string, collectionSlug: string, query?: string) {
         const normalizedQuery = query?.trim().toLowerCase() || "";
-        const { productCategories, categories } = await import("@shopvendly/db");
 
         const matches = await db
             .select({ id: products.id })
             .from(products)
-            .innerJoin(productCategories, eq(productCategories.productId, products.id))
-            .innerJoin(categories, eq(categories.id, productCategories.categoryId))
+            .innerJoin(productCollections, eq(productCollections.productId, products.id))
+            .innerJoin(storeCollections, eq(storeCollections.id, productCollections.collectionId))
             .where(
                 and(
                     eq(products.storeId, storeId),
                     eq(products.status, "active"),
                     isNull(products.deletedAt),
-                    eq(categories.slug, categorySlug)
+                    eq(storeCollections.slug, collectionSlug)
                 )
             );
 

@@ -1,17 +1,24 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
 type StorefrontView = "products" | "inspiration";
 
+type StoreCollection = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
 interface CategoriesProps {
+  handle: string;
+  collections: StoreCollection[];
+  activeCollectionSlug?: string;
   activeView: StorefrontView;
   onChangeView: (view: StorefrontView) => void;
   showInspiration: boolean;
 }
-
-const VIEW_OPTIONS: Array<{ key: StorefrontView; label: string }> = [
-  { key: "products", label: "All Products" },
-  { key: "inspiration", label: "Inspiration" },
-];
 
 const getButtonClassName = (isActive: boolean) =>
   [
@@ -21,10 +28,17 @@ const getButtonClassName = (isActive: boolean) =>
       : "border-transparent bg-muted/55 text-foreground/80 hover:bg-muted",
   ].join(" ");
 
-export function Categories({ activeView, onChangeView, showInspiration }: CategoriesProps) {
-  const visibleOptions = showInspiration
-    ? VIEW_OPTIONS
-    : VIEW_OPTIONS.filter((option) => option.key !== "inspiration");
+export function Categories({
+  handle,
+  collections,
+  activeCollectionSlug,
+  activeView,
+  onChangeView,
+  showInspiration,
+}: CategoriesProps) {
+  const pathname = usePathname();
+
+  const isAllProductsActive = pathname === `/${handle}` && !activeCollectionSlug;
 
   return (
     <nav
@@ -34,19 +48,32 @@ export function Categories({ activeView, onChangeView, showInspiration }: Catego
       <div className="px-3 sm:px-4 lg:px-6 xl:px-8">
         <div className="overflow-x-auto scrollbar-hide">
           <div className="mx-auto flex w-max min-w-full items-center justify-center gap-1.5 sm:gap-2 py-3">
-            {visibleOptions.map((option) => {
-              const isActive = activeView === option.key;
+            <Link href={`/${handle}`} className={getButtonClassName(isAllProductsActive)}>
+              All Products
+            </Link>
+
+            {collections.map((collection) => {
+              const isActive = activeCollectionSlug === collection.slug;
               return (
-                <button
-                  key={option.key}
-                  type="button"
-                  onClick={() => onChangeView(option.key)}
+                <Link
+                  key={collection.id}
+                  href={`/${handle}/categories/${collection.slug}`}
                   className={getButtonClassName(isActive)}
                 >
-                  {option.label}
-                </button>
+                  {collection.name}
+                </Link>
               );
             })}
+
+            {showInspiration ? (
+              <button
+                type="button"
+                onClick={() => onChangeView("inspiration")}
+                className={getButtonClassName(activeView === "inspiration")}
+              >
+                Inspiration
+              </button>
+            ) : null}
           </div>
         </div>
       </div>

@@ -123,6 +123,7 @@ export default function ProductsPage() {
     status: string;
     thumbnailUrl?: string;
     media?: { id?: string; blobUrl: string; contentType?: string; blobPathname?: string }[];
+    collectionIds?: string[];
   } | null>(null);
   const [drafts, setDrafts] = React.useState<DraftMap>({});
   const [activeCell, setActiveCell] = React.useState<{ id: string; field: EditableField } | null>(null);
@@ -170,6 +171,7 @@ export default function ProductsPage() {
         currency: product.currency,
         quantity: product.quantity,
         status: product.status,
+        collectionIds: product.collectionIds,
         media: product.media?.map((m) => ({
           blobUrl: m.blobUrl,
           contentType: m.contentType ?? undefined,
@@ -273,22 +275,22 @@ export default function ProductsPage() {
       // 3. Replace Optimistic with Real
       queryClient.setQueryData<ProductTableRow[]>(
         queryKeys.products.list(bootstrap.storeId),
-        (old) => {
-          if (!old) return [];
-          return old.map((p) => (p.id === tempId ? {
-            id: newProduct.id,
-            name: newProduct.productName,
-            slug: newProduct.slug,
-            description: newProduct.description,
-            priceAmount: newProduct.priceAmount,
-            currency: newProduct.currency,
-            quantity: newProduct.quantity,
-            status: newProduct.status,
-            thumbnailUrl: newProduct.media?.[0]?.blobUrl,
-            thumbnailType: newProduct.media?.[0]?.contentType || undefined,
-            salesAmount: newProduct.salesAmount ?? 0,
-          } : p));
-        }
+        (old) =>
+          old?.map((p) =>
+            p.id === tempId ? {
+              id: newProduct.id,
+              name: newProduct.productName,
+              slug: newProduct.slug,
+              description: newProduct.description,
+              priceAmount: newProduct.priceAmount,
+              currency: newProduct.currency,
+              quantity: newProduct.quantity,
+              status: newProduct.status,
+              thumbnailUrl: newProduct.media?.[0]?.blobUrl,
+              thumbnailType: newProduct.media?.[0]?.contentType || undefined,
+              salesAmount: newProduct.salesAmount ?? 0,
+            } : p
+          ) ?? []
       );
 
       // Force sync to be safe
@@ -922,6 +924,7 @@ export default function ProductsPage() {
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
         tenantId={bootstrap?.tenantId || ""}
+        storeId={bootstrap?.storeId || ""}
         onProductUpdated={handleProductUpdated}
       />
     </div>

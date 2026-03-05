@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { ProductGrid } from "@/app/[handle]/components/product-grid";
+import { StorefrontContentSwitcher } from "@/app/[handle]/components/storefront-content-switcher.client";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 
@@ -20,6 +20,23 @@ type StorefrontProduct = {
   currency: string;
   image: string | null;
   contentType?: string | null;
+};
+
+type StorefrontCollection = {
+  id: string;
+  name: string;
+  slug: string;
+  image?: string | null;
+};
+
+type StorefrontTikTokVideo = {
+  id: string;
+  title?: string;
+  video_description?: string;
+  duration?: number;
+  cover_image_url?: string;
+  embed_link?: string;
+  share_url?: string;
 };
 
 const getApiBaseUrl = async () => {
@@ -95,19 +112,37 @@ export default async function StorefrontCategoryPage({ params, searchParams }: P
   if (!store) notFound();
 
   const productUrl = new URL(`${baseUrl}/api/storefront/${handle}/products`);
-  productUrl.searchParams.set("category", categorySlug);
+  productUrl.searchParams.set("collection", categorySlug);
   if (query) productUrl.searchParams.set("q", query);
   const productsRes = await fetch(productUrl.toString(), { next: { revalidate: 30 } });
   const products = productsRes.ok ? (await productsRes.json()) as StorefrontProduct[] : [];
+
+  const collectionsRes = await fetch(`${baseUrl}/api/storefront/${handle}/collections`, {
+    next: { revalidate: 60 },
+  });
+  const collections = collectionsRes.ok ? (await collectionsRes.json()) as StorefrontCollection[] : [];
+
+  const activeCollection = collections.find((collection) => collection.slug === categorySlug);
+  const displayTitle = activeCollection?.name ?? categorySlug.replace(/-/g, " ");
+
+  const showInspirationTab = false;
+  const inspirationVideos: StorefrontTikTokVideo[] = [];
 
   return (
     <div className="min-h-screen">
       <div className="w-full">
         <div className="px-8">
           <h3 className="text-lg font-semibold my-8 text-foreground">
-            {categorySlug}
+            {displayTitle}
           </h3>
-          <ProductGrid products={products} />
+          <StorefrontContentSwitcher
+            handle={handle}
+            collections={collections}
+            activeCollectionSlug={categorySlug}
+            products={products}
+            showInspiration={showInspirationTab}
+            inspirationVideos={inspirationVideos}
+          />
         </div>
         <div className="my-20" />
       </div>

@@ -18,6 +18,7 @@ export const createProductSchema = z.object({
     pathname: z.string(),
     contentType: z.string().optional().default("image/jpeg"),
   })).optional(),
+  collectionIds: z.array(z.string().uuid()).optional(),
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
@@ -37,6 +38,7 @@ export type BulkUploadInput = z.infer<typeof bulkUploadSchema>;
 
 export interface ProductWithMedia extends Product {
   media: Array<MediaObject & { sortOrder: number; isFeatured: boolean }>;
+  collectionIds?: string[];
 }
 
 export const productQuerySchema = z.object({
@@ -61,6 +63,7 @@ export const updateProductSchema = z.object({
     pathname: z.string(),
     contentType: z.string().optional().default("image/jpeg"),
   })).optional(),
+  collectionIds: z.array(z.string().uuid()).optional(),
 });
 
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;

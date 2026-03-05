@@ -15,6 +15,12 @@ type StorefrontProduct = {
   contentType?: string | null;
 };
 
+type StoreCollection = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
 type TikTokVideo = {
   id: string;
   title?: string;
@@ -29,12 +35,18 @@ type TikTokVideo = {
 type StorefrontView = "products" | "inspiration";
 
 interface StorefrontContentSwitcherProps {
+  handle?: string;
+  collections?: StoreCollection[];
+  activeCollectionSlug?: string;
   products: StorefrontProduct[];
   inspirationVideos: TikTokVideo[];
   showInspiration: boolean;
 }
 
 export function StorefrontContentSwitcher({
+  handle = "",
+  collections = [],
+  activeCollectionSlug,
   products,
   inspirationVideos,
   showInspiration,
@@ -51,6 +63,9 @@ export function StorefrontContentSwitcher({
     <>
       <div className="mt-5">
         <Categories
+          handle={handle}
+          collections={collections}
+          activeCollectionSlug={activeCollectionSlug}
           activeView={activeView}
           onChangeView={setActiveView}
           showInspiration={showInspiration}

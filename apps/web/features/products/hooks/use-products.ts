@@ -21,6 +21,7 @@ export type ProductApiRow = {
     quantity: number;
     status: "draft" | "ready" | "active" | "sold-out";
     media: ProductMediaItem[];
+    collectionIds?: string[];
     salesAmount?: number;
 };
 

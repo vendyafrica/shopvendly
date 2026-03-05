@@ -31,6 +31,13 @@ type StorefrontProduct = {
   contentType?: string | null;
 };
 
+type StorefrontCollection = {
+  id: string;
+  name: string;
+  slug: string;
+  image?: string | null;
+};
+
 type StorefrontTikTokVideo = {
   id: string;
   title?: string;
@@ -140,6 +147,13 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
     ? ((await productsRes.json()) as StorefrontProduct[])
     : [];
 
+  const collectionsRes = await fetch(`${baseUrl}/api/storefront/${handle}/collections`, {
+    next: { revalidate: 60, tags: [`storefront:store:${handle}:collections`] },
+  });
+  const collections = collectionsRes.ok
+    ? ((await collectionsRes.json()) as StorefrontCollection[])
+    : [];
+
   // TikTok inspiration is temporarily disabled while we overhaul the experience.
   const showInspirationTab = false;
   const inspirationVideos: StorefrontTikTokVideo[] = [];
@@ -170,6 +184,8 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
       <Hero store={store} />
 
       <StorefrontContentSwitcher
+        handle={handle}
+        collections={collections}
         products={products}
         showInspiration={showInspirationTab}
         inspirationVideos={inspirationVideos}

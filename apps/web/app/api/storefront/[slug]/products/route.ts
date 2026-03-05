@@ -96,7 +96,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         const q = (searchParams.get("q") || "").trim();
 
-        const category = (searchParams.get("category") || "").trim();
+        const collection = (searchParams.get("collection") || searchParams.get("category") || "").trim();
 
         const store = await storefrontService.findStoreBySlug(slug);
 
@@ -110,9 +110,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 
 
-        const productList = category
+        const productList = collection
 
-            ? await storefrontService.getStoreProductsByCategorySlug(store.id, category, q)
+            ? await storefrontService.getStoreProductsByCollectionSlug(store.id, collection, q)
 
             : await storefrontService.getStoreProducts(store.id, q);
 

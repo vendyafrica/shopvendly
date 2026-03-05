@@ -20,19 +20,34 @@ type TikTokVideo = {
   share_url?: string;
 };
 
+type StoreCollection = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
 interface StorefrontContentTabsProps {
+  handle?: string;
+  collections?: StoreCollection[];
+  activeCollectionSlug?: string;
   products: StorefrontProduct[];
   showInspirationTab: boolean;
   inspirationVideos: TikTokVideo[];
 }
 
 export function StorefrontContentTabs({
+  handle,
+  collections,
+  activeCollectionSlug,
   products,
   showInspirationTab,
   inspirationVideos,
 }: StorefrontContentTabsProps) {
   return (
     <StorefrontContentSwitcher
+      handle={handle}
+      collections={collections}
+      activeCollectionSlug={activeCollectionSlug}
       products={products}
       showInspiration={showInspirationTab}
       inspirationVideos={inspirationVideos}
