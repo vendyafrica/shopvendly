@@ -7,6 +7,7 @@ type UploadOptions = {
     tenantId: string;
     endpoint?: UploadEndpoint;
     compressVideo?: boolean;
+    skipImageCompression?: boolean;
 };
 
 const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
@@ -114,7 +115,7 @@ const IMAGE_COMPRESS_THRESHOLD_BYTES = 300 * 1024; // only compress if > 300 KB
 async function compressImageClientSide(file: File): Promise<File> {
     if (typeof document === "undefined") return file;
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         const img = new window.Image();
         const objectUrl = URL.createObjectURL(file);
 
@@ -167,7 +168,7 @@ async function prepareFileForUpload(file: File, options: UploadOptions): Promise
             throw new Error("Image file is too large. Maximum image size is 10MB.");
         }
         // Compress any image that's meaningfully large to avoid slow uploads / slow first-load
-        if (file.size > IMAGE_COMPRESS_THRESHOLD_BYTES) {
+        if (!options.skipImageCompression && file.size > IMAGE_COMPRESS_THRESHOLD_BYTES) {
             return compressImageClientSide(file);
         }
         return file;

@@ -142,13 +142,14 @@ export function EditProductModal({
             return;
         }
 
-        await Promise.all(selectedFiles.map(async (file, i) => {
+        void Promise.all(selectedFiles.map(async (file, i) => {
             const index = startIndex + i;
             try {
                 const uploaded = await uploadFile(file, {
                     tenantId,
                     endpoint: "productMedia",
                     compressVideo: true,
+                    skipImageCompression: true,
                 });
 
                 setFiles(prev => {

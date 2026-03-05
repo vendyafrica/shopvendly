@@ -129,6 +129,7 @@ export default function ProductsPage() {
   const [uploadMode, setUploadMode] = React.useState<"single" | "multiple">("single");
   const [handledQuickAdd, setHandledQuickAdd] = React.useState(false);
   const [isEditingId, setIsEditingId] = React.useState<string | null>(null);
+  const [mobileStatusUpdatingId, setMobileStatusUpdatingId] = React.useState<string | null>(null);
 
   const updateProductMutation = useUpdateProduct(bootstrap?.storeId ?? "");
 
@@ -437,6 +438,43 @@ export default function ProductsPage() {
     setUploadMode(mode);
     setUploadModalOpen(true);
   }, []);
+
+  const handleMobileStatusChange = React.useCallback(
+    (productId: string, newStatus: ProductTableRow["status"]) => {
+      if (!UUID_REGEX.test(productId)) {
+        alert("This product is still syncing. Please try again in a moment.");
+        if (bootstrap?.storeId) {
+          invalidate(bootstrap.storeId);
+        }
+        return;
+      }
+
+      setMobileStatusUpdatingId(productId);
+
+      updateProductMutation.mutate(
+        { id: productId, data: { status: newStatus } },
+        {
+          onSuccess: (updatedProduct) => {
+            if (bootstrap?.storeId && updatedProduct) {
+              updateProductCache(bootstrap.storeId, updatedProduct);
+            }
+          },
+          onError: (error) => {
+            alert(error instanceof Error ? error.message : "Failed to update product status");
+          },
+          onSettled: () => {
+            setMobileStatusUpdatingId((current) =>
+              current === productId ? null : current
+            );
+            if (bootstrap?.storeId) {
+              invalidate(bootstrap.storeId);
+            }
+          },
+        }
+      );
+    },
+    [bootstrap?.storeId, invalidate, updateProductMutation, updateProductCache]
+  );
 
   const selectedIds = React.useMemo(() => Object.keys(rowSelection), [rowSelection]);
 
@@ -796,6 +834,8 @@ export default function ProductsPage() {
           onEdit={handleEdit}
           onDelete={handleDelete}
           onAddSelect={handleAddProductSelect}
+          onStatusChange={handleMobileStatusChange}
+          statusUpdatingProductId={mobileStatusUpdatingId}
           isPublishing={isPublishing}
         />
       </div>

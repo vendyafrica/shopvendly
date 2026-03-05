@@ -11,23 +11,10 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Edit02Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import type { ProductTableRow } from "@/features/products/hooks/use-products";
 import type { TenantBootstrap } from "@/app/admin/context/tenant-context";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@shopvendly/ui/components/select";
+import { Checkbox } from "@shopvendly/ui/components/checkbox";
 import { isLikelyVideoMedia } from "@/utils/misc";
 import { useRouter } from "next/navigation";
 import { StoreAvatar } from "@/components/store-avatar";
-
-const STATUS_STYLES: Record<ProductTableRow["status"], { label: string; badgeClass: string }> = {
-    draft: { label: "Draft", badgeClass: "bg-muted text-muted-foreground border-dashed" },
-    ready: { label: "Ready", badgeClass: "bg-amber-50 text-amber-700 border-amber-200" },
-    active: { label: "Active", badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    "sold-out": { label: "Sold out", badgeClass: "bg-rose-50 text-rose-700 border-rose-200" },
-};
 
 function formatMoney(amount: number, currency: string) {
     return new Intl.NumberFormat("en-KE", {
@@ -145,6 +132,7 @@ interface ProductsMobileViewProps {
     onDelete: (id: string) => void;
     onAddSelect: (mode: "single" | "multiple") => void;
     onStatusChange?: (productId: string, newStatus: ProductTableRow["status"]) => void;
+    statusUpdatingProductId?: string | null;
     isPublishing?: boolean;
 }
 
@@ -156,6 +144,7 @@ export function ProductsMobileView({
     onDelete,
     onAddSelect,
     onStatusChange,
+    statusUpdatingProductId,
 }: ProductsMobileViewProps) {
     const [selectedProduct, setSelectedProduct] = React.useState<ProductTableRow | null>(null);
     const [sheetOpen, setSheetOpen] = React.useState(false);
@@ -301,28 +290,27 @@ export function ProductsMobileView({
                                     <h3 className="font-semibold text-base leading-snug truncate">{selectedProduct.name}</h3>
                                     <p className="text-sm font-medium mt-1 mb-2 text-foreground">{formatMoney(selectedProduct.priceAmount, selectedProduct.currency)}</p>
                                     <div className="flex items-center gap-2">
-                                        <Select
-                                            value={selectedProduct.status}
-                                            onValueChange={(value) => {
-                                                if (!value) return;
-                                                if (onStatusChange) {
-                                                    onStatusChange(selectedProduct.id, value);
-                                                }
-                                                // Optimistic local update for the sheet
-                                                setSelectedProduct(prev => prev ? { ...prev, status: value as ProductTableRow["status"] } : null);
-                                            }}
-                                        >
-                                            <SelectTrigger className={`h-6 w-[90px] px-2 py-0 text-[10px] font-medium border ${STATUS_STYLES[selectedProduct.status].badgeClass} focus:ring-0 focus:ring-offset-0 bg-transparent`}>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {Object.entries(STATUS_STYLES).map(([key, style]) => (
-                                                    <SelectItem key={key} value={key} className="text-[10px] font-medium min-h-6 py-1">
-                                                        {style.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <label className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background px-2 py-1 text-[11px] font-medium text-foreground">
+                                            <Checkbox
+                                                checked={selectedProduct.status === "active"}
+                                                disabled={selectedProduct.status === "active" || statusUpdatingProductId === selectedProduct.id}
+                                                onCheckedChange={(checked) => {
+                                                    if (!checked) return;
+                                                    if (selectedProduct.status === "active") return;
+                                                    onStatusChange?.(selectedProduct.id, "active");
+                                                    setSelectedProduct((prev) =>
+                                                        prev ? { ...prev, status: "active" } : null
+                                                    );
+                                                }}
+                                            />
+                                            <span>
+                                                {statusUpdatingProductId === selectedProduct.id
+                                                    ? "Publishing..."
+                                                    : selectedProduct.status === "active"
+                                                        ? "Published"
+                                                        : "Publish"}
+                                            </span>
+                                        </label>
                                         <span className="text-[11px] text-muted-foreground font-medium">{selectedProduct.quantity} in stock</span>
                                     </div>
                                 </div>
