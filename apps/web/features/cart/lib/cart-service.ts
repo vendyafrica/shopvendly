@@ -2,6 +2,21 @@ import { db } from "@shopvendly/db/db";
 import { carts, cartItems, products } from "@shopvendly/db/schema";
 import { eq, and } from "@shopvendly/db";
 
+type CartSelectedOption = {
+  name: string;
+  value: string;
+};
+
+const normalizeSelectedOptions = (options: CartSelectedOption[] | undefined) => {
+  if (!options?.length) return [];
+  return options
+    .map((option) => ({
+      name: option.name.trim(),
+      value: option.value.trim(),
+    }))
+    .filter((option) => option.name.length > 0 && option.value.length > 0);
+};
+
 /**
  * Cart Service for serverless environment
  * Handles cart CRUD operations
@@ -55,8 +70,10 @@ export const cartService = {
     productId: string,
     storeId: string,
     quantity: number,
+    selectedOptions?: CartSelectedOption[],
   ) {
     const { cart } = await this.getUserCart(userId);
+    const normalizedSelectedOptions = normalizeSelectedOptions(selectedOptions);
 
     const product = await db.query.products.findFirst({
       where: eq(products.id, productId),
@@ -78,6 +95,7 @@ export const cartService = {
       where: and(
         eq(cartItems.cartId, cart.id),
         eq(cartItems.productId, productId),
+        eq(cartItems.selectedOptions, normalizedSelectedOptions),
       ),
     });
 
@@ -88,7 +106,7 @@ export const cartService = {
       }
       const [updated] = await db
         .update(cartItems)
-        .set({ quantity: clampedQuantity, updatedAt: new Date() })
+        .set({ quantity: clampedQuantity, updatedAt: new Date(), selectedOptions: normalizedSelectedOptions })
         .where(eq(cartItems.id, existingItem.id))
         .returning();
       return updated;
@@ -101,6 +119,7 @@ export const cartService = {
           productId,
           storeId,
           quantity: clampedQuantity,
+          selectedOptions: normalizedSelectedOptions,
         })
         .returning();
       return newItem;
@@ -110,12 +129,17 @@ export const cartService = {
   /**
    * Remove an item from the cart
    */
-  async removeItem(userId: string, productId: string) {
+  async removeItem(userId: string, productId: string, selectedOptions?: CartSelectedOption[]) {
     const { cart } = await this.getUserCart(userId);
+    const normalizedSelectedOptions = normalizeSelectedOptions(selectedOptions);
     await db
       .delete(cartItems)
       .where(
-        and(eq(cartItems.cartId, cart.id), eq(cartItems.productId, productId)),
+        and(
+          eq(cartItems.cartId, cart.id),
+          eq(cartItems.productId, productId),
+          eq(cartItems.selectedOptions, normalizedSelectedOptions),
+        ),
       );
   },
 

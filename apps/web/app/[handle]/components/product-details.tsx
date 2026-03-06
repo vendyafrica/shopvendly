@@ -223,6 +223,10 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     const sizeValues = sizeOption?.values?.filter(Boolean) ?? [];
     const hasColorOptions = colorValues.length > 0;
     const hasSizeOptions = sizeValues.length > 0;
+    const selectedOptions = [
+        ...(selectedSize ? [{ name: "Size", value: selectedSize }] : []),
+        ...(selectedColor ? [{ name: "Color", value: selectedColor }] : []),
+    ];
 
     return (
         <div className="min-h-screen bg-white pb-16" suppressHydrationWarning>
@@ -451,7 +455,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                         </div>
 
                         <div className="mb-6 w-full">
-                            <ProductActions product={product} />
+                            <ProductActions product={product} selectedOptions={selectedOptions} />
                         </div>
 
                         {product.description && (

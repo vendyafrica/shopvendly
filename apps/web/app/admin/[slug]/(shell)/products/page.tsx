@@ -15,12 +15,19 @@ import Image from "next/image";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { SparklesIcon, Loading03Icon, Delete02Icon, Edit02Icon } from "@hugeicons/core-free-icons";
+import { SparklesIcon, Loading03Icon, Edit02Icon, Delete02Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@shopvendly/ui/components/dropdown-menu";
 
 import { UploadModal } from "./components/upload-modal";
 import { EditProductModal } from "./components/edit-product-modal";
 import { ProductsMobileView } from "./components/products-mobile-view";
 import { Checkbox } from "@shopvendly/ui/components/checkbox";
+
 import {
   useProducts,
   useDeleteProduct,
@@ -149,8 +156,6 @@ export default function ProductsPage() {
 
   // Optimistic delete - removes instantly from UI
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this product?")) return;
-
     // This will optimistically remove the product from the list
     deleteProduct.mutate(id, {
       onError: (error) => {
@@ -775,22 +780,34 @@ export default function ProductsPage() {
     {
       id: "actions",
       header: "Actions",
-      size: 56,
+      size: 72,
       cell: ({ row }) => {
         const product = row.original;
 
         return (
           <div className="flex items-center justify-end">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-destructive hover:text-destructive"
-              onClick={() => handleDelete(product.id)}
-              disabled={deleteProduct.isPending}
-              aria-label="Delete product"
-            >
-              <HugeiconsIcon icon={Delete02Icon} className="size-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+                disabled={deleteProduct.isPending}
+                aria-label="Product actions"
+              >
+                <HugeiconsIcon icon={MoreHorizontalIcon} className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-36">
+                <DropdownMenuItem onClick={() => handleEdit(product.id)}>
+                  <HugeiconsIcon icon={Edit02Icon} className="size-4" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => handleDelete(product.id)}
+                >
+                  <HugeiconsIcon icon={Delete02Icon} className="size-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         );
       },

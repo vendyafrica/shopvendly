@@ -29,11 +29,25 @@ interface ProductActionsProduct {
   };
 }
 
+type SelectedOption = {
+  name: string;
+  value: string;
+};
+
 interface ProductActionsProps {
   product: ProductActionsProduct;
+  selectedOptions?: SelectedOption[];
 }
 
-export function ProductActions({ product }: ProductActionsProps) {
+const createCartLineId = (productId: string, selectedOptions: SelectedOption[] = []) => {
+  if (selectedOptions.length === 0) return productId;
+  const signature = selectedOptions
+    .map((option) => `${option.name}:${option.value}`)
+    .join("|");
+  return `${productId}::${signature}`;
+};
+
+export function ProductActions({ product, selectedOptions = [] }: ProductActionsProps) {
   const { addItem } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
 
@@ -69,7 +83,7 @@ export function ProductActions({ product }: ProductActionsProps) {
 
     addItem(
       {
-        id: product.id,
+        id: createCartLineId(product.id, selectedOptions),
         product: {
           id: product.id,
           name: product.name,
@@ -79,6 +93,7 @@ export function ProductActions({ product }: ProductActionsProps) {
           contentType: product.mediaItems?.[0]?.contentType || undefined,
           slug: product.slug,
           availableQuantity: product.availableQuantity ?? undefined,
+          selectedOptions,
         },
         store: {
           id: product.store.id,

@@ -372,13 +372,13 @@ export function EditProductModal({
                             </p>
                         )}
 
-                        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
+                        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(280px,0.95fr)_minmax(0,1.2fr)] xl:gap-8">
                             {/* Gallery / drop zone */}
                             <div
                                 className="space-y-2"
                             >
                                 <Label>Product Images</Label>
-                                <div className={`flex items-center justify-between gap-3 rounded-lg border border-dashed border-border/70 px-3 py-3 sm:py-4 ${isSaving ? "opacity-70" : "hover:bg-muted/40"}`}>
+                                <div className={`flex flex-col items-start gap-3 rounded-lg border border-dashed border-border/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:py-4 ${isSaving ? "opacity-70" : "hover:bg-muted/40"}`}>
                                     <div className="flex items-center gap-3">
                                         <HugeiconsIcon icon={ImageUpload01Icon} className="size-8 text-muted-foreground" />
                                         <div className="text-left text-sm text-muted-foreground">
@@ -410,7 +410,7 @@ export function EditProductModal({
                                 </div>
 
                                 {files.length > 0 && (
-                                    <div className="mt-2 flex gap-3 overflow-x-auto pb-1">
+                                    <div className="mt-2 flex gap-3 overflow-x-auto pb-1 xl:flex-wrap xl:overflow-visible">
                                         {files.map((f, i) => (
                                             <div
                                                 key={i}
@@ -498,7 +498,7 @@ export function EditProductModal({
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <div className="space-y-2">
                                         <Label htmlFor="priceAmount">Price ({storeCurrency})</Label>
                                         <Input

@@ -4,9 +4,15 @@ import type { Order, OrderItem } from "@shopvendly/db/schema";
 /**
  * Order item input for creating orders
  */
+export const orderItemSelectedOptionSchema = z.object({
+  name: z.string().min(1).max(64),
+  value: z.string().min(1).max(120),
+});
+
 export const orderItemInputSchema = z.object({
   productId: z.string().uuid(),
   quantity: z.number().int().min(1).default(1),
+  selectedOptions: z.array(orderItemSelectedOptionSchema).max(8).optional(),
 });
 
 export type OrderItemInput = z.infer<typeof orderItemInputSchema>;

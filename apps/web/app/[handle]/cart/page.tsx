@@ -169,7 +169,17 @@ export default function StoreCartPage() {
                                                         {item.product.name ? `${item.product.name.charAt(0).toUpperCase()}${item.product.name.slice(1)}` : item.product.name}
                                                     </Link>
                                                 </h3>
-                                                <p className="text-xs uppercase tracking-widest text-neutral-500">Standard</p>
+                                                {item.product.selectedOptions?.length ? (
+                                                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500">
+                                                        {item.product.selectedOptions.map((option) => (
+                                                            <span key={`${option.name}-${option.value}`}>
+                                                                {option.name}: {option.value}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs uppercase tracking-widest text-neutral-500">Standard</p>
+                                                )}
                                             </div>
                                             <div className="text-left sm:text-right">
                                                 <span className="font-semibold text-neutral-900">

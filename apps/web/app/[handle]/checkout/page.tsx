@@ -136,6 +136,7 @@ function CheckoutContent() {
                 items: storeItems.map((item) => ({
                     productId: item.product.id,
                     quantity: item.quantity,
+                    selectedOptions: item.product.selectedOptions,
                 })),
             };
 
@@ -355,9 +356,15 @@ function CheckoutContent() {
                                                 <p className="font-serif text-base leading-tight">
                                                     {capitalizeFirst(item.product.name)}
                                                 </p>
-                                                {/* <p className="text-[10px] uppercase tracking-widest text-neutral-500">
-                                                    Standard Variant
-                                                </p> */}
+                                                {item.product.selectedOptions?.length ? (
+                                                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500">
+                                                        {item.product.selectedOptions.map((option) => (
+                                                            <span key={`${option.name}-${option.value}`}>
+                                                                {option.name}: {option.value}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                ) : null}
                                             </div>
 
                                             <div className="text-right whitespace-nowrap">

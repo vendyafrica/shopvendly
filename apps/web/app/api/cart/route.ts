@@ -6,8 +6,10 @@ const DEFAULT_STORE_LOGO = "/store-logo.jpg";
 import { cartService } from "@/features/cart/lib/cart-service";
 
 type CartItemWithRelations = {
+    id: string;
     productId: string;
     quantity: number;
+    selectedOptions?: Array<{ name?: string; value?: string }> | null;
     product: {
         id: string;
         productName: string;
@@ -66,7 +68,7 @@ export async function GET() {
             const storeTenantId = item.product.store?.tenantId;
 
             return {
-                id: item.productId,
+                id: item.id,
                 quantity: item.quantity,
                 product: {
                     id: item.product.id,
@@ -78,6 +80,11 @@ export async function GET() {
                     slug: (item.product as { slug?: string })?.slug
                         ?? item.product.productName.toLowerCase().replace(/\s+/g, "-"),
                     availableQuantity: (item.product as { quantity?: number })?.quantity ?? null,
+                    selectedOptions: Array.isArray(item.selectedOptions)
+                        ? item.selectedOptions
+                            .filter((option): option is { name: string; value: string } => Boolean(option?.name && option?.value))
+                            .map((option) => ({ name: option.name, value: option.value }))
+                        : [],
                 },
                 store: {
                     id: item.product.store?.id,
@@ -111,13 +118,13 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { productId, storeId, quantity } = await request.json();
+        const { productId, storeId, quantity, selectedOptions } = await request.json();
 
         if (!productId || !storeId || quantity === undefined) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
-        const updated = await cartService.upsertItem(session.user.id, productId, storeId, quantity);
+        const updated = await cartService.upsertItem(session.user.id, productId, storeId, quantity, selectedOptions);
         return NextResponse.json(updated);
     } catch (error) {
         console.error("Error updating cart:", error);

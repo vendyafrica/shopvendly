@@ -20,9 +20,31 @@ type ProductWithMedia = (typeof products.$inferSelect) & {
   media?: Array<{ media?: { blobUrl?: string | null } | null; sortOrder?: number | null } | null>;
 };
 
+const orderItemSelectedOptionSchema = z.object({
+  name: z.string().min(1).max(64),
+  value: z.string().min(1).max(120),
+});
+
+const normalizeSelectedOptions = (options: Array<{ name: string; value: string }> | undefined) => {
+  if (!options?.length) return [];
+  return options
+    .map((option) => ({
+      name: option.name.trim(),
+      value: option.value.trim(),
+    }))
+    .filter((option) => option.name.length > 0 && option.value.length > 0);
+};
+
+const formatSelectedOptionsSuffix = (options: Array<{ name: string; value: string }> | undefined) => {
+  const normalized = normalizeSelectedOptions(options);
+  if (normalized.length === 0) return "";
+  return ` (${normalized.map((option) => `${option.name}: ${option.value}`).join(", ")})`;
+};
+
 export const orderItemInputSchema = z.object({
   productId: z.string().uuid(),
   quantity: z.number().int().min(1).default(1),
+  selectedOptions: z.array(orderItemSelectedOptionSchema).max(8).optional(),
 });
 
 export type OrderItemInput = z.infer<typeof orderItemInputSchema>;
@@ -112,11 +134,13 @@ export const orderService = {
       subtotal += totalPrice;
 
       const productImage = product.media?.[0]?.media?.blobUrl || undefined;
+      const selectedOptions = normalizeSelectedOptions(item.selectedOptions);
 
       return {
         productId: product.id,
-        productName: product.productName,
+        productName: `${product.productName}${formatSelectedOptionsSuffix(selectedOptions)}`,
         productImage,
+        selectedOptions,
         quantity: item.quantity,
         unitPrice: product.priceAmount,
         totalPrice,

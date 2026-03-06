@@ -5,6 +5,12 @@ import { useAppSession } from "@/contexts/app-session-context";
 import { trackStorefrontEvents } from "@/app/[handle]/lib/storefront-tracking";
 
 const API_BASE = "";
+const CART_STORAGE_KEY = "vendly_cart";
+
+export interface CartSelectedOption {
+    name: string;
+    value: string;
+}
 
 export interface CartItem {
     id: string;
@@ -18,6 +24,7 @@ export interface CartItem {
         contentType?: string;
         slug: string;
         availableQuantity?: number;
+        selectedOptions?: CartSelectedOption[];
     };
     store: {
         id: string;
@@ -43,6 +50,36 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const getBaseProductId = (lineId: string) => lineId.split("::")[0] ?? lineId;
+
+const normalizeSelectedOptions = (value: unknown): CartSelectedOption[] => {
+    if (!Array.isArray(value)) return [];
+    return value
+        .map((option) => {
+            if (!option || typeof option !== "object") return null;
+            const candidate = option as { name?: unknown; value?: unknown };
+            if (typeof candidate.name !== "string" || typeof candidate.value !== "string") return null;
+            const name = candidate.name.trim();
+            const optionValue = candidate.value.trim();
+            if (!name || !optionValue) return null;
+            return { name, value: optionValue };
+        })
+        .filter((option): option is CartSelectedOption => Boolean(option));
+};
+
+const sanitizeCartItems = (items: unknown): CartItem[] => {
+    if (!Array.isArray(items)) return [];
+    return items
+        .filter((item): item is CartItem => Boolean(item && typeof item === "object"))
+        .map((item) => ({
+            ...item,
+            product: {
+                ...item.product,
+                selectedOptions: normalizeSelectedOptions(item.product?.selectedOptions),
+            },
+        }));
+};
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const { session } = useAppSession();
     const [items, setItems] = useState<CartItem[]>([]);
@@ -59,17 +96,42 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                         headers: { "x-user-id": session.user.id }
                     });
                     if (res.ok) {
-                        const data = await res.json();
-                        setItems(data);
+                        const data = sanitizeCartItems(await res.json());
+                        const stored = localStorage.getItem(CART_STORAGE_KEY);
+                        const localItems = stored ? sanitizeCartItems(JSON.parse(stored)) : [];
+                        const localWithSelections = localItems.filter((item) => item.product.selectedOptions?.length);
+                        if (localWithSelections.length > 0) {
+                            const localBaseIds = new Set(localItems.map((item) => getBaseProductId(item.id)));
+                            setItems([
+                                ...localItems,
+                                ...data.filter((item) => !localBaseIds.has(item.product.id)),
+                            ]);
+                        } else {
+                            const localByBaseId = new Map(localItems.map((item) => [getBaseProductId(item.id), item]));
+                            setItems(
+                                data.map((item) => {
+                                    const localItem = localByBaseId.get(item.product.id);
+                                    if (!localItem?.product.selectedOptions?.length) return item;
+                                    return {
+                                        ...item,
+                                        id: localItem.id,
+                                        product: {
+                                            ...item.product,
+                                            selectedOptions: localItem.product.selectedOptions,
+                                        },
+                                    };
+                                })
+                            );
+                        }
                     }
                 } catch (e) {
                     console.error("Failed to fetch cart", e);
                 }
             } else {
-                const stored = localStorage.getItem("vendly_cart");
+                const stored = localStorage.getItem(CART_STORAGE_KEY);
                 if (stored) {
                     try {
-                        setItems(JSON.parse(stored));
+                        setItems(sanitizeCartItems(JSON.parse(stored)));
                     } catch (e) {
                         console.error("Failed to parse cart storage", e);
                     }
@@ -98,8 +160,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 // Load guest cart from localStorage
                 let guestItems: CartItem[] = [];
                 try {
-                    const guestRaw = localStorage.getItem("vendly_cart");
-                    guestItems = guestRaw ? (JSON.parse(guestRaw) as CartItem[]) : [];
+                    const guestRaw = localStorage.getItem(CART_STORAGE_KEY);
+                    guestItems = guestRaw ? sanitizeCartItems(JSON.parse(guestRaw)) : [];
                 } catch {
                     guestItems = [];
                 }
@@ -110,7 +172,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 }
 
                 // Clear guest storage early to prevent any chance of double-merge on re-renders
-                localStorage.removeItem("vendly_cart");
+                localStorage.removeItem(CART_STORAGE_KEY);
 
                 // Fetch server cart
                 const serverRes = await fetch(`${API_BASE}/api/cart`, {
@@ -151,6 +213,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                                 productId: item.product.id,
                                 storeId: item.store.id,
                                 quantity: item.quantity,
+                                selectedOptions: item.product.selectedOptions ?? [],
                             }),
                         });
                     } catch (e) {
@@ -174,7 +237,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         // Only persist a guest cart. Logged-in carts are persisted server-side.
         if (isLoaded && !session?.user) {
-            localStorage.setItem("vendly_cart", JSON.stringify(items));
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+        } else if (isLoaded && session?.user) {
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
         }
     }, [items, isLoaded, session?.user]);
 
@@ -228,7 +293,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                     body: JSON.stringify({
                         productId: newItem.product.id,
                         storeId: newItem.store.id,
-                        quantity: nextQuantity
+                        quantity: nextQuantity,
+                        selectedOptions: newItem.product.selectedOptions ?? [],
                     })
                 });
             } catch (e) {
@@ -238,11 +304,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     };
 
     const removeItem = async (productId: string) => {
+        const target = items.find((item) => item.id === productId);
         setItems((prev) => prev.filter((item) => item.id !== productId));
 
-        if (session?.user) {
+        if (session?.user && target) {
             try {
-                await fetch(`${API_BASE}/api/cart/items/${productId}`, {
+                const search = new URLSearchParams({
+                    selectedOptions: JSON.stringify(target.product.selectedOptions ?? []),
+                });
+                await fetch(`${API_BASE}/api/cart/items/${target.product.id}?${search.toString()}`, {
                     method: "DELETE",
                     headers: { "x-user-id": session.user.id }
                 });
@@ -286,7 +356,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                     body: JSON.stringify({
                         productId: item.product.id,
                         storeId: item.store.id,
-                        quantity: clampedQuantity
+                        quantity: clampedQuantity,
+                        selectedOptions: item.product.selectedOptions ?? [],
                     })
                 });
             } catch (e) {

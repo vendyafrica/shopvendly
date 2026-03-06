@@ -7,6 +7,7 @@ import {
     integer,
     index,
     unique,
+    jsonb
 } from "drizzle-orm/pg-core";
 
 import { tenants } from "./tenant-schema";
@@ -78,6 +79,7 @@ export const orderItems = pgTable(
 
         productName: text("product_name").notNull(),
         productImage: text("product_image"),
+        selectedOptions: jsonb("selected_options").$type<Array<{ name: string; value: string }>>().notNull().default([]),
 
         quantity: integer("quantity").notNull().default(1),
         unitPrice: integer("unit_price").notNull(),
