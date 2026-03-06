@@ -12,6 +12,9 @@ type StorefrontProduct = {
   slug: string;
   name: string;
   price: number;
+  originalPrice?: number | null;
+  hasSale?: boolean;
+  discountPercent?: number | null;
   currency: string;
   image: string | null;
   contentType?: string | null;
@@ -99,7 +102,7 @@ export function StorefrontContentSwitcher({
 
   return (
     <>
-      <section className="relative -mt-2 rounded-t-[28px] bg-background pt-8 sm:pt-12 lg:pt-14">
+      <section className="relative z-10 -mt-8 rounded-t-[28px] bg-background pt-8 shadow-[0_-1px_0_rgba(255,255,255,0.35)] sm:-mt-10 sm:pt-10 lg:-mt-12 lg:pt-12">
         <nav
           id="storefront-categories-rail"
           className="w-full"

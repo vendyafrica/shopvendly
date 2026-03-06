@@ -2,7 +2,6 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@shopvendly/ui/components/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@shopvendly/ui/components/dropdown-menu";
-import { StoreAvatar } from "@/components/store-avatar";
 import { useAppSession } from "@/contexts/app-session-context";
 import { signOut } from "@shopvendly/auth/react";
 import { useRouter } from "next/navigation";
@@ -34,7 +33,6 @@ export function AdminHeader({
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-accent-foreground/20 bg-background/80 px-4 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="flex min-w-0 items-center gap-3">
-        <StoreAvatar storeName={resolvedTenantName} logoUrl={bootstrap?.storeLogoUrl} size="md" className="rounded-none" />
         <div className="min-w-0">
           <p className="text-base font-semibold truncate">Welcome to {resolvedTenantName}</p>
         </div>

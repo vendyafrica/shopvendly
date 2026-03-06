@@ -126,12 +126,14 @@ export const productService = {
                 slug,
                 description: data.description,
                 priceAmount: data.priceAmount,
+                originalPriceAmount: data.originalPriceAmount ?? null,
                 currency: data.currency,
                 quantity: data.quantity,
                 source: data.source,
                 sourceId: data.sourceId,
                 sourceUrl: data.sourceUrl,
                 status: data.status,
+                variants: data.variants ?? null,
             }).returning();
             product = insertedProducts[0] ?? null;
         } catch (error: unknown) {
@@ -144,12 +146,14 @@ export const productService = {
                     slug,
                     description: data.description,
                     priceAmount: data.priceAmount,
+                    originalPriceAmount: data.originalPriceAmount ?? null,
                     currency: data.currency,
                     quantity: data.quantity,
                     source: data.source,
                     sourceId: data.sourceId,
                     sourceUrl: data.sourceUrl,
                     status: data.status,
+                    variants: data.variants ?? null,
                 }).returning();
                 product = insertedProducts[0] ?? null;
             } else {

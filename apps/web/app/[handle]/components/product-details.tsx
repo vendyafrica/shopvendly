@@ -27,9 +27,19 @@ interface ProductDetailsProps {
         name: string;
         description?: string | null;
         price: number;
+        originalPrice?: number | null;
         currency: string;
         images: string[];
         mediaItems?: { url: string; contentType?: string | null }[];
+        variants?: {
+            enabled?: boolean;
+            options?: Array<{
+                type?: string;
+                label?: string;
+                values?: string[];
+                preset?: string | null;
+            }>;
+        } | null;
         videos?: string[];
         rating?: number;
         ratingCount?: number;
@@ -84,6 +94,11 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     }, [product, addToRecentlyViewed]);
 
     const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
+    const variantOptions = product.variants?.enabled ? product.variants.options ?? [] : [];
+    const colorOption = variantOptions.find((option) => option.type === "color");
+    const sizeOption = variantOptions.find((option) => option.type === "size");
+    const [selectedColor, setSelectedColor] = useState<string | null>(colorOption?.values?.[0] ?? null);
+    const [selectedSize, setSelectedSize] = useState<string | null>(sizeOption?.values?.[0] ?? null);
 
     const initialRating = typeof product.rating === "number" && Number.isFinite(product.rating)
         ? product.rating
@@ -101,6 +116,11 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         setRatingCount(product.ratingCount ?? 0);
         setUserRating(product.userRating ?? null);
     }, [initialRating, product.ratingCount, product.userRating]);
+
+    useEffect(() => {
+        setSelectedColor(colorOption?.values?.[0] ?? null);
+        setSelectedSize(sizeOption?.values?.[0] ?? null);
+    }, [colorOption, sizeOption]);
 
     const handleSubmitRating = async (value: number) => {
         if (isSubmittingRating) return;
@@ -194,6 +214,18 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     const currentMedia = mediaItems[safeSelectedIndex] ?? mediaItems[0] ?? { url: FALLBACK_PRODUCT_IMAGE, contentType: "image/jpeg" };
     const posterFallback = product.images?.find((img) => !isVideoUrl(img)) || FALLBACK_PRODUCT_IMAGE;
     const currentIsVideo = isVideoUrl(currentMedia.url, currentMedia.contentType);
+    const hasSale = typeof product.originalPrice === "number" && product.originalPrice > product.price;
+    const discountPercent = hasSale && product.originalPrice
+        ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+        : null;
+
+    const formatPrice = (amount: number) => {
+        const showDecimals = product.currency === "USD";
+        return `${product.currency} ${amount.toLocaleString(undefined, {
+            minimumFractionDigits: showDecimals ? 2 : 0,
+            maximumFractionDigits: showDecimals ? 2 : 0,
+        })}`;
+    };
 
     return (
         <div className="min-h-screen bg-white pb-16" suppressHydrationWarning>
@@ -318,6 +350,71 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 {/* Right: Product Details */}
                 <div className="flex flex-col pt-1 lg:pt-0 w-full lg:max-w-[600px] xl:max-w-[640px] lg:justify-self-end">
 
+                    <div className="space-y-3 border-b border-neutral-100 pb-6">
+                        <h1 className="text-2xl font-semibold tracking-tight text-neutral-950 sm:text-3xl">{product.name}</h1>
+                        <div className="flex flex-wrap items-end gap-3">
+                            <span className="text-2xl font-semibold text-neutral-950">{formatPrice(product.price)}</span>
+                            {hasSale ? (
+                                <>
+                                    <span className="text-base text-neutral-400 line-through">{formatPrice(product.originalPrice as number)}</span>
+                                    {discountPercent ? (
+                                        <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-red-600">
+                                            {discountPercent}% off
+                                        </span>
+                                    ) : null}
+                                </>
+                            ) : null}
+                        </div>
+                    </div>
+
+                    {colorOption?.values?.length ? (
+                        <div className="mt-6 space-y-3 border-b border-neutral-100 pb-6">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Color</span>
+                                {selectedColor ? <span className="text-sm text-neutral-700">{selectedColor}</span> : null}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {colorOption.values.map((value) => {
+                                    const isActive = selectedColor === value;
+                                    return (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            onClick={() => setSelectedColor(value)}
+                                            className={`rounded-full border px-4 py-2 text-sm transition-colors ${isActive ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400"}`}
+                                        >
+                                            {value}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ) : null}
+
+                    {sizeOption?.values?.length ? (
+                        <div className="mt-6 space-y-3 border-b border-neutral-100 pb-6">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Size</span>
+                                {selectedSize ? <span className="text-sm text-neutral-700">{selectedSize}</span> : null}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {sizeOption.values.map((value) => {
+                                    const isActive = selectedSize === value;
+                                    return (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            onClick={() => setSelectedSize(value)}
+                                            className={`min-w-12 rounded-md border px-3 py-2 text-sm transition-colors ${isActive ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400"}`}
+                                        >
+                                            {value}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ) : null}
+
                     <div className="rounded-3xl border border-neutral-100 bg-white/90 p-6 lg:p-8 shadow-[0_20px_60px_-45px_rgba(0,0,0,0.2)]">
                         {/* Store Info - Header */}
                         <div className="flex items-center justify-between mb-6">
@@ -359,10 +456,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
                         {/* Product Name & Rating */}
                         <div className="mb-7">
-                            <h1 className="text-[26px] lg:text-[30px] capitalize font-semibold text-neutral-900 leading-snug tracking-tight mb-3">
-                                {product.name ? `${product.name.charAt(0).toUpperCase()}${product.name.slice(1)}` : product.name}
-                            </h1>
-
                             <div className="flex flex-col gap-2 mb-6">
                                 <div className="flex items-center gap-1">
                                     {Array.from({ length: 5 }).map((_, idx) => {
@@ -396,15 +489,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                 ) : (
                                     <span className="text-xs text-neutral-500"></span>
                                 )}
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <span className="text-3xl font-semibold text-neutral-900">
-                                    <sub className="text-sm text-muted-foreground">{product.currency}</sub> {product.price.toLocaleString(undefined, {
-                                        minimumFractionDigits: product.currency === "USD" ? 2 : 0,
-                                        maximumFractionDigits: product.currency === "USD" ? 2 : 0,
-                                    })}
-                                </span>
                             </div>
                         </div>
 

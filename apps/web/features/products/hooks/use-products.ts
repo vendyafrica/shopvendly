@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
+import type { ProductVariantsInput } from "@/features/products/lib/product-models";
 
 // Types
 type ProductMediaItem = {
@@ -17,11 +18,13 @@ export type ProductApiRow = {
     slug: string;
     description?: string | null;
     priceAmount: number;
+    originalPriceAmount?: number | null;
     currency: string;
     quantity: number;
     status: "draft" | "ready" | "active" | "sold-out";
     media: ProductMediaItem[];
     collectionIds?: string[];
+    variants?: ProductVariantsInput | null;
     salesAmount?: number;
 };
 
@@ -31,6 +34,7 @@ export type ProductTableRow = {
     slug: string;
     description?: string | null;
     priceAmount: number;
+    originalPriceAmount?: number | null;
     currency: string;
     quantity: number;
     status: "draft" | "ready" | "active" | "sold-out";
@@ -60,6 +64,7 @@ async function fetchProducts(storeId: string): Promise<ProductTableRow[]> {
         slug: p.slug,
         description: p.description,
         priceAmount: p.priceAmount,
+        originalPriceAmount: p.originalPriceAmount ?? null,
         currency: p.currency,
         quantity: p.quantity,
         status: p.status,
@@ -203,6 +208,7 @@ export function useUpdateProduct(storeId: string) {
                                 ...p,
                                 name: data.productName ?? p.name,
                                 priceAmount: data.priceAmount ?? p.priceAmount,
+                                originalPriceAmount: data.originalPriceAmount ?? p.originalPriceAmount,
                                 quantity: data.quantity ?? p.quantity,
                                 status: data.status ?? p.status,
                             }

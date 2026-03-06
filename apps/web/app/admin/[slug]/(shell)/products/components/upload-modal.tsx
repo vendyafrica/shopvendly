@@ -21,9 +21,16 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@shopvendly/ui/components/select";
+import { Checkbox } from "@shopvendly/ui/components/checkbox";
 import Image from "next/image";
 import { useTenant } from "@/app/admin/context/tenant-context";
 import { useUpload } from "@/features/media/hooks/use-upload";
+import type { ProductVariantsInput } from "@/features/products/lib/product-models";
+import {
+    PRODUCT_ALPHA_SIZE_PRESET,
+    PRODUCT_COLOR_PRESETS,
+    PRODUCT_UK_SIZE_PRESET,
+} from "@shopvendly/db/schema";
 
 interface UploadModalProps {
     open: boolean;
@@ -44,9 +51,11 @@ export interface ProductFormData {
     productName: string;
     description: string;
     priceAmount: number;
+    originalPriceAmount?: number | null;
     currency: string;
     quantity: number;
     collectionIds?: string[];
+    variants?: ProductVariantsInput | null;
 }
 
 interface FilePreview {
@@ -57,7 +66,6 @@ interface FilePreview {
     pathname?: string;
     error?: string;
 }
-
 
 export function UploadModal({
     open,
@@ -82,9 +90,14 @@ export function UploadModal({
     const [productName, setProductName] = React.useState("");
     const [description, setDescription] = React.useState("");
     const [priceAmount, setPriceAmount] = React.useState<string>("");
+    const [originalPriceAmount, setOriginalPriceAmount] = React.useState<string>("");
     const [quantity, setQuantity] = React.useState<string>("");
     const [collections, setCollections] = React.useState<{ id: string, name: string }[]>([]);
-    const [collectionId, setCollectionId] = React.useState<string>("none");
+    const [selectedCollectionIds, setSelectedCollectionIds] = React.useState<string[]>([]);
+    const [variantsEnabled, setVariantsEnabled] = React.useState(false);
+    const [selectedColors, setSelectedColors] = React.useState<string[]>([]);
+    const [sizePreset, setSizePreset] = React.useState<"none" | "alpha" | "uk">("none");
+    const [selectedSizes, setSelectedSizes] = React.useState<string[]>([]);
 
     React.useEffect(() => {
         if (!open || !storeId) return;
@@ -206,8 +219,6 @@ export function UploadModal({
         });
     };
 
-
-
     const handleSaveProduct = async () => {
         if (files.length === 0) {
             setError("Please select at least one file");
@@ -244,6 +255,15 @@ export function UploadModal({
             return;
         }
 
+        if (originalPriceAmount) {
+            const originalPrice = Math.floor(Number(originalPriceAmount));
+            const livePrice = Math.floor(Number(priceAmount));
+            if (Number.isNaN(originalPrice) || originalPrice <= livePrice) {
+                setError("Original price must be greater than the current price");
+                return;
+            }
+        }
+
         if (quantity && Number.isNaN(Number(quantity))) {
             setError("Quantity must be a number");
             return;
@@ -262,9 +282,21 @@ export function UploadModal({
                 productName: productName.trim(),
                 description: description.trim(),
                 priceAmount: Math.max(0, Math.floor(Number(priceAmount))),
+                originalPriceAmount: originalPriceAmount ? Math.max(0, Math.floor(Number(originalPriceAmount))) : null,
                 currency,
                 quantity: quantity ? Math.max(0, Math.floor(Number(quantity))) : 0,
-                collectionIds: collectionId === "none" ? [] : [collectionId],
+                collectionIds: selectedCollectionIds,
+                variants: variantsEnabled
+                    ? {
+                        enabled: true,
+                        options: [
+                            ...(selectedColors.length > 0 ? [{ type: "color" as const, label: "Color", values: selectedColors }] : []),
+                            ...(selectedSizes.length > 0
+                                ? [{ type: "size" as const, label: "Size", values: selectedSizes, preset: sizePreset === "none" ? null : sizePreset }]
+                                : []),
+                        ],
+                    }
+                    : null,
             };
 
             onCreate?.(data, media);
@@ -275,7 +307,13 @@ export function UploadModal({
             setProductName("");
             setDescription("");
             setPriceAmount("");
+            setOriginalPriceAmount("");
             setQuantity("");
+            setSelectedCollectionIds([]);
+            setVariantsEnabled(false);
+            setSelectedColors([]);
+            setSizePreset("none");
+            setSelectedSizes([]);
             setError(null);
 
             if (!shouldStayOpen) {
@@ -296,8 +334,13 @@ export function UploadModal({
         setProductName("");
         setDescription("");
         setPriceAmount("");
+        setOriginalPriceAmount("");
         setQuantity("");
-        setCollectionId("none");
+        setSelectedCollectionIds([]);
+        setVariantsEnabled(false);
+        setSelectedColors([]);
+        setSizePreset("none");
+        setSelectedSizes([]);
         onOpenChange(false);
     };
 
@@ -502,6 +545,21 @@ export function UploadModal({
                                         />
                                     </div>
                                     <div className="space-y-2">
+                                        <Label htmlFor="originalPriceAmount">Original Price ({currency})</Label>
+                                        <Input
+                                            id="originalPriceAmount"
+                                            value={originalPriceAmount}
+                                            onChange={(e) => setOriginalPriceAmount(e.target.value)}
+                                            placeholder="Optional"
+                                            type="number"
+                                            min="0"
+                                            disabled={isSaving}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-2">
                                         <Label htmlFor="quantity">Quantity</Label>
                                         <Input
                                             id="quantity"
@@ -528,24 +586,116 @@ export function UploadModal({
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>Collection</Label>
-                                    <Select
-                                        value={collectionId}
-                                        onValueChange={(value) => setCollectionId(value ?? "none")}
-                                        disabled={isSaving}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select a collection" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">No collection</SelectItem>
-                                            {collections.map((collection) => (
-                                                <SelectItem key={collection.id} value={collection.id}>
-                                                    {collection.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Label>Collections</Label>
+                                    <div className="max-h-40 space-y-2 overflow-y-auto rounded-md border border-border/70 p-3">
+                                        {collections.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground">No collections yet.</p>
+                                        ) : (
+                                            collections.map((collection) => {
+                                                const checked = selectedCollectionIds.includes(collection.id);
+                                                return (
+                                                    <label key={collection.id} className="flex items-center gap-3 text-sm">
+                                                        <Checkbox
+                                                            checked={checked}
+                                                            onCheckedChange={(nextChecked) => {
+                                                                setSelectedCollectionIds((prev) =>
+                                                                    nextChecked
+                                                                        ? [...prev, collection.id]
+                                                                        : prev.filter((id) => id !== collection.id)
+                                                                );
+                                                            }}
+                                                        />
+                                                        <span>{collection.name}</span>
+                                                    </label>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3 rounded-lg border border-border/60 p-4">
+                                    <label className="flex items-center gap-3 text-sm font-medium">
+                                        <Checkbox
+                                            checked={variantsEnabled}
+                                            onCheckedChange={(checked) => setVariantsEnabled(Boolean(checked))}
+                                            disabled={isSaving}
+                                        />
+                                        <span>Add sizes / colors</span>
+                                    </label>
+
+                                    {variantsEnabled ? (
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label>Preset colors</Label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {PRODUCT_COLOR_PRESETS.map((color) => {
+                                                        const checked = selectedColors.includes(color);
+                                                        return (
+                                                            <Button
+                                                                key={color}
+                                                                type="button"
+                                                                variant={checked ? "default" : "outline"}
+                                                                size="sm"
+                                                                className="h-8 rounded-full px-3"
+                                                                onClick={() => {
+                                                                    setSelectedColors((prev) =>
+                                                                        checked ? prev.filter((value) => value !== color) : [...prev, color]
+                                                                    );
+                                                                }}
+                                                            >
+                                                                {color}
+                                                            </Button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label>Size preset</Label>
+                                                <Select
+                                                    value={sizePreset}
+                                                    onValueChange={(value) => {
+                                                        const nextValue = (value ?? "none") as "none" | "alpha" | "uk";
+                                                        setSizePreset(nextValue);
+                                                        setSelectedSizes([]);
+                                                    }}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Choose a size preset" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">No sizes</SelectItem>
+                                                        <SelectItem value="alpha">XS / S / M / L / XL</SelectItem>
+                                                        <SelectItem value="uk">UK sizes</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            {sizePreset !== "none" ? (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {(sizePreset === "uk" ? PRODUCT_UK_SIZE_PRESET : PRODUCT_ALPHA_SIZE_PRESET).map((size) => {
+                                                        const checked = selectedSizes.includes(size);
+                                                        return (
+                                                            <Button
+                                                                key={size}
+                                                                type="button"
+                                                                variant={checked ? "default" : "outline"}
+                                                                size="sm"
+                                                                className="h-8 rounded-full px-3"
+                                                                onClick={() => {
+                                                                    setSelectedSizes((prev) =>
+                                                                        checked ? prev.filter((value) => value !== size) : [...prev, size]
+                                                                    );
+                                                                }}
+                                                            >
+                                                                {size}
+                                                            </Button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
                                 </div>
                             </div>
                         </div>

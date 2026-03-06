@@ -29,6 +29,7 @@ import {
   type ProductTableRow,
   type ProductApiRow,
 } from "@/features/products/hooks/use-products";
+import type { ProductVariantsInput } from "@/features/products/lib/product-models";
 import { ProductsPageSkeleton } from "@/components/ui/page-skeletons";
 import { isLikelyVideoMedia } from "@/utils/misc";
 
@@ -118,12 +119,14 @@ export default function ProductsPage() {
     productName: string;
     description?: string;
     priceAmount: number;
+    originalPriceAmount?: number | null;
     currency: string;
     quantity: number;
     status: string;
     thumbnailUrl?: string;
     media?: { id?: string; blobUrl: string; contentType?: string; blobPathname?: string }[];
     collectionIds?: string[];
+    variants?: ProductVariantsInput | null;
   } | null>(null);
   const [drafts, setDrafts] = React.useState<DraftMap>({});
   const [activeCell, setActiveCell] = React.useState<{ id: string; field: EditableField } | null>(null);
@@ -168,10 +171,12 @@ export default function ProductsPage() {
         productName: product.productName,
         description: product.description ?? undefined,
         priceAmount: product.priceAmount,
+        originalPriceAmount: product.originalPriceAmount ?? null,
         currency: product.currency,
         quantity: product.quantity,
         status: product.status,
         collectionIds: product.collectionIds,
+        variants: product.variants ?? null,
         media: product.media?.map((m) => ({
           blobUrl: m.blobUrl,
           contentType: m.contentType ?? undefined,
@@ -194,6 +199,7 @@ export default function ProductsPage() {
         slug: product.slug,
         description: product.description,
         priceAmount: product.priceAmount,
+        originalPriceAmount: product.originalPriceAmount ?? null,
         currency: product.currency,
         quantity: product.quantity,
         status: product.status,
@@ -223,9 +229,11 @@ export default function ProductsPage() {
       productName: string;
       description: string;
       priceAmount: number;
+      originalPriceAmount?: number | null;
       currency: string;
       quantity: number;
       collectionIds?: string[];
+      variants?: ProductVariantsInput | null;
     },
     media: { url: string; pathname: string; contentType: string }[]
   ) => {
@@ -240,10 +248,12 @@ export default function ProductsPage() {
       slug: data.productName.toLowerCase().replace(/\s+/g, "-"),
       description: data.description,
       priceAmount: data.priceAmount,
+      originalPriceAmount: data.originalPriceAmount ?? null,
       currency: data.currency,
       quantity: data.quantity,
       status: "ready",
       media: media.map((m) => ({ ...m, blobUrl: m.url, blobPathname: m.pathname })),
+      variants: data.variants ?? null,
       salesAmount: 0,
     };
 
@@ -259,12 +269,14 @@ export default function ProductsPage() {
           title: data.productName,
           description: data.description,
           priceAmount: data.priceAmount,
+          originalPriceAmount: data.originalPriceAmount,
           currency: data.currency,
           quantity: data.quantity,
           source: "manual",
           status: "ready",
           media,
           collectionIds: data.collectionIds,
+          variants: data.variants,
         }),
       });
 
@@ -279,19 +291,22 @@ export default function ProductsPage() {
         queryKeys.products.list(bootstrap.storeId),
         (old) =>
           old?.map((p) =>
-            p.id === tempId ? {
-              id: newProduct.id,
-              name: newProduct.productName,
-              slug: newProduct.slug,
-              description: newProduct.description,
-              priceAmount: newProduct.priceAmount,
-              currency: newProduct.currency,
-              quantity: newProduct.quantity,
-              status: newProduct.status,
-              thumbnailUrl: newProduct.media?.[0]?.blobUrl,
-              thumbnailType: newProduct.media?.[0]?.contentType || undefined,
-              salesAmount: newProduct.salesAmount ?? 0,
-            } : p
+            p.id === tempId
+              ? {
+                  id: newProduct.id,
+                  name: newProduct.productName,
+                  slug: newProduct.slug,
+                  description: newProduct.description,
+                  priceAmount: newProduct.priceAmount,
+                  originalPriceAmount: newProduct.originalPriceAmount ?? null,
+                  currency: newProduct.currency,
+                  quantity: newProduct.quantity,
+                  status: newProduct.status,
+                  thumbnailUrl: newProduct.media?.[0]?.blobUrl,
+                  thumbnailType: newProduct.media?.[0]?.contentType || undefined,
+                  salesAmount: newProduct.salesAmount ?? 0,
+                }
+              : p
           ) ?? []
       );
 

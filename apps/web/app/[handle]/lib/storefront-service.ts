@@ -11,7 +11,6 @@ import {
     instagramAccounts,
     inArray,
     sql,
-    tenants,
     asc,
 } from "@shopvendly/db";
 
@@ -32,12 +31,6 @@ async function findStoreBySlugFresh(slug: string) {
     const igAccount = await db.query.instagramAccounts.findFirst({
         where: and(eq(instagramAccounts.tenantId, store.tenantId), eq(instagramAccounts.isActive, true))
     });
-
-    const tenant = await db.query.tenants.findFirst({
-        where: eq(tenants.id, store.tenantId),
-        columns: { status: true, onboardingStep: true },
-    });
-
     if (igAccount?.profilePictureUrl) {
         return { ...store, logoUrl: igAccount.profilePictureUrl };
     }
@@ -121,8 +114,11 @@ export const storefrontService = {
                 productName: true,
                 description: true,
                 priceAmount: true,
+                originalPriceAmount: true,
                 currency: true,
                 quantity: true,
+                createdAt: true,
+                variants: true,
             },
             with: {
                 media: {
@@ -191,8 +187,11 @@ export const storefrontService = {
                 productName: true,
                 description: true,
                 priceAmount: true,
+                originalPriceAmount: true,
                 currency: true,
                 quantity: true,
+                createdAt: true,
+                variants: true,
             },
             with: {
                 media: {
@@ -279,8 +278,11 @@ export const storefrontService = {
                 productName: true,
                 description: true,
                 priceAmount: true,
+                originalPriceAmount: true,
                 currency: true,
                 quantity: true,
+                createdAt: true,
+                variants: true,
             },
             with: {
                 media: {

@@ -5,6 +5,7 @@ interface Product {
     slug: string;
     name: string;
     price: number;
+    originalPrice?: number | null;
     currency: string;
     image: string | null;
     contentType?: string | null;
@@ -44,6 +45,7 @@ export function ProductGrid({ products }: ProductGridProps) {
                         title={product.name}
                         slug={product.slug}
                         price={formatPrice(product.price, product.currency)}
+                        originalPrice={product.originalPrice ? formatPrice(product.originalPrice, product.currency) : null}
                         image={product.image}
                         contentType={product.contentType}
                     />

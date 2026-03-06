@@ -24,7 +24,17 @@ type StorefrontProduct = {
   name: string;
   description?: string | null;
   price: number;
+  originalPrice?: number | null;
   currency: string;
+  variants?: {
+    enabled?: boolean;
+    options?: Array<{
+      type?: string;
+      label?: string;
+      values?: string[];
+      preset?: string | null;
+    }>;
+  } | null;
   images: string[];
   mediaItems?: { url: string; contentType?: string | null }[];
   rating?: number;
@@ -42,6 +52,7 @@ type StorefrontProductListItem = {
   slug: string;
   name: string;
   price: number;
+  originalPrice?: number | null;
   currency: string;
   image: string | null;
   contentType?: string | null;

@@ -5,6 +5,7 @@ interface Product {
     slug: string;
     name: string;
     price: number;
+    originalPrice?: number | null;
     currency: string;
     image: string | null;
     rating: number;

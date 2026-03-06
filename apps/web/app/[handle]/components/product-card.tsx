@@ -11,6 +11,7 @@ interface ProductCardProps {
   title: string;
   slug: string;
   price: string;
+  originalPrice?: string | null;
   image: string | null;
   contentType?: string | null;
   index?: number;
@@ -23,13 +24,12 @@ const FALLBACK_PRODUCT_IMAGE = "https://cdn.cosmos.so/25e7ef9d-3d95-486d-b7db-f0
 const aspectVariants = [
   "aspect-[3/4]",
   "aspect-[4/5]",
-  "aspect-[1/1]",
   "aspect-[4/5]",
   "aspect-[3/4]",
   "aspect-[5/6]",
 ];
 
-export function ProductCard({ title, slug, price, image, contentType, index = 0, storeSlug }: ProductCardProps) {
+export function ProductCard({ title, slug, price, originalPrice, image, contentType, index = 0, storeSlug }: ProductCardProps) {
   const params = useParams();
   const [imageError, setImageError] = useState(false);
 
@@ -93,18 +93,17 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
         )}
 
         {/* Floating price pill */}
-        <div className="pointer-events-none absolute left-4 top-4 inline-flex items-center rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-gray-900 shadow-md backdrop-blur">
-          {price}
+        <div className="pointer-events-none absolute left-4 top-4 inline-flex flex-col rounded-2xl bg-white/90 px-3 py-2 text-[11px] font-semibold text-gray-900 shadow-md backdrop-blur">
+          <span>{price}</span>
+          {originalPrice ? (
+            <span className="text-[10px] font-medium text-neutral-500 line-through">{originalPrice}</span>
+          ) : null}
         </div>
 
-        {/* Subtle hover overlay */}
-        <div className="absolute inset-0 bg-linear-to-b from-transparent via-black/0 to-black/35 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-        {/* Product Info overlay */}
-        <div className="pointer-events-none absolute inset-x-4 bottom-4 rounded-2xl bg-white/92 px-5 py-4 text-left text-sm font-medium text-gray-900 shadow-xl backdrop-blur transition-all duration-300 opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0">
-          <p className="line-clamp-2 leading-tight">{title}</p>
-        </div>
       </div>
+      <p className="mt-2 text-sm font-semibold leading-tight text-neutral-900 capitalize">
+        {title}
+      </p>
     </Link>
   );
 }

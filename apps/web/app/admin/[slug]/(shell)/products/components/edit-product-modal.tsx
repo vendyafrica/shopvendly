@@ -14,16 +14,16 @@ import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { Label } from "@shopvendly/ui/components/label";
 import { Textarea } from "@shopvendly/ui/components/textarea";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@shopvendly/ui/components/select";
+import { Checkbox } from "@shopvendly/ui/components/checkbox";
 import Image from "next/image";
+import {
+    PRODUCT_ALPHA_SIZE_PRESET,
+    PRODUCT_COLOR_PRESETS,
+    PRODUCT_UK_SIZE_PRESET,
+} from "@shopvendly/db/schema";
 import { useTenant } from "@/app/admin/context/tenant-context";
 import type { ProductApiRow } from "@/features/products/hooks/use-products";
+import type { ProductVariantsInput } from "@/features/products/lib/product-models";
 import { useUpload } from "@/features/media/hooks/use-upload";
 
 interface Product {
@@ -31,6 +31,7 @@ interface Product {
     productName: string;
     description?: string;
     priceAmount: number;
+    originalPriceAmount?: number | null;
     currency: string;
     quantity: number;
     status: string;
@@ -43,6 +44,7 @@ interface Product {
         blobPathname?: string;
     }[];
     collectionIds?: string[];
+    variants?: ProductVariantsInput | null;
 }
 
 type StoreCollection = {
@@ -83,11 +85,16 @@ export function EditProductModal({
     const [productName, setProductName] = React.useState("");
     const [description, setDescription] = React.useState("");
     const [priceAmount, setPriceAmount] = React.useState<string>("");
+    const [originalPriceAmount, setOriginalPriceAmount] = React.useState<string>("");
     const [quantity, setQuantity] = React.useState<string>("");
     const [isSaving, setIsSaving] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const [collections, setCollections] = React.useState<StoreCollection[]>([]);
-    const [collectionId, setCollectionId] = React.useState<string>("none");
+    const [selectedCollectionIds, setSelectedCollectionIds] = React.useState<string[]>([]);
+    const [variantsEnabled, setVariantsEnabled] = React.useState(false);
+    const [selectedColors, setSelectedColors] = React.useState<string[]>([]);
+    const [sizePreset, setSizePreset] = React.useState<"none" | "alpha" | "uk">("none");
+    const [selectedSizes, setSelectedSizes] = React.useState<string[]>([]);
 
     // Image management
     const [files, setFiles] = React.useState<UploadedFile[]>([]);
@@ -100,8 +107,17 @@ export function EditProductModal({
             setProductName(product.productName);
             setDescription(product.description || "");
             setPriceAmount(product.priceAmount ? String(product.priceAmount) : "");
+            setOriginalPriceAmount(product.originalPriceAmount ? String(product.originalPriceAmount) : "");
             setQuantity(product.quantity ? String(product.quantity) : "");
-            setCollectionId(product.collectionIds?.[0] || "none");
+            setSelectedCollectionIds(product.collectionIds ?? []);
+
+            const nextVariantOptions = product.variants?.enabled ? product.variants.options ?? [] : [];
+            const nextColorOption = nextVariantOptions.find((option) => option.type === "color");
+            const nextSizeOption = nextVariantOptions.find((option) => option.type === "size");
+            setVariantsEnabled(Boolean(product.variants?.enabled));
+            setSelectedColors(nextColorOption?.values ?? []);
+            setSizePreset(nextSizeOption?.preset === "uk" ? "uk" : nextSizeOption ? "alpha" : "none");
+            setSelectedSizes(nextSizeOption?.values ?? []);
             setError(null);
 
             // Delay the heavy media array generation so the drawer can animate in smoothly on mobile
@@ -253,7 +269,12 @@ export function EditProductModal({
 
         try {
             const priceValue = Math.round(Number(priceAmount || 0));
+            const originalPriceValue = originalPriceAmount ? Math.round(Number(originalPriceAmount)) : null;
             const quantityValue = Number(quantity || 0);
+
+            if (originalPriceAmount && (Number.isNaN(originalPriceValue) || (originalPriceValue ?? 0) <= priceValue)) {
+                throw new Error("Original price must be greater than the current price");
+            }
 
             // Separate newly added media logic if needed in backend, 
             // but for now we might only send basic info.
@@ -272,6 +293,7 @@ export function EditProductModal({
                 productName,
                 description,
                 priceAmount: priceValue,
+                originalPriceAmount: originalPriceValue,
                 quantity: quantityValue,
                 // preserve current status unless explicitly changed elsewhere
                 status: product.status,
@@ -294,7 +316,18 @@ export function EditProductModal({
                 }));
             }
 
-            payload.collectionIds = collectionId === "none" ? [] : [collectionId];
+            payload.collectionIds = selectedCollectionIds;
+            payload.variants = variantsEnabled
+                ? {
+                    enabled: true,
+                    options: [
+                        ...(selectedColors.length > 0 ? [{ type: "color" as const, label: "Color", values: selectedColors }] : []),
+                        ...(selectedSizes.length > 0
+                            ? [{ type: "size" as const, label: "Size", values: selectedSizes, preset: sizePreset === "none" ? null : sizePreset }]
+                            : []),
+                    ],
+                }
+                : null;
 
             const response = await fetch(`/api/products/${product.id}`, {
                 method: "PATCH",
@@ -479,12 +512,12 @@ export function EditProductModal({
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="quantity">Quantity</Label>
+                                        <Label htmlFor="originalPriceAmount">Original Price ({storeCurrency})</Label>
                                         <Input
-                                            id="quantity"
-                                            value={quantity}
-                                            onChange={(e) => setQuantity(e.target.value)}
-                                            placeholder="0"
+                                            id="originalPriceAmount"
+                                            value={originalPriceAmount}
+                                            onChange={(e) => setOriginalPriceAmount(e.target.value)}
+                                            placeholder="Optional"
                                             type="number"
                                             min="0"
                                             disabled={isSaving}
@@ -505,24 +538,125 @@ export function EditProductModal({
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>Collection</Label>
-                                    <Select
-                                        value={collectionId}
-                                        onValueChange={(value) => setCollectionId(value ?? "none")}
-                                        disabled={isSaving}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select a collection" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">No collection</SelectItem>
-                                            {collections.map((collection) => (
-                                                <SelectItem key={collection.id} value={collection.id}>
-                                                    {collection.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Label>Collections</Label>
+                                    <div className="max-h-40 space-y-2 overflow-y-auto rounded-md border border-border/70 p-3">
+                                        {collections.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground">No collections yet.</p>
+                                        ) : (
+                                            collections.map((collection) => {
+                                                const checked = selectedCollectionIds.includes(collection.id);
+                                                return (
+                                                    <label key={collection.id} className="flex items-center gap-3 text-sm">
+                                                        <Checkbox
+                                                            checked={checked}
+                                                            onCheckedChange={(nextChecked) => {
+                                                                setSelectedCollectionIds((prev) =>
+                                                                    nextChecked
+                                                                        ? [...prev, collection.id]
+                                                                        : prev.filter((id) => id !== collection.id)
+                                                                );
+                                                            }}
+                                                            disabled={isSaving}
+                                                        />
+                                                        <span>{collection.name}</span>
+                                                    </label>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3 rounded-lg border border-border/60 p-4">
+                                    <label className="flex items-center gap-3 text-sm font-medium">
+                                        <Checkbox
+                                            checked={variantsEnabled}
+                                            onCheckedChange={(checked) => setVariantsEnabled(Boolean(checked))}
+                                            disabled={isSaving}
+                                        />
+                                        <span>Add sizes / colors</span>
+                                    </label>
+
+                                    {variantsEnabled ? (
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label>Preset colors</Label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {PRODUCT_COLOR_PRESETS.map((color) => {
+                                                        const checked = selectedColors.includes(color);
+                                                        return (
+                                                            <Button
+                                                                key={color}
+                                                                type="button"
+                                                                variant={checked ? "default" : "outline"}
+                                                                size="sm"
+                                                                className="h-8 rounded-full px-3"
+                                                                onClick={() => {
+                                                                    setSelectedColors((prev) =>
+                                                                        checked ? prev.filter((value) => value !== color) : [...prev, color]
+                                                                    );
+                                                                }}
+                                                            >
+                                                                {color}
+                                                            </Button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label>Size preset</Label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {(["none", "alpha", "uk"] as const).map((preset) => {
+                                                        const isActive = sizePreset === preset;
+                                                        const label = preset === "none"
+                                                            ? "No sizes"
+                                                            : preset === "alpha"
+                                                                ? "XS / S / M / L / XL"
+                                                                : "UK sizes";
+                                                        return (
+                                                            <Button
+                                                                key={preset}
+                                                                type="button"
+                                                                variant={isActive ? "default" : "outline"}
+                                                                size="sm"
+                                                                className="h-8 rounded-full px-3"
+                                                                onClick={() => {
+                                                                    setSizePreset(preset);
+                                                                    setSelectedSizes([]);
+                                                                }}
+                                                            >
+                                                                {label}
+                                                            </Button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {sizePreset !== "none" ? (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {(sizePreset === "uk" ? PRODUCT_UK_SIZE_PRESET : PRODUCT_ALPHA_SIZE_PRESET).map((size) => {
+                                                        const checked = selectedSizes.includes(size);
+                                                        return (
+                                                            <Button
+                                                                key={size}
+                                                                type="button"
+                                                                variant={checked ? "default" : "outline"}
+                                                                size="sm"
+                                                                className="h-8 rounded-full px-3"
+                                                                onClick={() => {
+                                                                    setSelectedSizes((prev) =>
+                                                                        checked ? prev.filter((value) => value !== size) : [...prev, size]
+                                                                    );
+                                                                }}
+                                                            >
+                                                                {size}
+                                                            </Button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
                                 </div>
                             </div>
                         </div>
