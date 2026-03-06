@@ -43,15 +43,16 @@ export function StorefrontContentSwitcher({
 
   return (
     <>
-      <div className="mt-5">
+      <div className="py-8 sm:py-12 mt-4 sm:mt-8 sticky top-0 z-10 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <nav
           id="storefront-categories-rail"
-          className="border-px border-border bg-background sticky top-0 z-10"
+          className="w-full"
         >
-          <div className="px-3 sm:px-4 lg:px-6 xl:px-8">
-            <div className="overflow-x-auto scrollbar-hide">
+          <div className="w-full">
+            <div className="overflow-x-auto scrollbar-hide px-4 md:px-6">
               <Tabs
                 value={tabValue}
+                className="w-max mx-auto"
                 onValueChange={(value) => {
                   if (value === "all") {
                     router.push(`/${handle}`);
@@ -64,11 +65,20 @@ export function StorefrontContentSwitcher({
                   }
                 }}
               >
-                <TabsList variant="line" className="flex min-w-full items-center justify-start gap-2 py-3">
-                  <TabsTrigger value="all">All Products</TabsTrigger>
+                <TabsList className="flex items-center gap-1.5 p-1.5 border border-border/50 bg-background rounded-md">
+                  <TabsTrigger
+                    value="all"
+                    className="rounded-md py-4 text-[15px] font-medium w-[28vw] sm:w-[18vw] lg:w-[140px] shrink-0 truncate transition-all text-muted-foreground hover:text-foreground data-active:bg-muted/80! data-active:text-foreground!"
+                  >
+                    All Products
+                  </TabsTrigger>
 
                   {collections.map((collection) => (
-                    <TabsTrigger key={collection.id} value={`collection:${collection.slug}`}>
+                    <TabsTrigger
+                      key={collection.id}
+                      value={`collection:${collection.slug}`}
+                      className="rounded-full py-2.5 text-[15px] font-medium w-[28vw] sm:w-[18vw] lg:w-[140px] shrink-0 truncate transition-all text-muted-foreground hover:text-foreground data-active:bg-muted/80! data-active:text-foreground!"
+                    >
                       {collection.name}
                     </TabsTrigger>
                   ))}

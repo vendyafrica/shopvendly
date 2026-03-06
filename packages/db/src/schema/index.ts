@@ -5,7 +5,6 @@ export * from "./storefront-schema";
 export * from "./product-schema";
 
 export * from "./instagram-schema";
-export * from "./tiktok-schema";
 export * from "./customer-schema";
 export * from "./media-schema";
 export * from "./order-schema";
