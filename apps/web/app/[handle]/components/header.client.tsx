@@ -59,11 +59,6 @@ export default function StorefrontHeaderClient({
   const { items: wishlistItems } = useWishlist();
   const [store, setStore] = useState<StoreData | null>(initialStore ?? null);
   const [storeId, setStoreId] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!store) return;
@@ -136,7 +131,7 @@ export default function StorefrontHeaderClient({
   const isProductPage = resolvedSlug
     ? normalizedPathname.startsWith(slugPath + "/")
     : false;
-  const headerVisible = !mounted || isVisible;
+  const headerVisible = isVisible;
   const headerTransition = `fixed inset-x-0 top-0 z-50 transition-all duration-300 ${headerVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
     }`;
 
@@ -220,7 +215,7 @@ export default function StorefrontHeaderClient({
     );
   }
 
-  const overlayActive = mounted && isHomePath && isOverlay;
+  const overlayActive = isHomePath && isOverlay;
 
   const getAdminOrigin = () => {
     // We must always point to the ROOT domain, never the storefront subdomain.

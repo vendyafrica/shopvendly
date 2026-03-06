@@ -1,7 +1,6 @@
 import { StorefrontContentSwitcher } from "./components/storefront-content-switcher.client";
 import { StorefrontFooter } from "./components/footer";
 import { Hero } from "./components/hero";
-import { StorefrontHeader } from "./components/header";
 import { StorefrontViewTracker } from "./components/StorefrontViewTracker";
 import { OneTapLogin } from "@/features/marketplace/components/one-tap-login";
 import { Suspense } from "react";
@@ -115,7 +114,9 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
   const { handle } = await params;
   const resolvedSearchParams = await searchParams;
   const search = resolvedSearchParams?.q;
+  const collection = resolvedSearchParams?.collection;
   const query = Array.isArray(search) ? search[0] : search;
+  const activeCollectionSlug = Array.isArray(collection) ? collection[0] : collection;
 
   const baseUrl = await getApiBaseUrl();
 
@@ -127,6 +128,7 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
 
   const productUrl = new URL(`${baseUrl}/api/storefront/${handle}/products`);
   if (query) productUrl.searchParams.set("q", query);
+  if (activeCollectionSlug) productUrl.searchParams.set("collection", activeCollectionSlug);
   const productsRes = await fetch(productUrl.toString(), {
     next: { revalidate: 30, tags: [`storefront:store:${handle}:products`] }
   });
@@ -152,23 +154,13 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
         <OneTapLogin storeSlug={handle} />
       </Suspense>
 
-      {/*
-        StorefrontHeader is a Server Component that receives the already-fetched
-        store object — no second fetch, no client waterfall.
-      */}
-      <StorefrontHeader
-        initialStore={{
-          name: store.name,
-          slug: store.slug,
-          logoUrl: store.logoUrl ?? undefined,
-        }}
-      />
-
       <Hero store={store} />
 
       <StorefrontContentSwitcher
         handle={handle}
         collections={collections}
+        activeCollectionSlug={activeCollectionSlug}
+        initialQuery={query}
         products={products}
       />
 
