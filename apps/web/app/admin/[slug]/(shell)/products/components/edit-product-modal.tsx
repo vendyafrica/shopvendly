@@ -526,6 +526,17 @@ export function EditProductModal({
                                 </div>
 
                                 <div className="space-y-2">
+                                    <Label htmlFor="quantity">Quantity</Label>
+                                    <Input
+                                        id="quantity"
+                                        value={quantity}
+                                        onChange={(e) => setQuantity(e.target.value)}
+                                        placeholder="Available quantity"
+                                        disabled={isSaving}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label htmlFor="description">Description</Label>
                                     <Textarea
                                         id="description"

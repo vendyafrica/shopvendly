@@ -234,24 +234,30 @@ export function Hero({ store }: HeroProps) {
                   sideOffset={8}
                   className="z-50 flex w-64 flex-col gap-1 rounded-2xl border border-black/8 bg-white p-2 text-neutral-900 shadow-2xl"
                 >
-                  <DropdownMenuItem asChild>
-                    <Link href={store.slug ? `/${store.slug}/cart` : "/cart"} className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 outline-none hover:bg-neutral-100 focus:bg-neutral-100">
-                      <span className="flex items-center gap-3">
-                        <HugeiconsIcon icon={ShoppingBag01Icon} size={18} />
-                        <span>Cart</span>
-                      </span>
-                      {storeItemCount > 0 ? <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">{storeItemCount}</span> : null}
-                    </Link>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      window.location.href = store.slug ? `/${store.slug}/cart` : "/cart"
+                    }}
+                    className="cursor-pointer flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 outline-none hover:bg-neutral-100 focus:bg-neutral-100"
+                  >
+                    <span className="flex items-center gap-3">
+                      <HugeiconsIcon icon={ShoppingBag01Icon} size={18} />
+                      <span>Cart</span>
+                    </span>
+                    {storeItemCount > 0 ? <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">{storeItemCount}</span> : null}
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem asChild>
-                    <Link href={store.slug ? `/${store.slug}/wishlist` : "/wishlist"} className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 outline-none hover:bg-neutral-100 focus:bg-neutral-100">
-                      <span className="flex items-center gap-3">
-                        <HugeiconsIcon icon={FavouriteIcon} size={18} />
-                        <span>Liked Items</span>
-                      </span>
-                      {wishlistCount > 0 ? <span className="flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900 text-[10px] font-bold text-white">{wishlistCount}</span> : null}
-                    </Link>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      window.location.href = store.slug ? `/${store.slug}/wishlist` : "/wishlist"
+                    }}
+                    className="cursor-pointer flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 outline-none hover:bg-neutral-100 focus:bg-neutral-100"
+                  >
+                    <span className="flex items-center gap-3">
+                      <HugeiconsIcon icon={FavouriteIcon} size={18} />
+                      <span>Liked Items</span>
+                    </span>
+                    {wishlistCount > 0 ? <span className="flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900 text-[10px] font-bold text-white">{wishlistCount}</span> : null}
                   </DropdownMenuItem>
 
                   <div className="my-1 border-t border-black/5" />

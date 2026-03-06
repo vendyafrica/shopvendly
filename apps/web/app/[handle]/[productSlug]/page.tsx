@@ -86,9 +86,13 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { handle, productSlug } = await params;
   const baseUrl = await getApiBaseUrl();
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
+  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, {
+    next: { revalidate: 60, tags: [`storefront:store:${handle}`] }
+  });
   const store = storeRes.ok ? (await storeRes.json()) as StorefrontStore : null;
-  const productRes = await fetch(`${baseUrl}/api/storefront/${handle}/products/${productSlug}`, { next: { revalidate: 60 } });
+  const productRes = await fetch(`${baseUrl}/api/storefront/${handle}/products/${productSlug}`, {
+    next: { revalidate: 60, tags: [`storefront:store:${handle}:product:${productSlug}`] }
+  });
   const product = productRes.ok ? (await productRes.json()) as StorefrontProduct : null;
 
   if (!store || !product) {
@@ -133,9 +137,15 @@ export default async function ProductPage({ params }: PageProps) {
 
   // Fetch everything in parallel to minimize wait time
   const [storeRes, productRes, productsRes] = await Promise.all([
-    fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } }),
-    fetch(`${baseUrl}/api/storefront/${handle}/products/${productSlug}`, { next: { revalidate: 60 } }),
-    fetch(`${baseUrl}/api/storefront/${handle}/products`, { next: { revalidate: 30 } })
+    fetch(`${baseUrl}/api/storefront/${handle}`, {
+      next: { revalidate: 60, tags: [`storefront:store:${handle}`] }
+    }),
+    fetch(`${baseUrl}/api/storefront/${handle}/products/${productSlug}`, {
+      next: { revalidate: 60, tags: [`storefront:store:${handle}:product:${productSlug}`] }
+    }),
+    fetch(`${baseUrl}/api/storefront/${handle}/products`, {
+      next: { revalidate: 30, tags: [`storefront:store:${handle}:products`] }
+    })
   ]);
 
   const [store, product, products] = await Promise.all([

@@ -9,6 +9,7 @@ import {
   ShoppingBag01Icon,
   FavouriteIcon,
   Menu01Icon,
+  ManagerIcon,
 } from "@hugeicons/core-free-icons";
 import { HeaderSkeleton } from "./skeletons";
 import { useCart } from "@/features/cart/context/cart-context";
@@ -21,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@shopvendly/ui/components/dropdown-menu";
+import { Button } from "@shopvendly/ui/components/button";
 
 const bricolage = Bricolage_Grotesque({
   variable: "--font-bricolage-grotesque",
@@ -167,32 +169,31 @@ export default function StorefrontHeaderClient({
         <div className="absolute inset-0 bg-white/95" />
         <div className="mx-auto max-w-[1480px] px-4 sm:px-6 lg:px-12 h-[72px] sm:h-[80px] flex items-center relative z-10">
           <div className="flex items-center justify-between w-full">
-            <button
-              type="button"
+            <Button
+              variant="ghost"
               onClick={() => router.back()}
-              className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50"
+              className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-primary-50"
             >
-              <span aria-hidden>←</span>
               Back
-            </button>
+            </Button>
             <div className="flex items-center gap-2">
-              <div className="flex md:hidden items-center gap-1">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-neutral-700 shadow-sm hover:bg-neutral-50"
+                  className="relative flex h-12 w-12 items-center justify-center bg-transparent p-0 text-neutral-700 shadow-none"
                   onClick={() => router.push(`/${store.slug}/wishlist`)}
                   aria-label="Liked Items"
                 >
-                  <HugeiconsIcon icon={FavouriteIcon} size={18} />
+                  <HugeiconsIcon icon={FavouriteIcon} size={24} />
                   <Badge count={wishlistCount} dark />
                 </button>
                 <button
                   type="button"
-                  className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-neutral-700 shadow-sm hover:bg-neutral-50"
+                  className="relative flex h-12 w-12 items-center justify-center bg-transparent p-0 text-neutral-700 shadow-none"
                   onClick={() => router.push(`/${store.slug}/cart`)}
                   aria-label="Cart"
                 >
-                  <HugeiconsIcon icon={ShoppingBag01Icon} size={18} />
+                  <HugeiconsIcon icon={ShoppingBag01Icon} size={24} />
                   <Badge count={storeItemCount} dark />
                 </button>
               </div>
@@ -205,9 +206,10 @@ export default function StorefrontHeaderClient({
                   }
                   router.push(sellerLoginUrl);
                 }}
-                className="inline-flex items-center rounded-full border border-black/10 bg-white px-4 py-1.5 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50"
+                className="relative flex h-12 w-12 items-center justify-center bg-transparent p-0 text-red-600 shadow-none"
+                aria-label="Admin"
               >
-                Admin
+                <HugeiconsIcon icon={ManagerIcon} size={26} />
               </button>
             </div>
           </div>
@@ -219,16 +221,11 @@ export default function StorefrontHeaderClient({
   const overlayActive = isHomePath && isOverlay;
 
   const getAdminOrigin = () => {
-    // We must always point to the ROOT domain, never the storefront subdomain.
-    // The proxy middleware explicitly blocks /admin paths on subdomains and
-    // redirects them back to /, so window.location.origin is wrong here.
     const envUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (envUrl) return envUrl.trim().replace(/\/$/, "");
 
     const domain = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
     if (typeof window !== "undefined" && domain) {
-      // Strip the subdomain from the current hostname and rebuild root origin.
-      // e.g. "mystore.shopvendly.store" -> "shopvendly.store"
       const normalizedDomain = domain.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "");
       const { protocol } = window.location;
       return `${protocol}//${normalizedDomain}`;
@@ -251,7 +248,7 @@ export default function StorefrontHeaderClient({
 
   // ─── Shared icon button classes ────────────────────────────────────────────
   const iconBtnBase =
-    "relative inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors shrink-0";
+    "relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors shrink-0 sm:h-12 sm:w-12";
   const iconBtnOverlay = `${iconBtnBase} hover:bg-white/10`;
   const iconBtnSolid = `${iconBtnBase} hover:bg-black/5`;
 
@@ -270,7 +267,7 @@ export default function StorefrontHeaderClient({
             >
               <HugeiconsIcon
                 icon={Menu01Icon}
-                size={20}
+                size={24}
                 className={overlay ? "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
               />
               <Badge count={totalCount} dark={!overlay} />
@@ -331,18 +328,7 @@ export default function StorefrontHeaderClient({
   // ─── Desktop Actions (shared) ───────────────────────────────────────────────
   const DesktopActions = ({ overlay }: { overlay?: boolean }) => {
     return (
-      <div className="hidden md:flex items-center gap-1 sm:gap-2">
-        <button
-          type="button"
-          onClick={() => { if (sellerLoginUrl.startsWith("http")) { window.location.href = sellerLoginUrl; return; } router.push(sellerLoginUrl); }}
-          className={`text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${overlay ? "text-white/90 hover:text-white hover:bg-white/10" : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
-            }`}
-        >
-          Admin
-        </button>
-
-        <div className={overlay ? "w-px h-5 bg-white/20 mx-1" : "w-px h-5 bg-black/10 mx-1"} />
-
+      <div className="hidden md:flex items-center gap-1 sm:gap-1.5">
         <button
           type="button"
           className={overlay ? iconBtnOverlay : iconBtnSolid}
@@ -351,7 +337,7 @@ export default function StorefrontHeaderClient({
         >
           <HugeiconsIcon
             icon={FavouriteIcon}
-            size={20}
+            size={24}
             className={overlay ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
           />
           <Badge count={wishlistCount} dark={!overlay} />
@@ -365,10 +351,23 @@ export default function StorefrontHeaderClient({
         >
           <HugeiconsIcon
             icon={ShoppingBag01Icon}
-            size={20}
+            size={24}
             className={overlay ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
           />
           <Badge count={storeItemCount} dark={!overlay} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { if (sellerLoginUrl.startsWith("http")) { window.location.href = sellerLoginUrl; return; } router.push(sellerLoginUrl); }}
+          className={`${overlay ? `${iconBtnOverlay} text-white/90 hover:bg-white/10` : `${iconBtnSolid} text-red-600 hover:bg-red-50`}`}
+          aria-label="Admin"
+        >
+          <HugeiconsIcon
+            icon={ManagerIcon}
+            size={24}
+            className={overlay ? "drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : ""}
+          />
         </button>
       </div>
     );

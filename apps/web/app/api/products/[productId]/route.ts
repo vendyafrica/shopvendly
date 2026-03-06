@@ -1,7 +1,7 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { productService } from "@/features/products/lib/product-service";
 import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
 import { updateProductSchema } from "@/features/products/lib/product-models";
@@ -128,8 +128,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         if (store?.slug) {
             revalidateTag(`storefront:store:${store.slug}`, {});
             revalidateTag(`storefront:store:${store.slug}:products`, {});
+            revalidatePath(`/${store.slug}`);
             if (updated.slug) {
                 revalidateTag(`storefront:store:${store.slug}:product:${updated.slug}`, {});
+                revalidatePath(`/${store.slug}/${updated.slug}`);
             }
         }
 

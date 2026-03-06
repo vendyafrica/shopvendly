@@ -2,23 +2,15 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 
-import { StarIcon, ShoppingBag01Icon, FavouriteIcon } from "@hugeicons/core-free-icons";
-import { StoreAvatar } from "@/components/store-avatar";
+import { StarIcon } from "@hugeicons/core-free-icons";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { trackStorefrontEvents } from "../lib/storefront-tracking";
 import { ProductActions } from "./product-actions";
-import { Bricolage_Grotesque } from "next/font/google";
 import { signInWithOneTap } from "@shopvendly/auth/react";
 import { useAppSession } from "@/contexts/app-session-context";
 import { isLikelyVideoMedia } from "@/utils/misc";
-
-const geistSans = Bricolage_Grotesque({
-    variable: "--font-bricolage-grotesque",
-    subsets: ["latin"],
-});
 
 interface ProductDetailsProps {
     product: {
@@ -227,6 +219,11 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         })}`;
     };
 
+    const colorValues = colorOption?.values?.filter(Boolean) ?? [];
+    const sizeValues = sizeOption?.values?.filter(Boolean) ?? [];
+    const hasColorOptions = colorValues.length > 0;
+    const hasSizeOptions = sizeValues.length > 0;
+
     return (
         <div className="min-h-screen bg-white pb-16" suppressHydrationWarning>
             <div className="max-w-[1520px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)] xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.9fr)] gap-6 lg:gap-10 xl:gap-14 px-4 sm:px-6 lg:px-12 pt-0 lg:pt-0 -mt-4">
@@ -348,15 +345,15 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 </div>
 
                 {/* Right: Product Details */}
-                <div className="flex flex-col pt-1 lg:pt-0 w-full lg:max-w-[600px] xl:max-w-[640px] lg:justify-self-end">
+                <div className="flex w-full flex-col pt-2 lg:max-w-[520px] lg:justify-self-end lg:pt-2 xl:max-w-[560px]">
 
-                    <div className="space-y-3 border-b border-neutral-100 pb-6">
-                        <h1 className="text-2xl font-semibold tracking-tight text-neutral-950 sm:text-3xl">{product.name}</h1>
-                        <div className="flex flex-wrap items-end gap-3">
-                            <span className="text-2xl font-semibold text-neutral-950">{formatPrice(product.price)}</span>
+                    <div className="space-y-3 border-b border-neutral-100 pb-5 sm:space-y-3.5 sm:pb-6">
+                        <h1 className="max-w-[18ch] text-[1.95rem] font-semibold tracking-[-0.03em] text-neutral-950 sm:text-[2.5rem] sm:leading-[1.08]">{product.name}</h1>
+                        <div className="flex flex-wrap items-end gap-2 sm:gap-2.5">
+                            <span className="text-[1.45rem] font-medium leading-none text-neutral-800 sm:text-[1.7rem]">{formatPrice(product.price)}</span>
                             {hasSale ? (
                                 <>
-                                    <span className="text-base text-neutral-400 line-through">{formatPrice(product.originalPrice as number)}</span>
+                                    <span className="pb-0.5 text-sm text-neutral-400 line-through">{formatPrice(product.originalPrice as number)}</span>
                                     {discountPercent ? (
                                         <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-red-600">
                                             {discountPercent}% off
@@ -367,45 +364,21 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                         </div>
                     </div>
 
-                    {colorOption?.values?.length ? (
-                        <div className="mt-6 space-y-3 border-b border-neutral-100 pb-6">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Color</span>
-                                {selectedColor ? <span className="text-sm text-neutral-700">{selectedColor}</span> : null}
+                    {hasSizeOptions ? (
+                        <div className="mt-6 space-y-2.5 pb-1">
+                            <div className="flex items-center gap-2 text-sm">
+                                <span className="font-semibold text-neutral-950">Size</span>
+                                {selectedSize ? <span className="text-neutral-500">{selectedSize}</span> : null}
                             </div>
-                            <div className="flex flex-wrap gap-2">
-                                {colorOption.values.map((value) => {
-                                    const isActive = selectedColor === value;
-                                    return (
-                                        <button
-                                            key={value}
-                                            type="button"
-                                            onClick={() => setSelectedColor(value)}
-                                            className={`rounded-full border px-4 py-2 text-sm transition-colors ${isActive ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400"}`}
-                                        >
-                                            {value}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    ) : null}
-
-                    {sizeOption?.values?.length ? (
-                        <div className="mt-6 space-y-3 border-b border-neutral-100 pb-6">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Size</span>
-                                {selectedSize ? <span className="text-sm text-neutral-700">{selectedSize}</span> : null}
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {sizeOption.values.map((value) => {
+                            <div className="flex flex-wrap gap-2.5">
+                                {sizeValues.map((value) => {
                                     const isActive = selectedSize === value;
                                     return (
                                         <button
                                             key={value}
                                             type="button"
                                             onClick={() => setSelectedSize(value)}
-                                            className={`min-w-12 rounded-md border px-3 py-2 text-sm transition-colors ${isActive ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400"}`}
+                                            className={`min-w-[88px] rounded-full border px-5 py-3 text-[15px] font-medium transition-colors ${isActive ? "border-neutral-950 bg-white text-neutral-950 shadow-[inset_0_0_0_1px_rgba(10,10,10,0.08)]" : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400"}`}
                                         >
                                             {value}
                                         </button>
@@ -415,49 +388,34 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                         </div>
                     ) : null}
 
-                    <div className="rounded-3xl border border-neutral-100 bg-white/90 p-6 lg:p-8 shadow-[0_20px_60px_-45px_rgba(0,0,0,0.2)]">
-                        {/* Store Info - Header */}
-                        <div className="flex items-center justify-between mb-6">
-                            <Link
-                                href={`/${product.store.slug ?? ""}`}
-                                className="flex items-center gap-3 group"
-                                prefetch
-                            >
-                                <StoreAvatar
-                                    storeName={product.store.name}
-                                    logoUrl={product.store.logoUrl}
-                                    shape="square"
-                                    size="md"
-                                />
-                                <div>
-                                    <p className={`${geistSans.className} text-sm uppercase tracking-[0.2em] text-neutral-500`}>Store</p>
-                                    <p className={` ${geistSans.className} text-lg tracking-wide font-semibold text-neutral-900 group-hover:underline`}>
-                                        {product.store.name ? `${product.store.name.charAt(0).toUpperCase()}${product.store.name.slice(1)}` : product.store.name}
-                                    </p>
-                                </div>
-                            </Link>
-                            <div className="hidden md:flex items-center gap-2">
-                                <Link
-                                    href={`/${product.store.slug}/wishlist`}
-                                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100"
-                                    aria-label="Wishlist"
-                                >
-                                    <HugeiconsIcon icon={FavouriteIcon} size={18} />
-                                </Link>
-                                <Link
-                                    href={`/${product.store.slug}/cart`}
-                                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100"
-                                    aria-label="Cart"
-                                >
-                                    <HugeiconsIcon icon={ShoppingBag01Icon} size={18} />
-                                </Link>
+                    {hasColorOptions ? (
+                        <div className="mt-6 space-y-2.5 border-b border-neutral-100 pb-6">
+                            <div className="flex items-center gap-2 text-sm">
+                                <span className="font-semibold text-neutral-950">Color</span>
+                                {selectedColor ? <span className="text-sm text-neutral-700">{selectedColor}</span> : null}
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                                {colorValues.map((value) => {
+                                    const isActive = selectedColor === value;
+                                    return (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            onClick={() => setSelectedColor(value)}
+                                            className={`rounded-full border px-4 py-2.5 text-[15px] font-medium transition-colors ${isActive ? "border-neutral-950 bg-neutral-950 text-white" : "border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400"}`}
+                                        >
+                                            {value}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
+                    ) : null}
 
-                        {/* Product Name & Rating */}
-                        <div className="mb-7">
-                            <div className="flex flex-col gap-2 mb-6">
-                                <div className="flex items-center gap-1">
+                    <div className={`mt-6 ${hasColorOptions || hasSizeOptions ? "" : "border-t border-neutral-100 pt-6"}`}>
+                        <div className="mb-5 border-b border-neutral-100 pb-4">
+                            <div className="mb-2 flex flex-col gap-2">
+                                <div className="flex items-center gap-0.5 sm:gap-1">
                                     {Array.from({ length: 5 }).map((_, idx) => {
                                         const activeValue = hoverRating ?? userRating ?? Math.round(averageRating);
                                         const filled = activeValue >= idx + 1;
@@ -469,7 +427,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                                 onMouseEnter={() => setHoverRating(idx + 1)}
                                                 onMouseLeave={() => setHoverRating(null)}
                                                 disabled={isSubmittingRating}
-                                                className="p-1 rounded-full text-yellow-500 disabled:opacity-50 transition-transform duration-150 hover:-translate-y-0.5 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200"
+                                                className="rounded-full p-1 text-yellow-500 transition-transform duration-150 hover:-translate-y-0.5 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200 disabled:opacity-50"
                                                 aria-label={`Rate ${idx + 1} stars`}
                                             >
                                                 <HugeiconsIcon
@@ -480,27 +438,26 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                             </button>
                                         );
                                     })}
-                                    <span className="text-sm font-medium text-neutral-900 ml-2">
+                                    <span className="ml-2 text-sm font-semibold text-neutral-900 sm:text-base">
                                         {Number.isFinite(averageRating) ? averageRating.toFixed(1) : "0.0"}
                                     </span>
                                 </div>
                                 {userRating ? (
-                                    <span className="text-xs text-neutral-600">You rated this {userRating}★</span>
+                                    <span className="text-sm text-neutral-600">You rated this {userRating}★</span>
                                 ) : (
-                                    <span className="text-xs text-neutral-500"></span>
+                                    <span className="text-sm text-neutral-400">Tap a star to rate this product</span>
                                 )}
                             </div>
                         </div>
 
-                        {/* Actions */}
-                        <div className="mb-8 w-full">
+                        <div className="mb-6 w-full">
                             <ProductActions product={product} />
                         </div>
 
                         {product.description && (
-                            <div className="border-t border-neutral-100 pt-6">
-                                <h2 className="text-xs font-semibold mb-3 uppercase tracking-[0.2em] text-neutral-600">Description</h2>
-                                <div className="text-sm leading-relaxed text-neutral-600">
+                            <div className="border-t border-neutral-100 pt-5">
+                                <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-600">Description</h2>
+                                <div className="text-[15px] leading-7 text-neutral-600">
                                     <p className="capitalize">{product.description}</p>
                                 </div>
                             </div>
