@@ -30,6 +30,8 @@ interface StorefrontContentSwitcherProps {
   handle?: string;
   collections?: StoreCollection[];
   activeCollectionSlug?: string;
+  activeSection?: string;
+  hasSaleTab?: boolean;
   initialQuery?: string;
   products: StorefrontProduct[];
 }
@@ -38,6 +40,8 @@ export function StorefrontContentSwitcher({
   handle = "",
   collections = [],
   activeCollectionSlug,
+  activeSection,
+  hasSaleTab = false,
   initialQuery,
   products,
 }: StorefrontContentSwitcherProps) {
@@ -57,19 +61,30 @@ export function StorefrontContentSwitcher({
     setDisplayProducts(products);
   }, [products]);
 
+  const currentSection = searchParams.get("section") ?? activeSection;
   const currentCollectionSlug = searchParams.get("collection") ?? activeCollectionSlug;
 
-  const tabValue = currentCollectionSlug
+  const tabValue = currentSection === "new-arrivals"
+    ? "section:new-arrivals"
+    : currentSection === "sale"
+    ? "section:sale"
+    : currentCollectionSlug
     ? `collection:${currentCollectionSlug}`
     : "all";
 
-  const updateRouteAndProducts = async (nextCollectionSlug?: string) => {
+  const updateRouteAndProducts = async (nextCollectionSlug?: string, nextSection?: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
 
     if (nextCollectionSlug) {
       nextParams.set("collection", nextCollectionSlug);
     } else {
       nextParams.delete("collection");
+    }
+
+    if (nextSection) {
+      nextParams.set("section", nextSection);
+    } else {
+      nextParams.delete("section");
     }
 
     const nextQueryString = nextParams.toString();
@@ -85,6 +100,7 @@ export function StorefrontContentSwitcher({
       const productUrl = new URL(`/api/storefront/${handle}/products`, window.location.origin);
       if (query) productUrl.searchParams.set("q", query);
       if (nextCollectionSlug) productUrl.searchParams.set("collection", nextCollectionSlug);
+      if (nextSection) productUrl.searchParams.set("section", nextSection);
 
       const response = await fetch(productUrl.toString(), { cache: "no-store" });
       if (!response.ok) {
@@ -118,6 +134,16 @@ export function StorefrontContentSwitcher({
                     return;
                   }
 
+                  if (value === "section:new-arrivals") {
+                    void updateRouteAndProducts(undefined, "new-arrivals");
+                    return;
+                  }
+
+                  if (value === "section:sale") {
+                    void updateRouteAndProducts(undefined, "sale");
+                    return;
+                  }
+
                   if (value.startsWith("collection:")) {
                     const slug = value.replace("collection:", "");
                     void updateRouteAndProducts(slug);
@@ -134,6 +160,22 @@ export function StorefrontContentSwitcher({
                   >
                     All Products
                   </TabsTrigger>
+
+                  <TabsTrigger
+                    value="section:new-arrivals"
+                    className="h-auto flex-none rounded-none border-0 px-0 py-2 text-sm font-medium text-foreground/45 hover:text-foreground/70 data-active:bg-transparent! data-active:text-foreground! data-active:shadow-none after:bottom-0"
+                  >
+                    New Arrivals
+                  </TabsTrigger>
+
+                  {hasSaleTab ? (
+                    <TabsTrigger
+                      value="section:sale"
+                      className="h-auto flex-none rounded-none border-0 px-0 py-2 text-sm font-medium text-foreground/45 hover:text-foreground/70 data-active:bg-transparent! data-active:text-foreground! data-active:shadow-none after:bottom-0"
+                    >
+                      On Sale
+                    </TabsTrigger>
+                  ) : null}
 
                   {collections.map((collection) => (
                     <TabsTrigger

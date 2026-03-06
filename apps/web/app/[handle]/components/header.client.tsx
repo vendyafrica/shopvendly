@@ -159,6 +159,7 @@ export default function StorefrontHeaderClient({
 
   if (loading) return <HeaderSkeleton />;
   if (!store) return null;
+  if (isHomePath) return null;
 
   if (isProductPage) {
     return (
@@ -373,28 +374,15 @@ export default function StorefrontHeaderClient({
     );
   };
 
-  // ─── Nav links ─────────────────────────────────────────────────────────────
-  const navLinks = [
-    { label: "New Arrival", href: `/${store.slug}#new-arrivals` },
-    { label: "Sale", href: `/${store.slug}#sale` },
-  ];
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // RENDER
-  // ══════════════════════════════════════════════════════════════════════════
+  // ─── Header ────────────────────────────────────────────────────────────────
   return (
-    <header className={headerTransition}>
-      {/* 
-        Solid background layer - only visible when not in overlay mode.
-        We keep the same header container and just toggle classes/children
-        style to ensure the React component tree (IDs) stays stable.
-      */}
-      <div className={`absolute inset-0 transition-opacity duration-300 ${overlayActive ? "opacity-0 pointer-events-none" : "opacity-100"
-        } bg-white/95 backdrop-blur-md border-b border-black/6 shadow-sm`} />
-
-      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10 h-[72px] sm:h-[80px] flex items-center relative z-10 transition-colors duration-300">
+    <header
+      className={`fixed top-0 left-0 z-50 w-full bg-white/95 py-3 shadow-md transition-all duration-200 ${
+        isHomePath && isOverlay ? "backdrop-blur-md bg-white/80" : "bg-white"
+      }`}
+    >
+      <div className="container mx-auto flex items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-3 sm:gap-4 md:gap-6 w-full">
-          {/* Store name */}
           <Link
             href={`/${store.slug}`}
             className={`${bricolage.className} font-semibold text-xl sm:text-2xl tracking-tight transition-all shrink-0 ${overlayActive
@@ -405,25 +393,8 @@ export default function StorefrontHeaderClient({
             {store.name}
           </Link>
 
-          {/* Nav links */}
-          <nav className="hidden md:flex items-center gap-5 text-sm font-medium shrink-0">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className={`transition-colors ${overlayActive
-                  ? "text-white/90 hover:text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
-                  : "text-neutral-600 hover:text-neutral-900"
-                  }`}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-
           <div className="flex-1" />
 
-          {/* Right actions */}
           <div className="flex items-center gap-1 sm:gap-1.5">
             <DesktopActions overlay={overlayActive} />
             <div className="md:hidden flex">

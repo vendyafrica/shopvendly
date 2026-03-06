@@ -1,7 +1,6 @@
 import { StorefrontContentSwitcher } from "./components/storefront-content-switcher.client";
 import { StorefrontFooter } from "./components/footer";
 import { Hero } from "./components/hero";
-import { ProductGrid } from "./components/product-grid";
 import { StorefrontViewTracker } from "./components/StorefrontViewTracker";
 import { OneTapLogin } from "@/features/marketplace/components/one-tap-login";
 import { Suspense } from "react";
@@ -119,8 +118,10 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
   const resolvedSearchParams = await searchParams;
   const search = resolvedSearchParams?.q;
   const collection = resolvedSearchParams?.collection;
+  const section = resolvedSearchParams?.section;
   const query = Array.isArray(search) ? search[0] : search;
   const activeCollectionSlug = Array.isArray(collection) ? collection[0] : collection;
+  const activeSection = Array.isArray(section) ? section[0] : section;
 
   const baseUrl = await getApiBaseUrl();
 
@@ -133,6 +134,7 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
   const productUrl = new URL(`${baseUrl}/api/storefront/${handle}/products`);
   if (query) productUrl.searchParams.set("q", query);
   if (activeCollectionSlug) productUrl.searchParams.set("collection", activeCollectionSlug);
+  if (activeSection) productUrl.searchParams.set("section", activeSection);
   const productsRes = await fetch(productUrl.toString(), {
     next: { revalidate: 30, tags: [`storefront:store:${handle}:products`] }
   });
@@ -140,15 +142,9 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
   const saleUrl = new URL(`${baseUrl}/api/storefront/${handle}/products`);
   saleUrl.searchParams.set("section", "sale");
 
-  const newArrivalsUrl = new URL(`${baseUrl}/api/storefront/${handle}/products`);
-  newArrivalsUrl.searchParams.set("section", "new-arrivals");
-
-  const [saleResult, newArrivalsResult] = await Promise.allSettled([
+  const [saleResult] = await Promise.allSettled([
     fetch(saleUrl.toString(), {
       next: { revalidate: 30, tags: [`storefront:store:${handle}:products:sale`] }
-    }),
-    fetch(newArrivalsUrl.toString(), {
-      next: { revalidate: 30, tags: [`storefront:store:${handle}:products:new-arrivals`] }
     })
   ]);
 
@@ -160,10 +156,6 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
     ? ((await saleResult.value.json()) as StorefrontProduct[])
     : [];
 
-  const newArrivalProducts = newArrivalsResult.status === "fulfilled" && newArrivalsResult.value.ok
-    ? ((await newArrivalsResult.value.json()) as StorefrontProduct[])
-    : [];
-
   const collectionsRes = await fetch(`${baseUrl}/api/storefront/${handle}/collections`, {
     next: { revalidate: 60, tags: [`storefront:store:${handle}:collections`] },
   });
@@ -171,7 +163,7 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
     ? ((await collectionsRes.json()) as StorefrontCollection[])
     : [];
 
-  const showHomepageSections = !query && !activeCollectionSlug;
+  const hasSaleTab = saleProducts.length > 0;
 
   return (
     <div className="min-h-screen">
@@ -189,37 +181,11 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
         handle={handle}
         collections={collections}
         activeCollectionSlug={activeCollectionSlug}
+        activeSection={activeSection}
+        hasSaleTab={hasSaleTab}
         initialQuery={query}
         products={products}
       />
-
-      {showHomepageSections && newArrivalProducts.length > 0 ? (
-        <section className="pb-6 pt-2 sm:pb-8">
-          <div className="mx-auto w-full max-w-6xl px-3 sm:px-6 lg:px-10 xl:px-12">
-            <div className="mb-5 flex items-end justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-semibold tracking-tight text-neutral-950 sm:text-2xl">New Arrivals</h2>
-                <p className="text-sm text-neutral-500">Fresh picks recently added to this store.</p>
-              </div>
-            </div>
-          </div>
-          <ProductGrid products={newArrivalProducts} />
-        </section>
-      ) : null}
-
-      {showHomepageSections && saleProducts.length > 0 ? (
-        <section className="pb-10 pt-2 sm:pb-12">
-          <div className="mx-auto w-full max-w-6xl px-3 sm:px-6 lg:px-10 xl:px-12">
-            <div className="mb-5 flex items-end justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-semibold tracking-tight text-neutral-950 sm:text-2xl">Sale</h2>
-                <p className="text-sm text-neutral-500">Reduced-price products currently on offer.</p>
-              </div>
-            </div>
-          </div>
-          <ProductGrid products={saleProducts} />
-        </section>
-      ) : null}
 
       <StorefrontFooter store={store} />
     </div>

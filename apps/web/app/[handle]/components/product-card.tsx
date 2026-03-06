@@ -50,7 +50,7 @@ export function ProductCard({ title, slug, price, originalPrice, image, contentT
       className="group block break-inside-avoid mb-6 sm:mb-7 transition-transform duration-300 hover:-translate-y-1"
     >
       {/* Image Container */}
-      <div className={`relative overflow-hidden rounded-3xl ${aspectClass} bg-neutral-100`}>
+      <div className={`relative overflow-hidden rounded-md ${aspectClass} bg-neutral-100`}>
         {isVideo ? (
           <video
             src={currentImageUrl}
@@ -93,7 +93,7 @@ export function ProductCard({ title, slug, price, originalPrice, image, contentT
         )}
 
         {/* Floating price pill */}
-        <div className="pointer-events-none absolute left-4 top-4 inline-flex flex-col rounded-2xl bg-white/90 px-3 py-2 text-[11px] font-semibold text-gray-900 shadow-md backdrop-blur">
+        <div className="pointer-events-none absolute left-3 top-3 inline-flex flex-col rounded-2xl bg-white/90 px-2.5 py-1.5 text-[11px] font-semibold text-gray-900 shadow-md backdrop-blur">
           <span>{price}</span>
           {originalPrice ? (
             <span className="text-[10px] font-medium text-neutral-500 line-through">{originalPrice}</span>
