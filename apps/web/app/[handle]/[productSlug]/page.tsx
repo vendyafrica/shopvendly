@@ -138,13 +138,13 @@ export default async function ProductPage({ params }: PageProps) {
   // Fetch everything in parallel to minimize wait time
   const [storeRes, productRes, productsRes] = await Promise.all([
     fetch(`${baseUrl}/api/storefront/${handle}`, {
-      next: { revalidate: 60, tags: [`storefront:store:${handle}`] }
+      ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 60, tags: [`storefront:store:${handle}`] } })
     }),
     fetch(`${baseUrl}/api/storefront/${handle}/products/${productSlug}`, {
-      next: { revalidate: 60, tags: [`storefront:store:${handle}:product:${productSlug}`] }
+      ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 60, tags: [`storefront:store:${handle}:product:${productSlug}`] } })
     }),
     fetch(`${baseUrl}/api/storefront/${handle}/products`, {
-      next: { revalidate: 30, tags: [`storefront:store:${handle}:products`] }
+      ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 30, tags: [`storefront:store:${handle}:products`] } })
     })
   ]);
 

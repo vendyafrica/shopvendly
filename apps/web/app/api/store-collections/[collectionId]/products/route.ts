@@ -85,13 +85,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const validProducts = normalizedIds.length
       ? await db.query.products.findMany({
-          where: and(
-            eq(products.storeId, collection.storeId),
-            eq(products.tenantId, collection.tenantId),
-            inArray(products.id, normalizedIds)
-          ),
-          columns: { id: true },
-        })
+        where: and(
+          eq(products.storeId, collection.storeId),
+          eq(products.tenantId, collection.tenantId),
+          inArray(products.id, normalizedIds)
+        ),
+        columns: { id: true },
+      })
       : [];
 
     await db.delete(productCollections).where(eq(productCollections.collectionId, collectionId));
@@ -111,8 +111,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     });
 
     if (store?.slug) {
-      revalidateTag(`storefront:store:${store.slug}:collections`, "default");
-      revalidateTag(`storefront:store:${store.slug}:products`, "default");
+      revalidateTag(`storefront:store:${store.slug}:collections`, "max");
+      revalidateTag(`storefront:store:${store.slug}:products`, "max");
     }
 
     return NextResponse.json({

@@ -7,6 +7,7 @@ import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access"
 import { db } from "@shopvendly/db/db";
 import { stores, tenants } from "@shopvendly/db/schema";
 import { eq, and, isNull } from "@shopvendly/db";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const bulkCreateSchema = z.object({
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
 
         const store = await db.query.stores.findFirst({
             where: and(eq(stores.id, storeId), eq(stores.tenantId, tenantId), isNull(stores.deletedAt)),
-            columns: { defaultCurrency: true },
+            columns: { defaultCurrency: true, slug: true },
         });
 
         if (!store) {
@@ -106,6 +107,11 @@ export async function POST(request: NextRequest) {
                 return product;
             });
         }));
+
+        if (store.slug) {
+            revalidateTag(`storefront:store:${store.slug}:products`);
+            revalidatePath(`/${store.slug}`);
+        }
 
         return NextResponse.json({ count: createdProducts.length, products: createdProducts });
     } catch (error) {

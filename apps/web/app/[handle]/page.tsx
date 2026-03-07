@@ -126,7 +126,7 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
   const baseUrl = await getApiBaseUrl();
 
   const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, {
-    next: { revalidate: 60, tags: [`storefront:store:${handle}`] }
+    ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 60, tags: [`storefront:store:${handle}`] } })
   });
   const store = storeRes.ok ? ((await storeRes.json()) as StorefrontStore) : null;
   if (!store) notFound();
@@ -136,7 +136,7 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
   if (activeCollectionSlug) productUrl.searchParams.set("collection", activeCollectionSlug);
   if (activeSection) productUrl.searchParams.set("section", activeSection);
   const productsRes = await fetch(productUrl.toString(), {
-    next: { revalidate: 30, tags: [`storefront:store:${handle}:products`] }
+    ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 30, tags: [`storefront:store:${handle}:products`] } })
   });
 
   const saleUrl = new URL(`${baseUrl}/api/storefront/${handle}/products`);
@@ -144,7 +144,7 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
 
   const [saleResult] = await Promise.allSettled([
     fetch(saleUrl.toString(), {
-      next: { revalidate: 30, tags: [`storefront:store:${handle}:products:sale`] }
+      ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 30, tags: [`storefront:store:${handle}:products:sale`] } })
     })
   ]);
 
@@ -157,7 +157,7 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
     : [];
 
   const collectionsRes = await fetch(`${baseUrl}/api/storefront/${handle}/collections`, {
-    next: { revalidate: 60, tags: [`storefront:store:${handle}:collections`] },
+    ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 60, tags: [`storefront:store:${handle}:collections`] } })
   });
   const collections = collectionsRes.ok
     ? ((await collectionsRes.json()) as StorefrontCollection[])

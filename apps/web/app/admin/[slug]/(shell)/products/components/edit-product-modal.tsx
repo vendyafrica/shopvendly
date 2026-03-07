@@ -5,11 +5,14 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon, Cancel01Icon, ImageUpload01Icon, Add01Icon } from "@hugeicons/core-free-icons";
 import {
     Dialog,
-    DialogContent,
     DialogHeader,
     DialogTitle,
     DialogFooter,
+    DialogPortal,
+    DialogOverlay,
+    DialogPrimitive,
 } from "@shopvendly/ui/components/dialog";
+import { cn } from "@shopvendly/ui/lib/utils";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { Label } from "@shopvendly/ui/components/label";
@@ -357,200 +360,228 @@ export function EditProductModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex w-[96vw] max-w-4xl flex-col gap-0 overflow-hidden p-0 top-auto bottom-0 translate-y-0 rounded-t-2xl max-h-[92vh] sm:top-1/2 sm:-translate-y-1/2 sm:bottom-auto sm:max-h-[85vh] sm:rounded-lg" showCloseButton={false}>
-                <div className="border-b px-4 py-3 sm:px-6 sm:py-4">
+            <DialogPortal>
+                <DialogOverlay />
+                <DialogPrimitive.Popup
+                    className={cn(
+                        "fixed left-1/2 top-1/2 z-50 flex w-[96vw] max-w-[1100px] -translate-x-1/2 -translate-y-1/2 flex-col gap-0 overflow-hidden rounded-2xl bg-background p-0 shadow-lg outline-none",
+                        "data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95",
+                        "h-[92svh] sm:h-[88vh]"
+                    )}
+                >
+                <div className="border-b px-5 py-4 sm:px-7 sm:py-5">
                     <DialogHeader>
-                        <DialogTitle>Edit Product</DialogTitle>
+                        <DialogTitle className="text-base font-semibold sm:text-lg">Edit Product</DialogTitle>
                     </DialogHeader>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-5">
-                    <div className="space-y-5 sm:space-y-6">
-                        {error && (
-                            <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                                {error}
-                            </p>
-                        )}
-
-                        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(280px,0.95fr)_minmax(0,1.2fr)] xl:gap-8">
-                            {/* Gallery / drop zone */}
-                            <div
-                                className="space-y-2"
-                            >
-                                <Label>Product Images</Label>
-                                <div className={`flex flex-col items-start gap-3 rounded-lg border border-dashed border-border/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:py-4 ${isSaving ? "opacity-70" : "hover:bg-muted/40"}`}>
-                                    <div className="flex items-center gap-3">
-                                        <HugeiconsIcon icon={ImageUpload01Icon} className="size-8 text-muted-foreground" />
-                                        <div className="text-left text-sm text-muted-foreground">
-                                            <p className="font-medium">Add product media</p>
-                                            <p className="text-xs text-muted-foreground/70">Images or videos up to 10MB</p>
-                                        </div>
+                <div className="min-h-0 flex-1 overflow-hidden">
+                    <div className="flex h-full overflow-hidden">
+                        <div className="hidden w-[360px] shrink-0 overflow-y-auto border-r border-border/60 bg-muted/10 lg:block">
+                            <div className="space-y-4 px-7 py-6">
+                                <div className="rounded-2xl border border-border/60 bg-muted/20 p-4 sm:p-5">
+                                    <div className="mb-4 space-y-1">
+                                        <Label className="text-sm font-medium text-foreground">Product Images</Label>
+                                        <p className="text-xs text-muted-foreground">Upload, reorder, and remove media for this product.</p>
                                     </div>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            fileInputRef.current?.click();
-                                        }}
-                                        disabled={isSaving}
-                                    >
-                                        Upload
-                                    </Button>
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/*,video/*"
-                                        multiple
-                                        className="hidden"
-                                        onChange={handleFileChange}
-                                        disabled={isSaving}
-                                    />
-                                </div>
-
-                                {files.length > 0 && (
-                                    <div className="mt-2 flex gap-3 overflow-x-auto pb-1 xl:flex-wrap xl:overflow-visible">
-                                        {files.map((f, i) => (
-                                            <div
-                                                key={i}
-                                                className={`relative aspect-square w-24 shrink-0 overflow-hidden rounded-md border ${i === 0 ? "border-primary" : "border-border/60"}`}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (i !== 0) {
-                                                        setFiles((prev) => {
-                                                            const updated = [...prev];
-                                                            const [moved] = updated.splice(i, 1);
-                                                            if (!moved) return prev;
-                                                            updated.unshift(moved);
-                                                            return updated;
-                                                        });
-                                                    }
-                                                }}
-                                            >
-                                                {f.contentType.startsWith("video/") ? (
-                                                    <video
-                                                        src={f.previewUrl}
-                                                        className={`h-full w-full object-cover transition-opacity bg-neutral-100 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
-                                                        muted
-                                                        playsInline
-                                                        preload="none"
-                                                    />
-                                                ) : (
-                                                    <Image
-                                                        src={f.previewUrl}
-                                                        alt="Preview"
-                                                        fill
-                                                        unoptimized={f.previewUrl.includes(".ufs.sh") || f.previewUrl.startsWith("blob:")}
-                                                        loading="lazy"
-                                                        sizes="96px"
-                                                        className={`object-cover transition-opacity bg-neutral-100 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
-                                                    />
-                                                )}
-                                                {f.isUploading && (
-                                                    <div className="absolute inset-0 flex items-center justify-center">
-                                                        <div className="size-5 animate-spin rounded-full border-2 border-white/60 border-t-white" />
-                                                    </div>
-                                                )}
-
-                                                {!isSaving && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            removeFile(i);
-                                                        }}
-                                                        className="absolute -right-1 -top-1 rounded-full bg-destructive p-0.5 text-destructive-foreground shadow-sm"
-                                                    >
-                                                        <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
-                                                    </button>
-                                                )}
+                                    <div className={`flex flex-col items-start gap-3 rounded-xl border border-dashed border-border/70 bg-background px-4 py-4 ${isSaving ? "opacity-70" : "hover:bg-muted/40"}`}>
+                                        <div className="flex items-start gap-3">
+                                            <div className="rounded-xl bg-muted p-2.5">
+                                                <HugeiconsIcon icon={ImageUpload01Icon} className="size-5 text-muted-foreground" />
                                             </div>
-                                        ))}
-
-                                        <button
+                                            <div className="text-left text-sm text-muted-foreground">
+                                                <p className="font-medium text-foreground">Add product media</p>
+                                                <p className="text-xs text-muted-foreground/70">Images or videos up to 10MB</p>
+                                            </div>
+                                        </div>
+                                        <Button
                                             type="button"
-                                            className="relative flex aspect-square w-24 shrink-0 items-center justify-center rounded-md border border-dashed border-border/70 hover:bg-muted/10"
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-9 rounded-lg px-4"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 fileInputRef.current?.click();
                                             }}
                                             disabled={isSaving}
                                         >
-                                            <HugeiconsIcon icon={Add01Icon} className="size-4 text-muted-foreground" />
-                                            <span className="sr-only">Add more media</span>
-                                        </button>
+                                            Upload media
+                                        </Button>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*,video/*"
+                                            multiple
+                                            className="hidden"
+                                            onChange={handleFileChange}
+                                            disabled={isSaving}
+                                        />
                                     </div>
-                                )}
+
+                                    {files.length > 0 ? (
+                                        <div className="mt-4 grid grid-cols-2 gap-3">
+                                            {files.map((f, i) => (
+                                                <div
+                                                    key={i}
+                                                    className={`group relative aspect-square overflow-hidden rounded-xl border bg-background ${i === 0 ? "border-primary ring-1 ring-primary/25" : "border-border/60"}`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (i !== 0) {
+                                                            setFiles((prev) => {
+                                                                const updated = [...prev];
+                                                                const [moved] = updated.splice(i, 1);
+                                                                if (!moved) return prev;
+                                                                updated.unshift(moved);
+                                                                return updated;
+                                                            });
+                                                        }
+                                                    }}
+                                                >
+                                                    {f.contentType.startsWith("video/") ? (
+                                                        <video
+                                                            src={f.previewUrl}
+                                                            className={`h-full w-full object-cover transition-opacity bg-neutral-100 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
+                                                            muted
+                                                            playsInline
+                                                            preload="none"
+                                                        />
+                                                    ) : (
+                                                        <Image
+                                                            src={f.previewUrl}
+                                                            alt="Preview"
+                                                            fill
+                                                            unoptimized={f.previewUrl.includes(".ufs.sh") || f.previewUrl.startsWith("blob:")}
+                                                            loading="lazy"
+                                                            sizes="(min-width: 1024px) 220px, 50vw"
+                                                            className={`object-cover transition-opacity bg-neutral-100 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
+                                                        />
+                                                    )}
+                                                    {i === 0 ? (
+                                                        <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-foreground shadow-sm">
+                                                            Cover
+                                                        </span>
+                                                    ) : null}
+                                                    {f.isUploading && (
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                                            <div className="size-5 animate-spin rounded-full border-2 border-white/60 border-t-white" />
+                                                        </div>
+                                                    )}
+
+                                                    {!isSaving && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                removeFile(i);
+                                                            }}
+                                                            className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground shadow-sm"
+                                                        >
+                                                            <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
+
+                                            <button
+                                                type="button"
+                                                className="relative flex aspect-square items-center justify-center rounded-xl border border-dashed border-border/70 bg-background hover:bg-muted/10"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    fileInputRef.current?.click();
+                                                }}
+                                                disabled={isSaving}
+                                            >
+                                                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                                                    <HugeiconsIcon icon={Add01Icon} className="size-4" />
+                                                    <span className="text-xs font-medium">Add more</span>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    ) : null}
+                                </div>
                             </div>
+                        </div>
 
-                            {/* Details */}
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="productName">Product Name</Label>
-                                    <Input
-                                        id="productName"
-                                        value={productName}
-                                        onChange={(e) => setProductName(e.target.value)}
-                                        placeholder="e.g. Black Hoodie"
-                                        required
-                                        disabled={isSaving}
-                                    />
-                                </div>
+                        <div className="min-w-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
+                            {error && (
+                                <p className="mb-5 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                                    {error}
+                                </p>
+                            )}
 
-                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="priceAmount">Price ({storeCurrency})</Label>
-                                        <Input
-                                            id="priceAmount"
-                                            value={priceAmount}
-                                            onChange={(e) => setPriceAmount(e.target.value)}
-                                            placeholder="0"
-                                            type="number"
-                                            min="0"
-                                            disabled={isSaving}
-                                        />
+                            <div className="space-y-5">
+                                <div className="rounded-2xl border border-border/60 bg-background p-4 sm:p-5">
+                                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                                        <div className="space-y-2 lg:col-span-2">
+                                            <Label htmlFor="productName">Product Name</Label>
+                                            <Input
+                                                id="productName"
+                                                value={productName}
+                                                onChange={(e) => setProductName(e.target.value)}
+                                                placeholder="e.g. Black Hoodie"
+                                                required
+                                                disabled={isSaving}
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:col-span-2">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="priceAmount">Price ({storeCurrency})</Label>
+                                                <Input
+                                                    id="priceAmount"
+                                                    value={priceAmount}
+                                                    onChange={(e) => setPriceAmount(e.target.value)}
+                                                    placeholder="0"
+                                                    type="number"
+                                                    min="0"
+                                                    disabled={isSaving}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="originalPriceAmount">Original Price ({storeCurrency})</Label>
+                                                <Input
+                                                    id="originalPriceAmount"
+                                                    value={originalPriceAmount}
+                                                    onChange={(e) => setOriginalPriceAmount(e.target.value)}
+                                                    placeholder="Optional"
+                                                    type="number"
+                                                    min="0"
+                                                    disabled={isSaving}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2 lg:col-span-1">
+                                            <Label htmlFor="quantity">Quantity</Label>
+                                            <Input
+                                                id="quantity"
+                                                value={quantity}
+                                                onChange={(e) => setQuantity(e.target.value)}
+                                                placeholder="Available quantity"
+                                                disabled={isSaving}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2 lg:col-span-2">
+                                            <Label htmlFor="description">Description</Label>
+                                            <Textarea
+                                                id="description"
+                                                value={description}
+                                                onChange={(e) => setDescription(e.target.value)}
+                                                placeholder="Describe the product..."
+                                                rows={5}
+                                                disabled={isSaving}
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="originalPriceAmount">Original Price ({storeCurrency})</Label>
-                                        <Input
-                                            id="originalPriceAmount"
-                                            value={originalPriceAmount}
-                                            onChange={(e) => setOriginalPriceAmount(e.target.value)}
-                                            placeholder="Optional"
-                                            type="number"
-                                            min="0"
-                                            disabled={isSaving}
-                                        />
+                                </div>
+
+                                <div className="rounded-2xl border border-border/60 bg-background p-4 sm:p-5">
+                                    <div className="mb-3 space-y-1">
+                                        <Label>Collections</Label>
+                                        <p className="text-xs text-muted-foreground">Choose where this product should appear in the storefront.</p>
                                     </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="quantity">Quantity</Label>
-                                    <Input
-                                        id="quantity"
-                                        value={quantity}
-                                        onChange={(e) => setQuantity(e.target.value)}
-                                        placeholder="Available quantity"
-                                        disabled={isSaving}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="description">Description</Label>
-                                    <Textarea
-                                        id="description"
-                                        value={description}
-                                        onChange={(e) => setDescription(e.target.value)}
-                                        placeholder="Describe the product..."
-                                        rows={5}
-                                        disabled={isSaving}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Collections</Label>
-                                    <div className="max-h-40 space-y-2 overflow-y-auto rounded-md border border-border/70 p-3">
+                                    <div className="max-h-48 space-y-2 overflow-y-auto rounded-xl border border-border/70 bg-muted/10 p-3.5">
                                         {collections.length === 0 ? (
                                             <p className="text-sm text-muted-foreground">No collections yet.</p>
                                         ) : (
@@ -577,7 +608,11 @@ export function EditProductModal({
                                     </div>
                                 </div>
 
-                                <div className="space-y-3 rounded-lg border border-border/60 p-4">
+                                <div className="space-y-4 rounded-2xl border border-border/60 bg-background p-4 sm:p-5">
+                                    <div className="space-y-1">
+                                        <p className="text-sm font-medium text-foreground">Variants</p>
+                                        <p className="text-xs text-muted-foreground">Control optional size and color choices on the storefront.</p>
+                                    </div>
                                     <label className="flex items-center gap-3 text-sm font-medium">
                                         <Checkbox
                                             checked={variantsEnabled}
@@ -674,17 +709,18 @@ export function EditProductModal({
                     </div>
                 </div>
 
-                <div className="border-t bg-background px-6 py-4">
-                    <DialogFooter className="flex gap-2">
+                <div className="border-t bg-background px-5 py-4 sm:px-7">
+                    <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
                         <Button
                             type="button"
                             variant="outline"
+                            className="w-full sm:w-auto"
                             onClick={() => onOpenChange(false)}
                             disabled={isSaving}
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={isSaving || files.some(f => f.isUploading)} onClick={handleSubmit}>
+                        <Button className="w-full sm:w-auto" type="submit" disabled={isSaving || files.some(f => f.isUploading)} onClick={handleSubmit}>
                             {isSaving ? (
                                 <>
                                     <HugeiconsIcon icon={Loading03Icon} className="mr-2 size-4 animate-spin" />
@@ -696,7 +732,8 @@ export function EditProductModal({
                         </Button>
                     </DialogFooter>
                 </div>
-            </DialogContent>
+                </DialogPrimitive.Popup>
+            </DialogPortal>
         </Dialog>
     );
 }

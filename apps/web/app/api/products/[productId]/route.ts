@@ -126,11 +126,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         });
 
         if (store?.slug) {
-            revalidateTag(`storefront:store:${store.slug}`, {});
-            revalidateTag(`storefront:store:${store.slug}:products`, {});
+            revalidateTag(`storefront:store:${store.slug}`);
+            revalidateTag(`storefront:store:${store.slug}:products`);
             revalidatePath(`/${store.slug}`);
             if (updated.slug) {
-                revalidateTag(`storefront:store:${store.slug}:product:${updated.slug}`, {});
+                revalidateTag(`storefront:store:${store.slug}:product:${updated.slug}`);
                 revalidatePath(`/${store.slug}/${updated.slug}`);
             }
         }
@@ -181,7 +181,22 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        await productService.deleteProduct(productId, scope.tenantId);
+        const deleted = await productService.deleteProduct(productId, scope.tenantId);
+
+        const store = await db.query.stores.findFirst({
+            where: and(eq(stores.id, scope.storeId), isNull(stores.deletedAt)),
+            columns: { slug: true }
+        });
+
+        if (store?.slug) {
+            revalidateTag(`storefront:store:${store.slug}`);
+            revalidateTag(`storefront:store:${store.slug}:products`);
+            revalidatePath(`/${store.slug}`);
+            if (deleted?.slug) {
+                revalidateTag(`storefront:store:${store.slug}:product:${deleted.slug}`);
+                revalidatePath(`/${store.slug}/${deleted.slug}`);
+            }
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {

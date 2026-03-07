@@ -13,7 +13,9 @@ const getCachedCategories = unstable_cache(
 
 export async function getCategoriesAction() {
     try {
-        const allCategories = await getCachedCategories();
+        const allCategories = process.env.NODE_ENV === "development"
+            ? await db.select().from(categories).where(eq(categories.level, 0))
+            : await getCachedCategories();
         return { success: true, data: allCategories };
     } catch (error) {
         console.error("Failed to fetch categories:", error);
