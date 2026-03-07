@@ -164,3 +164,54 @@ export const sendStoreAssignmentEmail = async ({
   console.info("[email] Store assignment email sent", { to, id: data.data?.id ?? null });
   return data;
 };
+
+interface SendNewStoreAlertEmailProps {
+  to: string;
+  storeName: string;
+  storeSlug: string;
+  sellerName: string;
+  sellerEmail: string;
+  adminStoreUrl: string;
+}
+
+export const sendNewStoreAlertEmail = async ({
+  to,
+  storeName,
+  storeSlug,
+  sellerName,
+  sellerEmail,
+  adminStoreUrl,
+}: SendNewStoreAlertEmailProps) => {
+  console.info("[email] Sending new store alert email", { to, storeName });
+  const { NewStoreAlertEmail } = await import('./emails/new-store-alert');
+  const emailHtml = await render(
+    React.createElement(NewStoreAlertEmail, {
+      storeName,
+      storeSlug,
+      sellerName,
+      sellerEmail,
+      adminStoreUrl,
+    })
+  );
+
+  let data;
+  try {
+    data = await resend.emails.send({
+      from: 'Vendly Admin <admin@shopvendly.store>',
+      to,
+      subject: `New Store Created: ${storeName}`,
+      html: emailHtml,
+    });
+  } catch (error) {
+    console.error("[email] New store alert email request failed", { to, error });
+    throw error;
+  }
+
+  if (data.error) {
+    console.error("[email] New store alert email rejected", { to, error: data.error });
+    throw new Error(`New store alert email failed: ${data.error.message || JSON.stringify(data.error)}`);
+  }
+
+  console.info("[email] New store alert email sent", { to, id: data.data?.id ?? null });
+  return data;
+};

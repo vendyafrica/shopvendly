@@ -155,7 +155,7 @@ export function ProductActions({ product, selectedOptions = [] }: ProductActions
               Added
             </span>
           ) : (
-            `Purchase at ${product.store.name}`
+            `Add to Cart`
           )}
         </Button>
 
