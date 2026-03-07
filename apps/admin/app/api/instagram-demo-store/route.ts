@@ -467,7 +467,6 @@ async function runImportJob(jobId: string, profileUrl: string) {
             source: "instagram",
             sourceId: post.sourceId,
             sourceUrl: post.postUrl,
-            variants: [],
           })
           .returning();
 
@@ -475,12 +474,7 @@ async function runImportJob(jobId: string, profileUrl: string) {
           throw new Error("Failed to create product row");
         }
 
-        const variantEntries: Array<{
-          name: string;
-          sourceMediaId: string;
-          mediaObjectId: string;
-          mediaType: string;
-        }> = [];
+        let mediaCount = 0;
 
         for (const [variantIndex, variant] of post.variants.entries()) {
           const uploaded = await copyToStorage({
@@ -511,25 +505,13 @@ async function runImportJob(jobId: string, profileUrl: string) {
             isFeatured: variantIndex === 0,
           });
 
-          variantEntries.push({
-            name: `Variant ${variantIndex + 1}`,
-            sourceMediaId: variant.sourceId,
-            mediaObjectId: media.id,
-            mediaType: variant.mediaType,
-          });
+          mediaCount++;
         }
 
-        if (variantEntries.length === 0) {
+        if (mediaCount === 0) {
           await db.delete(products).where(eq(products.id, product.id));
           skippedCount += 1;
           continue;
-        }
-
-        if (variantEntries.length > 1) {
-          await db
-            .update(products)
-            .set({ variants: variantEntries, updatedAt: new Date() })
-            .where(eq(products.id, product.id));
         }
 
         importedCount += 1;
