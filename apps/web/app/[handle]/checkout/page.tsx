@@ -50,6 +50,7 @@ function CheckoutContent() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [storePolicy, setStorePolicy] = useState<string | null>(null);
 
     useEffect(() => {
         if (session?.user) {
@@ -67,6 +68,34 @@ function CheckoutContent() {
             router.push(`/${storeSlug || ""}/cart`);
         }
     }, [isLoaded, storeId, store, storeSlug, router]);
+
+    useEffect(() => {
+        const resolvedSlug = storeSlug || store?.slug;
+        if (!resolvedSlug) return;
+
+        let cancelled = false;
+
+        const loadStorePolicy = async () => {
+            try {
+                const res = await fetch(`${API_BASE}/api/storefront/${resolvedSlug}`);
+                if (!res.ok) return;
+                const data = (await res.json()) as { storePolicy?: string | null };
+                if (!cancelled) {
+                    setStorePolicy(data.storePolicy ?? null);
+                }
+            } catch {
+                if (!cancelled) {
+                    setStorePolicy(null);
+                }
+            }
+        };
+
+        void loadStorePolicy();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [store?.slug, storeSlug]);
 
     if (!isLoaded) {
         return (
@@ -288,7 +317,7 @@ function CheckoutContent() {
                                     <h2 className={`${geistSans.className} text-lg tracking-widest font-semibold`}>Payment</h2>
                                     <div className="p-4 rounded-xl border border-neutral-200 bg-white">
                                         <p className="text-sm text-neutral-600 leading-relaxed">
-                                            Place order now. The seller will confirm availability, then you&apos;ll receive a WhatsApp payment link to complete payment.
+                                            Place order now. The seller will confirm availability, then you&apos;ll receive a WhatsApp message.
                                         </p>
                                     </div>
 
@@ -307,6 +336,19 @@ function CheckoutContent() {
                                             Place order
                                         </span>
                                     </Button>
+
+                                    {storePolicy ? (
+                                        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-linear-to-br from-white to-neutral-50/80">
+                                            <div className="border-b border-neutral-200/80 px-4 py-3">
+                                                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-neutral-500">Store Policy</div>
+                                            </div>
+                                            <div className="px-4 py-3.5">
+                                                <div className="whitespace-pre-wrap text-[14px] leading-6 text-neutral-700">
+                                                    {storePolicy}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : null}
                                 </div>
                             </form>
                         </div>

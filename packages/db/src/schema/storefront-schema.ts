@@ -22,6 +22,7 @@ export const stores = pgTable(
         name: text("name").notNull(),
         slug: text("slug").notNull(),
         description: text("description"),
+        storePolicy: text("store_policy"),
         logoUrl: text("logo_url"),
         categories: text("categories").array().default([]),
         status: boolean("status").notNull().default(false),

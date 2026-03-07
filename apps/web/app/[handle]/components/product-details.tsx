@@ -45,9 +45,10 @@ interface ProductDetailsProps {
         };
     };
     storeCategories?: string[];
+    storePolicy?: string | null;
 }
 
-export function ProductDetails({ product }: ProductDetailsProps) {
+export function ProductDetails({ product, storePolicy }: ProductDetailsProps) {
 
     const { addToRecentlyViewed } = useRecentlyViewed();
     const { session } = useAppSession();
@@ -466,6 +467,15 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                 </div>
                             </div>
                         )}
+
+                        {storePolicy ? (
+                            <div className="border-t border-neutral-100 pt-5">
+                                <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-600">Store Policy</h2>
+                                <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-[14px] leading-6 text-neutral-700 whitespace-pre-wrap">
+                                    {storePolicy}
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
                 </div>
             </div>

@@ -3,6 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { Button } from "@shopvendly/ui/components/button";
+import { Textarea } from "@shopvendly/ui/components/textarea";
 import {
   Select,
   SelectContent,
@@ -34,11 +35,12 @@ type SettingsStore = {
   slug: string;
   tenantId: string | null;
   heroMedia: string[];
+  storePolicy: string;
   logoUrl: string | null;
 };
 
 export function SettingsClient({ store }: { store: SettingsStore }) {
-  const { refetch } = useTenant();
+  const { bootstrap, refetch } = useTenant();
   const logoInputRef = React.useRef<HTMLInputElement | null>(null);
   const { uploadFile, isUploading } = useUpload();
 
@@ -48,19 +50,43 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
   const [heroMedia, setHeroMedia] = React.useState<string[]>(() =>
     Array.isArray(store.heroMedia) ? store.heroMedia : []
   );
-  const [logoUrl, setLogoUrl] = React.useState<string | null>(store.logoUrl ?? null);
-  const [isSaving, setIsSaving] = React.useState(false);
+  const [storePolicy, setStorePolicy] = React.useState(store.storePolicy ?? "");
+  const [logoUrl, setLogoUrl] = React.useState<string | null>(store.logoUrl ?? bootstrap?.storeLogoUrl ?? null);
+  const [isSavingCurrency, setIsSavingCurrency] = React.useState(false);
+  const [isSavingLogo, setIsSavingLogo] = React.useState(false);
+  const [isSavingPolicy, setIsSavingPolicy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
-  const isBusy = isSaving || isUploading;
+  const storeId = bootstrap?.storeId ?? store.id;
+  const isCurrencyBusy = isSavingCurrency;
+  const isLogoBusy = isSavingLogo || isUploading;
+  const isPolicyBusy = isSavingPolicy;
 
-  const saveStore = async (payload: Record<string, unknown>, successMessage: string) => {
-    setIsSaving(true);
+  React.useEffect(() => {
+    setLogoUrl(store.logoUrl ?? bootstrap?.storeLogoUrl ?? null);
+  }, [bootstrap?.storeLogoUrl, store.logoUrl]);
+
+  React.useEffect(() => {
+    setStorePolicy(store.storePolicy ?? "");
+  }, [store.storePolicy]);
+
+  const saveStore = async (
+    payload: Record<string, unknown>,
+    successMessage: string,
+    mode: "currency" | "logo" | "policy"
+  ) => {
+    if (mode === "currency") {
+      setIsSavingCurrency(true);
+    } else if (mode === "policy") {
+      setIsSavingPolicy(true);
+    } else {
+      setIsSavingLogo(true);
+    }
     setError(null);
     setSuccess(null);
 
     try {
-      const res = await fetch(`/api/stores/${encodeURIComponent(store.id)}`, {
+      const res = await fetch(`/api/stores/${encodeURIComponent(storeId)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -77,13 +103,27 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
       setError(e instanceof Error ? e.message : "Failed to update store settings");
       throw e;
     } finally {
-      setIsSaving(false);
+      if (mode === "currency") {
+        setIsSavingCurrency(false);
+      } else if (mode === "policy") {
+        setIsSavingPolicy(false);
+      } else {
+        setIsSavingLogo(false);
+      }
     }
   };
 
   const onSave = async () => {
     try {
-      await saveStore({ defaultCurrency: currency }, "Saved");
+      await saveStore({ defaultCurrency: currency }, "Saved", "currency");
+    } catch {
+      return;
+    }
+  };
+
+  const onSavePolicy = async () => {
+    try {
+      await saveStore({ storePolicy }, "Policy saved", "policy");
     } catch {
       return;
     }
@@ -107,7 +147,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
         endpoint: "storeHeroMedia",
       });
 
-      await saveStore({ logoUrl: uploaded.url }, "Store logo updated");
+      await saveStore({ logoUrl: uploaded.url }, "Store logo updated", "logo");
       setLogoUrl(uploaded.url);
     } catch {
       return;
@@ -116,7 +156,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
 
   const handleRemoveLogo = async () => {
     try {
-      await saveStore({ logoUrl: "" }, "Store logo removed");
+      await saveStore({ logoUrl: "" }, "Store logo removed", "logo");
       setLogoUrl(null);
     } catch {
       return;
@@ -164,7 +204,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
               accept="image/*"
               className="hidden"
               onChange={handleLogoInputChange}
-              disabled={!store.tenantId || isBusy}
+              disabled={!store.tenantId || isLogoBusy}
             />
             <div className="flex items-center gap-4">
               <div className="relative h-16 w-16 overflow-hidden rounded-full border bg-muted">
@@ -187,16 +227,16 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
                   type="button"
                   variant="outline"
                   onClick={() => logoInputRef.current?.click()}
-                  disabled={!store.tenantId || isBusy}
+                  disabled={!store.tenantId || isLogoBusy}
                 >
-                  {isUploading ? "Uploading..." : logoUrl ? "Change logo" : "Upload logo"}
+                  {isLogoBusy ? "Uploading..." : logoUrl ? "Change logo" : "Upload logo"}
                 </Button>
                 {logoUrl ? (
                   <Button
                     type="button"
                     variant="ghost"
                     onClick={handleRemoveLogo}
-                    disabled={isBusy}
+                    disabled={isLogoBusy}
                   >
                     Remove
                   </Button>
@@ -221,13 +261,35 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
                 </SelectContent>
               </Select>
 
-              <Button type="button" onClick={onSave} disabled={isBusy} className="sm:w-auto">
-                {isSaving ? (
+              <Button type="button" onClick={onSave} disabled={isCurrencyBusy} className="sm:w-auto">
+                {isSavingCurrency ? (
                   <>
                     <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" />
                     Saving...
                   </>
                 ) : "Save"}
+              </Button>
+            </div>
+          </div>
+
+          <div className="rounded-lg border bg-card p-4 space-y-3">
+            <div className="text-xs uppercase text-muted-foreground">Store Policy</div>
+            <Textarea
+              value={storePolicy}
+              onChange={(event) => setStorePolicy(event.target.value)}
+              placeholder="Add your store policy for returns, exchanges, delivery timelines, and any special order terms."
+              className="min-h-32 resize-y"
+              disabled={isPolicyBusy}
+            />
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-xs text-muted-foreground">This policy will appear below each product description and below the place order button at checkout.</div>
+              <Button type="button" onClick={onSavePolicy} disabled={isPolicyBusy} className="shrink-0">
+                {isSavingPolicy ? (
+                  <>
+                    <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : "Save policy"}
               </Button>
             </div>
           </div>

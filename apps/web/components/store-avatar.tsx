@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Avatar, AvatarImage, AvatarFallback } from "@shopvendly/ui/components/avatar";
 
-const DEFAULT_STORE_LOGO = "https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYDG9RTaEFldC5yAexJX0UPbcvMfWYIpsTjn4G";
+const DEFAULT_STORE_LOGO = "/vendly.png";
 
 function capitalizeFirst(value?: string | null) {
     if (!value) return "Store";
@@ -35,7 +35,7 @@ export function StoreAvatar({
     shape = "circle",
     className = "",
 }: StoreAvatarProps) {
-    const avatarUrl = instagramAvatarUrl || logoUrl || DEFAULT_STORE_LOGO;
+    const avatarUrl = logoUrl || instagramAvatarUrl || DEFAULT_STORE_LOGO;
     const displayName = capitalizeFirst(storeName);
 
     // Get initials from store name (up to 2 characters)
@@ -114,7 +114,7 @@ export function StoreAvatarSimple({
     size?: number;
     className?: string;
 }) {
-    const avatarUrl = instagramAvatarUrl || logoUrl || DEFAULT_STORE_LOGO;
+    const avatarUrl = logoUrl || instagramAvatarUrl || DEFAULT_STORE_LOGO;
 
     const getInitials = (name: string): string => {
         if (!name) return "S";

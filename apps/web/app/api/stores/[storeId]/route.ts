@@ -14,6 +14,7 @@ type RouteParams = {
 const updateStoreSchema = z.object({
     name: z.string().min(1).max(255).optional(),
     description: z.string().optional(),
+    storePolicy: z.string().optional(),
     storeContactPhone: z.string().optional(),
     storeAddress: z.string().optional(),
     logoUrl: z.string().url().optional().or(z.literal("")),
@@ -65,19 +66,27 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const { storeId } = await params;
+        const store = await storeService.findById(storeId);
+        if (!store) {
+            return NextResponse.json({ error: "Store not found" }, { status: 404 });
+        }
+
         const membership = await db.query.tenantMemberships.findFirst({
-            where: eq(tenantMemberships.userId, session.user.id),
+            where: and(
+                eq(tenantMemberships.userId, session.user.id),
+                eq(tenantMemberships.tenantId, store.tenantId)
+            ),
         });
 
         if (!membership) {
-            return NextResponse.json({ error: "No tenant found" }, { status: 404 });
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
-
-        const { storeId } = await params;
         const body = await request.json();
         const parsed = updateStoreSchema.parse(body);
         const input = {
             ...parsed,
+            storePolicy: parsed.storePolicy === "" ? null : parsed.storePolicy,
             logoUrl: parsed.logoUrl === "" ? null : parsed.logoUrl,
         };
 
@@ -121,15 +130,22 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const { storeId } = await params;
+        const store = await storeService.findById(storeId);
+        if (!store) {
+            return NextResponse.json({ error: "Store not found" }, { status: 404 });
+        }
+
         const membership = await db.query.tenantMemberships.findFirst({
-            where: eq(tenantMemberships.userId, session.user.id),
+            where: and(
+                eq(tenantMemberships.userId, session.user.id),
+                eq(tenantMemberships.tenantId, store.tenantId)
+            ),
         });
 
         if (!membership) {
-            return NextResponse.json({ error: "No tenant found" }, { status: 404 });
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
-
-        const { storeId } = await params;
         await storeService.delete(storeId, membership.tenantId);
 
         return NextResponse.json({ success: true });

@@ -8,7 +8,6 @@ import {
     eq,
     and,
     isNull,
-    instagramAccounts,
     inArray,
     sql,
     asc,
@@ -27,13 +26,6 @@ async function findStoreBySlugFresh(slug: string) {
     });
 
     if (!store) return undefined;
-
-    const igAccount = await db.query.instagramAccounts.findFirst({
-        where: and(eq(instagramAccounts.tenantId, store.tenantId), eq(instagramAccounts.isActive, true))
-    });
-    if (igAccount?.profilePictureUrl) {
-        return { ...store, logoUrl: igAccount.profilePictureUrl };
-    }
 
     return { ...store, logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO };
 }

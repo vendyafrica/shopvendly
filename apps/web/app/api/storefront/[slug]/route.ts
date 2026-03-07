@@ -61,6 +61,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             name: store.name,
             slug: store.slug,
             description: store.description,
+            storePolicy: store.storePolicy,
             logoUrl,
             heroMedia,
             categories: (store as { categories?: string[] }).categories ?? [],

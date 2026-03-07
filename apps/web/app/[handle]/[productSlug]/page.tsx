@@ -13,6 +13,7 @@ type StorefrontStore = {
   name: string;
   slug: string;
   description: string | null;
+  storePolicy?: string | null;
   logoUrl?: string | null;
   heroMedia?: string[];
   categories?: string[];
@@ -226,7 +227,7 @@ export default async function ProductPage({ params }: PageProps) {
         }
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-26 pb-8 md:pt-30 md:pb-12">
-          <ProductDetails product={product} storeCategories={storeCategories} />
+          <ProductDetails product={product} storeCategories={storeCategories} storePolicy={store.storePolicy ?? null} />
         </div>
       </Suspense>
       <ProductGridReveal products={products.map((p) => ({ ...p, rating: p.rating ?? 0 }))} />
