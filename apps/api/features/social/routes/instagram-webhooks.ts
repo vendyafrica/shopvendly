@@ -336,7 +336,6 @@ async function importInstagramMediaIntoProducts(params: {
       source: "instagram",
       sourceId: params.sourceId,
       sourceUrl,
-      variants: [],
     })
     .returning();
 
@@ -428,13 +427,6 @@ async function importInstagramMediaIntoProducts(params: {
         });
       }
     }
-  }
-
-  if (variantEntries.length) {
-    await db
-      .update(products)
-      .set({ variants: variantEntries, updatedAt: new Date() })
-      .where(eq(products.id, product.id));
   }
 
   return { created: true, skipped: false };
