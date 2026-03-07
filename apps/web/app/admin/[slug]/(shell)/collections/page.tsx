@@ -27,6 +27,8 @@ type CollectionRow = {
 type ProductRow = {
   id: string;
   productName: string;
+  thumbnailUrl?: string | null;
+  thumbnailType?: string | null;
 };
 
 function CollectionThumbnail({
@@ -77,6 +79,8 @@ export default function CollectionsPage() {
 
   const [collections, setCollections] = React.useState<CollectionRow[]>([]);
   const [products, setProducts] = React.useState<ProductRow[]>([]);
+  const [productsLoading, setProductsLoading] = React.useState(false);
+  const [productsError, setProductsError] = React.useState<string | null>(null);
 
   const [loading, setLoading] = React.useState(true);
   const [uploadModalOpen, setUploadModalOpen] = React.useState(false);
@@ -105,11 +109,45 @@ export default function CollectionsPage() {
   }, [storeId]);
 
   const loadProducts = React.useCallback(async () => {
-    if (!storeId) return;
-    const res = await fetch(`/api/products?storeId=${storeId}&page=1&limit=200`, { cache: "no-store" });
-    if (!res.ok) return;
-    const json = (await res.json()) as { products: Array<{ id: string; productName: string }> };
-    setProducts((json.products || []).map((product) => ({ id: product.id, productName: product.productName })));
+    if (!storeId) {
+      setProducts([]);
+      setProductsError("Store not ready.");
+      return;
+    }
+
+    setProductsLoading(true);
+    setProductsError(null);
+
+    try {
+      const res = await fetch(`/api/products?storeId=${storeId}&page=1&limit=100`, { cache: "no-store" });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Failed to load products");
+      }
+
+      const json = (await res.json()) as {
+        products: Array<{
+          id: string;
+          productName: string;
+          media?: Array<{ blobUrl: string; contentType?: string | null }>;
+        }>;
+      };
+
+      setProducts(
+        (json.products || []).map((product) => ({
+          id: product.id,
+          productName: product.productName,
+          thumbnailUrl: product.media?.[0]?.blobUrl ?? null,
+          thumbnailType: product.media?.[0]?.contentType ?? null,
+        }))
+      );
+    } catch (error) {
+      console.error("Error loading products for collections:", error);
+      setProducts([]);
+      setProductsError(error instanceof Error ? error.message : "Failed to load products");
+    } finally {
+      setProductsLoading(false);
+    }
   }, [storeId]);
 
   React.useEffect(() => {
@@ -155,6 +193,10 @@ export default function CollectionsPage() {
 
     // Open modal immediately for better UX
     setAssignModalOpen(true);
+
+    if (products.length === 0 || productsError) {
+      await loadProducts();
+    }
 
     const res = await fetch(`/api/store-collections/${collectionId}/products`, { cache: "no-store" });
     if (!res.ok) {
@@ -303,54 +345,107 @@ export default function CollectionsPage() {
     },
   ];
 
+  const mobileCollectionCards = (
+    <div className="grid grid-cols-2 gap-3">
+      {collections.length === 0 ? (
+        <div className="col-span-2 rounded-2xl border border-dashed border-border/60 bg-muted/20 px-4 py-12 text-center text-sm text-muted-foreground">
+          No collections yet. Tap Add Collection to create one.
+        </div>
+      ) : (
+        collections.map((collection) => (
+          <button
+            key={collection.id}
+            type="button"
+            className="group relative aspect-[0.9] overflow-hidden rounded-2xl bg-muted text-left"
+            onClick={() => handleOpenAssign(collection.id, collection.name)}
+          >
+            <CollectionThumbnail url={collection.image} name={collection.name} />
+            <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/20 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-3">
+              <p className="truncate text-sm font-semibold text-white">{collection.name}</p>
+              <p className="mt-1 text-[11px] font-medium text-white/85">{collection.productCount} product{collection.productCount === 1 ? "" : "s"}</p>
+            </div>
+          </button>
+        ))
+      )}
+    </div>
+  );
+
   return (
-    <div className="md:p-6 p-4 space-y-6">
-      {bootstrapError ? (
-        <div className="bg-destructive/10 text-destructive p-4 rounded-md">{bootstrapError}</div>
-      ) : null}
+    <div className="md:p-6 p-0">
+      <div className="block md:hidden px-4 py-4 space-y-5 pb-24">
+        {bootstrapError ? (
+          <div className="bg-destructive/10 text-destructive p-4 rounded-md text-sm">{bootstrapError}</div>
+        ) : null}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Collections</h1>
-          <p className="text-sm text-muted-foreground">Create collections and assign products shown on storefront rails.</p>
+        <div className="space-y-3 px-1">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Collections</h1>
+            <p className="text-sm text-muted-foreground">Create collections and assign products shown on storefront rails.</p>
+          </div>
+          <AddCollectionButton onSelect={() => setUploadModalOpen(true)} />
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-          {/* Can add bulk action buttons here safely later since checkbox selection works */}
-          <AddCollectionButton
-            onSelect={() => setUploadModalOpen(true)}
-          />
-        </div>
-      </div>
 
-      <SegmentedStatsCard segments={statSegments} />
+        <SegmentedStatsCard segments={statSegments} />
 
-      <div className="rounded-md border bg-card p-3 overflow-hidden min-w-0">
         {loading && collections.length === 0 ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-4 rounded-lg border border-dashed border-border/60 p-3 bg-muted/30">
-                <div className="size-10 bg-muted rounded-md animate-pulse shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-muted rounded w-1/3 animate-pulse" />
-                  <div className="h-4 bg-muted rounded w-24 animate-pulse" />
-                </div>
-                <div className="h-8 bg-muted rounded w-16 animate-pulse shrink-0" />
-              </div>
+          <div className="grid grid-cols-2 gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="aspect-[0.9] rounded-2xl bg-muted animate-pulse" />
             ))}
           </div>
         ) : (
-          <DataTable
-            className="table-fixed"
-            columns={columns}
-            data={collections}
-            rowSelection={rowSelection}
-            onRowSelectionChange={(updater) => {
-              setRowSelection((prev) =>
-                typeof updater === "function" ? updater(prev) : updater
-              );
-            }}
-          />
+          mobileCollectionCards
         )}
+      </div>
+
+      <div className="hidden md:block space-y-6 p-4 md:p-0">
+        {bootstrapError ? (
+          <div className="bg-destructive/10 text-destructive p-4 rounded-md">{bootstrapError}</div>
+        ) : null}
+
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Collections</h1>
+            <p className="text-sm text-muted-foreground">Create collections and assign products shown on storefront rails.</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+            <AddCollectionButton
+              onSelect={() => setUploadModalOpen(true)}
+            />
+          </div>
+        </div>
+
+        <SegmentedStatsCard segments={statSegments} />
+
+        <div className="rounded-md border bg-card p-3 overflow-hidden min-w-0">
+          {loading && collections.length === 0 ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-4 rounded-lg border border-dashed border-border/60 p-3 bg-muted/30">
+                  <div className="size-10 bg-muted rounded-md animate-pulse shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-muted rounded w-1/3 animate-pulse" />
+                    <div className="h-4 bg-muted rounded w-24 animate-pulse" />
+                  </div>
+                  <div className="h-8 bg-muted rounded w-16 animate-pulse shrink-0" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <DataTable
+              className="table-fixed"
+              columns={columns}
+              data={collections}
+              rowSelection={rowSelection}
+              onRowSelectionChange={(updater) => {
+                setRowSelection((prev) =>
+                  typeof updater === "function" ? updater(prev) : updater
+                );
+              }}
+            />
+          )}
+        </div>
       </div>
 
       <UploadCollectionModal
@@ -366,6 +461,8 @@ export default function CollectionsPage() {
         collectionId={selectedCollectionId}
         collectionName={selectedCollectionName}
         products={products}
+        productsLoading={productsLoading}
+        productsError={productsError}
         initialSelectedProductIds={selectedProductIds}
         onSave={handleSaveAssignments}
       />

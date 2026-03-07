@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import {
     Dialog,
     DialogContent,
@@ -17,6 +18,8 @@ import { Loading03Icon, Search01Icon } from "@hugeicons/core-free-icons";
 interface ProductRow {
     id: string;
     productName: string;
+    thumbnailUrl?: string | null;
+    thumbnailType?: string | null;
 }
 
 interface AssignProductsModalProps {
@@ -25,6 +28,8 @@ interface AssignProductsModalProps {
     collectionId: string | null;
     collectionName?: string;
     products: ProductRow[];
+    productsLoading?: boolean;
+    productsError?: string | null;
     initialSelectedProductIds: Set<string>;
     onSave: (collectionId: string, productIds: string[]) => Promise<void>;
 }
@@ -35,12 +40,47 @@ export function AssignProductsModal({
     collectionId,
     collectionName,
     products,
+    productsLoading = false,
+    productsError = null,
     initialSelectedProductIds,
     onSave,
 }: AssignProductsModalProps) {
     const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
     const [search, setSearch] = React.useState("");
     const [saving, setSaving] = React.useState(false);
+
+    const renderThumbnail = (product: ProductRow) => {
+        if (!product.thumbnailUrl) {
+            return <div className="flex size-12 items-center justify-center rounded-lg bg-muted text-[10px] text-muted-foreground">N/A</div>;
+        }
+
+        const isVideo = product.thumbnailType?.startsWith("video/") ?? false;
+
+        if (isVideo) {
+            return (
+                <video
+                    src={product.thumbnailUrl}
+                    className="size-12 rounded-lg object-cover bg-muted"
+                    muted
+                    playsInline
+                    preload="none"
+                />
+            );
+        }
+
+        return (
+            <div className="relative size-12 overflow-hidden rounded-lg bg-muted">
+                <Image
+                    src={product.thumbnailUrl}
+                    alt={product.productName}
+                    fill
+                    className="object-cover"
+                    unoptimized={product.thumbnailUrl.includes(".ufs.sh")}
+                    sizes="48px"
+                />
+            </div>
+        );
+    };
 
     React.useEffect(() => {
         if (open) {
@@ -109,7 +149,15 @@ export function AssignProductsModal({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-2">
-                    {products.length === 0 ? (
+                    {productsLoading ? (
+                        <div className="p-8 text-center text-sm text-muted-foreground">
+                            Loading products...
+                        </div>
+                    ) : productsError ? (
+                        <div className="p-8 text-center text-sm text-destructive">
+                            Failed to load products.
+                        </div>
+                    ) : products.length === 0 ? (
                         <div className="p-8 text-center text-sm text-muted-foreground">
                             No products found in your catalog.
                         </div>
@@ -128,12 +176,15 @@ export function AssignProductsModal({
                             </label>
 
                             {filteredProducts.map((product) => (
-                                <label key={product.id} className="flex items-center gap-3 rounded-md p-3 hover:bg-muted/50 cursor-pointer transition-colors">
+                                <label key={product.id} className="flex items-center gap-3 rounded-xl border border-transparent p-3 hover:border-border/60 hover:bg-muted/40 cursor-pointer transition-colors">
                                     <Checkbox
                                         checked={selectedIds.has(product.id)}
                                         onCheckedChange={() => handleToggle(product.id)}
                                     />
-                                    <span className="text-sm">{product.productName}</span>
+                                    {renderThumbnail(product)}
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-medium text-foreground">{product.productName}</p>
+                                    </div>
                                 </label>
                             ))}
                         </div>
