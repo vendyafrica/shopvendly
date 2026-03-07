@@ -5,7 +5,7 @@ import { StorefrontHeader } from "./components/header";
 import { HeaderSkeleton } from "./components/skeletons";
 import { headers } from "next/headers";
 
-const DEFAULT_STORE_LOGO = "/store-logo.jpg";
+const DEFAULT_STORE_LOGO = "/vendly.png";
 
 type StorefrontStore = {
   name: string;

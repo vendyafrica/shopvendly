@@ -20,6 +20,7 @@ export default async function SettingsPage({
       slug: true,
       tenantId: true,
       heroMedia: true,
+      logoUrl: true,
     },
   });
 
@@ -41,6 +42,7 @@ export default async function SettingsPage({
         slug: store.slug,
         tenantId: store.tenantId,
         heroMedia: Array.isArray(store.heroMedia) ? store.heroMedia : [],
+        logoUrl: store.logoUrl ?? null,
       }}
     />
   );

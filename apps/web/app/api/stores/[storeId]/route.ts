@@ -16,6 +16,7 @@ const updateStoreSchema = z.object({
     description: z.string().optional(),
     storeContactPhone: z.string().optional(),
     storeAddress: z.string().optional(),
+    logoUrl: z.string().url().optional().or(z.literal("")),
     categories: z.array(z.string()).optional(),
     // DB schema stores status as boolean (active flag). Align validation accordingly.
     status: z.boolean().optional(),
@@ -74,7 +75,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
         const { storeId } = await params;
         const body = await request.json();
-        const input = updateStoreSchema.parse(body);
+        const parsed = updateStoreSchema.parse(body);
+        const input = {
+            ...parsed,
+            logoUrl: parsed.logoUrl === "" ? null : parsed.logoUrl,
+        };
 
         const updated = await storeService.update(storeId, membership.tenantId, input);
 

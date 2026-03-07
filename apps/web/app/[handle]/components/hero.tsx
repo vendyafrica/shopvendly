@@ -131,6 +131,15 @@ export function Hero({ store }: HeroProps) {
     ? `${adminOrigin}/admin/${store.slug}/login`
     : `${adminOrigin}/admin/login`;
 
+  const navigateToAdmin = () => {
+    if (sellerLoginUrl.startsWith("http")) {
+      window.location.href = sellerLoginUrl;
+      return;
+    }
+
+    window.location.href = sellerLoginUrl;
+  };
+
   return (
     <section className="relative min-h-[80vh] sm:min-h-[90vh] w-full overflow-hidden bg-[#f2f2f2]">
       {/* Background media */}
@@ -182,12 +191,7 @@ export function Hero({ store }: HeroProps) {
             <div className="hidden items-center gap-1 sm:gap-2 md:flex">
               <button
                 type="button"
-                onClick={() => {
-                  if (sellerLoginUrl.startsWith("http")) {
-                    window.location.href = sellerLoginUrl;
-                    return;
-                  }
-                }}
+                onClick={navigateToAdmin}
                 className="rounded-full px-3 py-1.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/10 hover:text-white"
               >
                 Admin
@@ -263,11 +267,7 @@ export function Hero({ store }: HeroProps) {
                   <div className="my-1 border-t border-black/5" />
 
                   <DropdownMenuItem
-                    onClick={() => {
-                      if (sellerLoginUrl.startsWith("http")) {
-                        window.location.href = sellerLoginUrl;
-                      }
-                    }}
+                    onClick={navigateToAdmin}
                     className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 outline-none hover:bg-neutral-100 focus:bg-neutral-100"
                   >
                     Sign in to admin

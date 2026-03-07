@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storefrontService } from "@/app/[handle]/lib/storefront-service";
 
-const DEFAULT_STORE_LOGO = "/store-logo.jpg";
+const DEFAULT_STORE_LOGO = "/vendly.png";
 
 type RouteParams = {
     params: Promise<{ slug: string }>;

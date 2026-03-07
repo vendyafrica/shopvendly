@@ -130,12 +130,47 @@ export default function StorefrontHeaderClient({
   const slugPath = resolvedSlug ? `/${resolvedSlug}` : "/";
   const isHomePath =
     normalizedPathname === slugPath || normalizedPathname === "/";
-  const isProductPage = resolvedSlug
-    ? normalizedPathname.startsWith(slugPath + "/")
-    : false;
   const headerVisible = isVisible;
   const headerTransition = `fixed inset-x-0 top-0 z-50 transition-all duration-300 ${headerVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
     }`;
+
+  const getAdminOrigin = () => {
+    const envUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (envUrl) return envUrl.trim().replace(/\/$/, "");
+
+    const domain = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+    if (typeof window !== "undefined" && domain) {
+      const normalizedDomain = domain.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "");
+      const { protocol } = window.location;
+      return `${protocol}//${normalizedDomain}`;
+    }
+
+    if (domain) {
+      const normalizedDomain = domain.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "");
+      return `https://${normalizedDomain}`;
+    }
+
+    return typeof window !== "undefined" ? window.location.origin : getRootUrl();
+  };
+
+  const adminOrigin = getAdminOrigin();
+
+  const sellerLoginUrl = store?.slug
+    ? `${adminOrigin}/admin/${store.slug}/login`
+    : `${adminOrigin}/admin/login`;
+
+  const navigateToAdmin = () => {
+    if (sellerLoginUrl.startsWith("http")) {
+      window.location.href = sellerLoginUrl;
+      return;
+    }
+
+    router.push(sellerLoginUrl);
+  };
+
+  const isProductPage = resolvedSlug
+    ? normalizedPathname.startsWith(slugPath + "/")
+    : false;
 
   useEffect(() => {
     lastScrollYRef.current = window.scrollY;
@@ -199,13 +234,7 @@ export default function StorefrontHeaderClient({
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  if (sellerLoginUrl.startsWith("http")) {
-                    window.location.href = sellerLoginUrl;
-                    return;
-                  }
-                  router.push(sellerLoginUrl);
-                }}
+                onClick={navigateToAdmin}
                 className="relative flex h-12 w-12 items-center justify-center bg-transparent p-0 text-red-600 shadow-none"
                 aria-label="Admin"
               >
@@ -219,32 +248,6 @@ export default function StorefrontHeaderClient({
   }
 
   const overlayActive = isHomePath && isOverlay;
-
-  const getAdminOrigin = () => {
-    const envUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (envUrl) return envUrl.trim().replace(/\/$/, "");
-
-    const domain = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
-    if (typeof window !== "undefined" && domain) {
-      const normalizedDomain = domain.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "");
-      const { protocol } = window.location;
-      return `${protocol}//${normalizedDomain}`;
-    }
-
-    if (domain) {
-      const normalizedDomain = domain.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "");
-      return `https://${normalizedDomain}`;
-    }
-
-    // Fallback: trust environment
-    return typeof window !== "undefined" ? window.location.origin : getRootUrl();
-  };
-
-  const adminOrigin = getAdminOrigin();
-
-  const sellerLoginUrl = store.slug
-    ? `${adminOrigin}/admin/${store.slug}/login`
-    : `${adminOrigin}/admin/login`;
 
   // ─── Shared icon button classes ────────────────────────────────────────────
   const iconBtnBase =
@@ -314,7 +317,7 @@ export default function StorefrontHeaderClient({
           <div className="my-1 border-t border-black/5" />
 
           <DropdownMenuItem
-            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); if (sellerLoginUrl.startsWith("http")) { window.location.href = sellerLoginUrl; return; } router.push(sellerLoginUrl); }}
+            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); navigateToAdmin(); }}
             className="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 outline-none hover:bg-neutral-100 focus:bg-neutral-100 cursor-pointer"
           >
             Sign in to admin
@@ -359,7 +362,7 @@ export default function StorefrontHeaderClient({
 
         <button
           type="button"
-          onClick={() => { if (sellerLoginUrl.startsWith("http")) { window.location.href = sellerLoginUrl; return; } router.push(sellerLoginUrl); }}
+          onClick={navigateToAdmin}
           className={`${overlay ? `${iconBtnOverlay} text-white/90 hover:bg-white/10` : `${iconBtnSolid} text-red-600 hover:bg-red-50`}`}
           aria-label="Admin"
         >
