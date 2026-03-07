@@ -48,6 +48,7 @@ export function AssignProductsModal({
     const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
     const [search, setSearch] = React.useState("");
     const [saving, setSaving] = React.useState(false);
+    const searchInputRef = React.useRef<HTMLInputElement | null>(null);
 
     const renderThumbnail = (product: ProductRow) => {
         if (!product.thumbnailUrl) {
@@ -86,6 +87,12 @@ export function AssignProductsModal({
         if (open) {
             setSelectedIds(new Set(initialSelectedProductIds));
             setSearch("");
+
+            if (typeof window !== "undefined" && window.innerWidth < 768) {
+                window.requestAnimationFrame(() => {
+                    searchInputRef.current?.blur();
+                });
+            }
         }
     }, [open, initialSelectedProductIds]);
 
@@ -140,6 +147,7 @@ export function AssignProductsModal({
                     <div className="relative">
                         <HugeiconsIcon icon={Search01Icon} className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                         <Input
+                            ref={searchInputRef}
                             placeholder="Search products..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
