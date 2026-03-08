@@ -43,7 +43,7 @@ type NormalizedPost = {
   variants: MediaVariant[];
 };
 
-const MAX_POSTS = 10;
+const MAX_POSTS = 8;
 const utapi = new UTApi();
 const importJobs = new Map<string, ImportJob>();
 
@@ -194,6 +194,10 @@ function normalizeMediaUrl(raw: unknown): string | null {
   return value.length > 0 ? value : null;
 }
 
+function isLikelyVideoType(raw: unknown): boolean {
+  return typeof raw === "string" && raw.toLowerCase().includes("video");
+}
+
 function normalizePost(item: Record<string, unknown>, index: number): NormalizedPost | null {
   const sourceId = String(item.id ?? item.shortCode ?? item.code ?? item.url ?? `post-${index + 1}`);
   const caption = getCaption(item);
@@ -218,11 +222,15 @@ function normalizePost(item: Record<string, unknown>, index: number): Normalized
       if (!child || typeof child !== "object") continue;
 
       const childRecord = child as Record<string, unknown>;
-      const mediaUrl =
-        normalizeMediaUrl(childRecord.displayUrl) ||
-        normalizeMediaUrl(childRecord.imageUrl) ||
-        normalizeMediaUrl(childRecord.videoUrl) ||
-        normalizeMediaUrl(childRecord.url);
+      const mediaUrl = isLikelyVideoType(childRecord.type)
+        ? normalizeMediaUrl(childRecord.videoUrl) ||
+          normalizeMediaUrl(childRecord.url) ||
+          normalizeMediaUrl(childRecord.displayUrl) ||
+          normalizeMediaUrl(childRecord.imageUrl)
+        : normalizeMediaUrl(childRecord.displayUrl) ||
+          normalizeMediaUrl(childRecord.imageUrl) ||
+          normalizeMediaUrl(childRecord.videoUrl) ||
+          normalizeMediaUrl(childRecord.url);
 
       if (!mediaUrl) continue;
 
@@ -255,10 +263,13 @@ function normalizePost(item: Record<string, unknown>, index: number): Normalized
   }
 
   if (variants.length === 0) {
-    const fallbackMediaUrl =
-      normalizeMediaUrl(item.displayUrl) ||
-      normalizeMediaUrl(item.imageUrl) ||
-      normalizeMediaUrl(item.videoUrl);
+    const fallbackMediaUrl = isLikelyVideoType(item.type)
+      ? normalizeMediaUrl(item.videoUrl) ||
+        normalizeMediaUrl(item.displayUrl) ||
+        normalizeMediaUrl(item.imageUrl)
+      : normalizeMediaUrl(item.displayUrl) ||
+        normalizeMediaUrl(item.imageUrl) ||
+        normalizeMediaUrl(item.videoUrl);
 
     if (fallbackMediaUrl) {
       variants.push({
