@@ -16,7 +16,17 @@ function toCanonicalUploadThingUrl(rawUrl: string) {
         const isUploadThingHost = parsed.hostname.endsWith(".ufs.sh") || parsed.hostname === "utfs.io";
         if (!isUploadThingHost) return rawUrl;
 
-        return `https://utfs.io/f/${fileId}`;
+        const typeParam =
+            parsed.searchParams.get("x-ut-file-type") ||
+            parsed.searchParams.get("file-type");
+
+        const canonicalBase = `https://utfs.io/f/${fileId}`;
+        if (typeParam) {
+            const encodedType = encodeURIComponent(typeParam);
+            return `${canonicalBase}?x-ut-file-type=${encodedType}`;
+        }
+
+        return canonicalBase;
     } catch {
         return rawUrl;
     }
