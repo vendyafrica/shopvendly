@@ -43,7 +43,7 @@ type NormalizedPost = {
   variants: MediaVariant[];
 };
 
-const MAX_POSTS = 25;
+const MAX_POSTS = 10;
 const utapi = new UTApi();
 const importJobs = new Map<string, ImportJob>();
 
