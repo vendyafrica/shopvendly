@@ -170,7 +170,7 @@ export function EditProductModal({
             setDescription(product.description || "");
             setPriceAmount(product.priceAmount ? String(product.priceAmount) : "");
             setOriginalPriceAmount(product.originalPriceAmount ? String(product.originalPriceAmount) : "");
-            setQuantity(product.quantity ? String(product.quantity) : "");
+            setQuantity(String(product.quantity ?? 0));
             setSelectedCollectionIds(product.collectionIds ?? []);
 
             const nextVariantOptions = product.variants?.enabled ? product.variants.options ?? [] : [];
@@ -467,6 +467,149 @@ export function EditProductModal({
 
     if (!product) return null;
 
+    const mediaManager = (
+        <div className="rounded-2xl border border-border/60 bg-muted/20 p-4 sm:p-5">
+            <div className="mb-4 space-y-1">
+                <Label className="text-sm font-medium text-foreground">Product Images</Label>
+                <p className="text-xs text-muted-foreground">Upload, reorder, and remove media for this product.</p>
+            </div>
+            <div className={`flex flex-col items-start gap-3 rounded-xl border border-dashed border-border/70 bg-background px-4 py-4 ${isSaving ? "opacity-70" : "hover:bg-muted/40"}`}>
+                <div className="flex items-start gap-3">
+                    <div className="rounded-xl bg-muted p-2.5">
+                        <HugeiconsIcon icon={ImageUpload01Icon} className="size-5 text-muted-foreground" />
+                    </div>
+                    <div className="text-left text-sm text-muted-foreground">
+                        <p className="font-medium text-foreground">Add product media</p>
+                        <p className="text-xs text-muted-foreground/70">Images or videos up to 10MB</p>
+                    </div>
+                </div>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9 rounded-lg px-4"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                    }}
+                    disabled={isSaving}
+                >
+                    Upload media
+                </Button>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileChange}
+                    disabled={isSaving}
+                />
+            </div>
+
+            {files.length > 0 ? (
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                    {files.map((f, i) => (
+                        <div
+                            key={f.id}
+                            className={`group relative aspect-square overflow-hidden rounded-xl border bg-background ${i === 0 ? "border-primary ring-1 ring-primary/25" : "border-border/60"}`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (i !== 0) {
+                                    setFiles((prev) => {
+                                        const updated = [...prev];
+                                        const [moved] = updated.splice(i, 1);
+                                        if (!moved) return prev;
+                                        updated.unshift(moved);
+                                        return updated;
+                                    });
+                                }
+                            }}
+                        >
+                            {i === 0 ? (
+                                f.contentType.startsWith("video/") ? (
+                                    <video
+                                        src={f.previewUrl}
+                                        className={`h-full w-full object-cover bg-neutral-100 transition-opacity ${f.isUploading ? "opacity-55" : "opacity-100"}`}
+                                        muted
+                                        playsInline
+                                        preload="none"
+                                    />
+                                ) : (
+                                    <Image
+                                        src={f.previewUrl}
+                                        alt="Preview"
+                                        fill
+                                        unoptimized={f.previewUrl.includes(".ufs.sh") || f.previewUrl.startsWith("blob:")}
+                                        loading="lazy"
+                                        sizes="(min-width: 1024px) 220px, 50vw"
+                                        className={`object-cover bg-neutral-100 transition-opacity ${f.isUploading ? "opacity-55" : "opacity-100"}`}
+                                    />
+                                )
+                            ) : f.contentType.startsWith("video/") ? (
+                                <video
+                                    src={f.previewUrl}
+                                    className={`h-full w-full object-cover transition-opacity bg-neutral-100 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
+                                    muted
+                                    playsInline
+                                    preload="none"
+                                />
+                            ) : (
+                                <Image
+                                    src={f.previewUrl}
+                                    alt="Preview"
+                                    fill
+                                    unoptimized={f.previewUrl.includes(".ufs.sh") || f.previewUrl.startsWith("blob:")}
+                                    loading="lazy"
+                                    sizes="(min-width: 1024px) 220px, 50vw"
+                                    className={`object-cover transition-opacity bg-neutral-100 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
+                                />
+                            )}
+                            {i === 0 ? (
+                                <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-foreground shadow-sm">
+                                    Cover
+                                </span>
+                            ) : null}
+                            {i === 0 && f.isUploading ? (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <UploadProgressSpinner progress={f.displayProgress} />
+                                </div>
+                            ) : null}
+
+                            {!isSaving && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeFile(i);
+                                    }}
+                                    className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground shadow-sm"
+                                >
+                                    <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
+                                </button>
+                            )}
+                        </div>
+                    ))}
+
+                    <button
+                        type="button"
+                        className="relative flex aspect-square items-center justify-center rounded-xl border border-dashed border-border/70 bg-background hover:bg-muted/10"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            fileInputRef.current?.click();
+                        }}
+                        disabled={isSaving}
+                    >
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <HugeiconsIcon icon={Add01Icon} className="size-4" />
+                            <span className="text-xs font-medium">Add more</span>
+                        </div>
+                    </button>
+                </div>
+            ) : null}
+        </div>
+    );
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogPortal>
@@ -488,146 +631,7 @@ export function EditProductModal({
                     <div className="flex h-full overflow-hidden">
                         <div className="hidden w-[360px] shrink-0 overflow-y-auto border-r border-border/60 bg-muted/10 lg:block">
                             <div className="space-y-4 px-7 py-6">
-                                <div className="rounded-2xl border border-border/60 bg-muted/20 p-4 sm:p-5">
-                                    <div className="mb-4 space-y-1">
-                                        <Label className="text-sm font-medium text-foreground">Product Images</Label>
-                                        <p className="text-xs text-muted-foreground">Upload, reorder, and remove media for this product.</p>
-                                    </div>
-                                    <div className={`flex flex-col items-start gap-3 rounded-xl border border-dashed border-border/70 bg-background px-4 py-4 ${isSaving ? "opacity-70" : "hover:bg-muted/40"}`}>
-                                        <div className="flex items-start gap-3">
-                                            <div className="rounded-xl bg-muted p-2.5">
-                                                <HugeiconsIcon icon={ImageUpload01Icon} className="size-5 text-muted-foreground" />
-                                            </div>
-                                            <div className="text-left text-sm text-muted-foreground">
-                                                <p className="font-medium text-foreground">Add product media</p>
-                                                <p className="text-xs text-muted-foreground/70">Images or videos up to 10MB</p>
-                                            </div>
-                                        </div>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-9 rounded-lg px-4"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                fileInputRef.current?.click();
-                                            }}
-                                            disabled={isSaving}
-                                        >
-                                            Upload media
-                                        </Button>
-                                        <input
-                                            ref={fileInputRef}
-                                            type="file"
-                                            accept="image/*,video/*"
-                                            multiple
-                                            className="hidden"
-                                            onChange={handleFileChange}
-                                            disabled={isSaving}
-                                        />
-                                    </div>
-
-                                    {files.length > 0 ? (
-                                        <div className="mt-4 grid grid-cols-2 gap-3">
-                                            {files.map((f, i) => (
-                                                <div
-                                                    key={f.id}
-                                                    className={`group relative aspect-square overflow-hidden rounded-xl border bg-background ${i === 0 ? "border-primary ring-1 ring-primary/25" : "border-border/60"}`}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (i !== 0) {
-                                                            setFiles((prev) => {
-                                                                const updated = [...prev];
-                                                                const [moved] = updated.splice(i, 1);
-                                                                if (!moved) return prev;
-                                                                updated.unshift(moved);
-                                                                return updated;
-                                                            });
-                                                        }
-                                                    }}
-                                                >
-                                                    {i === 0 ? (
-                                                        f.contentType.startsWith("video/") ? (
-                                                            <video
-                                                                src={f.previewUrl}
-                                                                className={`h-full w-full object-cover bg-neutral-100 transition-opacity ${f.isUploading ? "opacity-55" : "opacity-100"}`}
-                                                                muted
-                                                                playsInline
-                                                                preload="none"
-                                                            />
-                                                        ) : (
-                                                            <Image
-                                                                src={f.previewUrl}
-                                                                alt="Preview"
-                                                                fill
-                                                                unoptimized={f.previewUrl.includes(".ufs.sh") || f.previewUrl.startsWith("blob:")}
-                                                                loading="lazy"
-                                                                sizes="(min-width: 1024px) 220px, 50vw"
-                                                                className={`object-cover bg-neutral-100 transition-opacity ${f.isUploading ? "opacity-55" : "opacity-100"}`}
-                                                            />
-                                                        )
-                                                    ) : f.contentType.startsWith("video/") ? (
-                                                        <video
-                                                            src={f.previewUrl}
-                                                            className={`h-full w-full object-cover transition-opacity bg-neutral-100 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
-                                                            muted
-                                                            playsInline
-                                                            preload="none"
-                                                        />
-                                                    ) : (
-                                                        <Image
-                                                            src={f.previewUrl}
-                                                            alt="Preview"
-                                                            fill
-                                                            unoptimized={f.previewUrl.includes(".ufs.sh") || f.previewUrl.startsWith("blob:")}
-                                                            loading="lazy"
-                                                            sizes="(min-width: 1024px) 220px, 50vw"
-                                                            className={`object-cover transition-opacity bg-neutral-100 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
-                                                        />
-                                                    )}
-                                                    {i === 0 ? (
-                                                        <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-foreground shadow-sm">
-                                                            Cover
-                                                        </span>
-                                                    ) : null}
-                                                    {i === 0 && f.isUploading ? (
-                                                        <div className="absolute inset-0 flex items-center justify-center">
-                                                            <UploadProgressSpinner progress={f.displayProgress} />
-                                                        </div>
-                                                    ) : null}
-
-                                                    {!isSaving && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                removeFile(i);
-                                                            }}
-                                                            className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground shadow-sm"
-                                                        >
-                                                            <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ))}
-
-                                            <button
-                                                type="button"
-                                                className="relative flex aspect-square items-center justify-center rounded-xl border border-dashed border-border/70 bg-background hover:bg-muted/10"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    fileInputRef.current?.click();
-                                                }}
-                                                disabled={isSaving}
-                                            >
-                                                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                                    <HugeiconsIcon icon={Add01Icon} className="size-4" />
-                                                    <span className="text-xs font-medium">Add more</span>
-                                                </div>
-                                            </button>
-                                        </div>
-                                    ) : null}
-                                </div>
+                                {mediaManager}
                             </div>
                         </div>
 
@@ -639,6 +643,10 @@ export function EditProductModal({
                             )}
 
                             <div className="space-y-5">
+                                <div className="lg:hidden">
+                                    {mediaManager}
+                                </div>
+
                                 <div className="rounded-2xl border border-border/60 bg-background p-4 sm:p-5">
                                     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                                         <div className="space-y-2 lg:col-span-2">

@@ -40,8 +40,19 @@ interface ProductActionsProps {
 }
 
 const createCartLineId = (productId: string, selectedOptions: SelectedOption[] = []) => {
+  if (!productId) return crypto.randomUUID();
   if (selectedOptions.length === 0) return productId;
-  const signature = selectedOptions
+  const signature = [...selectedOptions]
+    .map((option) => ({
+      name: option.name.trim(),
+      value: option.value.trim(),
+    }))
+    .filter((option) => option.name && option.value)
+    .sort((a, b) => {
+      const aKey = `${a.name}:${a.value}`.toLowerCase();
+      const bKey = `${b.name}:${b.value}`.toLowerCase();
+      return aKey.localeCompare(bKey);
+    })
     .map((option) => `${option.name}:${option.value}`)
     .join("|");
   return `${productId}::${signature}`;

@@ -276,7 +276,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
       collectoBaseUrl: getCollectoBaseUrl(),
     });
 
-    const response = await collectoApiFetch("checkTransactionStatus", {
+    const response = await collectoApiFetch("requestToPayStatus", {
       transactionId: body.transactionId,
     });
 
