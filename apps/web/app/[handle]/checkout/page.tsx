@@ -198,52 +198,74 @@ function CheckoutContent() {
   };
 
   const pollCollectoStatus = async (transactionId: string) => {
-    const statusRes = await fetch(
-      `${API_BASE}/api/storefront/${store.slug}/payments/collecto/status`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId }),
-      },
-    );
-
-    const statusData = await statusRes.json().catch(() => ({}));
-
-    if (!statusRes.ok) {
-      throw new Error(
-        typeof statusData?.error?.message === "string"
-          ? statusData.error.message
-          : "Unable to check mobile money payment status.",
+    try {
+      const statusRes = await fetch(
+        `${API_BASE}/api/storefront/${store.slug}/payments/collecto/status`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transactionId }),
+        },
       );
-    }
 
-    const status =
-      typeof statusData?.status === "string" ? statusData.status : "pending";
+      const statusData = await statusRes.json().catch(() => ({}));
 
-    if (status === "successful") {
-      setPaymentStatusMessage("Payment confirmed successfully.");
-      await finishSuccess();
-      return;
-    }
+      if (!statusRes.ok) {
+        throw new Error(
+          typeof statusData?.error?.message === "string"
+            ? statusData.error.message
+            : "Unable to check mobile money payment status.",
+        );
+      }
 
-    if (status === "failed") {
+      const status =
+        typeof statusData?.status === "string" ? statusData.status : "pending";
+      const statusMessage =
+        typeof statusData?.message === "string"
+          ? statusData.message
+          : undefined;
+
+      if (status === "successful") {
+        setPaymentStatusMessage("Payment confirmed successfully.");
+        clearPaymentPoll();
+        await finishSuccess();
+        return;
+      }
+
+      if (status === "failed") {
+        clearPaymentPoll();
+        setPaymentFlowStatus("failed");
+        const failureMessage =
+          statusMessage ||
+          "Mobile money payment was declined. You can try again or switch to cash on delivery.";
+        setPaymentStatusMessage(failureMessage);
+        setError(failureMessage);
+        setIsSubmitting(false);
+        return;
+      }
+
+      setPaymentFlowStatus("pending");
+      setPaymentStatusMessage(
+        "Waiting for payment confirmation from Collecto. Keep this page open for a moment.",
+      );
+
+      clearPaymentPoll();
+      paymentPollRef.current = setTimeout(() => {
+        void pollCollectoStatus(transactionId);
+      }, 1200);
+    } catch (err) {
+      clearPaymentPoll();
       setPaymentFlowStatus("failed");
       setError(
-        "Mobile money payment failed. You can try again or use cash on delivery.",
+        err instanceof Error
+          ? err.message
+          : "Unable to confirm payment status. Please try again.",
+      );
+      setPaymentStatusMessage(
+        "We couldn't confirm the payment. Please try again or choose cash on delivery.",
       );
       setIsSubmitting(false);
-      return;
     }
-
-    setPaymentFlowStatus("pending");
-    setPaymentStatusMessage(
-      "Waiting for payment confirmation from Collecto. Keep this page open for a moment.",
-    );
-
-    clearPaymentPoll();
-    paymentPollRef.current = setTimeout(() => {
-      void pollCollectoStatus(transactionId);
-    }, 1200);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
