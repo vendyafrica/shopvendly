@@ -67,6 +67,7 @@ function CheckoutContent() {
   const [paymentTransactionId, setPaymentTransactionId] = useState<
     string | null
   >(null);
+  const [paymentReference, setPaymentReference] = useState<string | null>(null);
   const [paymentStatusMessage, setPaymentStatusMessage] = useState<
     string | null
   >(null);
@@ -252,6 +253,7 @@ function CheckoutContent() {
     setError(null);
     setPaymentStatusMessage(null);
     setPaymentTransactionId(null);
+    setPaymentReference(null);
     setPaymentFlowStatus("idle");
     clearPaymentPoll();
 
@@ -320,12 +322,17 @@ function CheckoutContent() {
           typeof collectoData?.transactionId === "string"
             ? collectoData.transactionId
             : null;
+        const reference =
+          typeof collectoData?.reference === "string"
+            ? collectoData.reference
+            : null;
 
         if (!transactionId) {
           throw new Error("Missing transaction ID");
         }
 
         setPaymentTransactionId(transactionId);
+        setPaymentReference(reference);
         await pollCollectoStatus(transactionId);
         return;
       }
@@ -542,7 +549,7 @@ function CheckoutContent() {
                         Payment reference
                       </div>
                       <div className="mt-1 break-all">
-                        {paymentTransactionId}
+                        {paymentReference || paymentTransactionId}
                       </div>
                     </div>
                   ) : null}

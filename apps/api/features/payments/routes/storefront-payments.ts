@@ -136,6 +136,28 @@ function readCandidateStatus(payload: Record<string, unknown>): unknown {
   );
 }
 
+function readCandidateTransactionId(payload: Record<string, unknown>): string | null {
+  const nested = getCollectoPayloadRecord(payload);
+  const candidates = [
+    nested?.transactionId,
+    nested?.transactionID,
+    nested?.transaction_id,
+    nested?.id,
+    payload.transactionId,
+    payload.transactionID,
+    payload.transaction_id,
+    payload.id,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
+}
+
 function logCollectoDebug(event: string, payload: Record<string, unknown>) {
   console.info(`[Collecto] ${event}`, payload);
 }
@@ -210,16 +232,23 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
       payload,
     });
 
-    const transactionId =
-      (typeof payload.transactionId === "string" && payload.transactionId) ||
-      (typeof payload.id === "string" && payload.id) ||
-      (typeof payload.reference === "string" && payload.reference) ||
-      reference;
+    const transactionId = readCandidateTransactionId(payload);
+
+    if (!transactionId) {
+      return res.status(502).json({
+        error: {
+          code: "COLLECTO_INITIATE_MISSING_TRANSACTION_ID",
+          message: "Collecto did not return a transaction ID for status tracking.",
+          details: response.json || response.text,
+        },
+      });
+    }
 
     return res.status(202).json({
       ok: true,
       mode: "live",
       transactionId,
+      reference,
       raw: response.json,
     });
   } catch (err) {

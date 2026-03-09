@@ -88,7 +88,9 @@ export const updateOrderStatusSchema = z.object({
 
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
 
-export type OrderWithItems = Awaited<ReturnType<typeof orderService.getOrderById>>;
+type OrderWithItemsValue = NonNullable<Awaited<ReturnType<typeof db.query.orders.findFirst>>> & {
+  items: Array<typeof orderItems.$inferSelect>;
+};
 
 export const orderService = {
   async createOrder(storeSlug: string, input: CreateOrderInput) {
@@ -127,6 +129,10 @@ export const orderService = {
       const product = productMap.get(item.productId);
       if (!product) {
         throw new Error(`Product ${item.productId} not found`);
+      }
+
+      if (product.quantity < item.quantity) {
+        throw new Error(`Insufficient stock for ${product.productName}`);
       }
 
       const totalPrice = product.priceAmount * item.quantity;
@@ -248,6 +254,33 @@ export const orderService = {
     void invalidateCache(cacheKeys.orders.stats(tenantId));
 
     return updated;
+  },
+
+  async decrementInventoryForPaidOrder(order: OrderWithItemsValue) {
+    const productQuantities = new Map<string, number>();
+
+    for (const item of order.items) {
+      if (!item.productId) continue;
+      productQuantities.set(item.productId, (productQuantities.get(item.productId) || 0) + item.quantity);
+    }
+
+    for (const [productId, quantity] of productQuantities) {
+      const [updatedProduct] = await db
+        .update(products)
+        .set({
+          quantity: sql`${products.quantity} - ${quantity}`,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(products.id, productId), isNull(products.deletedAt), sql`${products.quantity} >= ${quantity}`))
+        .returning({ id: products.id, storeId: products.storeId });
+
+      if (!updatedProduct) {
+        throw new Error(`Insufficient stock to fulfill product ${productId}`);
+      }
+
+      void invalidateCache(cacheKeys.stores.products(updatedProduct.storeId));
+      void invalidateCache(cacheKeys.products.byId(updatedProduct.id));
+    }
   },
 
   async getTenantPhoneByStoreSlug(storeSlug: string) {

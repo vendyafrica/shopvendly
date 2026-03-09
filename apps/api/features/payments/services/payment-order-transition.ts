@@ -50,6 +50,10 @@ export async function handlePaidOrderTransition(params: HandlePaidOrderTransitio
     return null;
   }
 
+  if (existing.paymentStatus !== "paid" && full.paymentStatus === "paid") {
+    await orderService.decrementInventoryForPaidOrder(full);
+  }
+
   const jobs: Array<Promise<unknown>> = [
     notifyCustomerPreparing({ order: full }),
     dispatchDeliveryProviderForOrder(full.id),

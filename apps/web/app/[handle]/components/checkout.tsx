@@ -18,7 +18,6 @@ import { Loading03Icon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") || getRootUrl("");
 
 type CheckoutPaymentMethod = "cash_on_delivery" | "mobile_money";
-type PaymentFlowStatus = "idle" | "initiating" | "pending" | "successful" | "failed";
 
 interface CheckoutProduct {
     id: string;
@@ -46,9 +45,8 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [paymentFlowStatus, setPaymentFlowStatus] = useState<PaymentFlowStatus>("idle");
     const [paymentTransactionId, setPaymentTransactionId] = useState<string | null>(null);
-    const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null);
+    const [paymentReference, setPaymentReference] = useState<string | null>(null);
 
     const totalAmount = product.price * quantity;
 
@@ -67,9 +65,8 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
         setIsSuccess(false);
         setError(null);
         setPaymentMethod("mobile_money");
-        setPaymentFlowStatus("idle");
         setPaymentTransactionId(null);
-        setPaymentStatusMessage(null);
+        setPaymentReference(null);
     };
 
     const clearPaymentPoll = () => {
@@ -80,7 +77,6 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
     };
 
     const finishSuccess = () => {
-        setPaymentFlowStatus("successful");
         setIsSuccess(true);
         setTimeout(() => {
             if (storeSlug) {
@@ -109,22 +105,15 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
         const status = typeof statusData?.status === "string" ? statusData.status : "pending";
 
         if (status === "successful") {
-            setPaymentStatusMessage("Payment confirmed successfully.");
             finishSuccess();
             return;
         }
 
         if (status === "failed") {
-            setPaymentFlowStatus("failed");
             setError("Mobile money payment failed. You can try again or use cash on delivery.");
             setIsSubmitting(false);
             return;
         }
-
-        setPaymentFlowStatus("pending");
-        setPaymentStatusMessage(
-            "Approve the mobile money prompt on your phone, then wait for confirmation."
-        );
 
         clearPaymentPoll();
         paymentPollRef.current = setTimeout(() => {
@@ -136,9 +125,8 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
         e.preventDefault();
         setIsSubmitting(true);
         setError(null);
-        setPaymentStatusMessage(null);
         setPaymentTransactionId(null);
-        setPaymentFlowStatus("idle");
+        setPaymentReference(null);
         clearPaymentPoll();
 
         try {
@@ -178,9 +166,6 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                 return;
             }
 
-            setPaymentFlowStatus("initiating");
-            setPaymentStatusMessage("Sending payment request to your mobile money number...");
-
             const initiateRes = await fetch(`${API_BASE}/api/storefront/${storeSlug}/payments/collecto/initiate`, {
                 method: "POST",
                 headers: {
@@ -205,14 +190,15 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
             }
 
             const transactionId = typeof initiateData?.transactionId === "string" ? initiateData.transactionId : null;
+            const reference = typeof initiateData?.reference === "string" ? initiateData.reference : null;
             if (!transactionId) {
                 throw new Error("Collecto payment started without a transaction reference.");
             }
 
             setPaymentTransactionId(transactionId);
+            setPaymentReference(reference);
             await pollCollectoStatus(transactionId);
         } catch (err) {
-            setPaymentFlowStatus("failed");
             setError(err instanceof Error ? err.message : "Failed to place order");
         } finally {
             if (paymentMethod === "cash_on_delivery") {
@@ -363,13 +349,7 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                     {paymentTransactionId ? (
                         <div className="rounded-md border p-3 text-sm">
                             <div className="font-medium">Payment reference</div>
-                            <div className="mt-1 break-all text-muted-foreground">{paymentTransactionId}</div>
-                        </div>
-                    ) : null}
-
-                    {paymentMethod === "mobile_money" && paymentFlowStatus !== "idle" && paymentStatusMessage ? (
-                        <div className="rounded-md border p-3 text-sm text-muted-foreground">
-                            {paymentStatusMessage}
+                            <div className="text-muted-foreground break-all">{paymentReference || paymentTransactionId}</div>
                         </div>
                     ) : null}
 
