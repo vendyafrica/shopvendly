@@ -3,7 +3,7 @@ import type { Router as ExpressRouter } from "express";
 import { z } from "zod";
 import { and, db, eq, isNull, orders, stores } from "@shopvendly/db";
 import { handlePaidOrderTransition } from "../services/payment-order-transition.js";
-import { collectoApiFetch, getCollectoProxyUrl, getCollectoBaseUrl } from "./collecto-http.js";
+import { collectoApiFetch, getCollectoBaseUrl } from "./collecto-http.js";
 
 export const storefrontPaymentsRouter: ExpressRouter = Router();
 
@@ -173,7 +173,6 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
       phone: normalizeCollectoPhone(body.phone),
       reference,
       collectoBaseUrl: getCollectoBaseUrl(),
-      hasFixieUrl: Boolean(getCollectoProxyUrl()),
     });
 
     const response = await collectoApiFetch("requestToPay", {
@@ -246,7 +245,6 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
       slug,
       transactionId: body.transactionId,
       collectoBaseUrl: getCollectoBaseUrl(),
-      hasFixieUrl: Boolean(getCollectoProxyUrl()),
     });
 
     const response = await collectoApiFetch("checkTransactionStatus", {
