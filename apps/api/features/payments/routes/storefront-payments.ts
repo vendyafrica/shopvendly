@@ -1,5 +1,7 @@
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
+import { HttpsProxyAgent } from "https-proxy-agent";
+import https from "node:https";
 import { z } from "zod";
 import { and, db, eq, isNull, orders, stores } from "@shopvendly/db";
 import { handlePaidOrderTransition } from "../services/payment-order-transition.js";
@@ -101,22 +103,61 @@ function readCandidateMessage(payload: Record<string, unknown>): string | null {
   return null;
 }
 
+function getCollectoDispatcher() {
+  const proxyUrl = process.env.FIXIE_URL?.trim();
+  if (!proxyUrl) {
+    return undefined;
+  }
+
+  return new HttpsProxyAgent(proxyUrl);
+}
+
+async function executeCollectoRequest(url: string, body: string, agent?: HttpsProxyAgent<string>) {
+  return await new Promise<{ status: number; text: string }>((resolve, reject) => {
+    const request = https.request(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": process.env.COLLECTO_API_KEY || "",
+          "Content-Length": Buffer.byteLength(body),
+        },
+        agent,
+      },
+      (response) => {
+        let text = "";
+
+        response.setEncoding("utf8");
+        response.on("data", (chunk) => {
+          text += chunk;
+        });
+        response.on("end", () => {
+          resolve({ status: response.statusCode || 500, text });
+        });
+      },
+    );
+
+    request.on("error", reject);
+    request.write(body);
+    request.end();
+  });
+}
+
 async function collectoFetch(method: string, body: unknown) {
   const username = process.env.COLLECTO_USERNAME || "";
   if (!username) {
     throw new Error("Missing COLLECTO_USERNAME");
   }
 
-  const response = await fetch(`${getCollectoBaseUrl()}/${username}/${method}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.COLLECTO_API_KEY || "",
-    },
-    body: JSON.stringify(body),
-  });
+  const requestBody = JSON.stringify(body);
+  const response = await executeCollectoRequest(
+    `${getCollectoBaseUrl()}/${username}/${method}`,
+    requestBody,
+    getCollectoDispatcher(),
+  );
 
-  const text = await response.text();
+  const text = response.text;
   let json: unknown = null;
   try {
     json = text ? JSON.parse(text) : null;
@@ -125,7 +166,7 @@ async function collectoFetch(method: string, body: unknown) {
   }
 
   return {
-    ok: response.ok,
+    ok: response.status >= 200 && response.status < 300,
     status: response.status,
     json,
     text,
