@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -22,6 +22,9 @@ const geistSans = Bricolage_Grotesque({
     subsets: ["latin"],
 });
 
+type CheckoutPaymentMethod = "cash_on_delivery" | "mobile_money";
+type PaymentFlowStatus = "idle" | "initiating" | "pending" | "successful" | "failed";
+
 const API_BASE = "";
 
 const capitalizeFirst = (value?: string | null) => {
@@ -36,6 +39,7 @@ function CheckoutContent() {
     const searchParams = useSearchParams();
     const params = useParams();
     const storeSlug = (params?.handle as string) || (params?.s as string);
+    const paymentPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const storeId = searchParams.get("storeId");
     const { itemsByStore, clearStoreFromCart, isLoaded } = useCart();
@@ -45,12 +49,15 @@ function CheckoutContent() {
     const [fullName, setFullName] = useState("");
     const [address, setAddress] = useState("");
     const [phone, setPhone] = useState("");
-    const paymentMethod = "cash_on_delivery";
+    const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("mobile_money");
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isSuccess, setIsSuccess] = useState(false);
     const [storePolicy, setStorePolicy] = useState<string | null>(null);
+    const [paymentFlowStatus, setPaymentFlowStatus] = useState<PaymentFlowStatus>("idle");
+    const [paymentTransactionId, setPaymentTransactionId] = useState<string | null>(null);
+    const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null);
 
     useEffect(() => {
         if (session?.user) {
@@ -96,6 +103,14 @@ function CheckoutContent() {
             cancelled = true;
         };
     }, [store?.slug, storeSlug]);
+
+    useEffect(() => {
+        return () => {
+            if (paymentPollRef.current) {
+                clearTimeout(paymentPollRef.current);
+            }
+        };
+    }, []);
 
     if (!isLoaded) {
         return (
@@ -146,11 +161,78 @@ function CheckoutContent() {
         router.push(`/${resolvedStoreSlug}/cart`);
     };
 
+    const clearPaymentPoll = () => {
+        if (paymentPollRef.current) {
+            clearTimeout(paymentPollRef.current);
+            paymentPollRef.current = null;
+        }
+    };
+
+    const finishSuccess = async () => {
+        await clearStoreFromCart(store.id);
+        setPaymentFlowStatus("successful");
+        setIsSuccess(true);
+        setTimeout(() => {
+            const target = store?.slug ? `${window.location.origin}/${store.slug}` : `${window.location.origin}/`;
+            window.location.assign(target);
+        }, 1500);
+    };
+
+    const pollCollectoStatus = async (transactionId: string) => {
+        const statusRes = await fetch(`${API_BASE}/api/storefront/${store.slug}/payments/collecto/status`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ transactionId }),
+        });
+
+        const statusData = await statusRes.json().catch(() => ({}));
+
+        if (!statusRes.ok) {
+            throw new Error(
+                typeof statusData?.error?.message === "string"
+                    ? statusData.error.message
+                    : "Unable to check mobile money payment status."
+            );
+        }
+
+        const status = typeof statusData?.status === "string" ? statusData.status : "pending";
+        const mode = typeof statusData?.mode === "string" ? statusData.mode : null;
+
+        if (status === "successful") {
+            setPaymentStatusMessage(mode === "mock" ? "Mock payment confirmed." : "Payment confirmed successfully.");
+            await finishSuccess();
+            return;
+        }
+
+        if (status === "failed") {
+            setPaymentFlowStatus("failed");
+            setError("Mobile money payment failed. You can try again or use cash on delivery.");
+            setIsSubmitting(false);
+            return;
+        }
+
+        setPaymentFlowStatus("pending");
+        setPaymentStatusMessage(
+            mode === "mock"
+                ? "Mock payment created. Waiting for confirmation."
+                : "Approve the mobile money prompt on your phone, then wait for confirmation."
+        );
+
+        clearPaymentPoll();
+        paymentPollRef.current = setTimeout(() => {
+            void pollCollectoStatus(transactionId);
+        }, 3000);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         setIsSubmitting(true);
         setError(null);
+        setPaymentStatusMessage(null);
+        setPaymentTransactionId(null);
+        setPaymentFlowStatus("idle");
+        clearPaymentPoll();
 
         try {
             const payload = {
@@ -169,14 +251,11 @@ function CheckoutContent() {
                 })),
             };
 
-            const res = await fetch(
-                `${API_BASE}/api/storefront/${store.slug}/orders`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                }
-            );
+            const res = await fetch(`${API_BASE}/api/storefront/${store.slug}/orders`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
 
             if (!res.ok) throw new Error("Checkout failed");
 
@@ -184,13 +263,44 @@ function CheckoutContent() {
             const orderId = "order" in data ? data.order?.id : data.id;
             if (!orderId) throw new Error("Missing order ID");
 
-            await clearStoreFromCart(store.id);
-            setIsSuccess(true);
-            setTimeout(() => {
-                const target = store?.slug ? `${window.location.origin}/${store.slug}` : `${window.location.origin}/`;
-                window.location.assign(target);
-            }, 1500);
+            if (paymentMethod === "mobile_money") {
+                setPaymentFlowStatus("initiating");
+                setPaymentStatusMessage("Sending payment request to your mobile money number...");
+                const collectoRes = await fetch(`${API_BASE}/api/storefront/${store.slug}/payments/collecto/initiate`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        orderId,
+                        phone,
+                        amount: storeTotal,
+                        reference: `${store.slug}-${orderId}`,
+                    }),
+                });
+
+                const collectoData = await collectoRes.json().catch(() => ({}));
+
+                if (!collectoRes.ok) {
+                    throw new Error(
+                        typeof collectoData?.error?.message === "string"
+                            ? collectoData.error.message
+                            : "Unable to initiate mobile money payment."
+                    );
+                }
+
+                const transactionId = typeof collectoData?.transactionId === "string" ? collectoData.transactionId : null;
+
+                if (!transactionId) {
+                    throw new Error("Missing transaction ID");
+                }
+
+                setPaymentTransactionId(transactionId);
+                await pollCollectoStatus(transactionId);
+                return;
+            }
+
+            await finishSuccess();
         } catch (err: unknown) {
+            setPaymentFlowStatus("failed");
             setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
             setIsSubmitting(false);
         }
@@ -208,10 +318,10 @@ function CheckoutContent() {
                         />
                     </div>
                     <h1 className={`${geistSans.className} text-3xl tracking-widest font-semibold mb-4 leading-tight`}>
-                        Processing Order
+                        {paymentMethod === "mobile_money" ? "Processing Payment" : "Processing Order"}
                     </h1>
                     <p className="text-neutral-500 mb-10 max-w-sm mx-auto uppercase tracking-wider text-xs">
-                        Please wait while we confirm your order with {store.name}.
+                        {paymentStatusMessage || `Please wait while we confirm your order with ${store.name}.`}
                     </p>
                 </div>
             </div>
@@ -315,11 +425,41 @@ function CheckoutContent() {
 
                                 <div className="space-y-4 rounded-2xl border border-neutral-200 bg-neutral-50/60 p-5 sm:p-6 shadow-sm">
                                     <h2 className={`${geistSans.className} text-lg tracking-widest font-semibold`}>Payment</h2>
-                                    <div className="p-4 rounded-xl border border-neutral-200 bg-white">
-                                        <p className="text-sm text-neutral-600 leading-relaxed">
-                                            Place order now. The seller will confirm availability, then you&apos;ll receive a WhatsApp message.
-                                        </p>
+                                    <div className="grid gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPaymentMethod("mobile_money")}
+                                            className={`rounded-xl border p-4 text-left transition-colors ${paymentMethod === "mobile_money" ? "border-neutral-900 bg-white" : "border-neutral-200 bg-white/60"}`}
+                                        >
+                                            <div className="text-sm font-semibold text-neutral-900">Mobile money</div>
+                                            <p className="mt-1 text-sm text-neutral-600 leading-relaxed">
+                                                Pay now with Collecto. We&apos;ll send a prompt to your phone and confirm the payment in checkout.
+                                            </p>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPaymentMethod("cash_on_delivery")}
+                                            className={`rounded-xl border p-4 text-left transition-colors ${paymentMethod === "cash_on_delivery" ? "border-neutral-900 bg-white" : "border-neutral-200 bg-white/60"}`}
+                                        >
+                                            <div className="text-sm font-semibold text-neutral-900">Cash on delivery</div>
+                                            <p className="mt-1 text-sm text-neutral-600 leading-relaxed">
+                                                Place order now and pay when the order is delivered or confirmed with the seller.
+                                            </p>
+                                        </button>
                                     </div>
+
+                                    {paymentTransactionId ? (
+                                        <div className="p-4 rounded-xl border border-neutral-200 bg-white text-sm text-neutral-600">
+                                            <div className="font-medium text-neutral-900">Payment reference</div>
+                                            <div className="mt-1 break-all">{paymentTransactionId}</div>
+                                        </div>
+                                    ) : null}
+
+                                    {paymentMethod === "mobile_money" && paymentFlowStatus !== "idle" && paymentStatusMessage ? (
+                                        <div className="p-4 rounded-xl border border-neutral-200 bg-white text-sm text-neutral-600">
+                                            {paymentStatusMessage}
+                                        </div>
+                                    ) : null}
 
                                     {error && (
                                         <div className="p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg">
@@ -333,7 +473,7 @@ function CheckoutContent() {
                                         disabled={isSubmitting}
                                     >
                                         <span>
-                                            Place order
+                                            {paymentMethod === "mobile_money" ? "Pay with mobile money" : "Place order"}
                                         </span>
                                     </Button>
 
