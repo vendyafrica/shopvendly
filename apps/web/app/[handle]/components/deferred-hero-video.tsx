@@ -19,11 +19,9 @@ function guessMimeType(url: string): string | undefined {
 export function DeferredHeroVideo({
   src,
   className,
-  fallbackPoster,
 }: {
   src: string;
   className?: string;
-  fallbackPoster?: string;
 }) {
   const type = guessMimeType(src);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -62,11 +60,9 @@ export function DeferredHeroVideo({
       muted
       loop
       playsInline
-      preload="none"
-      poster={fallbackPoster}
+      preload="metadata"
       className={`${className || ""} bg-neutral-100`}
       src={src}
-      // Adding a key forces React to replace the node if the src changes
       key={src}
     >
       {type ? <source src={src} type={type} /> : <source src={src} type="video/mp4" />}

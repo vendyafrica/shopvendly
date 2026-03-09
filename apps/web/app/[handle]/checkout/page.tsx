@@ -375,8 +375,7 @@ function CheckoutContent() {
                                                             muted
                                                             playsInline
                                                             loop
-                                                            autoPlay
-                                                            preload="none"
+                                                            preload="metadata"
                                                         />
                                                     ) : (
                                                         <Image

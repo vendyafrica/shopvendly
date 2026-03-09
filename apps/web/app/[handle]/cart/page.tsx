@@ -146,8 +146,7 @@ export default function StoreCartPage() {
                                                 muted
                                                 playsInline
                                                 loop
-                                                autoPlay
-                                                preload="none"
+                                                preload="metadata"
                                             />
                                         ) : (
                                             <Image

@@ -54,13 +54,11 @@ export function ProductCard({ title, slug, price, originalPrice, image, contentT
         {isVideo ? (
           <video
             src={currentImageUrl}
-            poster={FALLBACK_PRODUCT_IMAGE}
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
             muted
             playsInline
             loop
-            autoPlay
-            preload="none"
+            preload="metadata"
             onError={() => setImageError(true)}
           />
         ) : currentImageUrl ? (
