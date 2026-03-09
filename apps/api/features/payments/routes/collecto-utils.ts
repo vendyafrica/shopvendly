@@ -3,8 +3,15 @@ import type { Router as ExpressRouter } from "express";
 
 export const collectoUtilsRouter: ExpressRouter = Router();
 
-collectoUtilsRouter.post("/internal/collecto/get-my-ip", async (_req, res, next) => {
+collectoUtilsRouter.post("/internal/collecto/get-my-ip", async (req, res, next) => {
   try {
+    const expected = process.env.INTERNAL_API_KEY;
+    const provided = req.header("x-internal-api-key");
+
+    if (!expected || !provided || provided !== expected) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const response = await fetch("https://collecto.cissytech.com/get-my-ip", {
       method: "POST",
       headers: {

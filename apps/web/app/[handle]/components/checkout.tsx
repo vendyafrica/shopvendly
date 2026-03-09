@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { Label } from "@shopvendly/ui/components/label";
+import { getRootUrl } from "@/utils/misc";
 import {
     Dialog,
     DialogContent,
@@ -14,7 +15,10 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 
-const API_BASE = "";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") || getRootUrl("");
+
+type CheckoutPaymentMethod = "cash_on_delivery" | "mobile_money";
+type PaymentFlowStatus = "idle" | "initiating" | "pending" | "successful" | "failed";
 
 interface CheckoutProduct {
     id: string;
@@ -33,16 +37,28 @@ interface CheckoutProps {
 }
 
 export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: CheckoutProps) {
+    const paymentPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [customerName, setCustomerName] = useState("");
     const [customerEmail, setCustomerEmail] = useState("");
     const [customerPhone, setCustomerPhone] = useState("");
-    const paymentMethod = "cash_on_delivery";
+    const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("mobile_money");
     const [notes, setNotes] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [paymentFlowStatus, setPaymentFlowStatus] = useState<PaymentFlowStatus>("idle");
+    const [paymentTransactionId, setPaymentTransactionId] = useState<string | null>(null);
+    const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null);
 
     const totalAmount = product.price * quantity;
+
+    useEffect(() => {
+        return () => {
+            if (paymentPollRef.current) {
+                clearTimeout(paymentPollRef.current);
+            }
+        };
+    }, []);
 
     const resetState = () => {
         setCustomerName("");
@@ -50,12 +66,80 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
         setCustomerPhone("");
         setIsSuccess(false);
         setError(null);
+        setPaymentMethod("mobile_money");
+        setPaymentFlowStatus("idle");
+        setPaymentTransactionId(null);
+        setPaymentStatusMessage(null);
+    };
+
+    const clearPaymentPoll = () => {
+        if (paymentPollRef.current) {
+            clearTimeout(paymentPollRef.current);
+            paymentPollRef.current = null;
+        }
+    };
+
+    const finishSuccess = () => {
+        setPaymentFlowStatus("successful");
+        setIsSuccess(true);
+        setTimeout(() => {
+            if (storeSlug) {
+                window.location.assign(`${window.location.origin}/${storeSlug}`);
+            }
+        }, 1200);
+    };
+
+    const pollCollectoStatus = async (transactionId: string) => {
+        const statusRes = await fetch(`${API_BASE}/api/storefront/${storeSlug}/payments/collecto/status`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ transactionId }),
+        });
+
+        const statusData = await statusRes.json().catch(() => ({}));
+
+        if (!statusRes.ok) {
+            throw new Error(
+                typeof statusData?.error?.message === "string"
+                    ? statusData.error.message
+                    : "Unable to check mobile money payment status."
+            );
+        }
+
+        const status = typeof statusData?.status === "string" ? statusData.status : "pending";
+
+        if (status === "successful") {
+            setPaymentStatusMessage("Payment confirmed successfully.");
+            finishSuccess();
+            return;
+        }
+
+        if (status === "failed") {
+            setPaymentFlowStatus("failed");
+            setError("Mobile money payment failed. You can try again or use cash on delivery.");
+            setIsSubmitting(false);
+            return;
+        }
+
+        setPaymentFlowStatus("pending");
+        setPaymentStatusMessage(
+            "Approve the mobile money prompt on your phone, then wait for confirmation."
+        );
+
+        clearPaymentPoll();
+        paymentPollRef.current = setTimeout(() => {
+            void pollCollectoStatus(transactionId);
+        }, 3000);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
         setError(null);
+        setPaymentStatusMessage(null);
+        setPaymentTransactionId(null);
+        setPaymentFlowStatus("idle");
+        clearPaymentPoll();
 
         try {
             const response = await fetch(`${API_BASE}/api/storefront/${storeSlug}/orders`, {
@@ -83,16 +167,57 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                 throw new Error(data.error || "Failed to place order");
             }
 
-            setIsSuccess(true);
-            setTimeout(() => {
-                if (storeSlug) {
-                    window.location.assign(`${window.location.origin}/${storeSlug}`);
-                }
-            }, 1200);
+            const data = await response.json().catch(() => ({}));
+            const orderId = typeof data?.id === "string" ? data.id : typeof data?.order?.id === "string" ? data.order.id : null;
+            if (!orderId) {
+                throw new Error("Missing order ID");
+            }
+
+            if (paymentMethod === "cash_on_delivery") {
+                finishSuccess();
+                return;
+            }
+
+            setPaymentFlowStatus("initiating");
+            setPaymentStatusMessage("Sending payment request to your mobile money number...");
+
+            const initiateRes = await fetch(`${API_BASE}/api/storefront/${storeSlug}/payments/collecto/initiate`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    orderId,
+                    phone: customerPhone,
+                    amount: totalAmount,
+                    reference: `${storeSlug}-${orderId}`,
+                }),
+            });
+
+            const initiateData = await initiateRes.json().catch(() => ({}));
+
+            if (!initiateRes.ok) {
+                throw new Error(
+                    typeof initiateData?.error?.message === "string"
+                        ? initiateData.error.message
+                        : "Failed to start mobile money payment."
+                );
+            }
+
+            const transactionId = typeof initiateData?.transactionId === "string" ? initiateData.transactionId : null;
+            if (!transactionId) {
+                throw new Error("Collecto payment started without a transaction reference.");
+            }
+
+            setPaymentTransactionId(transactionId);
+            await pollCollectoStatus(transactionId);
         } catch (err) {
+            setPaymentFlowStatus("failed");
             setError(err instanceof Error ? err.message : "Failed to place order");
         } finally {
-            setIsSubmitting(false);
+            if (paymentMethod === "cash_on_delivery") {
+                setIsSubmitting(false);
+            }
         }
     };
 
@@ -115,7 +240,9 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                         </div>
                         <h2 className="text-2xl font-semibold mb-2">Order Placed!</h2>
                         <p className="text-muted-foreground mb-6">
-                            Your order has been received and is being worked on. Delivery coordination will continue by phone/WhatsApp.
+                            {paymentMethod === "mobile_money"
+                                ? "Your mobile money payment has been confirmed and your order is now being processed."
+                                : "Your order has been received and is being worked on. Delivery coordination will continue by phone/WhatsApp."}
                         </p>
                         <Button onClick={handleClose} className="w-full">
                             Continue Shopping
@@ -137,7 +264,6 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Order Summary */}
                     <div className="rounded-lg border bg-muted/30 p-4">
                         <h3 className="font-medium mb-3">Order Summary</h3>
                         <div className="flex justify-between text-sm">
@@ -150,7 +276,6 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                         </div>
                     </div>
 
-                    {/* Customer Details */}
                     <div className="space-y-4">
                         <h3 className="font-medium">Your Details</h3>
 
@@ -193,11 +318,32 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                         </div>
                     </div>
 
-                    <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                        Payment method: <span className="font-medium text-foreground">Cash on delivery</span>
+                    <div className="space-y-3">
+                        <div className="text-sm font-medium">Payment method</div>
+                        <div className="grid gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setPaymentMethod("mobile_money")}
+                                className={`rounded-lg border p-3 text-left text-sm transition-colors ${paymentMethod === "mobile_money" ? "border-foreground bg-background" : "bg-muted/30 text-muted-foreground"}`}
+                            >
+                                <div className="font-medium text-foreground">Mobile money</div>
+                                <div className="mt-1 text-xs text-muted-foreground">
+                                    Pay now with mobile money.
+                                </div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPaymentMethod("cash_on_delivery")}
+                                className={`rounded-lg border p-3 text-left text-sm transition-colors ${paymentMethod === "cash_on_delivery" ? "border-foreground bg-background" : "bg-muted/30 text-muted-foreground"}`}
+                            >
+                                <div className="font-medium text-foreground">Cash on delivery</div>
+                                <div className="mt-1 text-xs text-muted-foreground">
+                                    Place your order now and pay later when delivery is arranged.
+                                </div>
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Notes */}
                     <div className="grid gap-2">
                         <Label htmlFor="notes">Order Notes (Optional)</Label>
                         <Input
@@ -214,6 +360,19 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                         </div>
                     )}
 
+                    {paymentTransactionId ? (
+                        <div className="rounded-md border p-3 text-sm">
+                            <div className="font-medium">Payment reference</div>
+                            <div className="mt-1 break-all text-muted-foreground">{paymentTransactionId}</div>
+                        </div>
+                    ) : null}
+
+                    {paymentMethod === "mobile_money" && paymentFlowStatus !== "idle" && paymentStatusMessage ? (
+                        <div className="rounded-md border p-3 text-sm text-muted-foreground">
+                            {paymentStatusMessage}
+                        </div>
+                    ) : null}
+
                     <Button
                         type="submit"
                         className="w-full h-12"
@@ -227,10 +386,10 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                         {isSubmitting ? (
                             <>
                                 <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" />
-                                Placing Order...
+                                {paymentMethod === "mobile_money" ? "Processing payment..." : "Placing Order..."}
                             </>
                         ) : (
-                            "Place order"
+                            paymentMethod === "mobile_money" ? "Pay with mobile money" : "Place order"
                         )}
                     </Button>
                 </form>
