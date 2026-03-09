@@ -1,5 +1,6 @@
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
+import { collectoDirectFetch, getCollectoProxyUrl } from "./collecto-http.js";
 
 export const collectoUtilsRouter: ExpressRouter = Router();
 
@@ -12,27 +13,23 @@ collectoUtilsRouter.post("/internal/collecto/get-my-ip", async (req, res, next) 
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const response = await fetch("https://collecto.cissytech.com/get-my-ip", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({}),
+    console.info("[CollectoUtils] get-my-ip:request", {
+      hasFixieUrl: Boolean(getCollectoProxyUrl()),
     });
 
-    const rawText = await response.text();
-    let payload: unknown = null;
+    const response = await collectoDirectFetch("https://collecto.cissytech.com/get-my-ip", {});
 
-    try {
-      payload = rawText ? JSON.parse(rawText) : null;
-    } catch {
-      payload = { raw: rawText };
-    }
+    console.info("[CollectoUtils] get-my-ip:response", {
+      hasFixieUrl: Boolean(getCollectoProxyUrl()),
+      status: response.status,
+      ok: response.ok,
+      body: response.json,
+    });
 
     return res.status(response.status).json({
       ok: response.ok,
       status: response.status,
-      data: payload,
+      data: response.json,
     });
   } catch (err) {
     next(err);

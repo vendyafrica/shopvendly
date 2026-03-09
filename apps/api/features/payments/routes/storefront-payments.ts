@@ -1,10 +1,9 @@
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
-import { HttpsProxyAgent } from "https-proxy-agent";
-import https from "node:https";
 import { z } from "zod";
 import { and, db, eq, isNull, orders, stores } from "@shopvendly/db";
 import { handlePaidOrderTransition } from "../services/payment-order-transition.js";
+import { collectoApiFetch, getCollectoProxyUrl, getCollectoBaseUrl } from "./collecto-http.js";
 
 export const storefrontPaymentsRouter: ExpressRouter = Router();
 
@@ -57,10 +56,6 @@ function isCollectoConfiguredForLive() {
   return Boolean(process.env.COLLECTO_USERNAME && process.env.COLLECTO_API_KEY);
 }
 
-function getCollectoBaseUrl() {
-  return (process.env.COLLECTO_BASE_URL || "https://collecto.cissytech.com/api").replace(/\/$/, "");
-}
-
 function normalizeCollectoPhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   if (digits.startsWith("256")) return digits;
@@ -101,76 +96,6 @@ function readCandidateMessage(payload: Record<string, unknown>): string | null {
   }
 
   return null;
-}
-
-function getCollectoDispatcher() {
-  const proxyUrl = process.env.FIXIE_URL?.trim();
-  if (!proxyUrl) {
-    return undefined;
-  }
-
-  return new HttpsProxyAgent(proxyUrl);
-}
-
-async function executeCollectoRequest(url: string, body: string, agent?: HttpsProxyAgent<string>) {
-  return await new Promise<{ status: number; text: string }>((resolve, reject) => {
-    const request = https.request(
-      url,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": process.env.COLLECTO_API_KEY || "",
-          "Content-Length": Buffer.byteLength(body),
-        },
-        agent,
-      },
-      (response) => {
-        let text = "";
-
-        response.setEncoding("utf8");
-        response.on("data", (chunk) => {
-          text += chunk;
-        });
-        response.on("end", () => {
-          resolve({ status: response.statusCode || 500, text });
-        });
-      },
-    );
-
-    request.on("error", reject);
-    request.write(body);
-    request.end();
-  });
-}
-
-async function collectoFetch(method: string, body: unknown) {
-  const username = process.env.COLLECTO_USERNAME || "";
-  if (!username) {
-    throw new Error("Missing COLLECTO_USERNAME");
-  }
-
-  const requestBody = JSON.stringify(body);
-  const response = await executeCollectoRequest(
-    `${getCollectoBaseUrl()}/${username}/${method}`,
-    requestBody,
-    getCollectoDispatcher(),
-  );
-
-  const text = response.text;
-  let json: unknown = null;
-  try {
-    json = text ? JSON.parse(text) : null;
-  } catch {
-    json = text || null;
-  }
-
-  return {
-    ok: response.status >= 200 && response.status < 300,
-    status: response.status,
-    json,
-    text,
-  };
 }
 
 async function assertStoreAndOrder(storeSlug: string, orderId: string) {
@@ -247,13 +172,23 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
       amount: body.amount,
       phone: normalizeCollectoPhone(body.phone),
       reference,
+      collectoBaseUrl: getCollectoBaseUrl(),
+      hasFixieUrl: Boolean(getCollectoProxyUrl()),
     });
 
-    const response = await collectoFetch("requestToPay", {
+    const response = await collectoApiFetch("requestToPay", {
       paymentOption: "mobilemoney",
       phone: normalizeCollectoPhone(body.phone),
       amount: body.amount,
       reference,
+    });
+
+    logCollectoDebug("initiate:response", {
+      slug,
+      orderId: order.id,
+      status: response.status,
+      ok: response.ok,
+      body: response.json,
     });
 
     if (!response.ok) {
@@ -307,7 +242,14 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
     const { slug } = req.params;
     const body = collectoStatusBodySchema.parse(req.body);
 
-    const response = await collectoFetch("requestToPayStatus", {
+    logCollectoDebug("status:request", {
+      slug,
+      transactionId: body.transactionId,
+      collectoBaseUrl: getCollectoBaseUrl(),
+      hasFixieUrl: Boolean(getCollectoProxyUrl()),
+    });
+
+    const response = await collectoApiFetch("checkTransactionStatus", {
       transactionId: body.transactionId,
     });
 
