@@ -130,6 +130,10 @@ function readCandidateStatus(payload: Record<string, unknown>): unknown {
   return payload.status ?? payload.paymentStatus ?? payload.transactionStatus ?? payload.state ?? payload.message;
 }
 
+function logCollectoDebug(event: string, payload: Record<string, unknown>) {
+  console.info(`[Collecto] ${event}`, payload);
+}
+
 storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", async (req, res, next) => {
   try {
     if (getCollectoMode() === "disabled" || !isCollectoConfiguredForLive()) {
@@ -156,6 +160,14 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
 
     const reference = `${slug}${COLLECTO_REFERENCE_SEPARATOR}${order.id}`;
 
+    logCollectoDebug("initiate:request", {
+      slug,
+      orderId: order.id,
+      amount: body.amount,
+      phone: normalizeCollectoPhone(body.phone),
+      reference,
+    });
+
     const response = await collectoFetch("requestToPay", {
       paymentOption: "mobilemoney",
       phone: normalizeCollectoPhone(body.phone),
@@ -174,6 +186,15 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
     }
 
     const payload = (response.json ?? {}) as Record<string, unknown>;
+
+    logCollectoDebug("initiate:response", {
+      slug,
+      orderId: order.id,
+      upstreamStatus: response.status,
+      ok: response.ok,
+      payload,
+    });
+
     const transactionId =
       (typeof payload.transactionId === "string" && payload.transactionId) ||
       (typeof payload.id === "string" && payload.id) ||
@@ -222,6 +243,15 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
     const payload = (response.json ?? {}) as Record<string, unknown>;
     const normalizedStatus = normalizeCollectoStatus(readCandidateStatus(payload));
 
+    logCollectoDebug("status:response", {
+      slug,
+      transactionId: body.transactionId,
+      upstreamStatus: response.status,
+      ok: response.ok,
+      normalizedStatus,
+      payload,
+    });
+
     if (normalizedStatus === "successful") {
       const reference = typeof payload.reference === "string" ? payload.reference : null;
       const { storeSlug, orderId } = parseCollectoReference(reference);
@@ -256,12 +286,20 @@ storefrontPaymentsRouter.post("/payments/collecto/callback", async (req, res, ne
   try {
     const body = collectoCallbackBodySchema.parse(req.body ?? {});
     const { storeSlug, orderId } = parseCollectoReference(body.reference || null);
+    const normalizedStatus = normalizeCollectoStatus(body.status);
+
+    logCollectoDebug("callback:received", {
+      storeSlug,
+      orderId,
+      transactionId: body.transactionId ?? null,
+      status: body.status ?? null,
+      normalizedStatus,
+      body,
+    });
 
     if (!storeSlug || !orderId) {
       return res.status(200).json({ ok: true, ignored: true });
     }
-
-    const normalizedStatus = normalizeCollectoStatus(body.status);
 
     if (normalizedStatus === "successful") {
       await handlePaidOrderTransition({ orderId, paymentMethod: "mobile_money" });
