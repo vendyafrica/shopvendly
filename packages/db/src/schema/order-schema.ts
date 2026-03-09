@@ -139,5 +139,5 @@ export type OrderStatus =
     | "cancelled"
     | "delivery_exception"
     | "refunded";
-export type PaymentMethod = "card" | "mpesa" | "mtn_momo" | "mobile_money" | "paystack" | "cash_on_delivery";
+export type PaymentMethod = "mobile_money" | "cash_on_delivery";
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";

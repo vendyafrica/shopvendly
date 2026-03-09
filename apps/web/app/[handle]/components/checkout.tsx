@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { Label } from "@shopvendly/ui/components/label";
+import { getRootUrl } from "@/utils/misc";
 import {
     Dialog,
     DialogContent,
@@ -14,7 +15,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 
-const API_BASE = "";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") || getRootUrl("");
 
 type CheckoutPaymentMethod = "cash_on_delivery" | "mobile_money";
 type PaymentFlowStatus = "idle" | "initiating" | "pending" | "successful" | "failed";
@@ -106,10 +107,9 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
         }
 
         const status = typeof statusData?.status === "string" ? statusData.status : "pending";
-        const mode = typeof statusData?.mode === "string" ? statusData.mode : null;
 
         if (status === "successful") {
-            setPaymentStatusMessage(mode === "mock" ? "Mock payment confirmed." : "Payment confirmed successfully.");
+            setPaymentStatusMessage("Payment confirmed successfully.");
             finishSuccess();
             return;
         }
@@ -123,9 +123,7 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
 
         setPaymentFlowStatus("pending");
         setPaymentStatusMessage(
-            mode === "mock"
-                ? "Mock payment created. Waiting for confirmation."
-                : "Approve the mobile money prompt on your phone, then wait for confirmation."
+            "Approve the mobile money prompt on your phone, then wait for confirmation."
         );
 
         clearPaymentPoll();

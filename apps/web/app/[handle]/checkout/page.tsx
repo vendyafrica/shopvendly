@@ -15,6 +15,7 @@ import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { useCart } from "@/features/cart/context/cart-context";
 import { useAppSession } from "@/contexts/app-session-context";
+import { getRootUrl } from "@/utils/misc";
 import { Bricolage_Grotesque } from "next/font/google";
 
 const geistSans = Bricolage_Grotesque({
@@ -30,7 +31,7 @@ type PaymentFlowStatus =
   | "successful"
   | "failed";
 
-const API_BASE = "";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") || getRootUrl("");
 
 const capitalizeFirst = (value?: string | null) => {
   if (!value) return value;
@@ -217,14 +218,9 @@ function CheckoutContent() {
 
     const status =
       typeof statusData?.status === "string" ? statusData.status : "pending";
-    const mode = typeof statusData?.mode === "string" ? statusData.mode : null;
 
     if (status === "successful") {
-      setPaymentStatusMessage(
-        mode === "mock"
-          ? "Mock payment confirmed."
-          : "Payment confirmed successfully.",
-      );
+      setPaymentStatusMessage("Payment confirmed successfully.");
       await finishSuccess();
       return;
     }
@@ -240,9 +236,7 @@ function CheckoutContent() {
 
     setPaymentFlowStatus("pending");
     setPaymentStatusMessage(
-      mode === "mock"
-        ? "Mock payment created. Waiting for confirmation."
-        : "Approve the mobile money prompt on your phone, then wait for confirmation.",
+      "Approve the mobile money prompt on your phone, then wait for confirmation.",
     );
 
     clearPaymentPoll();
