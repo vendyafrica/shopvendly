@@ -74,6 +74,33 @@ function normalizeCollectoStatus(value: unknown): "pending" | "successful" | "fa
   return "pending";
 }
 
+function getCollectoPayloadRecord(payload: Record<string, unknown>) {
+  const nested = payload.data;
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    return nested as Record<string, unknown>;
+  }
+
+  return null;
+}
+
+function readCandidateMessage(payload: Record<string, unknown>): string | null {
+  const nested = getCollectoPayloadRecord(payload);
+  const candidates = [
+    payload.message,
+    payload.status_message,
+    nested?.message,
+    nested?.status_message,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
+}
+
 async function collectoFetch(method: string, body: unknown) {
   const username = process.env.COLLECTO_USERNAME || "";
   if (!username) {
@@ -127,7 +154,20 @@ async function assertStoreAndOrder(storeSlug: string, orderId: string) {
 }
 
 function readCandidateStatus(payload: Record<string, unknown>): unknown {
-  return payload.status ?? payload.paymentStatus ?? payload.transactionStatus ?? payload.state ?? payload.message;
+  const nested = getCollectoPayloadRecord(payload);
+
+  return (
+    nested?.status ??
+    nested?.paymentStatus ??
+    nested?.transactionStatus ??
+    nested?.state ??
+    payload.status ??
+    payload.paymentStatus ??
+    payload.transactionStatus ??
+    payload.state ??
+    nested?.message ??
+    payload.message
+  );
 }
 
 function logCollectoDebug(event: string, payload: Record<string, unknown>) {
@@ -242,6 +282,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
 
     const payload = (response.json ?? {}) as Record<string, unknown>;
     const normalizedStatus = normalizeCollectoStatus(readCandidateStatus(payload));
+    const statusMessage = readCandidateMessage(payload);
 
     logCollectoDebug("status:response", {
       slug,
@@ -249,6 +290,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
       upstreamStatus: response.status,
       ok: response.ok,
       normalizedStatus,
+      statusMessage,
       payload,
     });
 
@@ -275,6 +317,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
       mode: "live",
       transactionId: body.transactionId,
       status: normalizedStatus,
+      message: statusMessage,
       raw: response.json,
     });
   } catch (err) {
