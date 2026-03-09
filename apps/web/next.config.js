@@ -79,6 +79,12 @@ const nextConfig = {
         port: "",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "oud.pics",
+        port: "",
+        pathname: "/**",
+      },
     ],
   },
   turbopack: {
