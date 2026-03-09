@@ -188,13 +188,13 @@ function CheckoutContent() {
   const finishSuccess = async () => {
     await clearStoreFromCart(store.id);
     setPaymentFlowStatus("successful");
+    setPaymentStatusMessage(
+      paymentMethod === "mobile_money"
+        ? "Payment confirmed successfully. Your order is now being processed."
+        : "Your order has been placed successfully.",
+    );
+    setIsSubmitting(false);
     setIsSuccess(true);
-    setTimeout(() => {
-      const target = store?.slug
-        ? `${window.location.origin}/${store.slug}`
-        : `${window.location.origin}/`;
-      window.location.assign(target);
-    }, 1500);
   };
 
   const pollCollectoStatus = async (transactionId: string) => {
@@ -237,13 +237,13 @@ function CheckoutContent() {
 
     setPaymentFlowStatus("pending");
     setPaymentStatusMessage(
-      "Approve the mobile money prompt on your phone, then wait for confirmation.",
+      "Waiting for payment confirmation from Collecto. Keep this page open for a moment.",
     );
 
     clearPaymentPoll();
     paymentPollRef.current = setTimeout(() => {
       void pollCollectoStatus(transactionId);
-    }, 3000);
+    }, 1200);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -272,16 +272,14 @@ function CheckoutContent() {
           quantity: item.quantity,
           selectedOptions: item.product.selectedOptions,
         })),
+        amount: storeTotal,
       };
 
-      const res = await fetch(
-        `${API_BASE}/api/storefront/${store.slug}/orders`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
-      );
+      const res = await fetch(`${API_BASE}/api/storefront/${store.slug}/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       if (!res.ok) throw new Error("Checkout failed");
 
@@ -292,39 +290,17 @@ function CheckoutContent() {
       if (paymentMethod === "mobile_money") {
         setPaymentFlowStatus("initiating");
         setPaymentStatusMessage(
-          "Sending payment request to your mobile money number...",
+          "Payment request sent. Check your phone and approve the mobile money prompt.",
         );
-        const collectoRes = await fetch(
-          `${API_BASE}/api/storefront/${store.slug}/payments/collecto/initiate`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              orderId,
-              phone,
-              amount: storeTotal,
-              reference: `${store.slug}-${orderId}`,
-            }),
-          },
-        );
-
-        const collectoData = await collectoRes.json().catch(() => ({}));
-
-        if (!collectoRes.ok) {
-          throw new Error(
-            typeof collectoData?.error?.message === "string"
-              ? collectoData.error.message
-              : "Unable to initiate mobile money payment.",
-          );
-        }
+        const payment = data?.payment;
 
         const transactionId =
-          typeof collectoData?.transactionId === "string"
-            ? collectoData.transactionId
+          typeof payment?.transactionId === "string"
+            ? payment.transactionId
             : null;
         const reference =
-          typeof collectoData?.reference === "string"
-            ? collectoData.reference
+          typeof payment?.reference === "string"
+            ? payment.reference
             : null;
 
         if (!transactionId) {
@@ -390,17 +366,37 @@ function CheckoutContent() {
           <h1
             className={`${geistSans.className} text-3xl uppercase tracking-widest font-semibold mb-4 leading-tight`}
           >
-            Order Confirmed
+            {paymentMethod === "mobile_money"
+              ? "Payment Confirmed"
+              : "Order Confirmed"}
           </h1>
-          <p className="text-neutral-500 mb-10 max-w-sm mx-auto uppercase tracking-wider text-xs">
-            Thank you for shopping with {store.name}. Your order receipt has
-            been sent to your email.
+          <p className="text-neutral-500 mb-6 max-w-sm mx-auto uppercase tracking-wider text-xs">
+            {paymentMethod === "mobile_money"
+              ? `Thank you for shopping with ${store.name}. Your payment was successful and your order is being processed.`
+              : `Thank you for shopping with ${store.name}. Your order has been received and is being processed.`}
           </p>
-          <Link href="/">
-            <Button className="h-14 rounded-none px-10 uppercase text-xs tracking-widest font-semibold transition-colors">
-              Continue Shopping
-            </Button>
-          </Link>
+          {paymentReference || paymentTransactionId ? (
+            <div className="mb-8 mx-auto max-w-md rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-left">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-neutral-500">
+                Payment reference
+              </div>
+              <div className="mt-2 break-all text-sm font-medium text-neutral-900">
+                {paymentReference || paymentTransactionId}
+              </div>
+            </div>
+          ) : null}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link href={`/${resolvedStoreSlug}`}>
+              <Button className="h-14 rounded-none px-10 uppercase text-xs tracking-widest font-semibold transition-colors">
+                Back to store
+              </Button>
+            </Link>
+            <Link href="/">
+              <Button variant="outline" className="h-14 rounded-none px-10 uppercase text-xs tracking-widest font-semibold transition-colors">
+                Home
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     );

@@ -118,7 +118,7 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
         clearPaymentPoll();
         paymentPollRef.current = setTimeout(() => {
             void pollCollectoStatus(transactionId);
-        }, 3000);
+        }, 1200);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -130,7 +130,7 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
         clearPaymentPoll();
 
         try {
-            const response = await fetch(`${API_BASE}/api/storefront/${storeSlug}/orders`, {
+            const response = await fetch(`${API_BASE}/api/storefront/${storeSlug}/checkout`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -147,15 +147,20 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                             quantity,
                         },
                     ],
+                    amount: totalAmount,
                 }),
             });
 
+            const data = await response.json().catch(() => ({}));
+
             if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || "Failed to place order");
+                throw new Error(
+                    typeof data?.error?.message === "string"
+                        ? data.error.message
+                        : "Failed to place order"
+                );
             }
 
-            const data = await response.json().catch(() => ({}));
             const orderId = typeof data?.id === "string" ? data.id : typeof data?.order?.id === "string" ? data.order.id : null;
             if (!orderId) {
                 throw new Error("Missing order ID");
@@ -166,31 +171,9 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                 return;
             }
 
-            const initiateRes = await fetch(`${API_BASE}/api/storefront/${storeSlug}/payments/collecto/initiate`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    orderId,
-                    phone: customerPhone,
-                    amount: totalAmount,
-                    reference: `${storeSlug}-${orderId}`,
-                }),
-            });
-
-            const initiateData = await initiateRes.json().catch(() => ({}));
-
-            if (!initiateRes.ok) {
-                throw new Error(
-                    typeof initiateData?.error?.message === "string"
-                        ? initiateData.error.message
-                        : "Failed to start mobile money payment."
-                );
-            }
-
-            const transactionId = typeof initiateData?.transactionId === "string" ? initiateData.transactionId : null;
-            const reference = typeof initiateData?.reference === "string" ? initiateData.reference : null;
+            const payment = data?.payment;
+            const transactionId = typeof payment?.transactionId === "string" ? payment.transactionId : null;
+            const reference = typeof payment?.reference === "string" ? payment.reference : null;
             if (!transactionId) {
                 throw new Error("Collecto payment started without a transaction reference.");
             }
