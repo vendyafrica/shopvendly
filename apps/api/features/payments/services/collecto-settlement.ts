@@ -209,6 +209,10 @@ async function markSettlementBatchSuccessful(orderIds: string[], settledAtIso: s
   );
 }
 
+async function patchSettlementBatch(orderIds: string[], patch: Partial<CollectoMeta>) {
+  await Promise.all(orderIds.map((id) => patchCollectoMeta(id, patch)));
+}
+
 async function pollTransactionStatus(method: string, transactionId: string, attempts: number) {
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const response = await collectoApiFetch(method, { transactionId }, { timeoutMs: 5000 });
@@ -341,7 +345,7 @@ export async function runCollectoSettlementForOrder(orderId: string) {
     const walletTransferAmount = Math.max(settlementAmount - bulkBalance, 0);
     const walletTransferReference = existingMeta.walletTransfer?.reference || `COLLECTO-BULK-${order.id}`;
 
-    await patchCollectoMeta(order.id, {
+    await patchSettlementBatch(settlementOrderIds, {
       settlementBatchOrderIds: settlementOrderIds,
     });
 
@@ -361,7 +365,7 @@ export async function runCollectoSettlementForOrder(orderId: string) {
         walletTransferStatus = normalizeStatus(readStatus(transferPayload));
         walletTransferMessage = readMessage(transferPayload);
 
-        await patchCollectoMeta(order.id, {
+        await patchSettlementBatch(settlementOrderIds, {
           walletTransfer: {
             reference: walletTransferReference,
             transactionId: walletTransactionId,
@@ -390,7 +394,7 @@ export async function runCollectoSettlementForOrder(orderId: string) {
           WITHDRAW_STATUS_ATTEMPTS,
         );
 
-        await patchCollectoMeta(order.id, {
+        await patchSettlementBatch(settlementOrderIds, {
           walletTransfer: {
             reference: walletTransferReference,
             transactionId: walletTransactionId,
@@ -407,7 +411,7 @@ export async function runCollectoSettlementForOrder(orderId: string) {
         }
       }
     } else {
-      await patchCollectoMeta(order.id, {
+      await patchSettlementBatch(settlementOrderIds, {
         walletTransfer: {
           reference: walletTransferReference,
           amount: 0,
@@ -444,7 +448,7 @@ export async function runCollectoSettlementForOrder(orderId: string) {
       payoutStatus = normalizeStatus(readStatus(payoutPayload));
       payoutMessage = readMessage(payoutPayload);
 
-      await patchCollectoMeta(order.id, {
+      await patchSettlementBatch(settlementOrderIds, {
         payout: {
           reference: payoutReference,
           transactionId: payoutTransactionId,
@@ -466,7 +470,7 @@ export async function runCollectoSettlementForOrder(orderId: string) {
 
     if (payoutStatus !== SETTLEMENT_STATUS_SUCCESSFUL) {
       const payoutStatusResult = await pollPayoutStatus(payoutReference, payoutGateway, PAYOUT_STATUS_ATTEMPTS);
-      await patchCollectoMeta(order.id, {
+      await patchSettlementBatch(settlementOrderIds, {
         payout: {
           reference: payoutReference,
           transactionId: payoutTransactionId,

@@ -58,6 +58,50 @@ const getCollectoPollIntervalMs = (attempt: number) => {
   return COLLECTO_POLL_INTERVAL_MS;
 };
 
+const getCheckoutLoadingCopy = (
+  paymentMethod: CheckoutPaymentMethod,
+  paymentFlowStatus: PaymentFlowStatus,
+  paymentStatusMessage: string | null,
+  storeName: string,
+) => {
+  if (paymentStatusMessage) {
+    return paymentStatusMessage;
+  }
+
+  if (paymentMethod === "mobile_money") {
+    if (paymentFlowStatus === "initiating") {
+      return "We’re creating your order and sending a mobile money prompt to your phone.";
+    }
+
+    if (paymentFlowStatus === "pending") {
+      return "Approve the payment prompt on your phone. We’ll confirm your order automatically once payment is received.";
+    }
+
+    return `We’re preparing your checkout with ${storeName}.`;
+  }
+
+  return `We’re placing your order with ${storeName} and preparing the next steps.`;
+};
+
+const getCheckoutLoadingLabel = (
+  paymentMethod: CheckoutPaymentMethod,
+  paymentFlowStatus: PaymentFlowStatus,
+) => {
+  if (paymentMethod === "mobile_money") {
+    if (paymentFlowStatus === "pending") {
+      return "Waiting for payment approval";
+    }
+
+    if (paymentFlowStatus === "initiating") {
+      return "Sending mobile money prompt";
+    }
+
+    return "Preparing payment";
+  }
+
+  return "Placing your order";
+};
+
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -565,27 +609,52 @@ function CheckoutContent() {
   };
 
   if (isSubmitting && !isSuccess) {
+    const loadingLabel = getCheckoutLoadingLabel(
+      paymentMethod,
+      paymentFlowStatus,
+    );
+    const loadingCopy = getCheckoutLoadingCopy(
+      paymentMethod,
+      paymentFlowStatus,
+      paymentStatusMessage,
+      store.name,
+    );
+
     return (
-      <div className="fixed inset-0 z-999 flex items-center justify-center text-center px-4 bg-white">
-        <div>
-          <div className="p-8 rounded-none inline-block mb-8">
+      <div className="fixed inset-0 z-999 flex items-center justify-center bg-white/95 px-4">
+        <div className="w-full max-w-md rounded-3xl border border-neutral-200 bg-white p-6 sm:p-8 text-center shadow-xl">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/8 text-primary">
             <HugeiconsIcon
               icon={Loading03Icon}
-              className="h-10 w-10 text-purple-600 animate-spin"
+              className="h-8 w-8 animate-spin"
               strokeWidth={1.5}
             />
           </div>
+          <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary/80">
+            {loadingLabel}
+          </div>
           <h1
-            className={`${geistSans.className} text-3xl tracking-widest font-semibold mb-4 leading-tight`}
+            className={`${geistSans.className} mb-3 text-2xl font-semibold leading-tight tracking-tight text-neutral-950 sm:text-3xl`}
           >
             {paymentMethod === "mobile_money"
-              ? "Processing Payment"
-              : "Processing Order"}
+              ? "Complete the payment on your phone"
+              : "Finalizing your order"}
           </h1>
-          <p className="text-neutral-500 mb-10 max-w-sm mx-auto uppercase tracking-wider text-xs">
-            {paymentStatusMessage ||
-              `Please wait while we confirm your order with ${store.name}.`}
+          <p className="mx-auto mb-6 max-w-sm text-sm leading-6 text-neutral-600">
+            {loadingCopy}
           </p>
+          <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-left">
+            <div className="text-xs font-medium text-neutral-900">
+              {paymentMethod === "mobile_money"
+                ? "What happens next"
+                : "Order progress"}
+            </div>
+            <div className="mt-1 text-xs leading-5 text-neutral-500">
+              {paymentMethod === "mobile_money"
+                ? "Keep this page open while we confirm the transaction. If approval takes longer than expected, you’ll get retry options."
+                : "We’re saving your details and creating the order for the seller."}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -694,7 +763,7 @@ function CheckoutContent() {
                           setFullName(e.target.value);
                           setActiveOrderId(null);
                         }}
-                        className="h-12 rounded-lg text-sm"
+                        className="h-12 rounded-lg text-base"
                         required
                       />
 
@@ -718,7 +787,7 @@ function CheckoutContent() {
                               void verifyCollectoPhone(phone, { force: true });
                             }
                           }}
-                          className="h-12 rounded-lg text-sm"
+                          className="h-12 rounded-lg text-base"
                           required
                         />
                         {paymentMethod === "mobile_money" &&
@@ -744,7 +813,7 @@ function CheckoutContent() {
                           setAddress(e.target.value);
                           setActiveOrderId(null);
                         }}
-                        className="h-12 rounded-lg text-sm"
+                        className="h-12 rounded-lg text-base"
                         required
                       />
                     </div>
@@ -771,7 +840,7 @@ function CheckoutContent() {
                           void verifyCollectoPhone(phone, { force: true });
                         }
                       }}
-                      className={`rounded-md border p-4 text-left transition-colors focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary/10 ${paymentMethod === "mobile_money" ? "border-primary bg-white" : "border-transparent bg-neutral-50"}`}
+                      className={`rounded-2xl border p-4 text-left transition-colors focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary/10 ${paymentMethod === "mobile_money" ? "border-primary bg-white" : "border-transparent bg-neutral-50"}`}
                     >
                       <div className="flex items-start gap-3">
                         <span
@@ -836,11 +905,11 @@ function CheckoutContent() {
                   ) : null}
 
                   {paymentFlowStatus === "failed" ? (
-                    <div className="flex flex-col gap-3 sm:flex-row">
+                    <div className="grid gap-3 sm:grid-cols-2">
                       <Button
                         type="button"
                         variant="outline"
-                        className="flex-1"
+                        className="h-11 w-full rounded-xl border-neutral-300 text-sm font-medium"
                         onClick={() => {
                           resetPaymentRetryState();
                         }}
@@ -850,7 +919,7 @@ function CheckoutContent() {
                       <Button
                         type="button"
                         variant="outline"
-                        className="flex-1"
+                        className="h-11 w-full rounded-xl border-neutral-300 text-sm font-medium"
                         onClick={switchToCashOnDelivery}
                       >
                         Use cash on delivery
