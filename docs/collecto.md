@@ -1,69 +1,208 @@
-# Collecto API Reference
-
-© 2025. All rights reserved | [www.collecto.cissytech.com](https://collecto.cissytech.com)
-
-**Base Endpoint:** `https://collecto.cissytech.com/api/{username}/{method}`
-
-> Get your `{username}` and `{x-api-key}` from the Collecto System's Settings.
+# Collecto API — Implementation Reference
+> For Windsurf agents. Read this fully before implementing any payment flow.
 
 ---
 
-## Endpoints
+## ⚠️ Critical Architecture Note — Read First
 
-### POST `/requestToPay`
+Collecto has **two separate products** that must be used together to avoid fees:
 
-Initiates a payment request to a mobile money account. This endpoint allows you to request funds from a specified phone number, with a defined amount and reference.
+| Product | System | What It Does |
+|---|---|---|
+| **Collecto Wallet** | `collecto.cissytech.com` | Collects money FROM customers via mobile money |
+| **Bulk Account** | `bulk.cissytech.com` | Pays OUT money TO sellers — MTN, Airtel, Stanbic, FlexiPay |
 
-**Headers**
+### The Fee Problem
+Withdrawing from your Collecto Wallet directly to mobile money costs **UGX 5,000 per transaction**. At any volume, this destroys margins.
+
+### The Correct Flow (Zero Payout Fees)
 ```
-Content-Type: application/json
-x-api-key: your-x-api-key
+Customer pays → Collecto Wallet → Transfer to Bulk Account → Payout to Seller (FREE)
 ```
 
-**Request Body**
+**Never** payout directly from the Wallet. Always route through Bulk first.
+
+---
+
+## Base URL & Auth
+
+```
+Base URL:  https://collecto.cissytech.com/api/{username}/{method}
+Auth:      x-api-key: your-x-api-key   (get from Collecto Settings)
+Content:   Content-Type: application/json
+```
+
+> Get `{username}` and `{x-api-key}` from the Collecto dashboard under Settings.
+
+---
+
+## Full Payment Flow — Collect → Bulk → Payout
+
+### Step 1 — Collect Money from Customer
+
+**`POST /requestToPay`**
+
+Initiates a mobile money payment request to the customer's phone. The customer receives a prompt on their phone to confirm payment.
+
 ```json
 {
   "paymentOption": "mobilemoney",
   "phone": "256705687760",
-  "amount": 6000,
-  "reference": "Samson"
+  "amount": 85000,
+  "reference": "ORDER-001"
 }
 ```
 
 ---
 
-### POST `/requestToPayStatus`
+### Step 2 — Poll Until Payment Confirmed
 
-Checks the status of a previously initiated payment request. You can track whether a payment has been successful, is pending, or has failed by providing the transaction ID.
+**`POST /requestToPayStatus`**
 
-**Headers**
-```
-Content-Type: application/json
-x-api-key: your-x-api-key
-```
+Poll this endpoint until `status` is `SUCCESSFUL` before proceeding. Do not assume payment succeeded.
 
-**Request Body**
 ```json
 {
   "transactionId": "PMT12345"
 }
 ```
 
+> Poll every 5–10 seconds. Timeout after 2–3 minutes. Mark order as `payment_pending` until confirmed.
+
 ---
 
-### POST `/servicePayment`
+### Step 3 — Transfer Wallet Balance to Bulk Account
 
-Processes payments for various Collecto services. This endpoint allows you to top up/deposit for the various services using mobile money or other supported payment options.
+**`POST /withdrawFromWallet`**
 
-**Headers**
+Move collected funds from your Collecto Wallet into your Bulk Account. This is the step that enables free payouts. Do this in batches (e.g. end of day, or once per order batch) to minimise the one-time transfer overhead.
+
+```json
+{
+  "amount": "500000",
+  "reference": "BATCH-2026-03-10",
+  "withDrawTo": "mobilemoney"
+}
 ```
-Content-Type: application/json
-x-api-key: your-x-api-key
+
+> **Note:** `withDrawTo` here means the Bulk system's mobile money gateway, not a personal number. This funds your Bulk Account, not a seller.
+
+---
+
+### Step 3b — Check Wallet Transfer Status
+
+**`POST /withdrawFromWalletStatus`**
+
+```json
+{
+  "transactionId": "P2134534"
+}
 ```
 
-**Supported Services:** `BULK`, `SMS`, `AIRTIME`, `EMAILS`, `ADS`
+Confirm the Bulk Account is funded before triggering payouts.
 
-**Request Body**
+---
+
+### Step 4 — Payout to Seller (FREE via Bulk)
+
+**`POST /initiatePayout`**
+
+Once funds are in the Bulk Account, pay out to any seller. **No per-transaction fee** for MTN, Airtel, or Stanbic Bank payouts via Bulk.
+
+```json
+{
+  "gateway": "mobilemoney",
+  "swiftCode": "",
+  "reference": "SELLER-PAYOUT-001",
+  "accountName": "Jane Nakato",
+  "accountNumber": 256772123456,
+  "amount": "72500",
+  "message": "Vendly order payout – March 10",
+  "phone": 256772123456
+}
+```
+
+**Supported Gateways:**
+| Gateway | Notes |
+|---|---|
+| `mobilemoney` | MTN and Airtel Uganda only |
+| `flexipay` | FlexiPay wallets |
+| `stanbicBank` | Stanbic bank accounts |
+| `otherBanks` | Other banks — requires `swiftCode` |
+
+---
+
+### Step 5 — Confirm Payout Status
+
+**`POST /payoutStatus`**
+
+```json
+{
+  "gateway": "mobilemoney",
+  "reference": "SELLER-PAYOUT-001"
+}
+```
+
+Only mark the seller's order as `settled` once this returns `SUCCESSFUL`.
+
+---
+
+## Supporting Endpoints
+
+### Verify a Phone Number Before Charging
+
+**`POST /verifyPhoneNumber`**
+
+Always verify before sending a payment request. Returns the registered name — use this to confirm the right person is paying/receiving.
+
+```json
+{
+  "phone": "256705687760"
+}
+```
+
+Supports: MTN Uganda, Airtel Uganda, FlexiPay.
+
+---
+
+### Check Wallet & Bulk Balances
+
+**`POST /currentBalance`**
+
+```json
+{
+  "type": "Wallet"
+}
+```
+
+**Available types:** `Wallet`, `CASH`, `BULK`, `SMS`, `AIRTIME`, `EMAILS`, `ADS`
+
+> Check `BULK` balance before triggering payouts. Check `Wallet` balance to know when to transfer to Bulk.
+
+---
+
+### Send SMS Notification to Seller/Buyer
+
+**`POST /sendSingleSMS`**
+
+Use this to notify buyers of order confirmation and sellers of incoming payouts. Requires SMS credit — fund via `/servicePayment`.
+
+```json
+{
+  "phone": 256705687760,
+  "message": "Your Vendly order has been confirmed. We'll notify you when it ships.",
+  "reference": 12345
+}
+```
+
+---
+
+### Fund SMS / Service Credits
+
+**`POST /servicePayment`**
+
+Top up SMS, Airtime, Email, or Ads credits.
+
 ```json
 {
   "service": "SMS",
@@ -74,139 +213,34 @@ x-api-key: your-x-api-key
 }
 ```
 
----
-
-### POST `/servicePaymentStatus`
-
-Retrieves the status of a service payment transaction. By providing the service type and transaction ID, you can check if your service payment was successful.
-
-**Headers**
-```
-Content-Type: application/json
-x-api-key: your-x-api-key
-```
-
-**Supported Services:** `BULK`, `SMS`, `AIRTIME`, `EMAILS`, `ADS`
-
-**Request Body**
-```json
-{
-  "service": "SMS",
-  "transactionId": "PMT12345"
-}
-```
+**Supported services:** `BULK`, `SMS`, `AIRTIME`, `EMAILS`, `ADS`
 
 ---
 
-### POST `/initiatePayout`
+## Complete Endpoint Reference
 
-Transfers funds from your BULK Collecto Account to recipients through various payment gateways (mobile money, FlexiPay, Stanbic Bank, other banks).
-
-> Fund your BULK payments account via the `/servicePayment` endpoint, request admin assistance, or self-service at [https://bulk.cissytech.com](https://bulk.cissytech.com).
-
-**Headers**
-```
-Content-Type: application/json
-x-api-key: your-x-api-key
-```
-
-**Supported Gateways:** `mobilemoney` (MTN and Airtel only), `flexipay`, `stanbicBank`, `otherBanks` (swiftCode required)
-
-**Request Body**
-```json
-{
-  "gateway": "mobilemoney",
-  "swiftCode": "",
-  "reference": "12345MYREF206",
-  "accountName": "Samson Kwiz",
-  "accountNumber": 256705687760,
-  "amount": "5000",
-  "message": "Test Payout",
-  "phone": 256705687760
-}
-```
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/requestToPay` | Request payment from customer |
+| POST | `/requestToPayStatus` | Check if customer payment succeeded |
+| POST | `/initiatePayout` | Pay out to seller via Bulk (free) |
+| POST | `/payoutStatus` | Check payout status |
+| POST | `/withdrawFromWallet` | Move Wallet funds → Bulk Account |
+| POST | `/withdrawFromWalletStatus` | Check wallet→bulk transfer status |
+| POST | `/currentBalance` | Check any account balance |
+| POST | `/verifyPhoneNumber` | Validate phone + get registered name |
+| POST | `/sendSingleSMS` | Send SMS to buyer or seller |
+| POST | `/servicePayment` | Top up SMS/Airtime/Bulk credits |
+| POST | `/servicePaymentStatus` | Check service top-up status |
 
 ---
 
-### POST `/payoutStatus`
+## Implementation Rules for Agents
 
-Checks the status of a previously initiated payout. By providing the gateway and reference, you can track whether your payout has been successful, is pending, or has failed.
-
-**Headers**
-```
-Content-Type: application/json
-x-api-key: your-x-api-key
-```
-
-**Request Body**
-```json
-{
-  "gateway": "mobilemoney",
-  "reference": "12345MYREF206"
-}
-```
-
----
-
-### POST `/sendSingleSMS`
-
-Delivers a text message to a specified phone number with a custom message and reference identifier.
-
-> Ensure your SMS account is funded via the `/servicePayment` endpoint, request Collecto Admin to assist, or log into [https://bulk.cissytech.com](https://bulk.cissytech.com) for self-service before sending messages.
-
-**Headers**
-```
-Content-Type: application/json
-x-api-key: your-x-api-key
-```
-
-**Request Body**
-```json
-{
-  "phone": 256705687760,
-  "message": "SMS Message",
-  "reference": 12345
-}
-```
-
----
-
-### POST `/currentBalance`
-
-Retrieves available funds for specified account types, allowing you to monitor balances across various Collecto services.
-
-**Headers**
-```
-Content-Type: application/json
-x-api-key: your-x-api-key
-```
-
-**Supported Types:** `Wallet`, `CASH`, `BULK`, `SMS`, `AIRTIME`, `EMAILS`, `ADS`
-
-**Request Body**
-```json
-{
-  "type": "Wallet"
-}
-```
-
----
-
-### POST `/verifyPhoneNumber`
-
-Validates phone number registration status on MTN MobileMoney, Airtel Money, or FlexiPay and returns the registered name.
-
-**Headers**
-```
-Content-Type: application/json
-x-api-key: your-x-api-key
-```
-
-**Supported Numbers:** MTN and Airtel Uganda
-
-**Request Body**
-```json
-{
-  "phone": "256705687760"
-}
-```
+1. **Always verify phone numbers** before initiating any payment or payout.
+2. **Always poll status endpoints** — never assume a payment succeeded from the initial response.
+3. **Never payout directly from Wallet** — always transfer to Bulk first. The fee is UGX 5,000 per direct withdrawal.
+4. **Batch Wallet→Bulk transfers** where possible (e.g. once per hour or end of day) to minimise overhead.
+5. **Store all `transactionId` and `reference` values** immediately after initiating any request — you'll need them to poll status.
+6. **Handle all three states:** `SUCCESSFUL`, `PENDING`, `FAILED`. Never leave a transaction in unknown state.
+7. **Check Bulk balance** before triggering seller payouts. If balance is insufficient, trigger a Wallet→Bulk transfer first.

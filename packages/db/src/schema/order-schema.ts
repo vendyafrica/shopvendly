@@ -28,7 +28,7 @@ export const orders = pgTable(
         orderNumber: text("order_number").notNull(),
 
         customerName: text("customer_name").notNull(),
-        customerEmail: text("customer_email").notNull(),
+        customerEmail: text("customer_email"),
         customerPhone: text("customer_phone"),
 
         status: text("status").notNull().default("pending_seller_acceptance"),

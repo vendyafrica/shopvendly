@@ -51,7 +51,7 @@ export type OrderItemInput = z.infer<typeof orderItemInputSchema>;
 
 export const createOrderSchema = z.object({
   customerName: z.string().min(1).max(255),
-  customerEmail: z.string().email(),
+  customerEmail: z.string().email().optional(),
   customerPhone: z.string().optional(),
   paymentMethod: z.enum(["mobile_money", "cash_on_delivery"]).default("cash_on_delivery"),
   notes: z.string().optional(),

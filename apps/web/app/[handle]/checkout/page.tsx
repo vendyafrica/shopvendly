@@ -51,7 +51,6 @@ function CheckoutContent() {
   const { itemsByStore, clearStoreFromCart, isLoaded } = useCart();
   const { session } = useAppSession();
 
-  const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
@@ -74,7 +73,6 @@ function CheckoutContent() {
 
   useEffect(() => {
     if (session?.user) {
-      setEmail(session.user.email || "");
       setFullName(session.user.name || "");
     }
   }, [session]);
@@ -282,7 +280,6 @@ function CheckoutContent() {
     try {
       const payload = {
         customerName: fullName,
-        customerEmail: email,
         customerPhone: phone,
         paymentMethod,
         shippingAddress: {
@@ -303,9 +300,17 @@ function CheckoutContent() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Checkout failed");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          typeof data?.error?.message === "string"
+            ? data.error.message
+            : typeof data?.message === "string"
+              ? data.message
+              : "Checkout failed",
+        );
+      }
 
-      const data = await res.json();
       const orderId = "order" in data ? data.order?.id : data.id;
       if (!orderId) throw new Error("Missing order ID");
 
@@ -462,9 +467,9 @@ function CheckoutContent() {
                     </Link>
                   </div>
 
-                  <div className="space-y-5 rounded-2xl border border-neutral-200 bg-neutral-50/60 p-5 sm:p-6 shadow-sm">
+                  <div className="space-y-5 rounded-md border border-neutral-200 bg-neutral-50/60 p-5 sm:p-6 shadow-sm">
                     <h2
-                      className={`${geistSans.className} text-lg tracking-widest font-semibold`}
+                      className="text-lg font-semibold"
                     >
                       Shipping Information
                     </h2>
@@ -478,15 +483,7 @@ function CheckoutContent() {
                         required
                       />
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                          placeholder="Email Address"
-                          type="email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="h-12 rounded-lg text-sm"
-                          required
-                        />
+                      <div className="space-y-4">
                         <Input
                           placeholder="Phone Number"
                           type="tel"
@@ -496,7 +493,6 @@ function CheckoutContent() {
                           required
                         />
                       </div>
-
                       <Input
                         placeholder="Delivery Address (e.g. 123 Main St, Kampala)"
                         value={address}
@@ -508,7 +504,7 @@ function CheckoutContent() {
                   </div>
                 </div>
 
-                <div className="space-y-5 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm">
+                <div className="space-y-5 rounded-md border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm">
                   <div>
                     <h2 className="text-base font-semibold text-neutral-900">
                       Payment method
@@ -522,7 +518,7 @@ function CheckoutContent() {
                     <button
                       type="button"
                       onClick={() => setPaymentMethod("mobile_money")}
-                      className={`rounded-2xl border p-4 text-left transition-colors focus-within:border-primary/50 focus-within:ring-[3px] focus-within:ring-primary/10 ${paymentMethod === "mobile_money" ? "border-neutral-900 bg-white" : "border-transparent bg-neutral-50"}`}
+                      className={`rounded-md border p-4 text-left transition-colors focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary/10 ${paymentMethod === "mobile_money" ? "border-primary bg-white" : "border-transparent bg-neutral-50"}`}
                     >
                       <div className="flex items-start gap-3">
                         <span
@@ -589,7 +585,7 @@ function CheckoutContent() {
                   <Button
                     type="submit"
                     className="w-full h-12 rounded-xl bg-primary text-white text-sm font-semibold tracking-wide transition-colors hover:bg-primary/70 disabled:bg-neutral-300 disabled:text-neutral-500"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !fullName || !address || !phone}
                   >
                     {paymentMethod === "mobile_money"
                       ? "Continue to payment"

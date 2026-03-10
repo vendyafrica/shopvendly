@@ -38,8 +38,8 @@ interface CheckoutProps {
 export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: CheckoutProps) {
     const paymentPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [customerName, setCustomerName] = useState("");
-    const [customerEmail, setCustomerEmail] = useState("");
     const [customerPhone, setCustomerPhone] = useState("");
+    const [shippingAddress, setShippingAddress] = useState("");
     const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("mobile_money");
     const [notes, setNotes] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,8 +60,8 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
 
     const resetState = () => {
         setCustomerName("");
-        setCustomerEmail("");
         setCustomerPhone("");
+        setShippingAddress("");
         setIsSuccess(false);
         setError(null);
         setPaymentMethod("mobile_money");
@@ -137,10 +137,12 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                 },
                 body: JSON.stringify({
                     customerName,
-                    customerEmail,
                     customerPhone: customerPhone || undefined,
                     paymentMethod,
                     notes: notes || undefined,
+                    shippingAddress: {
+                        street: shippingAddress || undefined,
+                    },
                     items: [
                         {
                             productId: product.id,
@@ -157,6 +159,8 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                 throw new Error(
                     typeof data?.error?.message === "string"
                         ? data.error.message
+                        : typeof data?.message === "string"
+                            ? data.message
                         : "Failed to place order"
                 );
             }
@@ -260,18 +264,6 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="email">Email *</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                placeholder="john@example.com"
-                                value={customerEmail}
-                                onChange={(e) => setCustomerEmail(e.target.value)}
-                                required
-                            />
-                        </div>
-
-                        <div className="grid gap-2">
                             <Label htmlFor="phone">WhatsApp Phone Number</Label>
                             <Input
                                 id="phone"
@@ -284,6 +276,17 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                             <p className="text-xs text-muted-foreground">
                                 Enter with country code so seller and delivery provider can reach you.
                             </p>
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="shipping-address">Shipping Address *</Label>
+                            <Input
+                                id="shipping-address"
+                                placeholder="Enter your delivery address"
+                                value={shippingAddress}
+                                onChange={(e) => setShippingAddress(e.target.value)}
+                                required
+                            />
                         </div>
                     </div>
 
@@ -342,8 +345,8 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                         disabled={
                             isSubmitting ||
                             !customerName ||
-                            !customerEmail ||
-                            !customerPhone
+                            !customerPhone ||
+                            !shippingAddress
                         }
                     >
                         {isSubmitting ? (

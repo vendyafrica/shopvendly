@@ -8,7 +8,7 @@ import {
   notifySellerNewOrder,
 } from "../../messaging/services/notifications.js";
 import { dispatchDeliveryProviderForOrder } from "../../payments/services/delivery-dispatch.js";
-import { collectoApiFetch } from "../../payments/routes/collecto-http.js";
+import { collectoApiFetch, getCollectoBaseUrl } from "../../payments/routes/collecto-http.js";
 
 export const storefrontOrdersRouter: ExpressRouter = Router();
 
@@ -65,6 +65,10 @@ function readCandidateTransactionId(payload: Record<string, unknown>): string | 
   return null;
 }
 
+function logCollectoCheckoutDebug(event: string, payload: Record<string, unknown>) {
+  console.info(`[CollectoCheckout] ${event}`, payload);
+}
+
 function captureOrderCreated(order: Awaited<ReturnType<typeof orderService.createOrder>>, slug: string) {
   capturePosthogEvent({
     distinctId: order.customerEmail || order.id,
@@ -112,11 +116,51 @@ storefrontOrdersRouter.post("/storefront/:slug/checkout", async (req, res, next)
     }
 
     const reference = `${slug}${COLLECTO_REFERENCE_SEPARATOR}${order.id}`;
-    const response = await collectoApiFetch("requestToPay", {
-      paymentOption: "mobilemoney",
-      phone: normalizeCollectoPhone(input.customerPhone || ""),
-      amount: input.amount ?? order.totalAmount,
+    const phone = normalizeCollectoPhone(input.customerPhone || "");
+    const amount = input.amount ?? order.totalAmount;
+
+    logCollectoCheckoutDebug("initiate:request", {
+      slug,
+      orderId: order.id,
+      amount,
+      phone,
       reference,
+      collectoBaseUrl: getCollectoBaseUrl(),
+    });
+
+    let response;
+    try {
+      response = await collectoApiFetch("requestToPay", {
+        paymentOption: "mobilemoney",
+        phone,
+        amount,
+        reference,
+      });
+    } catch (error) {
+      console.error("[CollectoCheckout] initiate:exception", {
+        slug,
+        orderId: order.id,
+        amount,
+        phone,
+        reference,
+        collectoBaseUrl: getCollectoBaseUrl(),
+        error,
+      });
+      return res.status(502).json({
+        error: {
+          code: "COLLECTO_INITIATE_EXCEPTION",
+          message: "Failed to reach Collecto mobile money service.",
+        },
+      });
+    }
+
+    logCollectoCheckoutDebug("initiate:response", {
+      slug,
+      orderId: order.id,
+      status: response.status,
+      ok: response.ok,
+      body: response.json,
+      text: response.text,
     });
 
     if (!response.ok) {
@@ -133,6 +177,15 @@ storefrontOrdersRouter.post("/storefront/:slug/checkout", async (req, res, next)
     const transactionId = readCandidateTransactionId(payload);
 
     if (!transactionId) {
+      console.error("[CollectoCheckout] initiate:missing-transaction-id", {
+        slug,
+        orderId: order.id,
+        amount,
+        phone,
+        reference,
+        body: response.json,
+        text: response.text,
+      });
       return res.status(502).json({
         error: {
           code: "COLLECTO_INITIATE_MISSING_TRANSACTION_ID",
