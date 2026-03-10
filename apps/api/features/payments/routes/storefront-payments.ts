@@ -158,6 +158,25 @@ function readCandidateTransactionId(payload: Record<string, unknown>): string | 
   return null;
 }
 
+function readCollectoInitiateFlag(payload: Record<string, unknown>): boolean | null {
+  const nested = getCollectoPayloadRecord(payload);
+  const candidates = [nested?.requestToPay, payload.requestToPay];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "boolean") {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function isUsableCollectoTransactionId(transactionId: string | null): transactionId is string {
+  if (!transactionId) return false;
+  const normalized = transactionId.trim().toLowerCase();
+  return normalized !== "" && normalized !== "0" && normalized !== "null" && normalized !== "undefined";
+}
+
 function logCollectoDebug(event: string, payload: Record<string, unknown>) {
   console.info(`[Collecto] ${event}`, payload);
 }
@@ -233,13 +252,25 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
     });
 
     const transactionId = readCandidateTransactionId(payload);
+    const requestToPay = readCollectoInitiateFlag(payload);
+    const statusMessage = readCandidateMessage(payload);
 
-    if (!transactionId) {
-      return res.status(502).json({
+    if (!isUsableCollectoTransactionId(transactionId) || requestToPay === false) {
+      return res.status(200).json({
+        ok: false,
         error: {
-          code: "COLLECTO_INITIATE_MISSING_TRANSACTION_ID",
-          message: "Collecto did not return a transaction ID for status tracking.",
+          code: "COLLECTO_INITIATE_UNAVAILABLE",
+          message:
+            statusMessage ||
+            "Mobile money is unavailable right now. Please use Cash on Delivery.",
           details: response.json || response.text,
+        },
+        fallback: {
+          recoverable: true,
+          suggestedPaymentMethod: "cash_on_delivery",
+          message:
+            statusMessage ||
+            "Mobile money is unavailable right now. Please use Cash on Delivery.",
         },
       });
     }

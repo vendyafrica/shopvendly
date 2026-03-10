@@ -65,6 +65,53 @@ function readCandidateTransactionId(payload: Record<string, unknown>): string | 
   return null;
 }
 
+function readCollectoInitiateFlag(payload: Record<string, unknown>): boolean | null {
+  const nested = getCollectoPayloadRecord(payload);
+  const candidates = [nested?.requestToPay, payload.requestToPay];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "boolean") {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function readCollectoMessage(payload: Record<string, unknown>): string | null {
+  const nested = getCollectoPayloadRecord(payload);
+  const candidates = [
+    nested?.message,
+    nested?.status_message,
+    payload.message,
+    payload.status_message,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
+}
+
+function isUsableCollectoTransactionId(transactionId: string | null): transactionId is string {
+  if (!transactionId) return false;
+  const normalized = transactionId.trim().toLowerCase();
+  return normalized !== "" && normalized !== "0" && normalized !== "null" && normalized !== "undefined";
+}
+
+function buildCollectoSoftFallback(message?: string | null) {
+  return {
+    recoverable: true,
+    suggestedPaymentMethod: "cash_on_delivery" as const,
+    message:
+      message?.trim() ||
+      "Mobile money is unavailable right now. Please use Cash on Delivery.",
+  };
+}
+
 function logCollectoCheckoutDebug(event: string, payload: Record<string, unknown>) {
   console.info(`[CollectoCheckout] ${event}`, payload);
 }
@@ -100,9 +147,9 @@ storefrontOrdersRouter.post("/storefront/:slug/checkout", async (req, res, next)
     const order = await orderService.createOrder(slug, input);
 
     captureOrderCreated(order, slug);
-    await notifyOrderCreated(order);
 
     if (input.paymentMethod !== "mobile_money") {
+      await notifyOrderCreated(order);
       return res.status(201).json({ ok: true, order });
     }
 
@@ -175,25 +222,38 @@ storefrontOrdersRouter.post("/storefront/:slug/checkout", async (req, res, next)
 
     const payload = (response.json ?? {}) as Record<string, unknown>;
     const transactionId = readCandidateTransactionId(payload);
+    const requestToPay = readCollectoInitiateFlag(payload);
+    const collectoMessage = readCollectoMessage(payload);
 
-    if (!transactionId) {
-      console.error("[CollectoCheckout] initiate:missing-transaction-id", {
+    if (!isUsableCollectoTransactionId(transactionId) || requestToPay === false) {
+      console.error("[CollectoCheckout] initiate:rejected", {
         slug,
         orderId: order.id,
         amount,
         phone,
         reference,
+        requestToPay,
+        transactionId,
+        message: collectoMessage,
         body: response.json,
         text: response.text,
       });
-      return res.status(502).json({
+
+      return res.status(200).json({
+        ok: false,
+        order,
         error: {
-          code: "COLLECTO_INITIATE_MISSING_TRANSACTION_ID",
-          message: "Collecto did not return a transaction ID for status tracking.",
+          code: "COLLECTO_INITIATE_UNAVAILABLE",
+          message:
+            collectoMessage ||
+            "Mobile money is unavailable right now. Please use Cash on Delivery.",
           details: response.json || response.text,
         },
+        fallback: buildCollectoSoftFallback(collectoMessage),
       });
     }
+
+    await notifyOrderCreated(order);
 
     return res.status(201).json({
       ok: true,

@@ -31,6 +31,9 @@ type PaymentFlowStatus =
   | "successful"
   | "failed";
 
+const COLLECTO_POLL_INTERVAL_MS = 2500;
+const COLLECTO_MAX_POLL_ATTEMPTS = 3;
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") || getRootUrl("");
 
 const capitalizeFirst = (value?: string | null) => {
@@ -38,6 +41,12 @@ const capitalizeFirst = (value?: string | null) => {
   const trimmed = value.trim();
   if (!trimmed) return value;
   return `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}`;
+};
+
+const isUsableTransactionId = (value: unknown): value is string => {
+  if (typeof value !== "string") return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized !== "" && normalized !== "0" && normalized !== "null" && normalized !== "undefined";
 };
 
 function CheckoutContent() {
@@ -70,6 +79,20 @@ function CheckoutContent() {
   const [paymentStatusMessage, setPaymentStatusMessage] = useState<
     string | null
   >(null);
+
+  const activateCashFallback = (message?: string | null) => {
+    clearPaymentPoll();
+    setPaymentMethod("cash_on_delivery");
+    setPaymentFlowStatus("idle");
+    setPaymentTransactionId(null);
+    setPaymentReference(null);
+    setPaymentStatusMessage(
+      message?.trim() ||
+        "Mobile money is unavailable right now. Please use Cash on Delivery.",
+    );
+    setError(null);
+    setIsSubmitting(false);
+  };
 
   useEffect(() => {
     if (session?.user) {
@@ -195,7 +218,7 @@ function CheckoutContent() {
     setIsSuccess(true);
   };
 
-  const pollCollectoStatus = async (transactionId: string) => {
+  const pollCollectoStatus = async (transactionId: string, attempt = 1) => {
     try {
       const statusRes = await fetch(
         `${API_BASE}/api/storefront/${store.slug}/payments/collecto/status`,
@@ -231,14 +254,17 @@ function CheckoutContent() {
       }
 
       if (status === "failed") {
-        clearPaymentPoll();
-        setPaymentFlowStatus("failed");
         const failureMessage =
           statusMessage ||
           "Mobile money payment was declined. You can try again or switch to cash on delivery.";
-        setPaymentStatusMessage(failureMessage);
-        setError(failureMessage);
-        setIsSubmitting(false);
+        activateCashFallback(failureMessage);
+        return;
+      }
+
+      if (attempt >= COLLECTO_MAX_POLL_ATTEMPTS) {
+        activateCashFallback(
+          "Mobile money confirmation is taking too long right now. Please use Cash on Delivery.",
+        );
         return;
       }
 
@@ -249,20 +275,14 @@ function CheckoutContent() {
 
       clearPaymentPoll();
       paymentPollRef.current = setTimeout(() => {
-        void pollCollectoStatus(transactionId);
-      }, 1200);
+        void pollCollectoStatus(transactionId, attempt + 1);
+      }, COLLECTO_POLL_INTERVAL_MS);
     } catch (err) {
-      clearPaymentPoll();
-      setPaymentFlowStatus("failed");
-      setError(
+      activateCashFallback(
         err instanceof Error
           ? err.message
-          : "Unable to confirm payment status. Please try again.",
+          : "Mobile money is unavailable right now. Please use Cash on Delivery.",
       );
-      setPaymentStatusMessage(
-        "We couldn't confirm the payment. Please try again or choose cash on delivery.",
-      );
-      setIsSubmitting(false);
     }
   };
 
@@ -315,6 +335,22 @@ function CheckoutContent() {
       if (!orderId) throw new Error("Missing order ID");
 
       if (paymentMethod === "mobile_money") {
+        const fallbackMessage =
+          typeof data?.fallback?.message === "string"
+            ? data.fallback.message
+            : typeof data?.error?.message === "string"
+              ? data.error.message
+              : null;
+        const suggestedPaymentMethod =
+          data?.fallback?.suggestedPaymentMethod === "cash_on_delivery"
+            ? "cash_on_delivery"
+            : null;
+
+        if (data?.ok === false && suggestedPaymentMethod === "cash_on_delivery") {
+          activateCashFallback(fallbackMessage);
+          return;
+        }
+
         setPaymentFlowStatus("initiating");
         setPaymentStatusMessage(
           "Payment request sent. Check your phone and approve the mobile money prompt.",
@@ -330,8 +366,12 @@ function CheckoutContent() {
             ? payment.reference
             : null;
 
-        if (!transactionId) {
-          throw new Error("Missing transaction ID");
+        if (!isUsableTransactionId(transactionId)) {
+          activateCashFallback(
+            fallbackMessage ||
+              "Mobile money is unavailable right now. Please use Cash on Delivery.",
+          );
+          return;
         }
 
         setPaymentTransactionId(transactionId);
@@ -342,6 +382,15 @@ function CheckoutContent() {
 
       await finishSuccess();
     } catch (err: unknown) {
+      if (paymentMethod === "mobile_money") {
+        activateCashFallback(
+          err instanceof Error
+            ? err.message
+            : "Mobile money is unavailable right now. Please use Cash on Delivery.",
+        );
+        return;
+      }
+
       setPaymentFlowStatus("failed");
       setError(
         err instanceof Error
