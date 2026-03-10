@@ -19,6 +19,7 @@ export interface CartItem {
         id: string;
         name: string;
         price: number;
+        originalPrice?: number | null;
         currency: string;
         image?: string;
         contentType?: string;
@@ -110,6 +111,7 @@ const sanitizeCartItems = (items: unknown): CartItem[] => {
             ...item,
             product: {
                 ...item.product,
+                originalPrice: typeof item.product?.originalPrice === "number" ? item.product.originalPrice : null,
                 selectedOptions: normalizeSelectedOptions(item.product?.selectedOptions),
             },
             id: buildCartLineId(
@@ -118,6 +120,77 @@ const sanitizeCartItems = (items: unknown): CartItem[] => {
             )
         }));
 };
+
+async function syncItemsWithLatestProducts(cartItems: CartItem[]): Promise<CartItem[]> {
+    if (cartItems.length === 0) return cartItems;
+
+    const storeSlugs = Array.from(
+        new Set(
+            cartItems
+                .map((item) => item.store.slug)
+                .filter((slug): slug is string => typeof slug === "string" && slug.length > 0)
+        )
+    );
+
+    if (storeSlugs.length === 0) return cartItems;
+
+    const latestProductsByStore = new Map<string, Map<string, {
+        id: string;
+        price: number;
+        originalPrice?: number | null;
+        currency: string;
+        image: string | null;
+        contentType?: string | null;
+        slug: string;
+    }>>();
+
+    await Promise.all(storeSlugs.map(async (storeSlug) => {
+        try {
+            const response = await fetch(`${API_BASE}/api/storefront/${storeSlug}/products`, {
+                cache: "no-store",
+            });
+
+            if (!response.ok) return;
+
+            const products = await response.json() as Array<{
+                id: string;
+                price: number;
+                originalPrice?: number | null;
+                currency: string;
+                image: string | null;
+                contentType?: string | null;
+                slug: string;
+            }>;
+
+            latestProductsByStore.set(
+                storeSlug,
+                new Map(products.map((product) => [product.id, product]))
+            );
+        } catch (error) {
+            console.error(`Failed to refresh cart prices for store ${storeSlug}`, error);
+        }
+    }));
+
+    return cartItems.map((item) => {
+        const latestProduct = latestProductsByStore.get(item.store.slug)?.get(item.product.id);
+        if (!latestProduct) {
+            return item;
+        }
+
+        return {
+            ...item,
+            product: {
+                ...item.product,
+                price: latestProduct.price,
+                originalPrice: latestProduct.originalPrice ?? null,
+                currency: latestProduct.currency,
+                image: latestProduct.image ?? item.product.image,
+                contentType: latestProduct.contentType ?? item.product.contentType,
+                slug: latestProduct.slug || item.product.slug,
+            },
+        };
+    });
+}
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const { session } = useAppSession();
@@ -138,7 +211,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                         const serverItems = sanitizeCartItems(await res.json());
                         const stored = localStorage.getItem(CART_STORAGE_KEY);
                         const localItems = stored ? sanitizeCartItems(JSON.parse(stored)) : [];
-                        setItems(mergeCartItems(serverItems, localItems));
+                        const mergedItems = mergeCartItems(serverItems, localItems);
+                        setItems(await syncItemsWithLatestProducts(mergedItems));
                     } else {
                         setItems([]);
                     }
@@ -149,7 +223,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 const stored = localStorage.getItem(CART_STORAGE_KEY);
                 if (stored) {
                     try {
-                        setItems(sanitizeCartItems(JSON.parse(stored)));
+                        const localItems = sanitizeCartItems(JSON.parse(stored));
+                        setItems(await syncItemsWithLatestProducts(localItems));
                     } catch (e) {
                         console.error("Failed to parse cart storage", e);
                     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -59,13 +59,19 @@ const createCartLineId = (productId: string, selectedOptions: SelectedOption[] =
 };
 
 export function ProductActions({ product, selectedOptions = [] }: ProductActionsProps) {
-  const { addItem } = useCart();
+  const { addItem, items } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
 
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
   const maxQuantity = product.availableQuantity ?? Number.POSITIVE_INFINITY;
   const isOutOfStock = maxQuantity <= 0;
+  const lineId = useMemo(
+    () => createCartLineId(product.id, selectedOptions),
+    [product.id, selectedOptions],
+  );
+  const existingCartItem = items.find((item) => item.id === lineId);
+  const isAlreadyInCart = Boolean(existingCartItem);
 
   const handleToggleWishlist = () => {
     toggleWishlist({
@@ -90,11 +96,11 @@ export function ProductActions({ product, selectedOptions = [] }: ProductActions
   const handleAddToCart = () => {
     if (!product) return;
 
-    if (isOutOfStock) return;
+    if (isOutOfStock || isAlreadyInCart) return;
 
     addItem(
       {
-        id: createCartLineId(product.id, selectedOptions),
+        id: lineId,
         product: {
           id: product.id,
           name: product.name,
@@ -158,9 +164,14 @@ export function ProductActions({ product, selectedOptions = [] }: ProductActions
         <Button
           onClick={handleAddToCart}
           className="mb-3 h-14 w-full rounded-xl bg-primary px-5 text-sm font-semibold uppercase tracking-[0.22em] text-white transition-colors hover:bg-primary/90"
-          disabled={isAdded || isOutOfStock}
+          disabled={isAdded || isOutOfStock || isAlreadyInCart}
         >
-          {isAdded ? (
+          {isAlreadyInCart ? (
+            <span className="flex items-center gap-2">
+              <HugeiconsIcon icon={Tick02Icon} size={18} />
+              Added already
+            </span>
+          ) : isAdded ? (
             <span className="flex items-center gap-2">
               <HugeiconsIcon icon={Tick02Icon} size={18} />
               Added

@@ -12,6 +12,7 @@ interface ProductCardProps {
   slug: string;
   price: string;
   originalPrice?: string | null;
+  discountPercent?: number | null;
   image: string | null;
   contentType?: string | null;
   index?: number;
@@ -29,7 +30,7 @@ const aspectVariants = [
   "aspect-[5/6]",
 ];
 
-export function ProductCard({ title, slug, price, originalPrice, image, contentType, index = 0, storeSlug }: ProductCardProps) {
+export function ProductCard({ title, slug, price, originalPrice, discountPercent, image, contentType, index = 0, storeSlug }: ProductCardProps) {
   const params = useParams();
   const [imageError, setImageError] = useState(false);
 
@@ -93,8 +94,8 @@ export function ProductCard({ title, slug, price, originalPrice, image, contentT
         {/* Floating price pill */}
         <div className="pointer-events-none absolute left-3 top-3 inline-flex flex-col rounded-2xl bg-white/90 px-2.5 py-1.5 text-[11px] font-semibold text-gray-900 shadow-md backdrop-blur">
           <span>{price}</span>
-          {originalPrice ? (
-            <span className="text-[10px] font-medium text-neutral-500 line-through">{originalPrice}</span>
+          {originalPrice && discountPercent ? (
+            <span className="text-[10px] font-medium uppercase text-red-500">{discountPercent}% off</span>
           ) : null}
         </div>
 

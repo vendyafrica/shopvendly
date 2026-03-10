@@ -6,6 +6,7 @@ interface Product {
     name: string;
     price: number;
     originalPrice?: number | null;
+    discountPercent?: number | null;
     currency: string;
     image: string | null;
     contentType?: string | null;
@@ -46,6 +47,7 @@ export function ProductGrid({ products }: ProductGridProps) {
                         slug={product.slug}
                         price={formatPrice(product.price, product.currency)}
                         originalPrice={product.originalPrice ? formatPrice(product.originalPrice, product.currency) : null}
+                        discountPercent={product.discountPercent ?? null}
                         image={product.image}
                         contentType={product.contentType}
                     />
