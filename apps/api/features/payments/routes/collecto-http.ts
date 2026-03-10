@@ -5,6 +5,10 @@ export type CollectoResponse = {
   text: string;
 };
 
+type CollectoRequestOptions = {
+  timeoutMs?: number;
+};
+
 export function getCollectoBaseUrl() {
   return (process.env.COLLECTO_BASE_URL || "https://collecto.cissytech.com/api").replace(/\/$/, "");
 }
@@ -24,28 +28,53 @@ export function buildCollectoUtilityUrl(path: string) {
   return `${baseUrl}/${normalizedPath}`;
 }
 
-async function executeCollectoRequest(url: string, body: unknown, headers: Record<string, string>) {
+async function executeCollectoRequest(
+  url: string,
+  body: unknown,
+  headers: Record<string, string>,
+  options: CollectoRequestOptions = {},
+) {
   const requestBody = JSON.stringify(body);
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(getCollectoProxySecret() ? { "x-proxy-secret": getCollectoProxySecret() } : {}),
-      ...headers,
-    },
-    body: requestBody,
-  });
+  const controller = new AbortController();
+  const timeoutMs = options.timeoutMs ?? 10000;
+  const timeoutHandle = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
 
-  const text = await response.text();
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(getCollectoProxySecret() ? { "x-proxy-secret": getCollectoProxySecret() } : {}),
+        ...headers,
+      },
+      body: requestBody,
+      signal: controller.signal,
+    });
 
-  return {
-    ok: response.ok,
-    status: response.status,
-    text,
-  };
+    const text = await response.text();
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      text,
+    };
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(`Collecto request timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
 }
 
-export async function collectoApiFetch(method: string, body: unknown): Promise<CollectoResponse> {
+export async function collectoApiFetch(
+  method: string,
+  body: unknown,
+  options: CollectoRequestOptions = {},
+): Promise<CollectoResponse> {
   const username = process.env.COLLECTO_USERNAME || "";
   if (!username) {
     throw new Error("Missing COLLECTO_USERNAME");
@@ -53,7 +82,7 @@ export async function collectoApiFetch(method: string, body: unknown): Promise<C
 
   const response = await executeCollectoRequest(`${getCollectoBaseUrl()}/${username}/${method}`, body, {
     "x-api-key": process.env.COLLECTO_API_KEY || "",
-  });
+  }, options);
 
   let json: unknown = null;
   try {
@@ -70,8 +99,12 @@ export async function collectoApiFetch(method: string, body: unknown): Promise<C
   };
 }
 
-export async function collectoDirectFetch(url: string, body: unknown): Promise<CollectoResponse> {
-  const response = await executeCollectoRequest(url, body, {});
+export async function collectoDirectFetch(
+  url: string,
+  body: unknown,
+  options: CollectoRequestOptions = {},
+): Promise<CollectoResponse> {
+  const response = await executeCollectoRequest(url, body, {}, options);
 
   let json: unknown = null;
   try {

@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
         );
 
         if (storeSlug) {
-            revalidateTag(`storefront:store:${storeSlug}:products`);
+            revalidateTag(`storefront:store:${storeSlug}:products`, "default");
             revalidatePath(`/${storeSlug}`);
         }
 

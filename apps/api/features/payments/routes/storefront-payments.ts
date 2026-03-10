@@ -3,17 +3,20 @@ import type { Router as ExpressRouter } from "express";
 import { z } from "zod";
 import { and, db, eq, isNull, orders, stores } from "@shopvendly/db";
 import { handlePaidOrderTransition } from "../services/payment-order-transition.js";
+import { orderService } from "../../orders/services/order-service.js";
 import { collectoApiFetch, getCollectoBaseUrl } from "./collecto-http.js";
 
 export const storefrontPaymentsRouter: ExpressRouter = Router();
 
 const COLLECTO_REFERENCE_SEPARATOR = "::";
 
+const collectoVerifyPhoneBodySchema = z.object({
+  phone: z.string().min(1),
+});
+
 const collectoInitiateBodySchema = z.object({
   orderId: z.string().uuid(),
   phone: z.string().min(1),
-  amount: z.number().positive(),
-  reference: z.string().min(1),
 });
 
 const collectoStatusBodySchema = z.object({
@@ -68,6 +71,14 @@ function normalizeCollectoStatus(value: unknown): "pending" | "successful" | "fa
   const normalized = value.trim().toLowerCase();
   if (["success", "successful", "completed", "paid"].includes(normalized)) return "successful";
   if (["failed", "error", "cancelled", "canceled", "rejected"].includes(normalized)) return "failed";
+  if (
+    normalized.includes("invalid") ||
+    normalized.includes("unrecognized") ||
+    normalized.includes("unrecogonized") ||
+    normalized.includes("not found")
+  ) {
+    return "failed";
+  }
   return "pending";
 }
 
@@ -87,6 +98,30 @@ function readCandidateMessage(payload: Record<string, unknown>): string | null {
     payload.status_message,
     nested?.message,
     nested?.status_message,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
+}
+
+function readCandidateName(payload: Record<string, unknown>): string | null {
+  const nested = getCollectoPayloadRecord(payload);
+  const candidates = [
+    nested?.name,
+    nested?.registeredName,
+    nested?.accountName,
+    nested?.customerName,
+    nested?.fullName,
+    payload.name,
+    payload.registeredName,
+    payload.accountName,
+    payload.customerName,
+    payload.fullName,
   ];
 
   for (const candidate of candidates) {
@@ -136,6 +171,19 @@ function readCandidateStatus(payload: Record<string, unknown>): unknown {
   );
 }
 
+function readCandidateReference(payload: Record<string, unknown>): string | null {
+  const nested = getCollectoPayloadRecord(payload);
+  const candidates = [nested?.reference, payload.reference];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
+}
+
 function readCandidateTransactionId(payload: Record<string, unknown>): string | null {
   const nested = getCollectoPayloadRecord(payload);
   const candidates = [
@@ -177,9 +225,115 @@ function isUsableCollectoTransactionId(transactionId: string | null): transactio
   return normalized !== "" && normalized !== "0" && normalized !== "null" && normalized !== "undefined";
 }
 
+function isCollectoFailureMessage(message: string | null) {
+  if (!message) {
+    return false;
+  }
+
+  const normalized = message.trim().toLowerCase();
+  return (
+    normalized.includes("failed") ||
+    normalized.includes("error") ||
+    normalized.includes("invalid") ||
+    normalized.includes("unrecognized") ||
+    normalized.includes("unrecogonized") ||
+    normalized.includes("not found") ||
+    normalized.includes("not registered") ||
+    normalized.includes("unavailable")
+  );
+}
+
+function buildCollectoSoftFallback(message?: string | null) {
+  return {
+    recoverable: true,
+    suggestedPaymentMethod: "cash_on_delivery" as const,
+    message:
+      message?.trim() ||
+      "Mobile money is unavailable right now. Please use Cash on Delivery.",
+  };
+}
+
 function logCollectoDebug(event: string, payload: Record<string, unknown>) {
   console.info(`[Collecto] ${event}`, payload);
 }
+
+storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/verify-phone", async (req, res, next) => {
+  try {
+    if (getCollectoMode() === "disabled" || !isCollectoConfiguredForLive()) {
+      return res.status(503).json({
+        error: {
+          code: "COLLECTO_DISABLED",
+          message: "Mobile money is not enabled for this storefront.",
+        },
+      });
+    }
+
+    const { slug } = req.params;
+    const body = collectoVerifyPhoneBodySchema.parse(req.body);
+    const phone = normalizeCollectoPhone(body.phone);
+
+    logCollectoDebug("verify:request", {
+      slug,
+      phone,
+      collectoBaseUrl: getCollectoBaseUrl(),
+    });
+
+    let response;
+    try {
+      response = await collectoApiFetch("verifyPhoneNumber", { phone }, { timeoutMs: 4000 });
+    } catch (error) {
+      console.error("[Collecto] verify:exception", {
+        slug,
+        phone,
+        collectoBaseUrl: getCollectoBaseUrl(),
+        error,
+      });
+      return res.status(200).json({
+        ok: false,
+        valid: false,
+        phone,
+        message:
+          "We couldn't verify this mobile money number quickly enough. Please try again or use Cash on Delivery.",
+      });
+    }
+
+    const payload = (response.json ?? {}) as Record<string, unknown>;
+    const message = readCandidateMessage(payload);
+    const name = readCandidateName(payload);
+    const valid =
+      response.ok &&
+      normalizeCollectoStatus(readCandidateStatus(payload)) !== "failed" &&
+      !isCollectoFailureMessage(message);
+
+    logCollectoDebug("verify:response", {
+      slug,
+      phone,
+      upstreamStatus: response.status,
+      ok: response.ok,
+      valid,
+      message,
+      name,
+      payload,
+    });
+
+    return res.status(200).json({
+      ok: valid,
+      valid,
+      phone,
+      name,
+      message:
+        message ||
+        (valid
+          ? name
+            ? `Verified mobile money number: ${name}.`
+            : "Mobile money number verified."
+          : "We couldn't verify this mobile money number."),
+      raw: response.json,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", async (req, res, next) => {
   try {
@@ -205,23 +359,57 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
       });
     }
 
+    await orderService.updateOrderStatusByOrderId(order.id, {
+      status: "awaiting_payment",
+      paymentMethod: "mobile_money",
+      paymentStatus: "pending",
+    });
+
     const reference = `${slug}${COLLECTO_REFERENCE_SEPARATOR}${order.id}`;
+    const phone = normalizeCollectoPhone(body.phone);
 
     logCollectoDebug("initiate:request", {
       slug,
       orderId: order.id,
-      amount: body.amount,
-      phone: normalizeCollectoPhone(body.phone),
+      amount: order.totalAmount,
+      phone,
       reference,
       collectoBaseUrl: getCollectoBaseUrl(),
     });
 
-    const response = await collectoApiFetch("requestToPay", {
-      paymentOption: "mobilemoney",
-      phone: normalizeCollectoPhone(body.phone),
-      amount: body.amount,
-      reference,
-    });
+    let response;
+    try {
+      response = await collectoApiFetch(
+        "requestToPay",
+        {
+          paymentOption: "mobilemoney",
+          phone,
+          amount: order.totalAmount,
+          reference,
+        },
+        { timeoutMs: 8000 },
+      );
+    } catch (error) {
+      console.error("[Collecto] initiate:exception", {
+        slug,
+        orderId: order.id,
+        amount: order.totalAmount,
+        phone,
+        reference,
+        collectoBaseUrl: getCollectoBaseUrl(),
+        error,
+      });
+      return res.status(200).json({
+        ok: false,
+        error: {
+          code: "COLLECTO_INITIATE_TIMEOUT",
+          message: "We couldn't get a payment prompt within 8 seconds.",
+        },
+        fallback: buildCollectoSoftFallback(
+          "Mobile money did not respond in time. Please use Cash on Delivery.",
+        ),
+      });
+    }
 
     logCollectoDebug("initiate:response", {
       slug,
@@ -232,30 +420,27 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
     });
 
     if (!response.ok) {
-      return res.status(response.status || 502).json({
+      return res.status(200).json({
+        ok: false,
         error: {
           code: "COLLECTO_INITIATE_FAILED",
-          message: "Failed to initiate Collecto mobile money payment.",
+          message: "Mobile money is unavailable right now. Please use Cash on Delivery.",
           details: response.json || response.text,
         },
+        fallback: buildCollectoSoftFallback(),
       });
     }
 
     const payload = (response.json ?? {}) as Record<string, unknown>;
-
-    logCollectoDebug("initiate:response", {
-      slug,
-      orderId: order.id,
-      upstreamStatus: response.status,
-      ok: response.ok,
-      payload,
-    });
-
     const transactionId = readCandidateTransactionId(payload);
     const requestToPay = readCollectoInitiateFlag(payload);
     const statusMessage = readCandidateMessage(payload);
 
-    if (!isUsableCollectoTransactionId(transactionId) || requestToPay === false) {
+    if (
+      !isUsableCollectoTransactionId(transactionId) ||
+      requestToPay === false ||
+      isCollectoFailureMessage(statusMessage)
+    ) {
       return res.status(200).json({
         ok: false,
         error: {
@@ -278,6 +463,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
     return res.status(202).json({
       ok: true,
       mode: "live",
+      status: "awaiting_customer",
       transactionId,
       reference,
       raw: response.json,
@@ -307,9 +493,13 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
       collectoBaseUrl: getCollectoBaseUrl(),
     });
 
-    const response = await collectoApiFetch("requestToPayStatus", {
-      transactionId: body.transactionId,
-    });
+    const response = await collectoApiFetch(
+      "requestToPayStatus",
+      {
+        transactionId: body.transactionId,
+      },
+      { timeoutMs: 5000 },
+    );
 
     if (!response.ok) {
       return res.status(response.status || 502).json({
@@ -322,8 +512,12 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
     }
 
     const payload = (response.json ?? {}) as Record<string, unknown>;
-    const normalizedStatus = normalizeCollectoStatus(readCandidateStatus(payload));
     const statusMessage = readCandidateMessage(payload);
+    const normalizedStatus =
+      normalizeCollectoStatus(readCandidateStatus(payload)) === "pending" &&
+      isCollectoFailureMessage(statusMessage)
+        ? "failed"
+        : normalizeCollectoStatus(readCandidateStatus(payload));
 
     logCollectoDebug("status:response", {
       slug,
@@ -336,7 +530,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
     });
 
     if (normalizedStatus === "successful") {
-      const reference = typeof payload.reference === "string" ? payload.reference : null;
+      const reference = readCandidateReference(payload);
       const { storeSlug, orderId } = parseCollectoReference(reference);
       if (storeSlug && orderId) {
         if (storeSlug !== slug) {
@@ -349,7 +543,11 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
         }
 
         await assertStoreAndOrder(slug, orderId);
-        await handlePaidOrderTransition({ orderId, paymentMethod: "mobile_money" });
+        await handlePaidOrderTransition({
+          orderId,
+          paymentMethod: "mobile_money",
+          includeSellerContext: true,
+        });
       }
     }
 
@@ -386,7 +584,11 @@ storefrontPaymentsRouter.post("/payments/collecto/callback", async (req, res, ne
     }
 
     if (normalizedStatus === "successful") {
-      await handlePaidOrderTransition({ orderId, paymentMethod: "mobile_money" });
+      await handlePaidOrderTransition({
+        orderId,
+        paymentMethod: "mobile_money",
+        includeSellerContext: true,
+      });
     }
 
     return res.status(200).json({ ok: true });
