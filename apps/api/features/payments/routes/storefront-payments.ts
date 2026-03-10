@@ -3,6 +3,7 @@ import type { Router as ExpressRouter } from "express";
 import { z } from "zod";
 import { and, db, eq, isNull, orders, stores } from "@shopvendly/db";
 import { handleFailedOrderTransition, handlePaidOrderTransition } from "../services/payment-order-transition.js";
+import { updateCollectoCollectionState } from "../services/collecto-settlement.js";
 import { orderService } from "../../orders/services/order-service.js";
 import { collectoApiFetch, getCollectoBaseUrl } from "./collecto-http.js";
 
@@ -430,6 +431,12 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
         collectoBaseUrl: getCollectoBaseUrl(),
         error,
       });
+      await updateCollectoCollectionState({
+        orderId: order.id,
+        reference,
+        status: "failed",
+        message: "Mobile money did not respond in time.",
+      });
       return res.status(200).json({
         ok: false,
         error: {
@@ -451,6 +458,12 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
     });
 
     if (!response.ok) {
+      await updateCollectoCollectionState({
+        orderId: order.id,
+        reference,
+        status: "failed",
+        message: "Mobile money is unavailable right now. Please use Cash on Delivery.",
+      });
       await handleFailedOrderTransition({
         orderId: order.id,
         paymentMethod: "mobile_money",
@@ -476,6 +489,15 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
       requestToPay === false ||
       isCollectoFailureMessage(statusMessage)
     ) {
+      await updateCollectoCollectionState({
+        orderId: order.id,
+        reference,
+        transactionId,
+        status: "failed",
+        message:
+          statusMessage ||
+          "Mobile money is unavailable right now. Please use Cash on Delivery.",
+      });
       await handleFailedOrderTransition({
         orderId: order.id,
         paymentMethod: "mobile_money",
@@ -498,6 +520,14 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
         },
       });
     }
+
+    await updateCollectoCollectionState({
+      orderId: order.id,
+      reference,
+      transactionId,
+      status: "pending",
+      message: statusMessage || "Awaiting customer confirmation.",
+    });
 
     return res.status(202).json({
       ok: true,
@@ -574,6 +604,16 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
     const resolvedOrderId = referenceOrderId ?? fallbackOrderId;
     const resolvedStoreSlug = storeSlug ?? (resolvedOrderId ? slug : null);
 
+    if (resolvedOrderId && resolvedStoreSlug === slug) {
+      await updateCollectoCollectionState({
+        orderId: resolvedOrderId,
+        reference,
+        transactionId: body.transactionId,
+        status: normalizedStatus,
+        message: statusMessage,
+      });
+    }
+
     if (normalizedStatus === "successful") {
       if (resolvedStoreSlug && resolvedOrderId) {
         if (resolvedStoreSlug !== slug) {
@@ -633,6 +673,14 @@ storefrontPaymentsRouter.post("/payments/collecto/callback", async (req, res, ne
     if (!storeSlug || !orderId) {
       return res.status(200).json({ ok: true, ignored: true });
     }
+
+    await updateCollectoCollectionState({
+      orderId,
+      reference: body.reference ?? null,
+      transactionId: body.transactionId ?? null,
+      status: normalizedStatus,
+      message: body.status ?? null,
+    });
 
     if (normalizedStatus === "successful") {
       await handlePaidOrderTransition({

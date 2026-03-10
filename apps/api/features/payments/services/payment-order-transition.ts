@@ -4,6 +4,7 @@ import {
   notifySellerCustomerDetails,
   notifySellerOrderDetails,
 } from "../../messaging/services/notifications.js";
+import { runCollectoSettlementForOrder } from "./collecto-settlement.js";
 import { dispatchDeliveryProviderForOrder } from "./delivery-dispatch.js";
 
 type PaymentMethodValue = "mobile_money" | "cash_on_delivery";
@@ -73,6 +74,15 @@ export async function handlePaidOrderTransition(params: HandlePaidOrderTransitio
   }
 
   await Promise.allSettled(jobs);
+
+  if (full.paymentMethod === "mobile_money" && full.paymentStatus === "paid") {
+    void runCollectoSettlementForOrder(full.id).catch((error) => {
+      console.error("[Collecto] settlement:background-error", {
+        orderId: full.id,
+        error,
+      });
+    });
+  }
 
   return full;
 }

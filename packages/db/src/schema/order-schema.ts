@@ -14,6 +14,41 @@ import { tenants } from "./tenant-schema";
 import { stores } from "./storefront-schema";
 import { products } from "./product-schema";
 
+export type CollectoStepStatus = "pending" | "successful" | "failed";
+
+export type CollectoMeta = {
+    settlementStatus?: "pending" | "processing" | "successful" | "failed";
+    settledAt?: string | null;
+    lastError?: string | null;
+    settlementBatchOrderIds?: string[];
+    collection?: {
+        reference?: string | null;
+        transactionId?: string | null;
+        status?: CollectoStepStatus;
+        message?: string | null;
+        updatedAt?: string | null;
+    };
+    walletTransfer?: {
+        reference?: string | null;
+        transactionId?: string | null;
+        status?: CollectoStepStatus;
+        amount?: number | null;
+        message?: string | null;
+        updatedAt?: string | null;
+    };
+    payout?: {
+        reference?: string | null;
+        transactionId?: string | null;
+        gateway?: string | null;
+        phone?: string | null;
+        accountName?: string | null;
+        amount?: number | null;
+        status?: CollectoStepStatus;
+        message?: string | null;
+        updatedAt?: string | null;
+    };
+};
+
 export const orders = pgTable(
     "orders",
     {
@@ -41,6 +76,7 @@ export const orders = pgTable(
 
         notes: text("notes"),
         deliveryAddress: text("delivery_address"),
+        collectoMeta: jsonb("collecto_meta").$type<CollectoMeta>().notNull().default({}),
         deliveryProvider: text("delivery_provider"),
         deliveryProviderDispatchId: text("delivery_provider_dispatch_id"),
         deliveryStatus: text("delivery_status"),
