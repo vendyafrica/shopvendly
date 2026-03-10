@@ -51,6 +51,13 @@ const isUsableTransactionId = (value: unknown): value is string => {
   return normalized !== "" && normalized !== "0" && normalized !== "null" && normalized !== "undefined";
 };
 
+const getCollectoPollIntervalMs = (attempt: number) => {
+  if (attempt <= 1) return 1800;
+  if (attempt <= 3) return 2500;
+  if (attempt <= 6) return 4000;
+  return COLLECTO_POLL_INTERVAL_MS;
+};
+
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -78,6 +85,7 @@ function CheckoutContent() {
     string | null
   >(null);
   const [paymentReference, setPaymentReference] = useState<string | null>(null);
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [paymentStatusMessage, setPaymentStatusMessage] = useState<
     string | null
   >(null);
@@ -88,15 +96,36 @@ function CheckoutContent() {
   >(null);
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
 
-  const activateCashFallback = (message?: string | null) => {
+  const handlePaymentFailure = (message?: string | null) => {
+    clearPaymentPoll();
+    setPaymentFlowStatus("failed");
+    setPaymentTransactionId(null);
+    setPaymentReference(null);
+    setPaymentStatusMessage(
+      message?.trim() ||
+        "Mobile money payment was declined. You can try again or use Cash on Delivery.",
+    );
+    setError(null);
+    setIsSubmitting(false);
+  };
+
+  const resetPaymentRetryState = () => {
+    clearPaymentPoll();
+    setPaymentFlowStatus("idle");
+    setPaymentTransactionId(null);
+    setPaymentReference(null);
+    setPaymentStatusMessage(null);
+    setError(null);
+  };
+
+  const switchToCashOnDelivery = () => {
     clearPaymentPoll();
     setPaymentMethod("cash_on_delivery");
     setPaymentFlowStatus("idle");
     setPaymentTransactionId(null);
     setPaymentReference(null);
     setPaymentStatusMessage(
-      message?.trim() ||
-        "Mobile money is unavailable right now. Please use Cash on Delivery.",
+      "Mobile money was declined. You can place this order with Cash on Delivery instead.",
     );
     setError(null);
     setIsSubmitting(false);
@@ -281,6 +310,7 @@ function CheckoutContent() {
 
   const finishSuccess = async () => {
     await clearStoreFromCart(store.id);
+    setActiveOrderId(null);
     setPaymentFlowStatus("successful");
     setPaymentStatusMessage(
       paymentMethod === "mobile_money"
@@ -291,14 +321,98 @@ function CheckoutContent() {
     setIsSuccess(true);
   };
 
-  const pollCollectoStatus = async (transactionId: string, attempt = 1) => {
+  const initiateCollectoPayment = async (orderId: string) => {
+    setPaymentFlowStatus("initiating");
+    setPaymentStatusMessage("Sending the payment request to your phone...");
+
+    const controller = new AbortController();
+    const timeoutHandle = setTimeout(() => {
+      controller.abort();
+    }, COLLECTO_INITIATION_TIMEOUT_MS);
+
+    let initiateRes: Response;
+    try {
+      initiateRes = await fetch(
+        `${API_BASE}/api/storefront/${store.slug}/payments/collecto/initiate`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId,
+            phone,
+          }),
+          signal: controller.signal,
+        },
+      );
+    } finally {
+      clearTimeout(timeoutHandle);
+    }
+
+    const initiateData = await initiateRes.json().catch(() => ({}));
+    if (!initiateRes.ok) {
+      throw new Error(
+        typeof initiateData?.error?.message === "string"
+          ? initiateData.error.message
+          : "Unable to start mobile money payment.",
+      );
+    }
+
+    const fallbackMessage =
+      typeof initiateData?.fallback?.message === "string"
+        ? initiateData.fallback.message
+        : typeof initiateData?.error?.message === "string"
+          ? initiateData.error.message
+          : null;
+    const suggestedPaymentMethod =
+      initiateData?.fallback?.suggestedPaymentMethod === "cash_on_delivery"
+        ? "cash_on_delivery"
+        : null;
+
+    if (initiateData?.ok === false && suggestedPaymentMethod === "cash_on_delivery") {
+      handlePaymentFailure(fallbackMessage);
+      return;
+    }
+
+    const transactionId =
+      typeof initiateData?.transactionId === "string"
+        ? initiateData.transactionId
+        : null;
+    const reference =
+      typeof initiateData?.reference === "string"
+        ? initiateData.reference
+        : null;
+
+    if (!isUsableTransactionId(transactionId)) {
+      handlePaymentFailure(
+        fallbackMessage ||
+          "Mobile money is unavailable right now. Please try again or use Cash on Delivery.",
+      );
+      return;
+    }
+
+    setPaymentTransactionId(transactionId);
+    setPaymentReference(reference);
+    setPaymentStatusMessage(
+      "Payment request sent. Check your phone and approve the mobile money prompt.",
+    );
+    await pollCollectoStatus(transactionId, 1, orderId);
+  };
+
+  const pollCollectoStatus = async (
+    transactionId: string,
+    attempt = 1,
+    orderId: string | null = activeOrderId,
+  ) => {
     try {
       const statusRes = await fetch(
         `${API_BASE}/api/storefront/${store.slug}/payments/collecto/status`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transactionId }),
+          body: JSON.stringify({
+            transactionId,
+            orderId: orderId || undefined,
+          }),
         },
       );
 
@@ -330,13 +444,13 @@ function CheckoutContent() {
         const failureMessage =
           statusMessage ||
           "Mobile money payment was declined. You can try again or switch to cash on delivery.";
-        activateCashFallback(failureMessage);
+        handlePaymentFailure(failureMessage);
         return;
       }
 
       if (attempt >= COLLECTO_MAX_POLL_ATTEMPTS) {
-        activateCashFallback(
-          "Mobile money confirmation is taking too long right now. Please use Cash on Delivery.",
+        handlePaymentFailure(
+          "Mobile money confirmation is taking too long right now. Please try again or use Cash on Delivery.",
         );
         return;
       }
@@ -348,13 +462,13 @@ function CheckoutContent() {
 
       clearPaymentPoll();
       paymentPollRef.current = setTimeout(() => {
-        void pollCollectoStatus(transactionId, attempt + 1);
-      }, COLLECTO_POLL_INTERVAL_MS);
+        void pollCollectoStatus(transactionId, attempt + 1, orderId);
+      }, getCollectoPollIntervalMs(attempt));
     } catch (err) {
-      activateCashFallback(
+      handlePaymentFailure(
         err instanceof Error
           ? err.message
-          : "Mobile money is unavailable right now. Please use Cash on Delivery.",
+          : "Mobile money is unavailable right now. Please try again or use Cash on Delivery.",
       );
     }
   };
@@ -378,6 +492,11 @@ function CheckoutContent() {
 
         if (!phoneIsVerified) {
           setIsSubmitting(false);
+          return;
+        }
+
+        if (activeOrderId) {
+          await initiateCollectoPayment(activeOrderId);
           return;
         }
       }
@@ -417,92 +536,20 @@ function CheckoutContent() {
 
       const orderId = "order" in data ? data.order?.id : data.id;
       if (!orderId) throw new Error("Missing order ID");
+      setActiveOrderId(orderId);
 
       if (paymentMethod === "mobile_money") {
-        setPaymentFlowStatus("initiating");
-        setPaymentStatusMessage("Sending the payment request to your phone...");
-
-        const controller = new AbortController();
-        const timeoutHandle = setTimeout(() => {
-          controller.abort();
-        }, COLLECTO_INITIATION_TIMEOUT_MS);
-
-        let initiateRes: Response;
-        try {
-          initiateRes = await fetch(
-            `${API_BASE}/api/storefront/${store.slug}/payments/collecto/initiate`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                orderId,
-                phone,
-              }),
-              signal: controller.signal,
-            },
-          );
-        } finally {
-          clearTimeout(timeoutHandle);
-        }
-
-        const initiateData = await initiateRes.json().catch(() => ({}));
-        if (!initiateRes.ok) {
-          throw new Error(
-            typeof initiateData?.error?.message === "string"
-              ? initiateData.error.message
-              : "Unable to start mobile money payment.",
-          );
-        }
-
-        const fallbackMessage =
-          typeof initiateData?.fallback?.message === "string"
-            ? initiateData.fallback.message
-            : typeof initiateData?.error?.message === "string"
-              ? initiateData.error.message
-              : null;
-        const suggestedPaymentMethod =
-          initiateData?.fallback?.suggestedPaymentMethod === "cash_on_delivery"
-            ? "cash_on_delivery"
-            : null;
-
-        if (initiateData?.ok === false && suggestedPaymentMethod === "cash_on_delivery") {
-          activateCashFallback(fallbackMessage);
-          return;
-        }
-
-        const transactionId =
-          typeof initiateData?.transactionId === "string"
-            ? initiateData.transactionId
-            : null;
-        const reference =
-          typeof initiateData?.reference === "string"
-            ? initiateData.reference
-            : null;
-
-        if (!isUsableTransactionId(transactionId)) {
-          activateCashFallback(
-            fallbackMessage ||
-              "Mobile money is unavailable right now. Please use Cash on Delivery.",
-          );
-          return;
-        }
-
-        setPaymentTransactionId(transactionId);
-        setPaymentReference(reference);
-        setPaymentStatusMessage(
-          "Payment request sent. Check your phone and approve the mobile money prompt.",
-        );
-        await pollCollectoStatus(transactionId);
+        await initiateCollectoPayment(orderId);
         return;
       }
 
       await finishSuccess();
     } catch (err: unknown) {
       if (paymentMethod === "mobile_money") {
-        activateCashFallback(
+        handlePaymentFailure(
           err instanceof Error
             ? err.message
-            : "Mobile money is unavailable right now. Please use Cash on Delivery.",
+            : "Mobile money is unavailable right now. Please try again or use Cash on Delivery.",
         );
         return;
       }
@@ -643,7 +690,10 @@ function CheckoutContent() {
                       <Input
                         placeholder="Full Name"
                         value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
+                        onChange={(e) => {
+                          setFullName(e.target.value);
+                          setActiveOrderId(null);
+                        }}
                         className="h-12 rounded-lg text-sm"
                         required
                       />
@@ -656,6 +706,7 @@ function CheckoutContent() {
                           onChange={(e) => {
                             const nextPhone = e.target.value;
                             setPhone(nextPhone);
+                            setActiveOrderId(null);
                             setVerifiedPhone(null);
                             if (phoneVerificationStatus !== "idle") {
                               setPhoneVerificationStatus("idle");
@@ -689,7 +740,10 @@ function CheckoutContent() {
                       <Input
                         placeholder="Delivery Address (e.g. 123 Main St, Kampala)"
                         value={address}
-                        onChange={(e) => setAddress(e.target.value)}
+                        onChange={(e) => {
+                          setAddress(e.target.value);
+                          setActiveOrderId(null);
+                        }}
                         className="h-12 rounded-lg text-sm"
                         required
                       />
@@ -712,6 +766,7 @@ function CheckoutContent() {
                       type="button"
                       onClick={() => {
                         setPaymentMethod("mobile_money");
+                        resetPaymentRetryState();
                         if (phone.trim()) {
                           void verifyCollectoPhone(phone, { force: true });
                         }
@@ -737,6 +792,8 @@ function CheckoutContent() {
                       type="button"
                       onClick={() => {
                         setPaymentMethod("cash_on_delivery");
+                        setActiveOrderId(null);
+                        resetPaymentRetryState();
                         setPhoneVerificationStatus("idle");
                         setPhoneVerificationMessage(null);
                       }}
@@ -775,6 +832,29 @@ function CheckoutContent() {
                   paymentStatusMessage ? (
                     <div className="p-4 rounded-xl border border-neutral-200 bg-white text-sm text-neutral-600">
                       {paymentStatusMessage}
+                    </div>
+                  ) : null}
+
+                  {paymentFlowStatus === "failed" ? (
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          resetPaymentRetryState();
+                        }}
+                      >
+                        Retry payment
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={switchToCashOnDelivery}
+                      >
+                        Use cash on delivery
+                      </Button>
                     </div>
                   ) : null}
 

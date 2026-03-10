@@ -14,6 +14,11 @@ type HandlePaidOrderTransitionParams = {
   includeSellerContext?: boolean;
 };
 
+type HandleFailedOrderTransitionParams = {
+  orderId: string;
+  paymentMethod?: PaymentMethodValue;
+};
+
 export async function handlePaidOrderTransition(params: HandlePaidOrderTransitionParams) {
   const { orderId, paymentMethod, includeSellerContext = false } = params;
 
@@ -70,4 +75,45 @@ export async function handlePaidOrderTransition(params: HandlePaidOrderTransitio
   await Promise.allSettled(jobs);
 
   return full;
+}
+
+export async function handleFailedOrderTransition(params: HandleFailedOrderTransitionParams) {
+  const { orderId, paymentMethod } = params;
+
+  const existing = await orderService.getOrderById(orderId);
+  if (!existing) {
+    return null;
+  }
+
+  if (existing.paymentStatus === "paid" || existing.paymentStatus === "refunded") {
+    return existing;
+  }
+
+  const update: {
+    paymentStatus?: "failed";
+    status?: "awaiting_payment";
+    paymentMethod?: PaymentMethodValue;
+  } = {};
+
+  if (existing.paymentStatus !== "failed") {
+    update.paymentStatus = "failed";
+  }
+
+  if (
+    existing.status === "pending" ||
+    existing.status === "pending_seller_acceptance" ||
+    existing.status === "awaiting_payment"
+  ) {
+    update.status = "awaiting_payment";
+  }
+
+  if (paymentMethod && existing.paymentMethod !== paymentMethod) {
+    update.paymentMethod = paymentMethod;
+  }
+
+  if (Object.keys(update).length > 0) {
+    await orderService.updateOrderStatusByOrderId(orderId, update);
+  }
+
+  return orderService.getOrderById(orderId);
 }

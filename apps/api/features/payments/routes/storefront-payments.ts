@@ -2,7 +2,7 @@ import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
 import { z } from "zod";
 import { and, db, eq, isNull, orders, stores } from "@shopvendly/db";
-import { handlePaidOrderTransition } from "../services/payment-order-transition.js";
+import { handleFailedOrderTransition, handlePaidOrderTransition } from "../services/payment-order-transition.js";
 import { orderService } from "../../orders/services/order-service.js";
 import { collectoApiFetch, getCollectoBaseUrl } from "./collecto-http.js";
 
@@ -21,6 +21,7 @@ const collectoInitiateBodySchema = z.object({
 
 const collectoStatusBodySchema = z.object({
   transactionId: z.string().min(1),
+  orderId: z.string().uuid().optional(),
 });
 
 const collectoCallbackBodySchema = z.object({
@@ -70,8 +71,29 @@ function normalizeCollectoStatus(value: unknown): "pending" | "successful" | "fa
   if (typeof value !== "string") return "pending";
   const normalized = value.trim().toLowerCase();
   if (["success", "successful", "completed", "paid"].includes(normalized)) return "successful";
-  if (["failed", "error", "cancelled", "canceled", "rejected"].includes(normalized)) return "failed";
   if (
+    [
+      "failed",
+      "error",
+      "cancelled",
+      "canceled",
+      "rejected",
+      "declined",
+      "decline",
+      "denied",
+      "deny",
+      "expired",
+    ].includes(normalized)
+  ) {
+    return "failed";
+  }
+  if (
+    normalized.includes("declin") ||
+    normalized.includes("reject") ||
+    normalized.includes("cancel") ||
+    normalized.includes("deni") ||
+    normalized.includes("insufficient") ||
+    normalized.includes("not enough") ||
     normalized.includes("invalid") ||
     normalized.includes("unrecognized") ||
     normalized.includes("unrecogonized") ||
@@ -234,9 +256,18 @@ function isCollectoFailureMessage(message: string | null) {
   return (
     normalized.includes("failed") ||
     normalized.includes("error") ||
+    normalized.includes("declin") ||
+    normalized.includes("reject") ||
+    normalized.includes("cancel") ||
+    normalized.includes("deni") ||
     normalized.includes("invalid") ||
     normalized.includes("unrecognized") ||
     normalized.includes("unrecogonized") ||
+    normalized.includes("insufficient") ||
+    normalized.includes("not enough") ||
+    normalized.includes("user cancelled") ||
+    normalized.includes("user canceled") ||
+    normalized.includes("user rejected") ||
     normalized.includes("not found") ||
     normalized.includes("not registered") ||
     normalized.includes("unavailable")
@@ -420,6 +451,10 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
     });
 
     if (!response.ok) {
+      await handleFailedOrderTransition({
+        orderId: order.id,
+        paymentMethod: "mobile_money",
+      });
       return res.status(200).json({
         ok: false,
         error: {
@@ -441,6 +476,10 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
       requestToPay === false ||
       isCollectoFailureMessage(statusMessage)
     ) {
+      await handleFailedOrderTransition({
+        orderId: order.id,
+        paymentMethod: "mobile_money",
+      });
       return res.status(200).json({
         ok: false,
         error: {
@@ -529,11 +568,15 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
       payload,
     });
 
+    const reference = readCandidateReference(payload);
+    const { storeSlug, orderId: referenceOrderId } = parseCollectoReference(reference);
+    const fallbackOrderId = body.orderId ?? null;
+    const resolvedOrderId = referenceOrderId ?? fallbackOrderId;
+    const resolvedStoreSlug = storeSlug ?? (resolvedOrderId ? slug : null);
+
     if (normalizedStatus === "successful") {
-      const reference = readCandidateReference(payload);
-      const { storeSlug, orderId } = parseCollectoReference(reference);
-      if (storeSlug && orderId) {
-        if (storeSlug !== slug) {
+      if (resolvedStoreSlug && resolvedOrderId) {
+        if (resolvedStoreSlug !== slug) {
           return res.status(409).json({
             error: {
               code: "COLLECTO_REFERENCE_MISMATCH",
@@ -542,13 +585,21 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
           });
         }
 
-        await assertStoreAndOrder(slug, orderId);
+        await assertStoreAndOrder(slug, resolvedOrderId);
         await handlePaidOrderTransition({
-          orderId,
+          orderId: resolvedOrderId,
           paymentMethod: "mobile_money",
           includeSellerContext: true,
         });
       }
+    }
+
+    if (normalizedStatus === "failed" && resolvedStoreSlug && resolvedOrderId && resolvedStoreSlug === slug) {
+      await assertStoreAndOrder(slug, resolvedOrderId);
+      await handleFailedOrderTransition({
+        orderId: resolvedOrderId,
+        paymentMethod: "mobile_money",
+      });
     }
 
     return res.status(200).json({
@@ -588,6 +639,13 @@ storefrontPaymentsRouter.post("/payments/collecto/callback", async (req, res, ne
         orderId,
         paymentMethod: "mobile_money",
         includeSellerContext: true,
+      });
+    }
+
+    if (normalizedStatus === "failed") {
+      await handleFailedOrderTransition({
+        orderId,
+        paymentMethod: "mobile_money",
       });
     }
 
