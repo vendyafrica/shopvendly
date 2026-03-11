@@ -313,7 +313,7 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
   if (!walletTransactionId || walletTransferStatus === SETTLEMENT_STATUS_FAILED) {
     const transferResponse = await collectoApiFetch(
       "withdrawFromWallet",
-      { amount: String(walletTransferAmount), reference: walletTransferReference, withDrawTo: "mobilemoney" },
+      { amount: String(walletTransferAmount), reference: walletTransferReference, withdrawTo: "mobilemoney" },
       { timeoutMs: 8000 },
     );
     const transferPayload = (transferResponse.json ?? {}) as CollectoPayload;

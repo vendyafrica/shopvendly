@@ -430,15 +430,57 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
       collectoBaseUrl: getCollectoBaseUrl(),
     });
 
-    const response = await collectoApiFetch(
-      "requestToPayStatus",
-      {
+    let response;
+    try {
+      response = await collectoApiFetch(
+        "requestToPayStatus",
+        {
+          transactionId: body.transactionId,
+        },
+        { timeoutMs: 5000 },
+      );
+    } catch (error) {
+      console.error("[Collecto] status:exception", {
+        slug,
         transactionId: body.transactionId,
-      },
-      { timeoutMs: 5000 },
-    );
+        orderId: body.orderId ?? null,
+        collectoBaseUrl: getCollectoBaseUrl(),
+        error,
+      });
+
+      const existingOrder = body.orderId ? await orderService.getOrderById(body.orderId).catch(() => null) : null;
+      if (existingOrder?.paymentStatus === "paid") {
+        return res.status(200).json({
+          ok: true,
+          mode: "live",
+          transactionId: body.transactionId,
+          status: "successful",
+          message: "Payment already confirmed successfully.",
+        });
+      }
+
+      return res.status(200).json({
+        ok: true,
+        mode: "live",
+        transactionId: body.transactionId,
+        status: "pending",
+        message: "We are still confirming your payment. Please keep this page open for a moment.",
+      });
+    }
 
     if (!response.ok) {
+      const existingOrder = body.orderId ? await orderService.getOrderById(body.orderId).catch(() => null) : null;
+      if (existingOrder?.paymentStatus === "paid") {
+        return res.status(200).json({
+          ok: true,
+          mode: "live",
+          transactionId: body.transactionId,
+          status: "successful",
+          message: "Payment already confirmed successfully.",
+          raw: response.json,
+        });
+      }
+
       return res.status(response.status || 502).json({
         error: {
           code: "COLLECTO_STATUS_FAILED",

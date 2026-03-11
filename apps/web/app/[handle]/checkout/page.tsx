@@ -463,11 +463,23 @@ function CheckoutContent() {
       const statusData = await statusRes.json().catch(() => ({}));
 
       if (!statusRes.ok) {
-        throw new Error(
-          typeof statusData?.error?.message === "string"
-            ? statusData.error.message
-            : "Unable to check mobile money payment status.",
+        if (attempt >= COLLECTO_MAX_POLL_ATTEMPTS) {
+          throw new Error(
+            typeof statusData?.error?.message === "string"
+              ? statusData.error.message
+              : "Unable to check mobile money payment status.",
+          );
+        }
+
+        setPaymentFlowStatus("pending");
+        setPaymentStatusMessage(
+          "We are still confirming your payment. If you already approved the prompt, please keep this page open for a moment.",
         );
+        clearPaymentPoll();
+        paymentPollRef.current = setTimeout(() => {
+          void pollCollectoStatus(transactionId, attempt + 1, orderId);
+        }, getCollectoPollIntervalMs(attempt));
+        return;
       }
 
       const status =
@@ -509,6 +521,18 @@ function CheckoutContent() {
         void pollCollectoStatus(transactionId, attempt + 1, orderId);
       }, getCollectoPollIntervalMs(attempt));
     } catch (err) {
+      if (attempt < COLLECTO_MAX_POLL_ATTEMPTS) {
+        setPaymentFlowStatus("pending");
+        setPaymentStatusMessage(
+          "We are still confirming your payment. If you already approved the prompt, please keep this page open for a moment.",
+        );
+        clearPaymentPoll();
+        paymentPollRef.current = setTimeout(() => {
+          void pollCollectoStatus(transactionId, attempt + 1, orderId);
+        }, getCollectoPollIntervalMs(attempt));
+        return;
+      }
+
       handlePaymentFailure(
         err instanceof Error
           ? err.message
@@ -791,15 +815,11 @@ function CheckoutContent() {
                           required
                         />
                         {paymentMethod === "mobile_money" &&
-                        phoneVerificationStatus !== "idle" &&
+                        phoneVerificationStatus === "failed" &&
                         phoneVerificationMessage ? (
                           <div
                             className={`rounded-lg border px-3 py-2 text-xs ${
-                              phoneVerificationStatus === "verified"
-                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                : phoneVerificationStatus === "failed"
-                                  ? "border-amber-200 bg-amber-50 text-amber-700"
-                                  : "border-neutral-200 bg-white text-neutral-600"
+                              "border-amber-200 bg-amber-50 text-amber-700"
                             }`}
                           >
                             {phoneVerificationMessage}
