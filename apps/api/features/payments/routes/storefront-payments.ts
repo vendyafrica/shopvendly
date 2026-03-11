@@ -61,6 +61,10 @@ function parseCollectoReference(reference: string | null | undefined) {
   return { storeSlug, orderId: parsedOrderId.data };
 }
 
+function buildCollectoReference(storeSlug: string, orderId: string) {
+  return `${storeSlug}${COLLECTO_REFERENCE_SEPARATOR}${orderId}${COLLECTO_REFERENCE_SEPARATOR}${Date.now()}`;
+}
+
 function getCollectoMode(): "disabled" | "live" {
   const value = (process.env.COLLECTO_PAYMENT_MODE || "disabled").trim().toLowerCase();
   return value === "live" ? "live" : "disabled";
@@ -280,7 +284,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
       paymentStatus: "pending",
     });
 
-    const reference = `${slug}${COLLECTO_REFERENCE_SEPARATOR}${order.id}`;
+    const reference = buildCollectoReference(slug, order.id);
     const phone = normalizeCollectoPhone(body.phone);
 
     logCollectoDebug("initiate:request", {
