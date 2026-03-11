@@ -437,7 +437,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
         {
           transactionId: body.transactionId,
         },
-        { timeoutMs: 5000 },
+        { timeoutMs: 12000 },
       );
     } catch (error) {
       console.error("[Collecto] status:exception", {
