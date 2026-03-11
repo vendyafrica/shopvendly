@@ -3,6 +3,16 @@ import type { Router as ExpressRouter } from "express";
 import { z } from "zod";
 import { and, db, eq, isNull, orders, stores } from "@shopvendly/db";
 import { handleFailedOrderTransition, handlePaidOrderTransition } from "../services/payment-order-transition.js";
+import {
+  isCollectoFailureMessage,
+  normalizeCollectoBusinessStatus,
+  readCollectoBooleanFlag,
+  readCollectoMessage,
+  readCollectoName,
+  readCollectoReference,
+  readCollectoStatus,
+  readCollectoTransactionId,
+} from "../services/collecto-payload.js";
 import { updateCollectoCollectionState } from "../services/collecto-settlement.js";
 import { orderService } from "../../orders/services/order-service.js";
 import { collectoApiFetch, getCollectoBaseUrl } from "./collecto-http.js";
@@ -68,94 +78,6 @@ function normalizeCollectoPhone(phone: string): string {
   return digits;
 }
 
-function normalizeCollectoStatus(value: unknown): "pending" | "successful" | "failed" {
-  if (typeof value !== "string") return "pending";
-  const normalized = value.trim().toLowerCase();
-  if (["success", "successful", "completed", "paid"].includes(normalized)) return "successful";
-  if (
-    [
-      "failed",
-      "error",
-      "cancelled",
-      "canceled",
-      "rejected",
-      "declined",
-      "decline",
-      "denied",
-      "deny",
-      "expired",
-    ].includes(normalized)
-  ) {
-    return "failed";
-  }
-  if (
-    normalized.includes("declin") ||
-    normalized.includes("reject") ||
-    normalized.includes("cancel") ||
-    normalized.includes("deni") ||
-    normalized.includes("insufficient") ||
-    normalized.includes("not enough") ||
-    normalized.includes("invalid") ||
-    normalized.includes("unrecognized") ||
-    normalized.includes("unrecogonized") ||
-    normalized.includes("not found")
-  ) {
-    return "failed";
-  }
-  return "pending";
-}
-
-function getCollectoPayloadRecord(payload: Record<string, unknown>) {
-  const nested = payload.data;
-  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
-    return nested as Record<string, unknown>;
-  }
-
-  return null;
-}
-
-function readCandidateMessage(payload: Record<string, unknown>): string | null {
-  const nested = getCollectoPayloadRecord(payload);
-  const candidates = [
-    payload.message,
-    payload.status_message,
-    nested?.message,
-    nested?.status_message,
-  ];
-
-  for (const candidate of candidates) {
-    if (typeof candidate === "string" && candidate.trim()) {
-      return candidate.trim();
-    }
-  }
-
-  return null;
-}
-
-function readCandidateName(payload: Record<string, unknown>): string | null {
-  const nested = getCollectoPayloadRecord(payload);
-  const candidates = [
-    nested?.name,
-    nested?.registeredName,
-    nested?.accountName,
-    nested?.customerName,
-    nested?.fullName,
-    payload.name,
-    payload.registeredName,
-    payload.accountName,
-    payload.customerName,
-    payload.fullName,
-  ];
-
-  for (const candidate of candidates) {
-    if (typeof candidate === "string" && candidate.trim()) {
-      return candidate.trim();
-    }
-  }
-
-  return null;
-}
-
 async function assertStoreAndOrder(storeSlug: string, orderId: string) {
   const store = await db.query.stores.findFirst({
     where: and(eq(stores.slug, storeSlug), isNull(stores.deletedAt)),
@@ -177,102 +99,10 @@ async function assertStoreAndOrder(storeSlug: string, orderId: string) {
   return order;
 }
 
-function readCandidateStatus(payload: Record<string, unknown>): unknown {
-  const nested = getCollectoPayloadRecord(payload);
-
-  return (
-    nested?.status ??
-    nested?.paymentStatus ??
-    nested?.transactionStatus ??
-    nested?.state ??
-    payload.status ??
-    payload.paymentStatus ??
-    payload.transactionStatus ??
-    payload.state ??
-    nested?.message ??
-    payload.message
-  );
-}
-
-function readCandidateReference(payload: Record<string, unknown>): string | null {
-  const nested = getCollectoPayloadRecord(payload);
-  const candidates = [nested?.reference, payload.reference];
-
-  for (const candidate of candidates) {
-    if (typeof candidate === "string" && candidate.trim()) {
-      return candidate.trim();
-    }
-  }
-
-  return null;
-}
-
-function readCandidateTransactionId(payload: Record<string, unknown>): string | null {
-  const nested = getCollectoPayloadRecord(payload);
-  const candidates = [
-    nested?.transactionId,
-    nested?.transactionID,
-    nested?.transaction_id,
-    nested?.id,
-    payload.transactionId,
-    payload.transactionID,
-    payload.transaction_id,
-    payload.id,
-  ];
-
-  for (const candidate of candidates) {
-    if (typeof candidate === "string" && candidate.trim()) {
-      return candidate.trim();
-    }
-  }
-
-  return null;
-}
-
-function readCollectoInitiateFlag(payload: Record<string, unknown>): boolean | null {
-  const nested = getCollectoPayloadRecord(payload);
-  const candidates = [nested?.requestToPay, payload.requestToPay];
-
-  for (const candidate of candidates) {
-    if (typeof candidate === "boolean") {
-      return candidate;
-    }
-  }
-
-  return null;
-}
-
 function isUsableCollectoTransactionId(transactionId: string | null): transactionId is string {
   if (!transactionId) return false;
   const normalized = transactionId.trim().toLowerCase();
   return normalized !== "" && normalized !== "0" && normalized !== "null" && normalized !== "undefined";
-}
-
-function isCollectoFailureMessage(message: string | null) {
-  if (!message) {
-    return false;
-  }
-
-  const normalized = message.trim().toLowerCase();
-  return (
-    normalized.includes("failed") ||
-    normalized.includes("error") ||
-    normalized.includes("declin") ||
-    normalized.includes("reject") ||
-    normalized.includes("cancel") ||
-    normalized.includes("deni") ||
-    normalized.includes("invalid") ||
-    normalized.includes("unrecognized") ||
-    normalized.includes("unrecogonized") ||
-    normalized.includes("insufficient") ||
-    normalized.includes("not enough") ||
-    normalized.includes("user cancelled") ||
-    normalized.includes("user canceled") ||
-    normalized.includes("user rejected") ||
-    normalized.includes("not found") ||
-    normalized.includes("not registered") ||
-    normalized.includes("unavailable")
-  );
 }
 
 function buildCollectoSoftFallback(message?: string | null) {
@@ -330,11 +160,13 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/verify-phone"
     }
 
     const payload = (response.json ?? {}) as Record<string, unknown>;
-    const message = readCandidateMessage(payload);
-    const name = readCandidateName(payload);
+    const message = readCollectoMessage(payload);
+    const name = readCollectoName(payload);
+    const verificationFlag = readCollectoBooleanFlag(payload, ["verifyPhoneNumber"]);
     const valid =
       response.ok &&
-      normalizeCollectoStatus(readCandidateStatus(payload)) !== "failed" &&
+      normalizeCollectoBusinessStatus(readCollectoStatus(payload)) !== "failed" &&
+      verificationFlag !== false &&
       !isCollectoFailureMessage(message);
 
     logCollectoDebug("verify:response", {
@@ -480,13 +312,15 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
     }
 
     const payload = (response.json ?? {}) as Record<string, unknown>;
-    const transactionId = readCandidateTransactionId(payload);
-    const requestToPay = readCollectoInitiateFlag(payload);
-    const statusMessage = readCandidateMessage(payload);
+    const transactionId = readCollectoTransactionId(payload);
+    const requestToPay = readCollectoBooleanFlag(payload, ["requestToPay"]);
+    const statusMessage = readCollectoMessage(payload);
+    const normalizedInitiateStatus = normalizeCollectoBusinessStatus(readCollectoStatus(payload));
 
     if (
       !isUsableCollectoTransactionId(transactionId) ||
       requestToPay === false ||
+      normalizedInitiateStatus === "failed" ||
       isCollectoFailureMessage(statusMessage)
     ) {
       await updateCollectoCollectionState({
@@ -581,12 +415,12 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
     }
 
     const payload = (response.json ?? {}) as Record<string, unknown>;
-    const statusMessage = readCandidateMessage(payload);
+    const statusMessage = readCollectoMessage(payload);
     const normalizedStatus =
-      normalizeCollectoStatus(readCandidateStatus(payload)) === "pending" &&
+      normalizeCollectoBusinessStatus(readCollectoStatus(payload)) === "pending" &&
       isCollectoFailureMessage(statusMessage)
         ? "failed"
-        : normalizeCollectoStatus(readCandidateStatus(payload));
+        : normalizeCollectoBusinessStatus(readCollectoStatus(payload));
 
     logCollectoDebug("status:response", {
       slug,
@@ -598,7 +432,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
       payload,
     });
 
-    const reference = readCandidateReference(payload);
+    const reference = readCollectoReference(payload);
     const { storeSlug, orderId: referenceOrderId } = parseCollectoReference(reference);
     const fallbackOrderId = body.orderId ?? null;
     const resolvedOrderId = referenceOrderId ?? fallbackOrderId;
@@ -659,7 +493,7 @@ storefrontPaymentsRouter.post("/payments/collecto/callback", async (req, res, ne
   try {
     const body = collectoCallbackBodySchema.parse(req.body ?? {});
     const { storeSlug, orderId } = parseCollectoReference(body.reference || null);
-    const normalizedStatus = normalizeCollectoStatus(body.status);
+    const normalizedStatus = normalizeCollectoBusinessStatus(body.status);
 
     logCollectoDebug("callback:received", {
       storeSlug,
