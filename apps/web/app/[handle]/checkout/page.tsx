@@ -37,6 +37,7 @@ const COLLECTO_MAX_POLL_ATTEMPTS = 36;
 const COLLECTO_INITIATION_TIMEOUT_MS = 14000;
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") || getRootUrl("");
+const STOREFRONT_API_BASE = "";
 
 const capitalizeFirst = (value?: string | null) => {
   if (!value) return value;
@@ -203,7 +204,7 @@ function CheckoutContent() {
 
     const loadStorePolicy = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/storefront/${resolvedSlug}`);
+        const res = await fetch(`${STOREFRONT_API_BASE}/api/storefront/${resolvedSlug}`);
         if (!res.ok) return;
         const data = (await res.json()) as { storePolicy?: string | null };
         if (!cancelled) {
