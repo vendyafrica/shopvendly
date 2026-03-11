@@ -33,7 +33,7 @@ function useIntegrationStatus(storeId?: string) {
   return { igConnected };
 }
 
-export function SocialConnectPrompt({ className }: { className?: string }) {
+export function SocialConnectPrompt({ className, variant = "default" }: { className?: string; variant?: "default" | "compact" }) {
   const { bootstrap } = useTenant();
   const storeId = bootstrap?.storeId;
   const storeSlug = bootstrap?.storeSlug;
@@ -59,14 +59,25 @@ export function SocialConnectPrompt({ className }: { className?: string }) {
 
   return (
     <div className={cn(className)}>
-      <button
-        type="button"
-        className="flex h-14 w-full items-center gap-3 rounded-xl border bg-card/80 px-4 py-3 text-left shadow-sm transition hover:bg-muted/60"
-        onClick={() => setModalOpen(true)}
-      >
-        <HugeiconsIcon icon={Share01Icon} className="h-4 w-4 text-primary" />
-        <p className="text-sm font-semibold">Connect</p>
-      </button>
+      {variant === "compact" ? (
+        <button
+          type="button"
+          className={cn("inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 gap-2", className)}
+          onClick={() => setModalOpen(true)}
+        >
+          <HugeiconsIcon icon={Share01Icon} className="h-4 w-4" />
+          Connect
+        </button>
+      ) : (
+        <button
+          type="button"
+          className={cn("flex h-14 w-full items-center gap-3 rounded-xl border bg-card/80 px-4 py-3 text-left shadow-sm transition hover:bg-muted/60", className)}
+          onClick={() => setModalOpen(true)}
+        >
+          <HugeiconsIcon icon={Share01Icon} className="h-4 w-4 text-primary" />
+          <p className="text-sm font-semibold">Connect</p>
+        </button>
+      )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="w-[92vw] max-w-sm rounded-2xl">

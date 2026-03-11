@@ -11,23 +11,10 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Edit02Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import type { ProductTableRow } from "@/features/products/hooks/use-products";
 import type { TenantBootstrap } from "@/app/admin/context/tenant-context";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@shopvendly/ui/components/select";
+import { Checkbox } from "@shopvendly/ui/components/checkbox";
 import { isLikelyVideoMedia } from "@/utils/misc";
 import { useRouter } from "next/navigation";
 import { StoreAvatar } from "@/components/store-avatar";
-
-const STATUS_STYLES: Record<ProductTableRow["status"], { label: string; badgeClass: string }> = {
-    draft: { label: "Draft", badgeClass: "bg-muted text-muted-foreground border-dashed" },
-    ready: { label: "Ready", badgeClass: "bg-amber-50 text-amber-700 border-amber-200" },
-    active: { label: "Active", badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    "sold-out": { label: "Sold out", badgeClass: "bg-rose-50 text-rose-700 border-rose-200" },
-};
 
 function formatMoney(amount: number, currency: string) {
     return new Intl.NumberFormat("en-KE", {
@@ -62,11 +49,12 @@ function ProductThumbnail({
         return (
             <video
                 src={url}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover bg-neutral-100"
                 muted
                 playsInline
                 loop
                 autoPlay
+                preload="none"
             />
         );
     }
@@ -76,33 +64,96 @@ function ProductThumbnail({
             src={url}
             alt={name}
             fill
-            className="object-cover"
+            sizes="(max-width: 640px) 33vw, 128px"
+            className="object-cover bg-neutral-100"
             unoptimized={url.includes(".ufs.sh")}
             onError={() => setForceVideo(true)}
+            loading="eager"
+            priority={false}
         />
+    );
+}
+
+// ─── Mobile skeleton ────────────────────────────────────────────────────────
+function ProductsMobileSkeleton() {
+    return (
+        <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden">
+            {/* Profile header skeleton */}
+            <div className="px-5 py-6">
+                <div className="flex items-center gap-6 mb-5">
+                    {/* Avatar */}
+                    <div className="size-[84px] shrink-0 rounded-[32px] bg-neutral-200 animate-pulse" />
+                    {/* Stats */}
+                    <div className="flex-1 flex justify-between items-center text-center">
+                        {[0, 1, 2].map((i) => (
+                            <div key={i} className="flex flex-col items-center flex-1 gap-2">
+                                <div className="h-6 w-8 bg-neutral-200 rounded animate-pulse" />
+                                <div className="h-3 w-12 bg-neutral-200 rounded animate-pulse" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                {/* Store name + bio */}
+                <div className="mb-5 space-y-2">
+                    <div className="h-4 w-24 bg-neutral-200 rounded animate-pulse" />
+                    <div className="h-3 w-40 bg-neutral-200 rounded animate-pulse" />
+                </div>
+                {/* Buttons */}
+                <div className="flex gap-2 w-full">
+                    <div className="flex-1 h-8 bg-neutral-200 rounded-md animate-pulse" />
+                    <div className="flex-1 h-8 bg-neutral-200 rounded-md animate-pulse" />
+                </div>
+            </div>
+
+            {/* Grid tab bar */}
+            <div className="flex w-full items-center justify-center border-b pt-3 pb-3">
+                <div className="h-5 w-5 bg-neutral-200 rounded animate-pulse" />
+            </div>
+
+            {/* Product grid */}
+            <div className="grid grid-cols-3 gap-px">
+                {Array.from({ length: 12 }).map((_, i) => (
+                    <div
+                        key={i}
+                        className="relative aspect-square bg-neutral-200 animate-pulse"
+                        style={{ animationDelay: `${(i % 6) * 60}ms` }}
+                    />
+                ))}
+            </div>
+        </div>
     );
 }
 
 interface ProductsMobileViewProps {
     bootstrap: TenantBootstrap | null;
     rows: ProductTableRow[];
+    isLoading?: boolean;
     onEdit: (id: string) => void;
     onDelete: (id: string) => void;
     onAddSelect: (mode: "single" | "multiple") => void;
     onStatusChange?: (productId: string, newStatus: ProductTableRow["status"]) => void;
+    statusUpdatingProductId?: string | null;
     isPublishing?: boolean;
 }
 
 export function ProductsMobileView({
     bootstrap,
     rows,
+    isLoading = false,
     onEdit,
     onDelete,
     onAddSelect,
     onStatusChange,
+    statusUpdatingProductId,
 }: ProductsMobileViewProps) {
     const [selectedProduct, setSelectedProduct] = React.useState<ProductTableRow | null>(null);
     const [sheetOpen, setSheetOpen] = React.useState(false);
+
+    const router = useRouter();
+
+    if (isLoading) {
+        return <ProductsMobileSkeleton />;
+    }
 
     const totalProducts = rows.length;
     const activeCount = rows.filter((p) => p.status === "active" || p.status === "ready").length;
@@ -115,7 +166,6 @@ export function ProductsMobileView({
 
     const storeName = bootstrap?.storeName || "My Store";
     const AdminHref = bootstrap?.storeSlug ? `/admin/${bootstrap.storeSlug}` : "/admin";
-    const router = useRouter();
 
     return (
         <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden">
@@ -194,7 +244,7 @@ export function ProductsMobileView({
                     rows.map((product) => (
                         <button
                             key={product.id}
-                            className="relative aspect-square focus:outline-none overflow-hidden group"
+                            className="relative aspect-square focus:outline-none overflow-hidden group bg-neutral-100"
                             onClick={() => handleProductClick(product)}
                         >
                             <ProductThumbnail
@@ -240,28 +290,27 @@ export function ProductsMobileView({
                                     <h3 className="font-semibold text-base leading-snug truncate">{selectedProduct.name}</h3>
                                     <p className="text-sm font-medium mt-1 mb-2 text-foreground">{formatMoney(selectedProduct.priceAmount, selectedProduct.currency)}</p>
                                     <div className="flex items-center gap-2">
-                                        <Select
-                                            value={selectedProduct.status}
-                                            onValueChange={(value) => {
-                                                if (!value) return;
-                                                if (onStatusChange) {
-                                                    onStatusChange(selectedProduct.id, value);
-                                                }
-                                                // Optimistic local update for the sheet
-                                                setSelectedProduct(prev => prev ? { ...prev, status: value as ProductTableRow["status"] } : null);
-                                            }}
-                                        >
-                                            <SelectTrigger className={`h-6 w-[90px] px-2 py-0 text-[10px] font-medium border ${STATUS_STYLES[selectedProduct.status].badgeClass} focus:ring-0 focus:ring-offset-0 bg-transparent`}>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {Object.entries(STATUS_STYLES).map(([key, style]) => (
-                                                    <SelectItem key={key} value={key} className="text-[10px] font-medium min-h-6 py-1">
-                                                        {style.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <label className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background px-2 py-1 text-[11px] font-medium text-foreground">
+                                            <Checkbox
+                                                checked={selectedProduct.status === "active"}
+                                                disabled={selectedProduct.status === "active" || statusUpdatingProductId === selectedProduct.id}
+                                                onCheckedChange={(checked) => {
+                                                    if (!checked) return;
+                                                    if (selectedProduct.status === "active") return;
+                                                    onStatusChange?.(selectedProduct.id, "active");
+                                                    setSelectedProduct((prev) =>
+                                                        prev ? { ...prev, status: "active" } : null
+                                                    );
+                                                }}
+                                            />
+                                            <span>
+                                                {statusUpdatingProductId === selectedProduct.id
+                                                    ? "Publishing..."
+                                                    : selectedProduct.status === "active"
+                                                        ? "Published"
+                                                        : "Publish"}
+                                            </span>
+                                        </label>
                                         <span className="text-[11px] text-muted-foreground font-medium">{selectedProduct.quantity} in stock</span>
                                     </div>
                                 </div>
@@ -273,7 +322,7 @@ export function ProductsMobileView({
                                     className="justify-start gap-3 h-[52px] text-sm font-semibold rounded-xl bg-muted/60 hover:bg-muted/80"
                                     onClick={() => {
                                         setSheetOpen(false);
-                                        onEdit(selectedProduct.id);
+                                        setTimeout(() => onEdit(selectedProduct.id), 250);
                                     }}
                                 >
                                     <HugeiconsIcon icon={Edit02Icon} className="size-[20px] text-foreground" />

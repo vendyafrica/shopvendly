@@ -37,15 +37,18 @@ type StorefrontProduct = {
 
     priceAmount: unknown;
 
+    originalPriceAmount?: unknown;
+
     currency: string;
 
     quantity?: number | null;
 
+    variants?: {
+        enabled?: boolean;
+        options?: Array<{ type?: string; label?: string; values?: string[]; preset?: string | null }>;
+    } | null;
+
     media?: ProductMedia[];
-
-    styleGuideEnabled?: boolean | null;
-
-    styleGuideType?: string | null;
 
     rating?: number;
     ratingCount?: number;
@@ -124,10 +127,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             name: product.productName,
             description: product.description,
             price: Number(product.priceAmount || 0),
+            originalPrice: Number(product.originalPriceAmount || 0) > Number(product.priceAmount || 0)
+                ? Number(product.originalPriceAmount || 0)
+                : null,
             currency: product.currency,
             availableQuantity: (product as { quantity?: number })?.quantity ?? 0,
-            styleGuideEnabled: Boolean(product.styleGuideEnabled),
-            styleGuideType: product.styleGuideType ?? "clothes",
+            variants: product.variants ?? null,
             images: (product.media ?? [])
                 .map((m) => resolveMediaUrl(m))
                 .filter(Boolean),
@@ -137,7 +142,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
                     contentType: m.media?.contentType ?? null,
                 }))
                 .filter((m) => Boolean(m.url)),
-            rating: 0,
+            rating: product.rating ?? 0,
+            ratingCount: product.ratingCount ?? 0,
             userRating,
             store: {
                 id: store.id,

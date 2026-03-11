@@ -13,6 +13,7 @@ type StorefrontStore = {
   name: string;
   slug: string;
   description: string | null;
+  storePolicy?: string | null;
   logoUrl?: string | null;
   heroMedia?: string[];
   categories?: string[];
@@ -24,7 +25,17 @@ type StorefrontProduct = {
   name: string;
   description?: string | null;
   price: number;
+  originalPrice?: number | null;
   currency: string;
+  variants?: {
+    enabled?: boolean;
+    options?: Array<{
+      type?: string;
+      label?: string;
+      values?: string[];
+      preset?: string | null;
+    }>;
+  } | null;
   images: string[];
   mediaItems?: { url: string; contentType?: string | null }[];
   rating?: number;
@@ -42,6 +53,7 @@ type StorefrontProductListItem = {
   slug: string;
   name: string;
   price: number;
+  originalPrice?: number | null;
   currency: string;
   image: string | null;
   contentType?: string | null;
@@ -75,9 +87,13 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { handle, productSlug } = await params;
   const baseUrl = await getApiBaseUrl();
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
+  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, {
+    next: { revalidate: 60, tags: [`storefront:store:${handle}`] }
+  });
   const store = storeRes.ok ? (await storeRes.json()) as StorefrontStore : null;
-  const productRes = await fetch(`${baseUrl}/api/storefront/${handle}/products/${productSlug}`, { next: { revalidate: 60 } });
+  const productRes = await fetch(`${baseUrl}/api/storefront/${handle}/products/${productSlug}`, {
+    next: { revalidate: 60, tags: [`storefront:store:${handle}:product:${productSlug}`] }
+  });
   const product = productRes.ok ? (await productRes.json()) as StorefrontProduct : null;
 
   if (!store || !product) {
@@ -119,12 +135,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ProductPage({ params }: PageProps) {
   const { handle, productSlug } = await params;
   const baseUrl = await getApiBaseUrl();
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
-  const store = storeRes.ok ? (await storeRes.json()) as StorefrontStore : null;
-  const productRes = await fetch(`${baseUrl}/api/storefront/${handle}/products/${productSlug}`, { next: { revalidate: 60 } });
-  const product = productRes.ok ? (await productRes.json()) as StorefrontProduct : null;
-  const productsRes = await fetch(`${baseUrl}/api/storefront/${handle}/products`, { next: { revalidate: 30 } });
-  const products = productsRes.ok ? (await productsRes.json()) as StorefrontProductListItem[] : [];
+
+  // Fetch everything in parallel to minimize wait time
+  const [storeRes, productRes, productsRes] = await Promise.all([
+    fetch(`${baseUrl}/api/storefront/${handle}`, {
+      ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 60, tags: [`storefront:store:${handle}`] } })
+    }),
+    fetch(`${baseUrl}/api/storefront/${handle}/products/${productSlug}`, {
+      ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 60, tags: [`storefront:store:${handle}:product:${productSlug}`] } })
+    }),
+    fetch(`${baseUrl}/api/storefront/${handle}/products`, {
+      ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 30, tags: [`storefront:store:${handle}:products`] } })
+    })
+  ]);
+
+  const [store, product, products] = await Promise.all([
+    storeRes.ok ? (storeRes.json() as Promise<StorefrontStore>) : Promise.resolve(null),
+    productRes.ok ? (productRes.json() as Promise<StorefrontProduct>) : Promise.resolve(null),
+    productsRes.ok ? (productsRes.json() as Promise<StorefrontProductListItem[]>) : Promise.resolve([])
+  ]);
 
   if (!store || !product) {
     notFound();
@@ -198,7 +227,7 @@ export default async function ProductPage({ params }: PageProps) {
         }
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-26 pb-8 md:pt-30 md:pb-12">
-          <ProductDetails product={product} storeCategories={storeCategories} />
+          <ProductDetails product={product} storeCategories={storeCategories} storePolicy={store.storePolicy ?? null} />
         </div>
       </Suspense>
       <ProductGridReveal products={products.map((p) => ({ ...p, rating: p.rating ?? 0 }))} />

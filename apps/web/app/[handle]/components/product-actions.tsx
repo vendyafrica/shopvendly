@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -20,6 +20,7 @@ interface ProductActionsProduct {
   images: string[];
   mediaItems?: { url: string; contentType?: string | null }[];
   slug: string;
+  availableQuantity?: number | null;
   store: {
     id: string;
     name: string;
@@ -28,16 +29,49 @@ interface ProductActionsProduct {
   };
 }
 
+type SelectedOption = {
+  name: string;
+  value: string;
+};
+
 interface ProductActionsProps {
   product: ProductActionsProduct;
+  selectedOptions?: SelectedOption[];
 }
 
-export function ProductActions({ product }: ProductActionsProps) {
-  const { addItem } = useCart();
+const createCartLineId = (productId: string, selectedOptions: SelectedOption[] = []) => {
+  if (!productId) return crypto.randomUUID();
+  if (selectedOptions.length === 0) return productId;
+  const signature = [...selectedOptions]
+    .map((option) => ({
+      name: option.name.trim(),
+      value: option.value.trim(),
+    }))
+    .filter((option) => option.name && option.value)
+    .sort((a, b) => {
+      const aKey = `${a.name}:${a.value}`.toLowerCase();
+      const bKey = `${b.name}:${b.value}`.toLowerCase();
+      return aKey.localeCompare(bKey);
+    })
+    .map((option) => `${option.name}:${option.value}`)
+    .join("|");
+  return `${productId}::${signature}`;
+};
+
+export function ProductActions({ product, selectedOptions = [] }: ProductActionsProps) {
+  const { addItem, items } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
 
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
+  const maxQuantity = product.availableQuantity ?? Number.POSITIVE_INFINITY;
+  const isOutOfStock = maxQuantity <= 0;
+  const lineId = useMemo(
+    () => createCartLineId(product.id, selectedOptions),
+    [product.id, selectedOptions],
+  );
+  const existingCartItem = items.find((item) => item.id === lineId);
+  const isAlreadyInCart = Boolean(existingCartItem);
 
   const handleToggleWishlist = () => {
     toggleWishlist({
@@ -56,15 +90,17 @@ export function ProductActions({ product }: ProductActionsProps) {
   };
 
   const handleQuantityChange = (delta: number) => {
-    setQuantity((prev) => Math.max(1, prev + delta));
+    setQuantity((prev) => Math.max(1, Math.min(maxQuantity, prev + delta)));
   };
 
   const handleAddToCart = () => {
     if (!product) return;
 
+    if (isOutOfStock || isAlreadyInCart) return;
+
     addItem(
       {
-        id: product.id,
+        id: lineId,
         product: {
           id: product.id,
           name: product.name,
@@ -73,6 +109,8 @@ export function ProductActions({ product }: ProductActionsProps) {
           image: product.images[0],
           contentType: product.mediaItems?.[0]?.contentType || undefined,
           slug: product.slug,
+          availableQuantity: product.availableQuantity ?? undefined,
+          selectedOptions,
         },
         store: {
           id: product.store.id,
@@ -91,41 +129,55 @@ export function ProductActions({ product }: ProductActionsProps) {
   const wishlisted = isInWishlist(product.id);
 
   return (
-    <div className="w-full mt-1">
+    <div className="w-full">
       {/* Quantity */}
-      <div className="flex items-center justify-between border-b border-neutral-100 pb-5 mb-5">
-        <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Quantity</span>
-        <div className="flex items-center gap-5">
+      <div className="flex items-center justify-between border-b border-neutral-100 pb-5">
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500">Quantity</span>
+          {Number.isFinite(maxQuantity) && maxQuantity > 0 ? (
+            <span className="text-xs font-medium text-neutral-400">
+              Only {maxQuantity} left
+            </span>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-4 rounded-full border border-neutral-200 bg-white px-2 py-1.5">
           <button
             onClick={() => handleQuantityChange(-1)}
-            className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-600 hover:text-neutral-900 transition-all"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 transition-all hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-35"
+            disabled={quantity <= 1}
           >
-            <HugeiconsIcon icon={MinusSignIcon} size={18} />
+            <HugeiconsIcon icon={MinusSignIcon} size={20} />
           </button>
-          <span className="text-base font-semibold w-6 text-center tabular-nums">{quantity}</span>
+          <span className="min-w-8 text-center text-lg font-semibold tabular-nums text-neutral-950">{quantity}</span>
           <button
             onClick={() => handleQuantityChange(1)}
-            className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-600 hover:text-neutral-900 transition-all"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 transition-all hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-35"
+            disabled={quantity >= maxQuantity}
           >
-            <HugeiconsIcon icon={PlusSignIcon} size={18} />
+            <HugeiconsIcon icon={PlusSignIcon} size={20} />
           </button>
         </div>
       </div>
 
       {/* Buttons */}
-      <div className="pt-2">
+      <div className="pt-5">
         <Button
           onClick={handleAddToCart}
-          className="w-full h-12 rounded-md bg-primary text-white hover:bg-primary/90 uppercase text-xs tracking-widest font-semibold transition-colors mb-3"
-          disabled={isAdded}
+          className="mb-3 h-14 w-full rounded-xl bg-primary px-5 text-sm font-semibold uppercase tracking-[0.22em] text-white transition-colors hover:bg-primary/90"
+          disabled={isAdded || isOutOfStock || isAlreadyInCart}
         >
-          {isAdded ? (
+          {isAlreadyInCart ? (
+            <span className="flex items-center gap-2">
+              <HugeiconsIcon icon={Tick02Icon} size={18} />
+              Added already
+            </span>
+          ) : isAdded ? (
             <span className="flex items-center gap-2">
               <HugeiconsIcon icon={Tick02Icon} size={18} />
               Added
             </span>
           ) : (
-            `Purchase at ${product.store.name}`
+            `Add to Cart`
           )}
         </Button>
 
@@ -133,16 +185,16 @@ export function ProductActions({ product }: ProductActionsProps) {
           <Button
             onClick={handleToggleWishlist}
             variant="outline"
-            className={`w-full h-12 rounded-md uppercase text-xs tracking-widest font-semibold transition-all duration-150 border flex items-center justify-center gap-2.5 active:scale-[0.98] hover:-translate-y-0.5 ${
+            className={`h-13 w-full rounded-xl border text-sm font-semibold uppercase tracking-[0.2em] transition-all duration-150 flex items-center justify-center gap-2.5 active:scale-[0.98] ${
               wishlisted
-                ? "border-red-400 bg-red-50 text-red-600 hover:bg-red-100"
-                : "border-neutral-200 bg-neutral-50 text-neutral-900 hover:bg-neutral-100"
+                ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
+                : "border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50"
             }`}
             aria-pressed={wishlisted}
           >
             <HugeiconsIcon
               icon={FavouriteIcon}
-              size={18}
+              size={20}
               className={wishlisted ? "fill-red-500 text-red-500" : "text-neutral-800"}
             />
             {wishlisted ? "Saved" : "Save"}

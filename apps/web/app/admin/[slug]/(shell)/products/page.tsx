@@ -14,21 +14,20 @@ import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@shopvendly/ui/components/select";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { SparklesIcon, Edit02Icon } from "@hugeicons/core-free-icons";
+import { SparklesIcon, Loading03Icon, Edit02Icon, Delete02Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@shopvendly/ui/components/dropdown-menu";
 
 import { UploadModal } from "./components/upload-modal";
 import { EditProductModal } from "./components/edit-product-modal";
 import { ProductsMobileView } from "./components/products-mobile-view";
 import { Checkbox } from "@shopvendly/ui/components/checkbox";
+
 import {
   useProducts,
   useDeleteProduct,
@@ -37,19 +36,13 @@ import {
   type ProductTableRow,
   type ProductApiRow,
 } from "@/features/products/hooks/use-products";
+import type { ProductVariantsInput } from "@/features/products/lib/product-models";
 import { ProductsPageSkeleton } from "@/components/ui/page-skeletons";
 import { isLikelyVideoMedia } from "@/utils/misc";
 
-const STATUS_STYLES: Record<ProductTableRow["status"], { label: string; badgeClass: string }> = {
-  draft: { label: "Draft", badgeClass: "bg-muted text-muted-foreground border-dashed" },
-  ready: { label: "Ready", badgeClass: "bg-amber-50 text-amber-700 border-amber-200" },
-  active: { label: "Active", badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  "sold-out": { label: "Sold out", badgeClass: "bg-rose-50 text-rose-700 border-rose-200" },
-};
-
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-type EditableField = "name" | "priceAmount" | "quantity" | "status";
+type EditableField = "name" | "priceAmount" | "quantity";
 type DraftMap = Record<string, Partial<Record<EditableField, string>>>;
 
 function formatMoney(amount: number, currency: string) {
@@ -81,11 +74,13 @@ function ProductThumbnail({
     return (
       <video
         src={url}
-        className="h-full w-full object-cover"
+        className="h-full w-full object-cover bg-muted/30"
         muted
         playsInline
         loop
         autoPlay
+        preload="none"
+        poster=""
       />
     );
   }
@@ -95,9 +90,10 @@ function ProductThumbnail({
       src={url}
       alt={name}
       fill
-      className="object-cover"
+      className="object-cover bg-muted/30"
       unoptimized={url.includes(".ufs.sh")}
       onError={() => setForceVideo(true)}
+      loading="eager"
     />
   );
 }
@@ -130,16 +126,21 @@ export default function ProductsPage() {
     productName: string;
     description?: string;
     priceAmount: number;
+    originalPriceAmount?: number | null;
     currency: string;
     quantity: number;
     status: string;
     thumbnailUrl?: string;
     media?: { id?: string; blobUrl: string; contentType?: string; blobPathname?: string }[];
+    collectionIds?: string[];
+    variants?: ProductVariantsInput | null;
   } | null>(null);
-  const [activeCell, setActiveCell] = React.useState<{ id: string; field: EditableField } | null>(null);
   const [drafts, setDrafts] = React.useState<DraftMap>({});
+  const [activeCell, setActiveCell] = React.useState<{ id: string; field: EditableField } | null>(null);
   const [uploadMode, setUploadMode] = React.useState<"single" | "multiple">("single");
   const [handledQuickAdd, setHandledQuickAdd] = React.useState(false);
+  const [isEditingId, setIsEditingId] = React.useState<string | null>(null);
+  const [mobileStatusUpdatingId, setMobileStatusUpdatingId] = React.useState<string | null>(null);
 
   const updateProductMutation = useUpdateProduct(bootstrap?.storeId ?? "");
 
@@ -155,8 +156,6 @@ export default function ProductsPage() {
 
   // Optimistic delete - removes instantly from UI
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this product?")) return;
-
     // This will optimistically remove the product from the list
     deleteProduct.mutate(id, {
       onError: (error) => {
@@ -167,6 +166,7 @@ export default function ProductsPage() {
 
   const handleEdit = async (id: string) => {
     try {
+      setIsEditingId(id);
       const res = await fetch(`/api/products/${id}`);
       if (!res.ok) throw new Error("Failed to load product");
       const product = (await res.json()) as ProductApiRow;
@@ -176,9 +176,12 @@ export default function ProductsPage() {
         productName: product.productName,
         description: product.description ?? undefined,
         priceAmount: product.priceAmount,
+        originalPriceAmount: product.originalPriceAmount ?? null,
         currency: product.currency,
         quantity: product.quantity,
         status: product.status,
+        collectionIds: product.collectionIds,
+        variants: product.variants ?? null,
         media: product.media?.map((m) => ({
           blobUrl: m.blobUrl,
           contentType: m.contentType ?? undefined,
@@ -188,6 +191,8 @@ export default function ProductsPage() {
       setEditModalOpen(true);
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to load product");
+    } finally {
+      setIsEditingId(null);
     }
   };
 
@@ -199,6 +204,7 @@ export default function ProductsPage() {
         slug: product.slug,
         description: product.description,
         priceAmount: product.priceAmount,
+        originalPriceAmount: product.originalPriceAmount ?? null,
         currency: product.currency,
         quantity: product.quantity,
         status: product.status,
@@ -228,8 +234,11 @@ export default function ProductsPage() {
       productName: string;
       description: string;
       priceAmount: number;
+      originalPriceAmount?: number | null;
       currency: string;
       quantity: number;
+      collectionIds?: string[];
+      variants?: ProductVariantsInput | null;
     },
     media: { url: string; pathname: string; contentType: string }[]
   ) => {
@@ -244,10 +253,12 @@ export default function ProductsPage() {
       slug: data.productName.toLowerCase().replace(/\s+/g, "-"),
       description: data.description,
       priceAmount: data.priceAmount,
+      originalPriceAmount: data.originalPriceAmount ?? null,
       currency: data.currency,
       quantity: data.quantity,
       status: "ready",
       media: media.map((m) => ({ ...m, blobUrl: m.url, blobPathname: m.pathname })),
+      variants: data.variants ?? null,
       salesAmount: 0,
     };
 
@@ -263,11 +274,14 @@ export default function ProductsPage() {
           title: data.productName,
           description: data.description,
           priceAmount: data.priceAmount,
+          originalPriceAmount: data.originalPriceAmount,
           currency: data.currency,
           quantity: data.quantity,
           source: "manual",
           status: "ready",
           media,
+          collectionIds: data.collectionIds,
+          variants: data.variants,
         }),
       });
 
@@ -280,22 +294,25 @@ export default function ProductsPage() {
       // 3. Replace Optimistic with Real
       queryClient.setQueryData<ProductTableRow[]>(
         queryKeys.products.list(bootstrap.storeId),
-        (old) => {
-          if (!old) return [];
-          return old.map((p) => (p.id === tempId ? {
-            id: newProduct.id,
-            name: newProduct.productName,
-            slug: newProduct.slug,
-            description: newProduct.description,
-            priceAmount: newProduct.priceAmount,
-            currency: newProduct.currency,
-            quantity: newProduct.quantity,
-            status: newProduct.status,
-            thumbnailUrl: newProduct.media?.[0]?.blobUrl,
-            thumbnailType: newProduct.media?.[0]?.contentType || undefined,
-            salesAmount: newProduct.salesAmount ?? 0,
-          } : p));
-        }
+        (old) =>
+          old?.map((p) =>
+            p.id === tempId
+              ? {
+                  id: newProduct.id,
+                  name: newProduct.productName,
+                  slug: newProduct.slug,
+                  description: newProduct.description,
+                  priceAmount: newProduct.priceAmount,
+                  originalPriceAmount: newProduct.originalPriceAmount ?? null,
+                  currency: newProduct.currency,
+                  quantity: newProduct.quantity,
+                  status: newProduct.status,
+                  thumbnailUrl: newProduct.media?.[0]?.blobUrl,
+                  thumbnailType: newProduct.media?.[0]?.contentType || undefined,
+                  salesAmount: newProduct.salesAmount ?? 0,
+                }
+              : p
+          ) ?? []
       );
 
       // Force sync to be safe
@@ -321,26 +338,6 @@ export default function ProductsPage() {
     }
   };
 
-  const startEditing = React.useCallback((productId: string, field: EditableField) => {
-    setActiveCell({ id: productId, field });
-  }, []);
-
-  const stopEditing = React.useCallback(() => {
-    setActiveCell(null);
-  }, []);
-
-  const getDraftValue = React.useCallback(
-    (product: ProductTableRow, field: EditableField) => {
-      const draftValue = drafts[product.id]?.[field];
-      if (draftValue !== undefined) return draftValue;
-      if (field === "name") return product.name;
-      if (field === "priceAmount") return product.priceAmount.toString();
-      if (field === "quantity") return product.quantity.toString();
-      return product.status;
-    },
-    [drafts]
-  );
-
   const handleDraftChange = React.useCallback(
     (product: ProductTableRow, field: EditableField, value: string) => {
       setDrafts((prev) => {
@@ -350,9 +347,7 @@ export default function ProductsPage() {
             ? product.name
             : field === "priceAmount"
               ? product.priceAmount.toString()
-              : field === "quantity"
-                ? product.quantity.toString()
-                : product.status;
+              : product.quantity.toString();
 
         if (value === baseline) {
           const productDraft = next[product.id];
@@ -400,7 +395,10 @@ export default function ProductsPage() {
       }
 
       const draft = drafts[productId];
-      if (!draft) return;
+      if (!draft) {
+        setActiveCell(null);
+        return;
+      }
 
       if (hasInvalidDraft(draft)) {
         alert("Please enter valid values before saving.");
@@ -420,13 +418,20 @@ export default function ProductsPage() {
       if (draft.quantity !== undefined) {
         payload.quantity = Number(draft.quantity);
       }
-      if (draft.status !== undefined) {
-        payload.status = draft.status as ProductTableRow["status"];
-      }
 
       if (Object.keys(payload).length === 0) {
         return;
       }
+
+      const draftSnapshot = draft;
+
+      // Optimistic local UX: exit edit mode immediately while the mutation runs.
+      setDrafts((prev) => {
+        const next = { ...prev };
+        delete next[productId];
+        return next;
+      });
+      setActiveCell(null);
 
       updateProductMutation.mutate(
         { id: productId, data: payload },
@@ -435,14 +440,15 @@ export default function ProductsPage() {
             if (bootstrap?.storeId && updatedProduct) {
               updateProductCache(bootstrap.storeId, updatedProduct);
             }
-            setDrafts((prev) => {
-              const next = { ...prev };
-              delete next[productId];
-              return next;
-            });
-            setActiveCell(null);
           },
           onError: (error) => {
+            setDrafts((prev) => ({
+              ...prev,
+              [productId]: {
+                ...prev[productId],
+                ...draftSnapshot,
+              },
+            }));
             alert(error instanceof Error ? error.message : "Failed to save product");
           },
         }
@@ -452,9 +458,47 @@ export default function ProductsPage() {
   );
 
   const handleAddProductSelect = React.useCallback((mode: "single" | "multiple") => {
+    // ...
     setUploadMode(mode);
     setUploadModalOpen(true);
   }, []);
+
+  const handleMobileStatusChange = React.useCallback(
+    (productId: string, newStatus: ProductTableRow["status"]) => {
+      if (!UUID_REGEX.test(productId)) {
+        alert("This product is still syncing. Please try again in a moment.");
+        if (bootstrap?.storeId) {
+          invalidate(bootstrap.storeId);
+        }
+        return;
+      }
+
+      setMobileStatusUpdatingId(productId);
+
+      updateProductMutation.mutate(
+        { id: productId, data: { status: newStatus } },
+        {
+          onSuccess: (updatedProduct) => {
+            if (bootstrap?.storeId && updatedProduct) {
+              updateProductCache(bootstrap.storeId, updatedProduct);
+            }
+          },
+          onError: (error) => {
+            alert(error instanceof Error ? error.message : "Failed to update product status");
+          },
+          onSettled: () => {
+            setMobileStatusUpdatingId((current) =>
+              current === productId ? null : current
+            );
+            if (bootstrap?.storeId) {
+              invalidate(bootstrap.storeId);
+            }
+          },
+        }
+      );
+    },
+    [bootstrap?.storeId, invalidate, updateProductMutation, updateProductCache]
+  );
 
   const selectedIds = React.useMemo(() => Object.keys(rowSelection), [rowSelection]);
 
@@ -575,15 +619,15 @@ export default function ProductsPage() {
     {
       accessorKey: "name",
       header: "Product",
-      size: 260,
+      size: 240,
       cell: ({ row }) => {
         const product = row.original;
         const field: EditableField = "name";
         const isEditing = activeCell?.id === product.id && activeCell.field === field;
-        const value = getDraftValue(product, field);
+        const value = drafts[product.id]?.[field] ?? product.name;
 
         return (
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex max-w-[240px] items-center gap-3 min-w-0">
             <div className="relative size-10 overflow-hidden rounded-md bg-muted shrink-0">
               <ProductThumbnail
                 url={product.thumbnailUrl}
@@ -597,32 +641,29 @@ export default function ProductsPage() {
                   autoFocus
                   value={value}
                   onChange={(event) => handleDraftChange(product, field, event.target.value)}
-                  onBlur={() => {
-                    handleInlineSave(product.id);
-                    stopEditing();
-                  }}
+                  onBlur={() => handleInlineSave(product.id)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
                       event.preventDefault();
-                      event.currentTarget.blur();
+                      handleInlineSave(product.id);
                     }
                     if (event.key === "Escape") {
                       setDrafts((prev) => {
                         const next = { ...prev };
                         delete next[product.id];
+
                         return next;
                       });
-                      stopEditing();
+                      setActiveCell(null);
                     }
                   }}
-                  className="h-9 border border-border bg-background font-semibold"
+                  className="h-9 border-0 bg-transparent px-0 font-semibold shadow-none focus-visible:ring-0"
                 />
               ) : (
                 <button
                   type="button"
-                  className="group flex items-center gap-2 truncate font-semibold text-left w-full hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors"
-                  onClick={() => startEditing(product.id, field)}
-                  title={product.name}
+                  onClick={() => setActiveCell({ id: product.id, field })}
+                  className="group flex items-center gap-1.5 text-left hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors w-full"
                 >
                   <span className="truncate">{value}</span>
                   <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity shrink-0" />
@@ -636,54 +677,47 @@ export default function ProductsPage() {
     {
       id: "price",
       header: "Price",
-      size: 130,
+      size: 120,
       cell: ({ row }) => {
         const product = row.original;
         const field: EditableField = "priceAmount";
         const isEditing = activeCell?.id === product.id && activeCell.field === field;
-        const value = getDraftValue(product, field);
+        const value = drafts[product.id]?.[field] ?? product.priceAmount.toString();
 
-        return (
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-muted-foreground">{product.currency}</span>
-            {isEditing ? (
-              <Input
-                autoFocus
-                type="number"
-                inputMode="decimal"
-                value={value}
-                onChange={(event) => handleDraftChange(product, field, event.target.value)}
-                onBlur={() => {
-                  handleInlineSave(product.id);
-                  stopEditing();
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    event.currentTarget.blur();
-                  }
-                  if (event.key === "Escape") {
-                    setDrafts((prev) => {
-                      const next = { ...prev };
-                      delete next[product.id];
-                      return next;
-                    });
-                    stopEditing();
-                  }
-                }}
-                className="h-9 w-28 border border-border bg-background text-sm font-medium"
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={() => startEditing(product.id, field)}
-                className="group flex items-center gap-1.5 text-sm font-medium whitespace-nowrap hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors"
-              >
-                <span>{formatMoney(product.priceAmount, product.currency)}</span>
-                <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity" />
-              </button>
-            )}
-          </div>
+        return isEditing ? (
+          <Input
+            autoFocus
+            type="text"
+            inputMode="decimal"
+            value={value}
+            onChange={(event) => handleDraftChange(product, field, event.target.value)}
+            onBlur={() => handleInlineSave(product.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                handleInlineSave(product.id);
+              }
+              if (event.key === "Escape") {
+                setDrafts((prev) => {
+                  const next = { ...prev };
+                  delete next[product.id];
+
+                  return next;
+                });
+                setActiveCell(null);
+              }
+            }}
+            className="h-9 w-24 border-0 bg-transparent px-0 text-sm font-medium shadow-none focus-visible:ring-0"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setActiveCell({ id: product.id, field })}
+            className="group flex items-center gap-1.5 text-sm font-medium whitespace-nowrap hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors"
+          >
+            <span>{value}</span>
+            <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity" />
+          </button>
         );
       },
     },
@@ -695,23 +729,20 @@ export default function ProductsPage() {
         const product = row.original;
         const field: EditableField = "quantity";
         const isEditing = activeCell?.id === product.id && activeCell.field === field;
-        const value = getDraftValue(product, field);
+        const value = drafts[product.id]?.[field] ?? product.quantity.toString();
 
         return isEditing ? (
           <Input
             autoFocus
-            type="number"
+            type="text"
             inputMode="numeric"
             value={value}
             onChange={(event) => handleDraftChange(product, field, event.target.value)}
-            onBlur={() => {
-              handleInlineSave(product.id);
-              stopEditing();
-            }}
+            onBlur={() => handleInlineSave(product.id)}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
-                event.currentTarget.blur();
+                handleInlineSave(product.id);
               }
               if (event.key === "Escape") {
                 setDrafts((prev) => {
@@ -719,16 +750,16 @@ export default function ProductsPage() {
                   delete next[product.id];
                   return next;
                 });
-                stopEditing();
+                setActiveCell(null);
               }
             }}
-            className="h-9 w-20 border border-border bg-background text-sm font-medium"
+            className="h-9 w-16 border-0 bg-transparent px-0 text-sm font-medium shadow-none focus-visible:ring-0"
           />
         ) : (
           <button
             type="button"
-            className="group flex items-center gap-1.5 text-sm font-medium hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors"
-            onClick={() => startEditing(product.id, field)}
+            onClick={() => setActiveCell({ id: product.id, field })}
+            className="group flex items-center gap-1.5 text-sm font-medium whitespace-nowrap hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors"
           >
             <span>{value}</span>
             <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity" />
@@ -739,7 +770,7 @@ export default function ProductsPage() {
     {
       id: "sales",
       header: "Sales",
-      size: 110,
+      size: 90,
       cell: ({ row }) => (
         <span className="text-sm font-semibold whitespace-nowrap">
           {formatMoney(row.original.salesAmount ?? 0, row.original.currency)}
@@ -747,36 +778,37 @@ export default function ProductsPage() {
       ),
     },
     {
-      accessorKey: "status",
-      header: "Status",
-      size: 120,
+      id: "actions",
+      header: "Actions",
+      size: 72,
       cell: ({ row }) => {
         const product = row.original;
-        const field: EditableField = "status";
-        const draftValue = drafts[product.id]?.status;
-        const currentStatus = (draftValue ?? product.status) as keyof typeof STATUS_STYLES;
-        const badge = STATUS_STYLES[currentStatus];
 
         return (
-          <Select
-            value={currentStatus}
-            onValueChange={(value) => {
-              if (!value) return;
-              handleDraftChange(product, field, value);
-              setTimeout(() => handleInlineSave(product.id), 0);
-            }}
-          >
-            <SelectTrigger className={`h-8 w-[110px] px-3 py-1 text-xs font-medium border ${badge.badgeClass} focus:ring-0 focus:ring-offset-0 bg-transparent`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(STATUS_STYLES).map(([key, style]) => (
-                <SelectItem key={key} value={key} className="text-xs font-medium">
-                  {style.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+                disabled={deleteProduct.isPending}
+                aria-label="Product actions"
+              >
+                <HugeiconsIcon icon={MoreHorizontalIcon} className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-36">
+                <DropdownMenuItem onClick={() => handleEdit(product.id)}>
+                  <HugeiconsIcon icon={Edit02Icon} className="size-4" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => handleDelete(product.id)}
+                >
+                  <HugeiconsIcon icon={Delete02Icon} className="size-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         );
       },
     },
@@ -823,19 +855,23 @@ export default function ProductsPage() {
     <div className="md:p-6 p-0">
       {/* Mobile View */}
       <div className="block md:hidden">
+        {isEditingId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-2">
+              <HugeiconsIcon icon={Loading03Icon} className="size-8 animate-spin text-primary" />
+              <span className="text-sm font-medium text-foreground">Loading product...</span>
+            </div>
+          </div>
+        )}
         <ProductsMobileView
           bootstrap={bootstrap}
           rows={rows}
+          isLoading={isLoading}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onAddSelect={handleAddProductSelect}
-          onStatusChange={(productId, newStatus) => {
-            const product = rows.find((r) => r.id === productId);
-            if (product) {
-              handleDraftChange(product, "status", newStatus);
-              setTimeout(() => handleInlineSave(productId), 0);
-            }
-          }}
+          onStatusChange={handleMobileStatusChange}
+          statusUpdatingProductId={mobileStatusUpdatingId}
           isPublishing={isPublishing}
         />
       </div>
@@ -910,6 +946,7 @@ export default function ProductsPage() {
         open={uploadModalOpen}
         onOpenChange={setUploadModalOpen}
         tenantId={bootstrap?.tenantId || ""}
+        storeId={bootstrap?.storeId || ""}
         onCreate={handleCreateProduct}
         mode={uploadMode}
       />
@@ -919,6 +956,7 @@ export default function ProductsPage() {
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
         tenantId={bootstrap?.tenantId || ""}
+        storeId={bootstrap?.storeId || ""}
         onProductUpdated={handleProductUpdated}
       />
     </div>

@@ -43,9 +43,9 @@ export function StoreStats({ stats, isLoading }: StoreStatsProps) {
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">
-                        {new Intl.NumberFormat("en-KE", {
+                        {new Intl.NumberFormat("en-UG", {
                             style: "currency",
-                            currency: "KES",
+                            currency: "UGX",
                         }).format(stats.totalRevenue)}
                     </div>
                     <p className="text-xs text-muted-foreground">

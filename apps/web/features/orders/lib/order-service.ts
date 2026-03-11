@@ -265,6 +265,7 @@ export const orderService = {
             .where(
                 and(
                     eq(orders.tenantId, tenantId),
+                    eq(orders.paymentStatus, "pending"),
                     inArray(orders.status, ["pending", "pending_seller_acceptance", "awaiting_payment"]),
                     isNull(orders.deletedAt)
                 )

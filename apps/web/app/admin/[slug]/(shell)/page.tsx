@@ -8,8 +8,8 @@ import { IntegrationsPanel } from "@/app/admin/components/integrations-panel";
 import { QuickAddLauncher } from "@/app/admin/components/quick-add-launcher";
 import { SocialConnectPrompt } from "@/app/admin/components/social-connect-prompt";
 import { db } from "@shopvendly/db/db";
-import { orderItems, orders, storefrontSessions, stores } from "@shopvendly/db/schema";
-import { and, desc, eq, isNull, sql } from "@shopvendly/db";
+import { orderItems, orders, products, storefrontSessions, stores } from "@shopvendly/db/schema";
+import { and, count, desc, eq, isNull, sql } from "@shopvendly/db";
 import { Button } from "@shopvendly/ui/components/button";
 import { Card, CardContent, CardHeader } from "@shopvendly/ui/components/card";
 import { getStorefrontUrl } from "@/utils/misc";
@@ -17,11 +17,11 @@ import {
   Add01Icon,
   ShoppingBag01Icon,
   Invoice01Icon,
-  Notification01Icon,
   Share01Icon,
-  CheckmarkCircle01Icon,
   Link01Icon,
-  Image01Icon,
+  ArrowRight01Icon,
+  AnalyticsDownIcon,
+  AnalyticsUpIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@shopvendly/ui/components/badge";
@@ -81,6 +81,8 @@ export default async function AdminPage({
   const storefrontUrl = getStorefrontUrl(slug);
   const to = new Date();
   const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const prevTo = new Date(from.getTime());
+  const prevFrom = new Date(prevTo.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   const wherePaidOrders = and(
     eq(orders.tenantId, store.tenantId),
@@ -98,7 +100,16 @@ export default async function AdminPage({
     sql`${storefrontSessions.lastSeenAt} <= ${to}`
   );
 
-  const [paidKpis, customerAgg, trafficTotals] = await Promise.all([
+  const wherePrevOrders = and(
+    eq(orders.tenantId, store.tenantId),
+    eq(orders.storeId, store.id),
+    eq(orders.paymentStatus, "paid"),
+    isNull(orders.deletedAt),
+    sql`${orders.createdAt} >= ${prevFrom}`,
+    sql`${orders.createdAt} <= ${prevTo}`
+  );
+
+  const [paidKpis, customerAgg, trafficTotals, prevKpis, productCount] = await Promise.all([
     db
       .select({
         revenuePaid: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)::int`,
@@ -124,7 +135,36 @@ export default async function AdminPage({
       .from(storefrontSessions)
       .where(whereSessionsInRange)
       .then((rows) => rows[0] ?? { visits: 0, uniqueVisitors: 0 }),
+
+    // Previous period for trends
+    db
+      .select({
+        revenuePaid: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)::int`,
+        ordersPaid: sql<number>`COALESCE(COUNT(*), 0)::int`,
+        distinctCustomers: sql<number>`COALESCE(COUNT(DISTINCT ${orders.customerEmail}), 0)::int`,
+      })
+      .from(orders)
+      .where(wherePrevOrders)
+      .then((rows) => rows[0] ?? { revenuePaid: 0, ordersPaid: 0, distinctCustomers: 0 }),
+
+    // Product count for onboarding vs active hero
+    db
+      .select({ value: count() })
+      .from(products)
+      .where(and(eq(products.tenantId, store.tenantId), isNull(products.deletedAt)))
+      .then((rows) => rows[0]?.value ?? 0),
   ]);
+
+  // Trend helpers
+  function trendLabel(curr: number, prev: number): string {
+    if (prev === 0) return curr > 0 ? `+${curr}` : "";
+    const pct = ((curr - prev) / prev) * 100;
+    return pct >= 0 ? `+${pct.toFixed(0)}%` : `${pct.toFixed(0)}%`;
+  }
+  function trendTone(curr: number, prev: number): "positive" | "negative" | "neutral" {
+    if (prev === 0 && curr === 0) return "neutral";
+    return curr >= prev ? "positive" : "negative";
+  }
 
   const conversionRate = trafficTotals.visits > 0 ? (paidKpis.ordersPaid / trafficTotals.visits) * 100 : null;
   const conversionRateLabel = conversionRate === null ? "—" : `${conversionRate.toFixed(1)}%`;
@@ -227,20 +267,20 @@ export default async function AdminPage({
     {
       label: "Total Revenue",
       value: formatStatCurrency(paidKpis.revenuePaid, currency),
-      changeLabel: "",
-      changeTone: "neutral" as const,
+      changeLabel: trendLabel(paidKpis.revenuePaid, prevKpis.revenuePaid),
+      changeTone: trendTone(paidKpis.revenuePaid, prevKpis.revenuePaid),
     },
     {
       label: "Paid Orders",
       value: paidKpis.ordersPaid.toLocaleString(),
-      changeLabel: "",
-      changeTone: "neutral" as const,
+      changeLabel: trendLabel(paidKpis.ordersPaid, prevKpis.ordersPaid),
+      changeTone: trendTone(paidKpis.ordersPaid, prevKpis.ordersPaid),
     },
     {
       label: "Customers",
       value: customerAgg.distinctCustomers.toLocaleString(),
-      changeLabel: "",
-      changeTone: "neutral" as const,
+      changeLabel: trendLabel(customerAgg.distinctCustomers, prevKpis.distinctCustomers),
+      changeTone: trendTone(customerAgg.distinctCustomers, prevKpis.distinctCustomers),
     },
     {
       label: "Conversion Rate",
@@ -250,17 +290,12 @@ export default async function AdminPage({
     },
   ];
 
-  const featuredOrder = recentOrders[0];
-  const featuredItemName = featuredOrder?.items?.[0]?.productName;
-  const featuredItemValue = featuredOrder
-    ? formatCurrency(featuredOrder.totalAmount, featuredOrder.currency || currency)
-    : undefined;
+  const hasProducts = productCount > 0;
 
   const quickActions = [
     { label: "Add product", href: `${basePath}/products?quickAdd=1`, icon: Add01Icon },
     { label: "Orders", href: `${basePath}/transactions`, icon: Invoice01Icon },
     { label: "Products", href: `${basePath}/products`, icon: ShoppingBag01Icon },
-    { label: "Notifications", href: `${basePath}/notifications`, icon: Notification01Icon },
     { label: "Share store", href: storefrontUrl, icon: Share01Icon, external: true },
   ];
 
@@ -353,50 +388,137 @@ export default async function AdminPage({
         </div>
       </div>
 
-      {/* Desktop-first cards and charts */}
-      <Card className="bg-muted/20 shadow-sm hidden md:block">
-        <CardHeader className="flex flex-col gap-2 pb-2 md:flex-row md:items-center md:justify-between">
-          <Link
-            href={storefrontUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-sm border border-border/70 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/60"
-          >
-            <HugeiconsIcon icon={Link01Icon} className="h-4 w-4" />
-            {storefrontUrl.replace(/^https?:\/\//, "")}
-          </Link>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-6">
-          <div className="grid gap-6 md:grid-cols-2 min-h-[480px]">
-            <div className="flex h-full flex-col rounded-3xl border border-dashed bg-background p-6 shadow-sm">
-              <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-muted-foreground/40 bg-muted/40 p-16 min-h-[260px]">
-                <HugeiconsIcon icon={Image01Icon} className="h-10 w-10 text-muted-foreground" />
-                <p className="mt-4 font-semibold">{featuredItemName || "Add your first product"}</p>
-                <p className="text-sm text-muted-foreground">{featuredItemValue || "Upload an item to showcase it on your storefront."}</p>
-              </div>
-              <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div className="flex items-center gap-2 text-sm font-medium text-emerald-600">
-                  <HugeiconsIcon icon={CheckmarkCircle01Icon} className="h-4 w-4" />
-                  {featuredItemName ? "Product added" : "No product yet"}
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="secondary" >
-                    <Link href={`${basePath}/products`}>Add more</Link>
+
+      {/* ── Desktop hero ─────────────────────────────────────────────────── */}
+      <div className="hidden md:block">
+        {hasProducts ? (
+          /* ── ACTIVE STATE: performance strip + quick actions ─────────── */
+          <div className="rounded-2xl border bg-card/60 shadow-sm overflow-hidden">
+            {/* Top bar: storefront link + quick actions */}
+            <div className="flex items-center justify-between gap-4 px-6 py-4 border-b bg-muted/30">
+              <Link
+                href={storefrontUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <HugeiconsIcon icon={Link01Icon} className="h-4 w-4 shrink-0" />
+                <span className="truncate max-w-[260px]">{storefrontUrl.replace(/^https?:\/\//, "")}</span>
+                <HugeiconsIcon icon={ArrowRight01Icon} className="h-3.5 w-3.5 opacity-50" />
+              </Link>
+              {/* Quick action buttons */}
+              <div className="flex items-center gap-2 shrink-0">
+                <QuickAddLauncher
+                  className="h-9 px-3 text-sm gap-2"
+                  label="Add product"
+                />
+                {quickActions.slice(1, 3).map((action) => (
+                  <Link
+                    key={action.label}
+                    href={action.href}
+                    target={(action as { external?: boolean }).external ? "_blank" : undefined}
+                    rel={(action as { external?: boolean }).external ? "noreferrer" : undefined}
+                  >
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <HugeiconsIcon icon={action.icon} className="h-4 w-4" />
+                      {action.label}
+                    </Button>
+                  </Link>
+                ))}
+                <SocialConnectPrompt variant="compact" />
+                <Link href={storefrontUrl} target="_blank" rel="noreferrer">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <HugeiconsIcon icon={Share01Icon} className="h-4 w-4" />
+                    Share store
                   </Button>
-                  <Button size="sm" variant="outline" >
-                    <Link href={`${basePath}/products`}>View products</Link>
-                  </Button>
-                </div>
+                </Link>
               </div>
             </div>
-            <div className="rounded-3xl border bg-background p-6 shadow-sm">
-              <IntegrationsPanel variant="compact" />
+
+            {/* Performance strip */}
+            <div className="grid grid-cols-3 divide-x">
+              <div className="px-6 py-5">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">30-day Revenue</p>
+                <p className="text-2xl font-bold tracking-tight">{formatStatCurrency(paidKpis.revenuePaid, currency)}</p>
+                {trendLabel(paidKpis.revenuePaid, prevKpis.revenuePaid) && (
+                  <p className={`text-xs font-medium mt-1 flex items-center gap-1 ${paidKpis.revenuePaid >= prevKpis.revenuePaid ? "text-emerald-600" : "text-rose-500"}`}>
+                    <HugeiconsIcon icon={paidKpis.revenuePaid >= prevKpis.revenuePaid ?AnalyticsUpIcon : AnalyticsDownIcon} className="h-3.5 w-3.5" />
+                    {trendLabel(paidKpis.revenuePaid, prevKpis.revenuePaid)} vs prev 30d
+                  </p>
+                )}
+              </div>
+              <div className="px-6 py-5">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Paid Orders</p>
+                <p className="text-2xl font-bold tracking-tight">{paidKpis.ordersPaid.toLocaleString()}</p>
+                {trendLabel(paidKpis.ordersPaid, prevKpis.ordersPaid) && (
+                  <p className={`text-xs font-medium mt-1 flex items-center gap-1 ${paidKpis.ordersPaid >= prevKpis.ordersPaid ? "text-emerald-600" : "text-rose-500"}`}>
+                    <HugeiconsIcon icon={paidKpis.ordersPaid >= prevKpis.ordersPaid ? AnalyticsUpIcon : AnalyticsDownIcon} className="h-3.5 w-3.5" />
+                    {trendLabel(paidKpis.ordersPaid, prevKpis.ordersPaid)} vs prev 30d
+                  </p>
+                )}
+              </div>
+              <div className="px-6 py-5">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Customers</p>
+                <p className="text-2xl font-bold tracking-tight">{customerAgg.distinctCustomers.toLocaleString()}</p>
+                {trendLabel(customerAgg.distinctCustomers, prevKpis.distinctCustomers) && (
+                  <p className={`text-xs font-medium mt-1 flex items-center gap-1 ${customerAgg.distinctCustomers >= prevKpis.distinctCustomers ? "text-emerald-600" : "text-rose-500"}`}>
+                    <HugeiconsIcon icon={customerAgg.distinctCustomers >= prevKpis.distinctCustomers ? AnalyticsUpIcon : AnalyticsDownIcon} className="h-3.5 w-3.5" />
+                    {trendLabel(customerAgg.distinctCustomers, prevKpis.distinctCustomers)} vs prev 30d
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        ) : (
+          /* ── ONBOARDING STATE: checklist for new stores ───────────────── */
+          <Card className="bg-muted/20 shadow-sm">
+            <CardHeader className="flex flex-col gap-2 pb-2 md:flex-row md:items-center md:justify-between">
+              <Link
+                href={storefrontUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-sm border border-border/70 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/60"
+              >
+                <HugeiconsIcon icon={Link01Icon} className="h-4 w-4" />
+                {storefrontUrl.replace(/^https?:\/\//, "")}
+              </Link>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+              <div className="grid gap-6 md:grid-cols-2 min-h-[340px]">
+                <div className="flex h-full flex-col gap-4 rounded-2xl border border-dashed bg-background p-6 shadow-sm">
+                  <p className="text-base font-semibold">Get started with Vendly</p>
+                  <p className="text-sm text-muted-foreground -mt-2">Complete these steps to make your first sale.</p>
+                  <div className="flex flex-col gap-3 mt-2">
+                    {[
+                      { label: "Upload your first product", href: `${basePath}/products?quickAdd=1`, done: false },
+                      { label: "Connect Instagram", href: `${basePath}/integrations`, done: false },
+                      { label: "Share your store link", href: storefrontUrl, done: false, external: true },
+                    ].map((step) => (
+                      <Link
+                        key={step.label}
+                        href={step.href}
+                        target={step.external ? "_blank" : undefined}
+                        rel={step.external ? "noreferrer" : undefined}
+                        className="flex items-center gap-3 rounded-xl border bg-muted/20 px-4 py-3 text-sm font-medium hover:bg-muted/40 transition-colors group"
+                      >
+                        <div className="size-6 rounded-full border-2 border-dashed border-border flex items-center justify-center shrink-0 group-hover:border-primary/60 transition-colors" />
+                        <span className="flex-1">{step.label}</span>
+                        <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-2xl border bg-background p-6 shadow-sm">
+                  <IntegrationsPanel variant="compact" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <SegmentedStatsCard segments={statSegments} />
+
 
       <div className="hidden md:grid grid-cols-1 gap-5 md:grid-cols-7 lg:grid-cols-7">
         <RevenueAreaChartCard

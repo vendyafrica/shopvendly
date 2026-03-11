@@ -5,6 +5,8 @@ interface Product {
     slug: string;
     name: string;
     price: number;
+    originalPrice?: number | null;
+    discountPercent?: number | null;
     currency: string;
     image: string | null;
     contentType?: string | null;
@@ -32,19 +34,25 @@ export function ProductGrid({ products }: ProductGridProps) {
         })}`.trim();
     };
 
+    const largeScreenColumns = products.length >= 12 ? " lg:columns-4 xl:columns-4" : " lg:columns-3 xl:columns-3";
+
     return (
-        <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-2 sm:gap-4 lg:gap-5 px-1 sm:px-4 lg:px-6 xl:px-8 [column-fill:balance]">
-            {products.map((product, index) => (
-                <ProductCard
-                    key={product.id}
-                    index={index}
-                    title={product.name}
-                    slug={product.slug}
-                    price={formatPrice(product.price, product.currency)}
-                    image={product.image}
-                    contentType={product.contentType}
-                />
-            ))}
+        <div className="mx-auto w-full max-w-6xl px-3 sm:px-6 lg:px-10 xl:px-12">
+            <div className={`columns-2 sm:columns-2 md:columns-3${largeScreenColumns} gap-3 sm:gap-5 lg:gap-7 [column-fill:balance]`}>
+                {products.map((product, index) => (
+                    <ProductCard
+                        key={product.id}
+                        index={index}
+                        title={product.name}
+                        slug={product.slug}
+                        price={formatPrice(product.price, product.currency)}
+                        originalPrice={product.originalPrice ? formatPrice(product.originalPrice, product.currency) : null}
+                        discountPercent={product.discountPercent ?? null}
+                        image={product.image}
+                        contentType={product.contentType}
+                    />
+                ))}
+            </div>
         </div>
     );
 }

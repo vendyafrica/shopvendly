@@ -5,7 +5,7 @@ import { StorefrontHeader } from "./components/header";
 import { HeaderSkeleton } from "./components/skeletons";
 import { headers } from "next/headers";
 
-const DEFAULT_STORE_LOGO = "/store-logo.jpg";
+const DEFAULT_STORE_LOGO = "/vendly.png";
 
 type StorefrontStore = {
   name: string;
@@ -37,15 +37,17 @@ interface LayoutProps {
 export default async function StorefrontLayout({ children, params }: LayoutProps) {
   const { handle } = await params;
   const baseUrl = await getApiBaseUrl();
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
+  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, {
+    ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 60 } })
+  });
   const store = storeRes.ok ? await storeRes.json() as StorefrontStore : null;
 
   const initialStore = store
     ? {
-        name: store.name,
-        slug: store.slug,
-        logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO,
-      }
+      name: store.name,
+      slug: store.slug,
+      logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO,
+    }
     : null;
 
   return (

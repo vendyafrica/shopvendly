@@ -122,19 +122,19 @@ export default function WishlistClient() {
                       className="relative w-full sm:w-28 aspect-3/4 bg-white rounded-xl overflow-hidden shadow-sm"
                     >
                       {item.contentType?.startsWith("video/") ||
-                      item.image?.match(/\.(mp4|webm|mov|ogg)$/i) ||
-                      ((item.image || "").includes(".ufs.sh") &&
-                        !(item.image || "").match(
-                          /\.(jpg|jpeg|png|webp|gif)$/i,
-                        ) &&
-                        !item.contentType?.startsWith("image/")) ? (
+                        item.image?.match(/\.(mp4|webm|mov|ogg)$/i) ||
+                        ((item.image || "").includes(".ufs.sh") &&
+                          !(item.image || "").match(
+                            /\.(jpg|jpeg|png|webp|gif)$/i,
+                          ) &&
+                          !item.contentType?.startsWith("image/")) ? (
                         <video
                           src={item.image || ""}
-                          className="h-full w-full object-cover"
+                          className="h-full w-full object-cover bg-neutral-100"
                           muted
                           playsInline
                           loop
-                          autoPlay
+                          preload="metadata"
                         />
                       ) : (
                         <Image
@@ -142,7 +142,7 @@ export default function WishlistClient() {
                           alt={item.name}
                           fill
                           sizes="160px"
-                          className="object-cover"
+                          className="object-cover bg-neutral-100"
                           unoptimized={item.image?.includes(".ufs.sh")}
                         />
                       )}
@@ -216,12 +216,12 @@ export default function WishlistClient() {
                       0,
                     ) > 0
                       ? formatPrice(
-                          storeItems.reduce(
-                            (sum, item) => sum + (item.price || 0),
-                            0,
-                          ),
-                          storeItems[0]?.currency,
-                        )
+                        storeItems.reduce(
+                          (sum, item) => sum + (item.price || 0),
+                          0,
+                        ),
+                        storeItems[0]?.currency,
+                      )
                       : "—"}
                   </span>
                 </div>

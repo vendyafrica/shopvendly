@@ -18,6 +18,43 @@ import { mediaObjects } from "./media-schema";
 import { categories } from "./category-schema";
 import { users } from "./auth-schema";
 
+export const PRODUCT_COLOR_PRESETS = [
+  "Black",
+  "White",
+  "Grey",
+  "Brown",
+  "Beige",
+  "Navy",
+  "Blue",
+  "Green",
+  "Olive",
+  "Yellow",
+  "Orange",
+  "Red",
+  "Pink",
+  "Purple",
+  "Gold",
+  "Silver",
+] as const;
+
+export const PRODUCT_ALPHA_SIZE_PRESET = ["XS", "S", "M", "L", "XL"] as const;
+export const PRODUCT_UK_SIZE_PRESET = ["4", "6", "8", "10", "12", "14", "16", "18"] as const;
+
+export type ProductVariantOptionType = "color" | "size";
+export type ProductSizePreset = "alpha" | "uk";
+
+export type ProductVariantOption = {
+  type: ProductVariantOptionType;
+  label: string;
+  values: string[];
+  preset?: ProductSizePreset | null;
+};
+
+export type ProductVariantConfig = {
+  enabled: boolean;
+  options: ProductVariantOption[];
+};
+
 export const products = pgTable(
   "products",
   {
@@ -34,6 +71,7 @@ export const products = pgTable(
     description: text("description"),
 
     priceAmount: integer("price_amount").notNull().default(0),
+    originalPriceAmount: integer("original_price_amount"),
     currency: text("currency").notNull().default("UGX"),
     quantity: integer("quantity").notNull().default(0),
 
@@ -45,7 +83,7 @@ export const products = pgTable(
     sourceId: text("source_id"),
     sourceUrl: text("source_url"),
 
-    variants: jsonb("variants").default([]),
+    variants: jsonb("variants").$type<ProductVariantConfig | null>().default(null),
 
     viewCount: integer("view_count").default(0).notNull(),
 

@@ -14,14 +14,29 @@ import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { Label } from "@shopvendly/ui/components/label";
 import { Textarea } from "@shopvendly/ui/components/textarea";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@shopvendly/ui/components/select";
+import { Checkbox } from "@shopvendly/ui/components/checkbox";
 import Image from "next/image";
 import { useTenant } from "@/app/admin/context/tenant-context";
 import { useUpload } from "@/features/media/hooks/use-upload";
+import type { ProductVariantsInput } from "@/features/products/lib/product-models";
+import {
+    PRODUCT_ALPHA_SIZE_PRESET,
+    PRODUCT_COLOR_PRESETS,
+    PRODUCT_UK_SIZE_PRESET,
+} from "@shopvendly/db/schema";
 
 interface UploadModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     tenantId: string;
+    storeId: string;
     onCreate?: (productData: ProductFormData, media: MediaItem[]) => void;
     mode?: "single" | "multiple";
 }
@@ -36,24 +51,56 @@ export interface ProductFormData {
     productName: string;
     description: string;
     priceAmount: number;
+    originalPriceAmount?: number | null;
     currency: string;
     quantity: number;
+    collectionIds?: string[];
+    variants?: ProductVariantsInput | null;
 }
 
 interface FilePreview {
+    id: string;
     file: File;
     previewUrl: string;
     isUploading: boolean;
+    progress: number;
+    displayProgress: number;
+    startedAt: number;
     url?: string;
     pathname?: string;
     error?: string;
 }
 
+function UploadProgressSpinner({ progress }: { progress: number }) {
+    const radius = 18;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (Math.max(0, Math.min(progress, 100)) / 100) * circumference;
+
+    return (
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm">
+            <svg className="h-12 w-12 -rotate-90" viewBox="0 0 48 48" aria-hidden="true">
+                <circle cx="24" cy="24" r={radius} className="fill-none stroke-white/20" strokeWidth="4" />
+                <circle
+                    cx="24"
+                    cy="24"
+                    r={radius}
+                    className="fill-none stroke-white transition-all duration-150"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={offset}
+                />
+            </svg>
+            <span className="absolute text-[11px] font-semibold text-white">{progress}%</span>
+        </div>
+    );
+}
 
 export function UploadModal({
     open,
     onOpenChange,
     tenantId,
+    storeId,
     onCreate,
     mode = "single",
 }: UploadModalProps) {
@@ -72,7 +119,66 @@ export function UploadModal({
     const [productName, setProductName] = React.useState("");
     const [description, setDescription] = React.useState("");
     const [priceAmount, setPriceAmount] = React.useState<string>("");
+    const [originalPriceAmount, setOriginalPriceAmount] = React.useState<string>("");
     const [quantity, setQuantity] = React.useState<string>("");
+    const [collections, setCollections] = React.useState<{ id: string, name: string }[]>([]);
+    const [selectedCollectionIds, setSelectedCollectionIds] = React.useState<string[]>([]);
+    const [variantsEnabled, setVariantsEnabled] = React.useState(false);
+    const [selectedColors, setSelectedColors] = React.useState<string[]>([]);
+    const [sizePreset, setSizePreset] = React.useState<"none" | "alpha" | "uk">("none");
+    const [selectedSizes, setSelectedSizes] = React.useState<string[]>([]);
+
+    React.useEffect(() => {
+        const hasActiveUpload = files.some((file) => file.isUploading || file.displayProgress < file.progress);
+        if (!hasActiveUpload) return;
+
+        const frame = window.setInterval(() => {
+            setFiles((prev) => prev.map((file) => {
+                if (!file.isUploading && file.displayProgress >= file.progress) {
+                    return file;
+                }
+
+                const nextTarget = file.isUploading
+                    ? Math.max(file.progress, Math.min(file.displayProgress + 8, 95))
+                    : file.progress;
+                const step = file.isUploading ? 4 : 12;
+                const nextDisplayProgress = Math.min(file.displayProgress + step, nextTarget);
+
+                if (nextDisplayProgress === file.displayProgress) {
+                    return file;
+                }
+
+                return {
+                    ...file,
+                    displayProgress: nextDisplayProgress,
+                };
+            }));
+        }, 80);
+
+        return () => window.clearInterval(frame);
+    }, [files]);
+
+    React.useEffect(() => {
+        if (!open || !storeId) return;
+
+        let active = true;
+        const loadCollections = async () => {
+            try {
+                const params = new URLSearchParams({ storeId });
+                const res = await fetch(`/api/store-collections?${params.toString()}`, { cache: "no-store" });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (active) setCollections(data);
+            } catch {
+                if (active) setCollections([]);
+            }
+        };
+
+        void loadCollections();
+        return () => {
+            active = false;
+        };
+    }, [open, storeId]);
 
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -83,47 +189,72 @@ export function UploadModal({
     };
 
     const handleUploadFiles = async (selectedFiles: File[]) => {
-        const newFiles = selectedFiles.map(file => ({
+        const startedAt = Date.now();
+        const newFiles = selectedFiles.map((file, index) => ({
+            id: `${file.name}-${file.lastModified}-${Date.now()}-${index}`,
             file,
             previewUrl: URL.createObjectURL(file),
             isUploading: true,
+            progress: 0,
+            displayProgress: 0,
+            startedAt,
             url: undefined,
             pathname: undefined,
-            error: undefined
+            error: undefined,
         }));
 
-        setFiles(prev => [...prev, ...newFiles]);
-
-        const startIndex = files.length;
+        setFiles((prev) => [...prev, ...newFiles]);
 
         if (!tenantId) {
             setError("Tenant not found. Please refresh and try again.");
-            setFiles(prev => prev.filter((_, idx) => idx < startIndex));
+            setFiles((prev) => prev.filter((existing) => !newFiles.some((file) => file.id === existing.id)));
             return;
         }
 
         // Upload in parallel
         await Promise.all(selectedFiles.map(async (file, i) => {
-            const index = startIndex + i;
+            const fileId = newFiles[i]?.id;
+            if (!fileId) return;
             try {
                 const uploaded = await uploadFile(file, {
                     tenantId,
                     endpoint: "productMedia",
                     compressVideo: true,
+                    onUploadProgress: ({ progress }) => {
+                        setFiles((prev) => {
+                            const updated = [...prev];
+                            const targetIndex = updated.findIndex((item) => item.id === fileId);
+                            if (targetIndex >= 0) {
+                                const targetFile = updated[targetIndex];
+                                if (!targetFile) {
+                                    return updated;
+                                }
+
+                                updated[targetIndex] = {
+                                    ...targetFile,
+                                    progress,
+                                };
+                            }
+                            return updated;
+                        });
+                    },
                 });
 
-                setFiles(prev => {
+                setFiles((prev) => {
                     const updated = [...prev];
-                    // Find by index relative to prev state, assuming append
-                    // Warning: concurrency issues if files added quickly. 
-                    // Better to use functional update properly or ID.
-                    // Simplified for now based on index assumption which is risky but standard in this codebase so far.
-                    if (updated[index]) {
-                        updated[index] = {
-                            ...updated[index],
+                    const targetIndex = updated.findIndex((item) => item.id === fileId);
+                    if (targetIndex >= 0) {
+                        const targetFile = updated[targetIndex];
+                        if (!targetFile) {
+                            return updated;
+                        }
+
+                        updated[targetIndex] = {
+                            ...targetFile,
                             url: uploaded.url,
                             pathname: uploaded.pathname,
-                            isUploading: false
+                            isUploading: false,
+                            progress: 100,
                         };
                     }
                     return updated;
@@ -132,10 +263,22 @@ export function UploadModal({
                 const message = err instanceof Error ? err.message : "Upload failed";
                 console.error("Upload failed", err);
                 setError(`Failed to upload ${file.name}: ${message}`);
-                setFiles(prev => {
+                setFiles((prev) => {
                     const updated = [...prev];
-                    if (updated[index]) {
-                        updated[index] = { ...updated[index], isUploading: false, error: message };
+                    const targetIndex = updated.findIndex((item) => item.id === fileId);
+                    if (targetIndex >= 0) {
+                        const targetFile = updated[targetIndex];
+                        if (!targetFile) {
+                            return updated;
+                        }
+
+                        updated[targetIndex] = {
+                            ...targetFile,
+                            isUploading: false,
+                            progress: 0,
+                            displayProgress: 0,
+                            error: message,
+                        };
                     }
                     return updated;
                 });
@@ -171,8 +314,6 @@ export function UploadModal({
             return updated;
         });
     };
-
-
 
     const handleSaveProduct = async () => {
         if (files.length === 0) {
@@ -210,6 +351,15 @@ export function UploadModal({
             return;
         }
 
+        if (originalPriceAmount) {
+            const originalPrice = Math.floor(Number(originalPriceAmount));
+            const livePrice = Math.floor(Number(priceAmount));
+            if (Number.isNaN(originalPrice) || originalPrice <= livePrice) {
+                setError("Original price must be greater than the current price");
+                return;
+            }
+        }
+
         if (quantity && Number.isNaN(Number(quantity))) {
             setError("Quantity must be a number");
             return;
@@ -228,8 +378,21 @@ export function UploadModal({
                 productName: productName.trim(),
                 description: description.trim(),
                 priceAmount: Math.max(0, Math.floor(Number(priceAmount))),
+                originalPriceAmount: originalPriceAmount ? Math.max(0, Math.floor(Number(originalPriceAmount))) : null,
                 currency,
                 quantity: quantity ? Math.max(0, Math.floor(Number(quantity))) : 0,
+                collectionIds: selectedCollectionIds,
+                variants: variantsEnabled
+                    ? {
+                        enabled: true,
+                        options: [
+                            ...(selectedColors.length > 0 ? [{ type: "color" as const, label: "Color", values: selectedColors }] : []),
+                            ...(selectedSizes.length > 0
+                                ? [{ type: "size" as const, label: "Size", values: selectedSizes, preset: sizePreset === "none" ? null : sizePreset }]
+                                : []),
+                        ],
+                    }
+                    : null,
             };
 
             onCreate?.(data, media);
@@ -240,7 +403,13 @@ export function UploadModal({
             setProductName("");
             setDescription("");
             setPriceAmount("");
+            setOriginalPriceAmount("");
             setQuantity("");
+            setSelectedCollectionIds([]);
+            setVariantsEnabled(false);
+            setSelectedColors([]);
+            setSizePreset("none");
+            setSelectedSizes([]);
             setError(null);
 
             if (!shouldStayOpen) {
@@ -261,7 +430,13 @@ export function UploadModal({
         setProductName("");
         setDescription("");
         setPriceAmount("");
+        setOriginalPriceAmount("");
         setQuantity("");
+        setSelectedCollectionIds([]);
+        setVariantsEnabled(false);
+        setSelectedColors([]);
+        setSizePreset("none");
+        setSelectedSizes([]);
         onOpenChange(false);
     };
 
@@ -340,35 +515,33 @@ export function UploadModal({
                                             {files[0]?.file.type.startsWith("video/") ? (
                                                 <video
                                                     src={files[0]?.previewUrl}
-                                                    className={`h-full w-full rounded-md object-cover transition-opacity ${files[0]?.isUploading ? "opacity-60" : "opacity-100"}`}
+                                                    className={`h-full w-full rounded-md object-cover transition-opacity ${files[0]?.isUploading ? "opacity-55" : "opacity-100"}`}
                                                     muted
                                                     playsInline
                                                     controls
                                                 />
                                             ) : (
-                                                <div className="relative h-full w-full">
+                                                <div className="relative h-full w-full rounded-md bg-muted/30">
                                                     <Image
                                                         src={files[0]?.previewUrl || ""}
                                                         alt="Featured preview"
                                                         fill
-                                                        className={`object-contain rounded-md transition-opacity ${files[0]?.isUploading ? "opacity-60" : "opacity-100"}`}
+                                                        className={`object-contain rounded-md transition-opacity ${files[0]?.isUploading ? "opacity-55" : "opacity-100"}`}
                                                     />
                                                 </div>
                                             )}
-                                            {files[0]?.isUploading && (
+                                            {files[0]?.isUploading ? (
                                                 <div className="absolute inset-0 flex items-center justify-center">
-                                                    <div className="size-10 rounded-full bg-background/80 flex items-center justify-center">
-                                                        <div className="size-7 rounded-full border-2 border-primary/60 border-t-primary animate-spin" />
-                                                    </div>
+                                                    <UploadProgressSpinner progress={files[0].displayProgress} />
                                                 </div>
-                                            )}
+                                            ) : null}
                                         </div>
 
                                         {/* Thumbnail strip */}
                                         <div className="grid grid-cols-5 gap-2 sm:grid-cols-6">
                                             {files.map((f, i) => (
                                                 <div
-                                                    key={i}
+                                                    key={f.id}
                                                     className={`relative aspect-square cursor-pointer border-2 rounded-md ${i === 0 ? "border-primary" : "border-transparent hover:border-border"}`}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -389,11 +562,6 @@ export function UploadModal({
                                                             fill
                                                             className={`object-cover rounded-md transition-opacity ${f.isUploading ? "opacity-60" : "opacity-100"}`}
                                                         />
-                                                    )}
-                                                    {f.isUploading && (
-                                                        <div className="absolute inset-0 flex items-center justify-center">
-                                                            <div className="size-5 rounded-full border-2 border-white/60 border-t-white animate-spin" />
-                                                        </div>
                                                     )}
 
                                                     {!isSaving && !f.isUploading && (
@@ -466,6 +634,21 @@ export function UploadModal({
                                         />
                                     </div>
                                     <div className="space-y-2">
+                                        <Label htmlFor="originalPriceAmount">Original Price ({currency})</Label>
+                                        <Input
+                                            id="originalPriceAmount"
+                                            value={originalPriceAmount}
+                                            onChange={(e) => setOriginalPriceAmount(e.target.value)}
+                                            placeholder="Optional"
+                                            type="number"
+                                            min="0"
+                                            disabled={isSaving}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-2">
                                         <Label htmlFor="quantity">Quantity</Label>
                                         <Input
                                             id="quantity"
@@ -489,6 +672,119 @@ export function UploadModal({
                                         rows={5}
                                         disabled={isSaving}
                                     />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Collections</Label>
+                                    <div className="max-h-40 space-y-2 overflow-y-auto rounded-md border border-border/70 p-3">
+                                        {collections.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground">No collections yet.</p>
+                                        ) : (
+                                            collections.map((collection) => {
+                                                const checked = selectedCollectionIds.includes(collection.id);
+                                                return (
+                                                    <label key={collection.id} className="flex items-center gap-3 text-sm">
+                                                        <Checkbox
+                                                            checked={checked}
+                                                            onCheckedChange={(nextChecked) => {
+                                                                setSelectedCollectionIds((prev) =>
+                                                                    nextChecked
+                                                                        ? [...prev, collection.id]
+                                                                        : prev.filter((id) => id !== collection.id)
+                                                                );
+                                                            }}
+                                                        />
+                                                        <span>{collection.name}</span>
+                                                    </label>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3 rounded-lg border border-border/60 p-4">
+                                    <label className="flex items-center gap-3 text-sm font-medium">
+                                        <Checkbox
+                                            checked={variantsEnabled}
+                                            onCheckedChange={(checked) => setVariantsEnabled(Boolean(checked))}
+                                            disabled={isSaving}
+                                        />
+                                        <span>Add sizes / colors</span>
+                                    </label>
+
+                                    {variantsEnabled ? (
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label>Preset colors</Label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {PRODUCT_COLOR_PRESETS.map((color) => {
+                                                        const checked = selectedColors.includes(color);
+                                                        return (
+                                                            <Button
+                                                                key={color}
+                                                                type="button"
+                                                                variant={checked ? "default" : "outline"}
+                                                                size="sm"
+                                                                className="h-8 rounded-full px-3"
+                                                                onClick={() => {
+                                                                    setSelectedColors((prev) =>
+                                                                        checked ? prev.filter((value) => value !== color) : [...prev, color]
+                                                                    );
+                                                                }}
+                                                            >
+                                                                {color}
+                                                            </Button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label>Size preset</Label>
+                                                <Select
+                                                    value={sizePreset}
+                                                    onValueChange={(value) => {
+                                                        const nextValue = (value ?? "none") as "none" | "alpha" | "uk";
+                                                        setSizePreset(nextValue);
+                                                        setSelectedSizes([]);
+                                                    }}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Choose a size preset" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">No sizes</SelectItem>
+                                                        <SelectItem value="alpha">XS / S / M / L / XL</SelectItem>
+                                                        <SelectItem value="uk">UK sizes</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            {sizePreset !== "none" ? (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {(sizePreset === "uk" ? PRODUCT_UK_SIZE_PRESET : PRODUCT_ALPHA_SIZE_PRESET).map((size) => {
+                                                        const checked = selectedSizes.includes(size);
+                                                        return (
+                                                            <Button
+                                                                key={size}
+                                                                type="button"
+                                                                variant={checked ? "default" : "outline"}
+                                                                size="sm"
+                                                                className="h-8 rounded-full px-3"
+                                                                onClick={() => {
+                                                                    setSelectedSizes((prev) =>
+                                                                        checked ? prev.filter((value) => value !== size) : [...prev, size]
+                                                                    );
+                                                                }}
+                                                            >
+                                                                {size}
+                                                            </Button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
                                 </div>
                             </div>
                         </div>

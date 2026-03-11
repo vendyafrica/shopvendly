@@ -142,11 +142,11 @@ export default function StoreCartPage() {
                                         {item.product.contentType?.startsWith("video/") || item.product.image?.match(/\.(mp4|webm|mov|ogg)$/i) || ((item.product.image || "").includes(".ufs.sh") && !(item.product.image || "").match(/\.(jpg|jpeg|png|webp|gif)$/i) && !item.product.contentType?.startsWith("image/")) ? (
                                             <video
                                                 src={item.product.image || ""}
-                                                className="h-full w-full object-cover"
+                                                className="h-full w-full object-cover bg-neutral-100"
                                                 muted
                                                 playsInline
                                                 loop
-                                                autoPlay
+                                                preload="metadata"
                                             />
                                         ) : (
                                             <Image
@@ -154,7 +154,7 @@ export default function StoreCartPage() {
                                                 alt={item.product.name}
                                                 fill
                                                 sizes="160px"
-                                                className="object-cover"
+                                                className="object-cover bg-neutral-100"
                                                 unoptimized={(item.product.image || "").includes(".ufs.sh")}
                                             />
                                         )}
@@ -168,12 +168,29 @@ export default function StoreCartPage() {
                                                         {item.product.name ? `${item.product.name.charAt(0).toUpperCase()}${item.product.name.slice(1)}` : item.product.name}
                                                     </Link>
                                                 </h3>
-                                                <p className="text-xs uppercase tracking-widest text-neutral-500">Standard</p>
+                                                {item.product.selectedOptions?.length ? (
+                                                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500">
+                                                        {item.product.selectedOptions.map((option) => (
+                                                            <span key={`${option.name}-${option.value}`}>
+                                                                {option.name}: {option.value}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs uppercase tracking-widest text-neutral-500">Standard</p>
+                                                )}
                                             </div>
                                             <div className="text-left sm:text-right">
-                                                <span className="font-semibold text-neutral-900">
-                                                    {item.product.currency} {item.product.price.toLocaleString(undefined, { minimumFractionDigits: item.product.currency === "USD" ? 2 : 0, maximumFractionDigits: item.product.currency === "USD" ? 2 : 0 })}
-                                                </span>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="font-semibold text-neutral-900">
+                                                        {item.product.currency} {item.product.price.toLocaleString(undefined, { minimumFractionDigits: item.product.currency === "USD" ? 2 : 0, maximumFractionDigits: item.product.currency === "USD" ? 2 : 0 })}
+                                                    </span>
+                                                    {typeof item.product.originalPrice === "number" && item.product.originalPrice > item.product.price ? (
+                                                        <span className="text-xs text-red-500">
+                                                            {Math.round(((item.product.originalPrice - item.product.price) / item.product.originalPrice) * 100)}% off
+                                                        </span>
+                                                    ) : null}
+                                                </div>
                                             </div>
                                         </div>
 

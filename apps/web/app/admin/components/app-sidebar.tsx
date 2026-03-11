@@ -64,6 +64,11 @@ const tenantAdminItems: SidebarNavItem[] = [
     icon: ShoppingBag01Icon,
   },
   {
+    title: "Collections",
+    url: "/collections",
+    icon: GroupLayersIcon,
+  },
+  {
     title: "Transactions",
     url: "/transactions",
     icon: PackageOpenIcon,

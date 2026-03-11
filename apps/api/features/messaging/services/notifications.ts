@@ -86,7 +86,16 @@ type OrderLike = (typeof orders.$inferSelect) & {
 function formatItemsSummary(items: Array<OrderItem> | null | undefined): string {
   if (!items || items.length === 0) return "See order details";
   return items
-    .map((i) => `${i.quantity ?? 1}x ${i.productName || "Item"}`)
+    .map((i) => {
+      const selectedOptions = Array.isArray(i.selectedOptions)
+        ? i.selectedOptions
+            .filter((option): option is { name: string; value: string } => Boolean(option?.name && option?.value))
+            .map((option) => `${option.name}: ${option.value}`)
+        : [];
+      const suffix = selectedOptions.length ? ` (${selectedOptions.join(", ")})` : "";
+      const baseName = (i.productName || "Item").replace(/\s*\([^)]*\)\s*$/, "");
+      return `${i.quantity ?? 1}x ${baseName}${suffix}`;
+    })
     .join(", ");
 }
 

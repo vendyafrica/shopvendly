@@ -5,6 +5,12 @@ import { useAppSession } from "@/contexts/app-session-context";
 import { trackStorefrontEvents } from "@/app/[handle]/lib/storefront-tracking";
 
 const API_BASE = "";
+const CART_STORAGE_KEY = "vendly_cart";
+
+export interface CartSelectedOption {
+    name: string;
+    value: string;
+}
 
 export interface CartItem {
     id: string;
@@ -13,11 +19,13 @@ export interface CartItem {
         id: string;
         name: string;
         price: number;
+        originalPrice?: number | null;
         currency: string;
         image?: string;
         contentType?: string;
         slug: string;
         availableQuantity?: number;
+        selectedOptions?: CartSelectedOption[];
     };
     store: {
         id: string;
@@ -43,6 +51,147 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const normalizeSelectedOptions = (value: unknown): CartSelectedOption[] => {
+    if (!Array.isArray(value)) return [];
+    return value
+        .map((option) => {
+            if (!option || typeof option !== "object") return null;
+            const candidate = option as { name?: unknown; value?: unknown };
+            if (typeof candidate.name !== "string" || typeof candidate.value !== "string") return null;
+            const name = candidate.name.trim();
+            const optionValue = candidate.value.trim();
+            if (!name || !optionValue) return null;
+            return { name, value: optionValue };
+        })
+        .filter((option): option is CartSelectedOption => Boolean(option));
+};
+
+const buildCartLineId = (productId: string, selectedOptions: CartSelectedOption[] = []) => {
+    if (!productId) return crypto.randomUUID();
+    if (selectedOptions.length === 0) return productId;
+    const signature = [...selectedOptions]
+        .sort((a, b) => {
+            const aKey = `${a.name}:${a.value}`.toLowerCase();
+            const bKey = `${b.name}:${b.value}`.toLowerCase();
+            return aKey.localeCompare(bKey);
+        })
+        .map((option) => `${option.name}:${option.value}`)
+        .join("|");
+    return `${productId}::${signature}`;
+};
+
+const mergeCartItems = (primary: CartItem[], secondary: CartItem[]) => {
+    const merged = new Map<string, CartItem>();
+
+    for (const item of primary) {
+        merged.set(item.id, { ...item });
+    }
+
+    for (const item of secondary) {
+        const existing = merged.get(item.id);
+        if (existing) {
+            const maxQuantity = existing.product.availableQuantity ?? Number.POSITIVE_INFINITY;
+            merged.set(item.id, {
+                ...existing,
+                quantity: Math.min(existing.quantity + item.quantity, maxQuantity),
+            });
+        } else {
+            merged.set(item.id, { ...item });
+        }
+    }
+
+    return Array.from(merged.values());
+};
+
+const sanitizeCartItems = (items: unknown): CartItem[] => {
+    if (!Array.isArray(items)) return [];
+    return items
+        .filter((item): item is CartItem => Boolean(item && typeof item === "object"))
+        .map((item) => ({
+            ...item,
+            product: {
+                ...item.product,
+                originalPrice: typeof item.product?.originalPrice === "number" ? item.product.originalPrice : null,
+                selectedOptions: normalizeSelectedOptions(item.product?.selectedOptions),
+            },
+            id: buildCartLineId(
+                item.product?.id,
+                normalizeSelectedOptions(item.product?.selectedOptions)
+            )
+        }));
+};
+
+async function syncItemsWithLatestProducts(cartItems: CartItem[]): Promise<CartItem[]> {
+    if (cartItems.length === 0) return cartItems;
+
+    const storeSlugs = Array.from(
+        new Set(
+            cartItems
+                .map((item) => item.store.slug)
+                .filter((slug): slug is string => typeof slug === "string" && slug.length > 0)
+        )
+    );
+
+    if (storeSlugs.length === 0) return cartItems;
+
+    const latestProductsByStore = new Map<string, Map<string, {
+        id: string;
+        price: number;
+        originalPrice?: number | null;
+        currency: string;
+        image: string | null;
+        contentType?: string | null;
+        slug: string;
+    }>>();
+
+    await Promise.all(storeSlugs.map(async (storeSlug) => {
+        try {
+            const response = await fetch(`${API_BASE}/api/storefront/${storeSlug}/products`, {
+                cache: "no-store",
+            });
+
+            if (!response.ok) return;
+
+            const products = await response.json() as Array<{
+                id: string;
+                price: number;
+                originalPrice?: number | null;
+                currency: string;
+                image: string | null;
+                contentType?: string | null;
+                slug: string;
+            }>;
+
+            latestProductsByStore.set(
+                storeSlug,
+                new Map(products.map((product) => [product.id, product]))
+            );
+        } catch (error) {
+            console.error(`Failed to refresh cart prices for store ${storeSlug}`, error);
+        }
+    }));
+
+    return cartItems.map((item) => {
+        const latestProduct = latestProductsByStore.get(item.store.slug)?.get(item.product.id);
+        if (!latestProduct) {
+            return item;
+        }
+
+        return {
+            ...item,
+            product: {
+                ...item.product,
+                price: latestProduct.price,
+                originalPrice: latestProduct.originalPrice ?? null,
+                currency: latestProduct.currency,
+                image: latestProduct.image ?? item.product.image,
+                contentType: latestProduct.contentType ?? item.product.contentType,
+                slug: latestProduct.slug || item.product.slug,
+            },
+        };
+    });
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const { session } = useAppSession();
     const [items, setItems] = useState<CartItem[]>([]);
@@ -59,17 +208,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                         headers: { "x-user-id": session.user.id }
                     });
                     if (res.ok) {
-                        const data = await res.json();
-                        setItems(data);
+                        const serverItems = sanitizeCartItems(await res.json());
+                        const stored = localStorage.getItem(CART_STORAGE_KEY);
+                        const localItems = stored ? sanitizeCartItems(JSON.parse(stored)) : [];
+                        const mergedItems = mergeCartItems(serverItems, localItems);
+                        setItems(await syncItemsWithLatestProducts(mergedItems));
+                    } else {
+                        setItems([]);
                     }
                 } catch (e) {
                     console.error("Failed to fetch cart", e);
                 }
             } else {
-                const stored = localStorage.getItem("vendly_cart");
+                const stored = localStorage.getItem(CART_STORAGE_KEY);
                 if (stored) {
                     try {
-                        setItems(JSON.parse(stored));
+                        const localItems = sanitizeCartItems(JSON.parse(stored));
+                        setItems(await syncItemsWithLatestProducts(localItems));
                     } catch (e) {
                         console.error("Failed to parse cart storage", e);
                     }
@@ -98,8 +253,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 // Load guest cart from localStorage
                 let guestItems: CartItem[] = [];
                 try {
-                    const guestRaw = localStorage.getItem("vendly_cart");
-                    guestItems = guestRaw ? (JSON.parse(guestRaw) as CartItem[]) : [];
+                    const guestRaw = localStorage.getItem(CART_STORAGE_KEY);
+                    guestItems = guestRaw ? sanitizeCartItems(JSON.parse(guestRaw)) : [];
                 } catch {
                     guestItems = [];
                 }
@@ -110,34 +265,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 }
 
                 // Clear guest storage early to prevent any chance of double-merge on re-renders
-                localStorage.removeItem("vendly_cart");
+                localStorage.removeItem(CART_STORAGE_KEY);
 
                 // Fetch server cart
                 const serverRes = await fetch(`${API_BASE}/api/cart`, {
                     headers: { "x-user-id": userId }
                 });
-                const serverItems: CartItem[] = serverRes.ok ? await serverRes.json() : [];
+                const serverItems: CartItem[] = serverRes.ok ? sanitizeCartItems(await serverRes.json()) : [];
 
-                // Merge by product id; prefer sum of quantities
-                const mergedMap = new Map<string, CartItem>();
-
-                for (const item of serverItems) {
-                    mergedMap.set(item.id, { ...item });
-                }
-
-                for (const item of guestItems) {
-                    const existing = mergedMap.get(item.id);
-                    if (existing) {
-                        mergedMap.set(item.id, {
-                            ...existing,
-                            quantity: existing.quantity + item.quantity,
-                        });
-                    } else {
-                        mergedMap.set(item.id, { ...item });
-                    }
-                }
-
-                const mergedItems = Array.from(mergedMap.values());
+                const mergedItems = mergeCartItems(serverItems, guestItems);
 
                 for (const item of mergedItems) {
                     try {
@@ -151,6 +287,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                                 productId: item.product.id,
                                 storeId: item.store.id,
                                 quantity: item.quantity,
+                                selectedOptions: item.product.selectedOptions ?? [],
                             }),
                         });
                     } catch (e) {
@@ -174,7 +311,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         // Only persist a guest cart. Logged-in carts are persisted server-side.
         if (isLoaded && !session?.user) {
-            localStorage.setItem("vendly_cart", JSON.stringify(items));
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+        } else if (isLoaded && session?.user) {
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
         }
     }, [items, isLoaded, session?.user]);
 
@@ -194,22 +333,32 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             );
         }
 
+        const normalizedOptions = normalizeSelectedOptions(newItem.product.selectedOptions ?? []);
+        const lineId = buildCartLineId(newItem.product.id, normalizedOptions);
         let nextQuantity = quantity;
         const maxQuantity = newItem.product.availableQuantity ?? Number.POSITIVE_INFINITY;
 
         // Optimistic update (also computes the exact quantity we should persist)
         setItems((prev) => {
-            const existing = prev.find((item) => item.id === newItem.id);
+            const existing = prev.find((item) => item.id === lineId);
             if (existing) {
                 nextQuantity = Math.min(existing.quantity + quantity, maxQuantity);
                 return prev.map((item) =>
-                    item.id === newItem.id
+                    item.id === lineId
                         ? { ...item, quantity: nextQuantity }
                         : item
                 );
             }
             nextQuantity = Math.min(quantity, maxQuantity);
-            return [...prev, { ...newItem, quantity: nextQuantity }];
+            return [
+                ...prev,
+                {
+                    ...newItem,
+                    id: lineId,
+                    product: { ...newItem.product, selectedOptions: normalizedOptions },
+                    quantity: nextQuantity,
+                },
+            ];
         });
 
         // If maxQuantity is zero or less, do not persist to server
@@ -228,7 +377,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                     body: JSON.stringify({
                         productId: newItem.product.id,
                         storeId: newItem.store.id,
-                        quantity: nextQuantity
+                        quantity: nextQuantity,
+                        selectedOptions: normalizedOptions,
                     })
                 });
             } catch (e) {
@@ -238,11 +388,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     };
 
     const removeItem = async (productId: string) => {
+        const target = items.find((item) => item.id === productId);
         setItems((prev) => prev.filter((item) => item.id !== productId));
 
-        if (session?.user) {
+        if (session?.user && target) {
             try {
-                await fetch(`${API_BASE}/api/cart/items/${productId}`, {
+                const search = new URLSearchParams({
+                    selectedOptions: JSON.stringify(target.product.selectedOptions ?? []),
+                });
+                await fetch(`${API_BASE}/api/cart/items/${target.product.id}?${search.toString()}`, {
                     method: "DELETE",
                     headers: { "x-user-id": session.user.id }
                 });
@@ -286,7 +440,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                     body: JSON.stringify({
                         productId: item.product.id,
                         storeId: item.store.id,
-                        quantity: clampedQuantity
+                        quantity: clampedQuantity,
+                        selectedOptions: item.product.selectedOptions ?? [],
                     })
                 });
             } catch (e) {

@@ -22,7 +22,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         }
 
         const { productId } = await params;
-        await cartService.removeItem(session.user.id, productId);
+        const selectedOptionsParam = request.nextUrl.searchParams.get("selectedOptions");
+        const selectedOptions = selectedOptionsParam ? JSON.parse(selectedOptionsParam) : undefined;
+        await cartService.removeItem(session.user.id, productId, selectedOptions);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Error removing item:", error);

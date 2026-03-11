@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useState } from "react";
 import { getStorefrontUrl } from "@/utils/misc";
 import { isLikelyVideoMedia } from "@/utils/misc";
@@ -11,6 +11,8 @@ interface ProductCardProps {
   title: string;
   slug: string;
   price: string;
+  originalPrice?: string | null;
+  discountPercent?: number | null;
   image: string | null;
   contentType?: string | null;
   index?: number;
@@ -23,16 +25,13 @@ const FALLBACK_PRODUCT_IMAGE = "https://cdn.cosmos.so/25e7ef9d-3d95-486d-b7db-f0
 const aspectVariants = [
   "aspect-[3/4]",
   "aspect-[4/5]",
-  "aspect-[1/1]",
   "aspect-[4/5]",
   "aspect-[3/4]",
   "aspect-[5/6]",
 ];
 
-export function ProductCard({ title, slug, price, image, contentType, index = 0, storeSlug }: ProductCardProps) {
+export function ProductCard({ title, slug, price, originalPrice, discountPercent, image, contentType, index = 0, storeSlug }: ProductCardProps) {
   const params = useParams();
-  const router = useRouter();
-  const [isNavigating, setIsNavigating] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   const paramsObject = typeof params === "object" ? (params as Record<string, string | undefined>) : {};
@@ -46,40 +45,21 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
 
   const prefetchedHref = derivedStoreSlug ? getStorefrontUrl(derivedStoreSlug, `/${slug}`) : `/${slug}`;
 
-  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    if (isNavigating) {
-      event.preventDefault();
-      return;
-    }
-    setIsNavigating(true);
-    // Best-effort prefetch to reduce perceived delay
-    try {
-      if (derivedStoreSlug) {
-        router.prefetch(prefetchedHref);
-      }
-    } catch {
-      // Prefetch is best-effort; ignore errors
-    }
-  };
-
   return (
     <Link
       href={prefetchedHref}
-      onClick={handleClick}
-      className={`group block break-inside-avoid mb-3 sm:mb-4 lg:mb-5 ${isNavigating ? "pointer-events-none opacity-70" : ""}`}
-      aria-busy={isNavigating}
+      className="group block break-inside-avoid mb-6 sm:mb-7 transition-transform duration-300 hover:-translate-y-1"
     >
       {/* Image Container */}
-      <div className={`relative overflow-hidden rounded-lg ${aspectClass} bg-muted`}>
+      <div className={`relative overflow-hidden rounded-md ${aspectClass} bg-neutral-100`}>
         {isVideo ? (
           <video
             src={currentImageUrl}
-            poster={FALLBACK_PRODUCT_IMAGE}
-            className="h-full w-full object-cover transition-all duration-700 ease-out group-hover:scale-[1.03]"
+            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
             muted
             playsInline
             loop
-            autoPlay
+            preload="metadata"
             onError={() => setImageError(true)}
           />
         ) : currentImageUrl ? (
@@ -89,7 +69,7 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
             fill
             priority={index < 4}
             sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-            className="object-cover transition-all duration-700 ease-out group-hover:scale-[1.03]"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
             unoptimized={currentImageUrl.includes(".ufs.sh") || currentImageUrl.includes("utfs.io") || currentImageUrl.includes(".cdninstagram.com") || currentImageUrl.includes(".fbcdn.net")}
             onError={() => !imageError && setImageError(true)}
           />
@@ -111,25 +91,18 @@ export function ProductCard({ title, slug, price, image, contentType, index = 0,
           </div>
         )}
 
-        {/* Subtle hover overlay */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
+        {/* Floating price pill */}
+        <div className="pointer-events-none absolute left-3 top-3 inline-flex flex-col rounded-2xl bg-white/90 px-2.5 py-1.5 text-[11px] font-semibold text-gray-900 shadow-md backdrop-blur">
+          <span>{price}</span>
+          {originalPrice && discountPercent ? (
+            <span className="text-[10px] font-medium uppercase text-red-500">{discountPercent}% off</span>
+          ) : null}
+        </div>
 
-        {isNavigating && (
-          <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center">
-            <div className="h-8 w-8 rounded-full border-2 border-neutral-900 border-t-transparent animate-spin" aria-label="Loading" />
-          </div>
-        )}
       </div>
-
-      {/* Product Info - Clean and minimal */}
-      <div className="mt-2 px-0.5 sm:px-0.5">
-        <h3 className="text-[13px] sm:text-sm font-normal text-foreground leading-tight line-clamp-2 mb-1">
-          {title}
-        </h3>
-        <p className="text-xs sm:text-[13px] font-medium text-muted-foreground">
-          {price}
-        </p>
-      </div>
+      <p className="mt-2 text-sm font-semibold leading-tight text-neutral-900 capitalize">
+        {title}
+      </p>
     </Link>
   );
 }

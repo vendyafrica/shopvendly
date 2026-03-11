@@ -295,6 +295,62 @@
       "when": 1772629145739,
       "tag": "0041_low_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1772655704243,
+      "tag": "0042_quick_killraven",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1772724318157,
+      "tag": "0043_damp_garia",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1772823977150,
+      "tag": "0044_windy_zemo",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1772830443567,
+      "tag": "0045_rainy_microbe",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1772890500000,
+      "tag": "0046_store_policy",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1772894609333,
+      "tag": "0047_thin_vengeance",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1773148898088,
+      "tag": "0048_modern_shriek",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1773152400000,
+      "tag": "0049_collecto_meta",
+      "breakpoints": true
     }
   ]
 }

@@ -1,7 +1,6 @@
 import { StorefrontContentSwitcher } from "./components/storefront-content-switcher.client";
 import { StorefrontFooter } from "./components/footer";
 import { Hero } from "./components/hero";
-import { StorefrontHeader } from "./components/header";
 import { StorefrontViewTracker } from "./components/StorefrontViewTracker";
 import { OneTapLogin } from "@/features/marketplace/components/one-tap-login";
 import { Suspense } from "react";
@@ -16,7 +15,6 @@ type StorefrontStore = {
   slug: string;
   description: string | null;
   logoUrl?: string | null;
-  claimable?: boolean;
   heroMedia?: string[];
   categories?: string[];
 };
@@ -26,20 +24,19 @@ type StorefrontProduct = {
   slug: string;
   name: string;
   price: number;
+  originalPrice?: number | null;
+  hasSale?: boolean;
+  discountPercent?: number | null;
   currency: string;
   image: string | null;
   contentType?: string | null;
 };
 
-type StorefrontTikTokVideo = {
+type StorefrontCollection = {
   id: string;
-  title?: string;
-  video_description?: string;
-  duration?: number;
-  cover_image_url?: string;
-  video_url?: string;
-  embed_link?: string;
-  share_url?: string;
+  name: string;
+  slug: string;
+  image?: string | null;
 };
 
 const getApiBaseUrl = async () => {
@@ -71,7 +68,9 @@ const capitalizeStoreName = (name?: string | null) => {
 export async function generateMetadata({ params }: StorefrontPageProps): Promise<Metadata> {
   const { handle } = await params;
   const baseUrl = await getApiBaseUrl();
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
+  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, {
+    next: { revalidate: 60, tags: [`storefront:store:${handle}`] }
+  });
   const store = storeRes.ok ? ((await storeRes.json()) as StorefrontStore) : null;
 
   if (!store) {
@@ -118,25 +117,53 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
   const { handle } = await params;
   const resolvedSearchParams = await searchParams;
   const search = resolvedSearchParams?.q;
+  const collection = resolvedSearchParams?.collection;
+  const section = resolvedSearchParams?.section;
   const query = Array.isArray(search) ? search[0] : search;
+  const activeCollectionSlug = Array.isArray(collection) ? collection[0] : collection;
+  const activeSection = Array.isArray(section) ? section[0] : section;
 
   const baseUrl = await getApiBaseUrl();
 
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, { next: { revalidate: 60 } });
+  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, {
+    ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 60, tags: [`storefront:store:${handle}`] } })
+  });
   const store = storeRes.ok ? ((await storeRes.json()) as StorefrontStore) : null;
   if (!store) notFound();
 
   const productUrl = new URL(`${baseUrl}/api/storefront/${handle}/products`);
   if (query) productUrl.searchParams.set("q", query);
-  const productsRes = await fetch(productUrl.toString(), { next: { revalidate: 30 } });
+  if (activeCollectionSlug) productUrl.searchParams.set("collection", activeCollectionSlug);
+  if (activeSection) productUrl.searchParams.set("section", activeSection);
+  const productsRes = await fetch(productUrl.toString(), {
+    ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 30, tags: [`storefront:store:${handle}:products`] } })
+  });
+
+  const saleUrl = new URL(`${baseUrl}/api/storefront/${handle}/products`);
+  saleUrl.searchParams.set("section", "sale");
+
+  const [saleResult] = await Promise.allSettled([
+    fetch(saleUrl.toString(), {
+      ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 30, tags: [`storefront:store:${handle}:products:sale`] } })
+    })
+  ]);
 
   const products = productsRes.ok
     ? ((await productsRes.json()) as StorefrontProduct[])
     : [];
 
-  // TikTok inspiration is temporarily disabled while we overhaul the experience.
-  const showInspirationTab = false;
-  const inspirationVideos: StorefrontTikTokVideo[] = [];
+  const saleProducts = saleResult.status === "fulfilled" && saleResult.value.ok
+    ? ((await saleResult.value.json()) as StorefrontProduct[])
+    : [];
+
+  const collectionsRes = await fetch(`${baseUrl}/api/storefront/${handle}/collections`, {
+    ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 60, tags: [`storefront:store:${handle}:collections`] } })
+  });
+  const collections = collectionsRes.ok
+    ? ((await collectionsRes.json()) as StorefrontCollection[])
+    : [];
+
+  const hasSaleTab = saleProducts.length > 0;
 
   return (
     <div className="min-h-screen">
@@ -148,25 +175,16 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
         <OneTapLogin storeSlug={handle} />
       </Suspense>
 
-      {/*
-        StorefrontHeader is a Server Component that receives the already-fetched
-        store object — no second fetch, no client waterfall.
-      */}
-      <StorefrontHeader
-        initialStore={{
-          name: store.name,
-          slug: store.slug,
-          logoUrl: store.logoUrl ?? undefined,
-          claimable: Boolean(store.claimable),
-        }}
-      />
-
       <Hero store={store} />
 
       <StorefrontContentSwitcher
+        handle={handle}
+        collections={collections}
+        activeCollectionSlug={activeCollectionSlug}
+        activeSection={activeSection}
+        hasSaleTab={hasSaleTab}
+        initialQuery={query}
         products={products}
-        showInspiration={showInspirationTab}
-        inspirationVideos={inspirationVideos}
       />
 
       <StorefrontFooter store={store} />

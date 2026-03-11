@@ -8,6 +8,7 @@ import {
   Settings01Icon,
   Home01Icon,
   ShoppingBag01Icon,
+  GroupLayersIcon,
   Loading03Icon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@shopvendly/ui/lib/utils";
@@ -96,6 +97,7 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
   const items: DockItem[] = [
     { label: "Home", href: joinPaths(basePath, "/"), icon: Home01Icon, exact: true },
     { label: "Products", href: joinPaths(basePath, "/products"), icon: ShoppingBag01Icon },
+    { label: "Collections", href: joinPaths(basePath, "/collections"), icon: GroupLayersIcon },
     { label: "Orders", href: joinPaths(basePath, "/transactions"), icon: PackageOpenIcon },
     { label: "Settings", href: joinPaths(basePath, "/settings"), icon: Settings01Icon },
   ];

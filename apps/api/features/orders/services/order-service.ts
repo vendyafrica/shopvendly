@@ -20,18 +20,40 @@ type ProductWithMedia = (typeof products.$inferSelect) & {
   media?: Array<{ media?: { blobUrl?: string | null } | null; sortOrder?: number | null } | null>;
 };
 
+const orderItemSelectedOptionSchema = z.object({
+  name: z.string().min(1).max(64),
+  value: z.string().min(1).max(120),
+});
+
+const normalizeSelectedOptions = (options: Array<{ name: string; value: string }> | undefined) => {
+  if (!options?.length) return [];
+  return options
+    .map((option) => ({
+      name: option.name.trim(),
+      value: option.value.trim(),
+    }))
+    .filter((option) => option.name.length > 0 && option.value.length > 0);
+};
+
+const formatSelectedOptionsSuffix = (options: Array<{ name: string; value: string }> | undefined) => {
+  const normalized = normalizeSelectedOptions(options);
+  if (normalized.length === 0) return "";
+  return ` (${normalized.map((option) => `${option.name}: ${option.value}`).join(", ")})`;
+};
+
 export const orderItemInputSchema = z.object({
   productId: z.string().uuid(),
   quantity: z.number().int().min(1).default(1),
+  selectedOptions: z.array(orderItemSelectedOptionSchema).max(8).optional(),
 });
 
 export type OrderItemInput = z.infer<typeof orderItemInputSchema>;
 
 export const createOrderSchema = z.object({
   customerName: z.string().min(1).max(255),
-  customerEmail: z.string().email(),
+  customerEmail: z.string().email().optional(),
   customerPhone: z.string().optional(),
-  paymentMethod: z.enum(["card", "mpesa", "mtn_momo", "mobile_money", "paystack", "cash_on_delivery", "relworx"]).default("cash_on_delivery"),
+  paymentMethod: z.enum(["mobile_money", "cash_on_delivery"]).default("cash_on_delivery"),
   notes: z.string().optional(),
   deliveryAddress: z.string().optional(),
   shippingAddress: z
@@ -61,24 +83,17 @@ export const updateOrderStatusSchema = z.object({
     ])
     .optional(),
   paymentStatus: z.enum(["pending", "paid", "failed", "refunded"]).optional(),
-  paymentMethod: z.enum(["card", "mpesa", "mtn_momo", "mobile_money", "paystack", "cash_on_delivery", "relworx"]).optional(),
+  paymentMethod: z.enum(["mobile_money", "cash_on_delivery"]).optional(),
 });
 
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
 
-export type OrderWithItems = Awaited<ReturnType<typeof orderService.getOrderById>>;
-
-function normalizePersistedPaymentMethod(method: CreateOrderInput["paymentMethod"] | UpdateOrderStatusInput["paymentMethod"] | undefined) {
-  if (!method) return method;
-  if (method === "mobile_money" || method === "relworx") {
-    return "mtn_momo" as const;
-  }
-  return method;
-}
+type OrderWithItemsValue = NonNullable<Awaited<ReturnType<typeof db.query.orders.findFirst>>> & {
+  items: Array<typeof orderItems.$inferSelect>;
+};
 
 export const orderService = {
   async createOrder(storeSlug: string, input: CreateOrderInput) {
-    const normalizedPaymentMethod = normalizePersistedPaymentMethod(input.paymentMethod);
     const deliveryAddress = input.deliveryAddress || input.shippingAddress?.street || null;
 
     const store = await db.query.stores.findFirst({
@@ -116,15 +131,21 @@ export const orderService = {
         throw new Error(`Product ${item.productId} not found`);
       }
 
+      if (product.quantity < item.quantity) {
+        throw new Error(`Insufficient stock for ${product.productName}`);
+      }
+
       const totalPrice = product.priceAmount * item.quantity;
       subtotal += totalPrice;
 
       const productImage = product.media?.[0]?.media?.blobUrl || undefined;
+      const selectedOptions = normalizeSelectedOptions(item.selectedOptions);
 
       return {
         productId: product.id,
-        productName: product.productName,
+        productName: `${product.productName}${formatSelectedOptionsSuffix(selectedOptions)}`,
         productImage,
+        selectedOptions,
         quantity: item.quantity,
         unitPrice: product.priceAmount,
         totalPrice,
@@ -150,7 +171,7 @@ export const orderService = {
         customerName: input.customerName,
         customerEmail: input.customerEmail,
         customerPhone: input.customerPhone,
-        paymentMethod: normalizedPaymentMethod,
+        paymentMethod: input.paymentMethod,
         paymentStatus: "pending",
         status: "pending_seller_acceptance",
         notes: input.notes,
@@ -212,10 +233,6 @@ export const orderService = {
   },
 
   async updateOrderStatus(orderId: string, tenantId: string, input: UpdateOrderStatusInput) {
-    const normalizedInput = input.paymentMethod
-      ? { ...input, paymentMethod: normalizePersistedPaymentMethod(input.paymentMethod) }
-      : input;
-
     const existing = await db.query.orders.findFirst({
       where: and(eq(orders.id, orderId), eq(orders.tenantId, tenantId), isNull(orders.deletedAt)),
     });
@@ -227,7 +244,7 @@ export const orderService = {
     const [updated] = await db
       .update(orders)
       .set({
-        ...normalizedInput,
+        ...input,
         updatedAt: new Date(),
       })
       .where(and(eq(orders.id, orderId), eq(orders.tenantId, tenantId), isNull(orders.deletedAt)))
@@ -237,6 +254,33 @@ export const orderService = {
     void invalidateCache(cacheKeys.orders.stats(tenantId));
 
     return updated;
+  },
+
+  async decrementInventoryForPaidOrder(order: OrderWithItemsValue) {
+    const productQuantities = new Map<string, number>();
+
+    for (const item of order.items) {
+      if (!item.productId) continue;
+      productQuantities.set(item.productId, (productQuantities.get(item.productId) || 0) + item.quantity);
+    }
+
+    for (const [productId, quantity] of productQuantities) {
+      const [updatedProduct] = await db
+        .update(products)
+        .set({
+          quantity: sql`${products.quantity} - ${quantity}`,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(products.id, productId), isNull(products.deletedAt), sql`${products.quantity} >= ${quantity}`))
+        .returning({ id: products.id, storeId: products.storeId });
+
+      if (!updatedProduct) {
+        throw new Error(`Insufficient stock to fulfill product ${productId}`);
+      }
+
+      void invalidateCache(cacheKeys.stores.products(updatedProduct.storeId));
+      void invalidateCache(cacheKeys.products.byId(updatedProduct.id));
+    }
   },
 
   async getTenantPhoneByStoreSlug(storeSlug: string) {
@@ -367,14 +411,10 @@ export const orderService = {
   },
 
   async updateOrderStatusByOrderId(orderId: string, input: UpdateOrderStatusInput) {
-    const normalizedInput = input.paymentMethod
-      ? { ...input, paymentMethod: normalizePersistedPaymentMethod(input.paymentMethod) }
-      : input;
-
     const [updated] = await db
       .update(orders)
       .set({
-        ...normalizedInput,
+        ...input,
         updatedAt: new Date(),
       })
       .where(and(eq(orders.id, orderId), isNull(orders.deletedAt)))

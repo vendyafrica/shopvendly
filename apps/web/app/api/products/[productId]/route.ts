@@ -1,11 +1,12 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { productService } from "@/features/products/lib/product-service";
 import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
 import { updateProductSchema } from "@/features/products/lib/product-models";
 import { db } from "@shopvendly/db/db";
-import { products } from "@shopvendly/db/schema";
+import { products, stores } from "@shopvendly/db/schema";
 import { and, eq, isNull } from "@shopvendly/db";
 
 type RouteParams = {
@@ -118,6 +119,22 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         // Let's update the service to handle optional "media" in updateProduct.
         // But first let's pass it.
         const updated = await productService.updateProduct(productId, scope.tenantId, { ...input, media: mediaInput });
+
+        const store = await db.query.stores.findFirst({
+            where: and(eq(stores.id, scope.storeId), isNull(stores.deletedAt)),
+            columns: { slug: true }
+        });
+
+        if (store?.slug) {
+            revalidateTag(`storefront:store:${store.slug}`);
+            revalidateTag(`storefront:store:${store.slug}:products`);
+            revalidatePath(`/${store.slug}`);
+            if (updated.slug) {
+                revalidateTag(`storefront:store:${store.slug}:product:${updated.slug}`);
+                revalidatePath(`/${store.slug}/${updated.slug}`);
+            }
+        }
+
         return NextResponse.json(updated);
     } catch (error) {
         console.error("Error updating product:", error);
@@ -164,7 +181,22 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        await productService.deleteProduct(productId, scope.tenantId);
+        const deleted = await productService.deleteProduct(productId, scope.tenantId);
+
+        const store = await db.query.stores.findFirst({
+            where: and(eq(stores.id, scope.storeId), isNull(stores.deletedAt)),
+            columns: { slug: true }
+        });
+
+        if (store?.slug) {
+            revalidateTag(`storefront:store:${store.slug}`);
+            revalidateTag(`storefront:store:${store.slug}:products`);
+            revalidatePath(`/${store.slug}`);
+            if (deleted?.slug) {
+                revalidateTag(`storefront:store:${store.slug}:product:${deleted.slug}`);
+                revalidatePath(`/${store.slug}/${deleted.slug}`);
+            }
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {

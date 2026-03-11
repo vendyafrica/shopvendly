@@ -1,6 +1,14 @@
 import { db } from "@shopvendly/db/db";
-import { products, productMedia, mediaObjects, orderItems, orders } from "@shopvendly/db/schema";
-import { eq, and, isNull, desc, sql, like } from "@shopvendly/db";
+import {
+    products,
+    productMedia,
+    mediaObjects,
+    orderItems,
+    orders,
+    productCollections,
+    storeCollections,
+} from "@shopvendly/db/schema";
+import { eq, and, isNull, desc, sql, like, inArray } from "@shopvendly/db";
 import { mediaService, type UploadFile } from "../../media/lib/media-service";
 import type { CreateProductInput, ProductFilters, ProductWithMedia, UpdateProductInput } from "./product-models";
 
@@ -64,6 +72,38 @@ async function generateUniqueSlugWithTimestamp(tx: { query: typeof db.query }, s
  * Product Service for serverless environment
  */
 export const productService = {
+    async syncProductCollections(
+        productId: string,
+        tenantId: string,
+        storeId: string,
+        collectionIds: string[]
+    ): Promise<string[]> {
+        await db.delete(productCollections).where(eq(productCollections.productId, productId));
+
+        const normalizedIds = Array.from(new Set(collectionIds.filter(Boolean)));
+        if (normalizedIds.length === 0) return [];
+
+        const validCollections = await db.query.storeCollections.findMany({
+            where: and(
+                eq(storeCollections.tenantId, tenantId),
+                eq(storeCollections.storeId, storeId),
+                inArray(storeCollections.id, normalizedIds)
+            ),
+            columns: { id: true },
+        });
+
+        if (validCollections.length === 0) return [];
+
+        await db.insert(productCollections).values(
+            validCollections.map((collection) => ({
+                collectionId: collection.id,
+                productId,
+            }))
+        );
+
+        return validCollections.map((collection) => collection.id);
+    },
+
     /**
      * Create a new product with optional media
      */
@@ -86,11 +126,14 @@ export const productService = {
                 slug,
                 description: data.description,
                 priceAmount: data.priceAmount,
+                originalPriceAmount: data.originalPriceAmount ?? null,
                 currency: data.currency,
+                quantity: data.quantity,
                 source: data.source,
                 sourceId: data.sourceId,
                 sourceUrl: data.sourceUrl,
                 status: data.status,
+                variants: data.variants ?? null,
             }).returning();
             product = insertedProducts[0] ?? null;
         } catch (error: unknown) {
@@ -103,11 +146,14 @@ export const productService = {
                     slug,
                     description: data.description,
                     priceAmount: data.priceAmount,
+                    originalPriceAmount: data.originalPriceAmount ?? null,
                     currency: data.currency,
+                    quantity: data.quantity,
                     source: data.source,
                     sourceId: data.sourceId,
                     sourceUrl: data.sourceUrl,
                     status: data.status,
+                    variants: data.variants ?? null,
                 }).returning();
                 product = insertedProducts[0] ?? null;
             } else {
@@ -118,6 +164,13 @@ export const productService = {
         if (!product) {
             throw new Error("Failed to create product");
         }
+
+        const assignedCollectionIds = await this.syncProductCollections(
+            product.id,
+            tenantId,
+            data.storeId,
+            data.collectionIds ?? []
+        );
 
         let formattedMedia: Array<{ sortOrder: number; isFeatured: boolean } & typeof mediaObjects.$inferSelect> = [];
 
@@ -150,7 +203,7 @@ export const productService = {
             }));
         }
 
-        return { ...product, media: formattedMedia } as ProductWithMedia;
+        return { ...product, media: formattedMedia, collectionIds: assignedCollectionIds } as ProductWithMedia;
     },
 
     /**
@@ -250,7 +303,14 @@ export const productService = {
             isFeatured: pm.isFeatured,
         }));
 
-        return { ...product, media: formattedMedia } as ProductWithMedia;
+        const collectionLinks = await db.query.productCollections.findMany({
+            where: eq(productCollections.productId, id),
+            columns: { collectionId: true },
+        });
+
+        const collectionIds = collectionLinks.map((link) => link.collectionId);
+
+        return { ...product, media: formattedMedia, collectionIds } as ProductWithMedia;
     },
 
     /**
@@ -348,7 +408,7 @@ export const productService = {
      * Update a product
      */
     async updateProduct(id: string, tenantId: string, data: UpdateProductInput): Promise<ProductWithMedia> {
-        const { media, ...productData } = data;
+        const { media, collectionIds, ...productData } = data;
 
         const [updated] = await db.update(products)
             .set({
@@ -415,6 +475,10 @@ export const productService = {
                     isFeatured: index === 0
                 });
             }));
+        }
+
+        if (collectionIds) {
+            await this.syncProductCollections(id, tenantId, updated.storeId, collectionIds);
         }
 
         return this.getProductWithMedia(id, tenantId);

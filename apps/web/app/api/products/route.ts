@@ -9,6 +9,7 @@ import { productQuerySchema, createProductSchema } from "@/features/products/lib
 import { db } from "@shopvendly/db/db";
 import { stores, tenants } from "@shopvendly/db/schema";
 import { and, eq, isNull } from "@shopvendly/db";
+import { revalidateTag, revalidatePath } from "next/cache";
 
 /**
  * GET /api/products
@@ -144,12 +145,14 @@ export async function POST(request: NextRequest) {
         }
 
         let currency = input.currency;
-        if (!currency) {
+        let storeSlug: string | undefined;
+        if (!currency || !storeSlug) {
             const store = await db.query.stores.findFirst({
                 where: and(eq(stores.id, input.storeId), eq(stores.tenantId, access.store.tenantId), isNull(stores.deletedAt)),
-                columns: { defaultCurrency: true },
+                columns: { defaultCurrency: true, slug: true },
             });
-            currency = store?.defaultCurrency || "UGX";
+            currency = currency || store?.defaultCurrency || "UGX";
+            storeSlug = store?.slug;
         }
 
         const product = await productService.createProduct(
@@ -158,6 +161,11 @@ export async function POST(request: NextRequest) {
             { ...input, currency } as Parameters<typeof productService.createProduct>[2],
             files
         );
+
+        if (storeSlug) {
+            revalidateTag(`storefront:store:${storeSlug}:products`, "default");
+            revalidatePath(`/${storeSlug}`);
+        }
 
         // If specific media URLs were passed (client-side upload)
         if (input.media && input.media.length > 0) {

@@ -2,23 +2,15 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { StarIcon } from "@hugeicons/core-free-icons";
-import { StoreAvatar } from "@/components/store-avatar";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { trackStorefrontEvents } from "../lib/storefront-tracking";
 import { ProductActions } from "./product-actions";
-import { Bricolage_Grotesque } from "next/font/google";
 import { signInWithOneTap } from "@shopvendly/auth/react";
 import { useAppSession } from "@/contexts/app-session-context";
 import { isLikelyVideoMedia } from "@/utils/misc";
-
-const geistSans = Bricolage_Grotesque({
-    variable: "--font-bricolage-grotesque",
-    subsets: ["latin"],
-});
 
 interface ProductDetailsProps {
     product: {
@@ -27,13 +19,24 @@ interface ProductDetailsProps {
         name: string;
         description?: string | null;
         price: number;
+        originalPrice?: number | null;
         currency: string;
         images: string[];
         mediaItems?: { url: string; contentType?: string | null }[];
+        variants?: {
+            enabled?: boolean;
+            options?: Array<{
+                type?: string;
+                label?: string;
+                values?: string[];
+                preset?: string | null;
+            }>;
+        } | null;
         videos?: string[];
         rating?: number;
         ratingCount?: number;
         userRating?: number | null;
+        availableQuantity?: number | null;
         store: {
             id: string;
             name: string;
@@ -42,9 +45,10 @@ interface ProductDetailsProps {
         };
     };
     storeCategories?: string[];
+    storePolicy?: string | null;
 }
 
-export function ProductDetails({ product }: ProductDetailsProps) {
+export function ProductDetails({ product, storePolicy }: ProductDetailsProps) {
 
     const { addToRecentlyViewed } = useRecentlyViewed();
     const { session } = useAppSession();
@@ -83,6 +87,11 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     }, [product, addToRecentlyViewed]);
 
     const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
+    const variantOptions = product.variants?.enabled ? product.variants.options ?? [] : [];
+    const colorOption = variantOptions.find((option) => option.type === "color");
+    const sizeOption = variantOptions.find((option) => option.type === "size");
+    const [selectedColor, setSelectedColor] = useState<string | null>(colorOption?.values?.[0] ?? null);
+    const [selectedSize, setSelectedSize] = useState<string | null>(sizeOption?.values?.[0] ?? null);
 
     const initialRating = typeof product.rating === "number" && Number.isFinite(product.rating)
         ? product.rating
@@ -100,6 +109,11 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         setRatingCount(product.ratingCount ?? 0);
         setUserRating(product.userRating ?? null);
     }, [initialRating, product.ratingCount, product.userRating]);
+
+    useEffect(() => {
+        setSelectedColor(colorOption?.values?.[0] ?? null);
+        setSelectedSize(sizeOption?.values?.[0] ?? null);
+    }, [colorOption, sizeOption]);
 
     const handleSubmitRating = async (value: number) => {
         if (isSubmittingRating) return;
@@ -193,12 +207,33 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     const currentMedia = mediaItems[safeSelectedIndex] ?? mediaItems[0] ?? { url: FALLBACK_PRODUCT_IMAGE, contentType: "image/jpeg" };
     const posterFallback = product.images?.find((img) => !isVideoUrl(img)) || FALLBACK_PRODUCT_IMAGE;
     const currentIsVideo = isVideoUrl(currentMedia.url, currentMedia.contentType);
+    const hasSale = typeof product.originalPrice === "number" && product.originalPrice > product.price;
+    const discountPercent = hasSale && product.originalPrice
+        ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+        : null;
+
+    const formatPrice = (amount: number) => {
+        const showDecimals = product.currency === "USD";
+        return `${product.currency} ${amount.toLocaleString(undefined, {
+            minimumFractionDigits: showDecimals ? 2 : 0,
+            maximumFractionDigits: showDecimals ? 2 : 0,
+        })}`;
+    };
+
+    const colorValues = colorOption?.values?.filter(Boolean) ?? [];
+    const sizeValues = sizeOption?.values?.filter(Boolean) ?? [];
+    const hasColorOptions = colorValues.length > 0;
+    const hasSizeOptions = sizeValues.length > 0;
+    const selectedOptions = [
+        ...(selectedSize ? [{ name: "Size", value: selectedSize }] : []),
+        ...(selectedColor ? [{ name: "Color", value: selectedColor }] : []),
+    ];
 
     return (
         <div className="min-h-screen bg-white pb-16" suppressHydrationWarning>
-            <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] xl:grid-cols-[1.8fr_1fr] gap-4 lg:gap-6 xl:gap-8 px-4 sm:px-6 lg:px-10 pt-0 lg:pt-0 -mt-4">
+            <div className="max-w-[1520px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)] xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.9fr)] gap-6 lg:gap-10 xl:gap-14 px-4 sm:px-6 lg:px-12 pt-0 lg:pt-0 -mt-4">
                 {/* Left: Gallery */}
-                <div className="flex flex-col gap-3 lg:sticky lg:top-0 lg:self-start lg:h-max">
+                <div className="flex flex-col gap-4 lg:sticky lg:top-20 lg:self-start lg:h-max">
                     {/* Mobile carousel */}
                     <div className="lg:hidden flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide">
                         {mediaItems.map((media, index) => {
@@ -212,19 +247,19 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                     {isVideo ? (
                                         <video
                                             src={media.url}
-                                            poster={posterFallback}
-                                            className="h-full w-full object-cover"
+                                            className="h-full w-full object-cover bg-neutral-100"
                                             muted
                                             loop
                                             playsInline
                                             autoPlay
+                                            preload="metadata"
                                         />
                                     ) : (
                                         <Image
                                             src={media.url}
                                             alt={`${product.name} ${index + 1}`}
                                             fill
-                                            className="object-cover"
+                                            className="object-cover bg-neutral-100"
                                             priority={index === 0}
                                             unoptimized={media.url.includes(".ufs.sh")}
                                             onError={() => handleImageError(media.url)}
@@ -236,7 +271,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                     </div>
 
                     {/* Desktop thumbs + main */}
-                    <div className="hidden lg:flex flex-row gap-6 lg:gap-8 h-[75vh] min-h-[600px] max-h-[900px]">
+                    <div className="hidden lg:flex flex-row gap-6 lg:gap-8 h-[78vh] min-h-[620px] max-h-[920px]">
                         <div className="flex flex-col gap-4 w-20 xl:w-24 shrink-0 overflow-y-auto scrollbar-hide">
                             {mediaItems.map((media, index) => {
                                 const isVideo = isVideoUrl(media.url, media.contentType);
@@ -246,7 +281,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                         onClick={() => setSelectedMediaIndex(index)}
                                         onMouseEnter={() => setSelectedMediaIndex(index)}
                                         className={`
-                                            relative w-full aspect-3/4 overflow-hidden transition-all duration-300 rounded-none
+                                            relative w-full aspect-3/4 overflow-hidden transition-all duration-300 rounded-2xl
                                             ${safeSelectedIndex === index
                                                 ? "ring-1 ring-black opacity-100"
                                                 : "opacity-60 hover:opacity-100"
@@ -256,19 +291,19 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                         {isVideo ? (
                                             <video
                                                 src={media.url}
-                                                poster={posterFallback}
-                                                className="h-full w-full object-cover"
+                                                className="h-full w-full object-cover bg-neutral-100"
                                                 muted
                                                 loop
                                                 playsInline
                                                 autoPlay
+                                                preload="metadata"
                                             />
                                         ) : (
                                             <Image
                                                 src={media.url}
                                                 alt={`View ${index + 1}`}
                                                 fill
-                                                className="object-cover"
+                                                className="object-cover bg-neutral-100"
                                                 unoptimized={media.url.includes(".ufs.sh")}
                                                 onError={() => handleImageError(media.url)}
                                             />
@@ -278,17 +313,18 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                             })}
                         </div>
 
-                        <div className="flex-1 relative bg-neutral-100 overflow-hidden h-full rounded-md">
+                        <div className="flex-1 relative bg-neutral-100 overflow-hidden h-full rounded-3xl">
                             {currentIsVideo ? (
                                 <>
                                     <video
                                         src={currentMedia.url}
-                                        poster={posterFallback}
-                                        className="h-full w-full object-cover"
+                                        poster={posterFallback !== FALLBACK_PRODUCT_IMAGE ? posterFallback : undefined}
+                                        className="h-full w-full object-cover bg-neutral-100"
                                         muted
                                         loop
                                         autoPlay
                                         playsInline
+                                        preload="metadata"
                                     />
                                     {/* <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full bg-black/70 text-white text-xs px-2 py-1">
                                         <span aria-hidden>▶</span>
@@ -301,7 +337,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                     alt={product.name}
                                     fill
                                     sizes="(max-width: 1024px) 100vw, 60vw"
-                                    className="object-cover object-center"
+                                    className="object-cover object-center bg-neutral-100"
                                     priority
                                     unoptimized={currentMedia.url.includes(".ufs.sh")}
                                     onError={() => handleImageError(currentMedia.url)}
@@ -312,92 +348,133 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 </div>
 
                 {/* Right: Product Details */}
-                <div className="flex flex-col pt-1 lg:pt-0 lg:pl-6 max-w-xl w-full lg:max-w-[520px] xl:max-w-[560px]">
+                <div className="flex w-full flex-col pt-2 lg:max-w-[520px] lg:justify-self-end lg:pt-2 xl:max-w-[560px]">
 
-                    {/* Store Info - Header */}
-                    <div className="flex items-center justify-between mb-3 mt-0">
-                        <Link
-                            href={`/${product.store.slug ?? ""}`}
-                            className="flex items-center gap-3 group"
-                            prefetch
-                        >
-                            <StoreAvatar
-                                storeName={product.store.name}
-                                logoUrl={product.store.logoUrl}
-                                shape="square"
-                                size="md"
-                            />
-                            <div>
-                                <p className={` ${geistSans.className} text-lg tracking-wide font-semibold text-neutral-900 group-hover:underline`}>
-                                    {product.store.name ? `${product.store.name.charAt(0).toUpperCase()}${product.store.name.slice(1)}` : product.store.name}
-                                </p>
-                            </div>
-                        </Link>
+                    <div className="space-y-3 border-b border-neutral-100 pb-5 sm:space-y-3.5 sm:pb-6">
+                        <h1 className="max-w-[18ch] text-[1.95rem] font-semibold tracking-[-0.03em] text-neutral-950 sm:text-[2.5rem] sm:leading-[1.08]">{product.name}</h1>
+                        <div className="flex flex-wrap items-end gap-2 sm:gap-2.5">
+                            <span className="text-[1.45rem] font-medium leading-none text-neutral-800 sm:text-[1.7rem]">{formatPrice(product.price)}</span>
+                            {hasSale ? (
+                                <>
+                                    <span className="pb-0.5 text-sm text-neutral-400 line-through">{formatPrice(product.originalPrice as number)}</span>
+                                    {discountPercent ? (
+                                        <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-red-600">
+                                            {discountPercent}% off
+                                        </span>
+                                    ) : null}
+                                </>
+                            ) : null}
+                        </div>
                     </div>
 
-                    {/* Product Name & Rating */}
-                    <div className="mb-6">
-                        <h1 className="text-[26px] lg:text-[28px] capitalize font-semibold text-neutral-800 leading-snug tracking-tight mb-2">
-                            {product.name ? `${product.name.charAt(0).toUpperCase()}${product.name.slice(1)}` : product.name}
-                        </h1>
-
-                        <div className="flex flex-col gap-2 mb-5">
-                            <div className="flex items-center gap-1">
-                                {Array.from({ length: 5 }).map((_, idx) => {
-                                    const activeValue = hoverRating ?? userRating ?? Math.round(averageRating);
-                                    const filled = activeValue >= idx + 1;
+                    {hasSizeOptions ? (
+                        <div className="mt-6 space-y-2.5 pb-1">
+                            <div className="flex items-center gap-2 text-sm">
+                                <span className="font-semibold text-neutral-950">Size</span>
+                                {selectedSize ? <span className="text-neutral-500">{selectedSize}</span> : null}
+                            </div>
+                            <div className="flex flex-wrap gap-2.5">
+                                {sizeValues.map((value) => {
+                                    const isActive = selectedSize === value;
                                     return (
                                         <button
-                                            key={idx}
+                                            key={value}
                                             type="button"
-                                            onClick={() => handleSubmitRating(idx + 1)}
-                                            onMouseEnter={() => setHoverRating(idx + 1)}
-                                            onMouseLeave={() => setHoverRating(null)}
-                                            disabled={isSubmittingRating}
-                                            className="p-1 rounded-full text-yellow-500 disabled:opacity-50 transition-transform duration-150 hover:-translate-y-0.5 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200"
-                                            aria-label={`Rate ${idx + 1} stars`}
+                                            onClick={() => setSelectedSize(value)}
+                                            className={`min-w-[88px] rounded-full border px-5 py-3 text-[15px] font-medium transition-colors ${isActive ? "border-neutral-950 bg-white text-neutral-950 shadow-[inset_0_0_0_1px_rgba(10,10,10,0.08)]" : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400"}`}
                                         >
-                                            <HugeiconsIcon
-                                                icon={StarIcon}
-                                                size={18}
-                                                className={filled ? "fill-yellow-400 text-yellow-400" : "text-neutral-300"}
-                                            />
+                                            {value}
                                         </button>
                                     );
                                 })}
-                                <span className="text-sm font-medium text-neutral-900 ml-2">
-                                    {Number.isFinite(averageRating) ? averageRating.toFixed(1) : "0.0"}
-                                </span>
                             </div>
-                            {userRating ? (
-                                <span className="text-xs text-neutral-600">You rated this {userRating}★</span>
-                            ) : (
-                                <span className="text-xs text-neutral-500"></span>
-                            )}
                         </div>
+                    ) : null}
 
-                        <div className="flex items-center gap-3">
-                            <span className="text-2xl font-bold text-neutral-900">
-                                <sub className="text-sm text-muted-foreground">{product.currency}</sub> {product.price.toLocaleString(undefined, {
-                                    minimumFractionDigits: product.currency === "USD" ? 2 : 0,
-                                    maximumFractionDigits: product.currency === "USD" ? 2 : 0,
+                    {hasColorOptions ? (
+                        <div className="mt-6 space-y-2.5 border-b border-neutral-100 pb-6">
+                            <div className="flex items-center gap-2 text-sm">
+                                <span className="font-semibold text-neutral-950">Color</span>
+                                {selectedColor ? <span className="text-sm text-neutral-700">{selectedColor}</span> : null}
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                                {colorValues.map((value) => {
+                                    const isActive = selectedColor === value;
+                                    return (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            onClick={() => setSelectedColor(value)}
+                                            className={`rounded-full border px-4 py-2.5 text-[15px] font-medium transition-colors ${isActive ? "border-neutral-950 bg-neutral-950 text-white" : "border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400"}`}
+                                        >
+                                            {value}
+                                        </button>
+                                    );
                                 })}
-                            </span>
-                        </div>
-                    </div>
-                    {/* Actions */}
-                    <div className="mb-8 w-full max-w-[460px]">
-                        <ProductActions product={product} />
-                    </div>
-
-                    {product.description && (
-                        <div className="border-t border-neutral-100 pt-5">
-                            <h2 className="text-sm font-medium mb-3 uppercase tracking-widest text-neutral-900">Description / Details</h2>
-                            <div className="text-sm leading-relaxed text-neutral-600">
-                                <p className="capitalize">{product.description}</p>
                             </div>
                         </div>
-                    )}
+                    ) : null}
+
+                    <div className={`mt-6 ${hasColorOptions || hasSizeOptions ? "" : "border-t border-neutral-100 pt-6"}`}>
+                        <div className="mb-5 border-b border-neutral-100 pb-4">
+                            <div className="mb-2 flex flex-col gap-2">
+                                <div className="flex items-center gap-0.5 sm:gap-1">
+                                    {Array.from({ length: 5 }).map((_, idx) => {
+                                        const activeValue = hoverRating ?? userRating ?? Math.round(averageRating);
+                                        const filled = activeValue >= idx + 1;
+                                        return (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => handleSubmitRating(idx + 1)}
+                                                onMouseEnter={() => setHoverRating(idx + 1)}
+                                                onMouseLeave={() => setHoverRating(null)}
+                                                disabled={isSubmittingRating}
+                                                className="rounded-full p-1 text-yellow-500 transition-transform duration-150 hover:-translate-y-0.5 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200 disabled:opacity-50"
+                                                aria-label={`Rate ${idx + 1} stars`}
+                                            >
+                                                <HugeiconsIcon
+                                                    icon={StarIcon}
+                                                    size={18}
+                                                    className={filled ? "fill-yellow-400 text-yellow-400" : "text-neutral-300"}
+                                                />
+                                            </button>
+                                        );
+                                    })}
+                                    <span className="ml-2 text-sm font-semibold text-neutral-900 sm:text-base">
+                                        {Number.isFinite(averageRating) ? averageRating.toFixed(1) : "0.0"}
+                                    </span>
+                                </div>
+                                {userRating ? (
+                                    <span className="text-sm text-neutral-600">You rated this {userRating}★</span>
+                                ) : (
+                                    <span className="text-sm text-neutral-400">Tap a star to rate this product</span>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="mb-6 w-full">
+                            <ProductActions product={product} selectedOptions={selectedOptions} />
+                        </div>
+
+                        {product.description && (
+                            <div className="border-t border-neutral-100 pt-5">
+                                <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-600">Description</h2>
+                                <div className="text-[15px] leading-7 text-neutral-600">
+                                    <p className="capitalize">{product.description}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {storePolicy ? (
+                            <div className="border-t border-neutral-100 pt-5">
+                                <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-600">Store Policy</h2>
+                                <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-[14px] leading-6 text-neutral-700 whitespace-pre-wrap">
+                                    {storePolicy}
+                                </div>
+                            </div>
+                        ) : null}
+                    </div>
                 </div>
             </div>
         </div>

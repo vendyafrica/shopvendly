@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storefrontService } from "@/app/[handle]/lib/storefront-service";
 
-const DEFAULT_STORE_LOGO = "/store-logo.jpg";
+const DEFAULT_STORE_LOGO = "/vendly.png";
 
 type RouteParams = {
     params: Promise<{ slug: string }>;
@@ -16,7 +16,17 @@ function toCanonicalUploadThingUrl(rawUrl: string) {
         const isUploadThingHost = parsed.hostname.endsWith(".ufs.sh") || parsed.hostname === "utfs.io";
         if (!isUploadThingHost) return rawUrl;
 
-        return `https://utfs.io/f/${fileId}`;
+        const typeParam =
+            parsed.searchParams.get("x-ut-file-type") ||
+            parsed.searchParams.get("file-type");
+
+        const canonicalBase = `https://utfs.io/f/${fileId}`;
+        if (typeParam) {
+            const encodedType = encodeURIComponent(typeParam);
+            return `${canonicalBase}?x-ut-file-type=${encodedType}`;
+        }
+
+        return canonicalBase;
     } catch {
         return rawUrl;
     }
@@ -61,8 +71,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             name: store.name,
             slug: store.slug,
             description: store.description,
+            storePolicy: store.storePolicy,
             logoUrl,
-            claimable: Boolean((store as { claimable?: boolean }).claimable),
             heroMedia,
             categories: (store as { categories?: string[] }).categories ?? [],
             rating: rating.rating,

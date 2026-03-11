@@ -4,9 +4,15 @@ import type { Order, OrderItem } from "@shopvendly/db/schema";
 /**
  * Order item input for creating orders
  */
+export const orderItemSelectedOptionSchema = z.object({
+  name: z.string().min(1).max(64),
+  value: z.string().min(1).max(120),
+});
+
 export const orderItemInputSchema = z.object({
   productId: z.string().uuid(),
   quantity: z.number().int().min(1).default(1),
+  selectedOptions: z.array(orderItemSelectedOptionSchema).max(8).optional(),
 });
 
 export type OrderItemInput = z.infer<typeof orderItemInputSchema>;
@@ -16,9 +22,9 @@ export type OrderItemInput = z.infer<typeof orderItemInputSchema>;
  */
 export const createOrderSchema = z.object({
   customerName: z.string().min(1).max(255),
-  customerEmail: z.string().email(),
+  customerEmail: z.string().email().optional(),
   customerPhone: z.string().optional(),
-  paymentMethod: z.enum(["card", "mpesa", "mtn_momo", "mobile_money", "paystack", "cash_on_delivery", "relworx"]).default("cash_on_delivery"),
+  paymentMethod: z.enum(["mobile_money", "cash_on_delivery"]).default("cash_on_delivery"),
   notes: z.string().optional(),
   deliveryAddress: z.string().optional(),
   shippingAddress: z

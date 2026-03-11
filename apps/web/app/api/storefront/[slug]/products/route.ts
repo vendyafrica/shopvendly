@@ -25,7 +25,13 @@ type StorefrontProduct = {
     slug: string | null;
     productName: string;
     priceAmount: unknown;
+    originalPriceAmount?: unknown;
     currency: string;
+    createdAt?: string | Date;
+    variants?: {
+        enabled?: boolean;
+        options?: Array<{ type?: string; values?: string[] }>;
+    } | null;
     media?: ProductMedia[];
     rating?: number;
     ratingCount?: number;
@@ -96,7 +102,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         const q = (searchParams.get("q") || "").trim();
 
-        const category = (searchParams.get("category") || "").trim();
+        const collection = (searchParams.get("collection") || searchParams.get("category") || "").trim();
+
+        const section = (searchParams.get("section") || "").trim().toLowerCase();
 
         const store = await storefrontService.findStoreBySlug(slug);
 
@@ -110,35 +118,63 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 
 
-        const productList = category
+        const fetchedProducts = collection
 
-            ? await storefrontService.getStoreProductsByCategorySlug(store.id, category, q)
+            ? await storefrontService.getStoreProductsByCollectionSlug(store.id, collection, q)
 
             : await storefrontService.getStoreProducts(store.id, q);
+
+        let productList = fetchedProducts as StorefrontProduct[];
+
+        if (section === "sale") {
+            productList = productList.filter((product) => {
+                const livePrice = Number(product.priceAmount || 0);
+                const originalPrice = Number(product.originalPriceAmount || 0);
+                return originalPrice > livePrice && livePrice >= 0;
+            });
+        }
+
+        if (section === "new-arrivals") {
+            productList = [...productList]
+                .sort((a, b) => new Date(String(b.createdAt ?? 0)).getTime() - new Date(String(a.createdAt ?? 0)).getTime())
+                .slice(0, 12);
+        }
 
 
 
         return NextResponse.json(
 
-            (productList as StorefrontProduct[]).map((product) => ({
+            productList.map((product) => {
+                const price = Number(product.priceAmount || 0);
+                const originalPrice = Number(product.originalPriceAmount || 0);
+                const hasSale = originalPrice > price;
+                const discountPercent = hasSale && originalPrice > 0
+                    ? Math.round(((originalPrice - price) / originalPrice) * 100)
+                    : null;
 
-                id: product.id,
+                const variantOptions = product.variants?.enabled
+                    ? product.variants.options ?? []
+                    : [];
 
-                slug: product.slug || product.productName.toLowerCase().replace(/\s+/g, "-"),
-
-                name: product.productName,
-
-                price: Number(product.priceAmount || 0),
-
-                currency: product.currency,
-
-                image: resolveMediaUrl(product.media?.[0]),
-
-                contentType: resolveMediaContentType(product.media?.[0]),
-
-                rating: 0,
-
-            }))
+                return {
+                    id: product.id,
+                    slug: product.slug || product.productName.toLowerCase().replace(/\s+/g, "-"),
+                    name: product.productName,
+                    price,
+                    originalPrice: hasSale ? originalPrice : null,
+                    hasSale,
+                    discountPercent,
+                    currency: product.currency,
+                    image: resolveMediaUrl(product.media?.[0]),
+                    contentType: resolveMediaContentType(product.media?.[0]),
+                    variantSummary: {
+                        hasColors: variantOptions.some((option) => option.type === "color" && (option.values?.length ?? 0) > 0),
+                        hasSizes: variantOptions.some((option) => option.type === "size" && (option.values?.length ?? 0) > 0),
+                    },
+                    rating: product.rating ?? 0,
+                    ratingCount: product.ratingCount ?? 0,
+                };
+            })
 
         );
 

@@ -2,7 +2,7 @@ import { categoryRepo } from "@/lib/data/category-repo";
 import { storeRepo } from "@/lib/data/store-repo";
 import { withCache, cacheKeys, TTL } from "@shopvendly/db";
 
-const DEFAULT_STORE_LOGO = "/store-logo.jpg";
+const DEFAULT_STORE_LOGO = "/vendly.png";
 
 export interface StoreWithCategory {
     id: string;

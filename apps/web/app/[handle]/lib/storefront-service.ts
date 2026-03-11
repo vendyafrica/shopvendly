@@ -1,6 +1,19 @@
-import { db, stores, products, productRatings, eq, and, isNull, instagramAccounts, inArray, sql, tenants } from "@shopvendly/db";
+import {
+    db,
+    stores,
+    products,
+    productRatings,
+    storeCollections,
+    productCollections,
+    eq,
+    and,
+    isNull,
+    inArray,
+    sql,
+    asc,
+} from "@shopvendly/db";
 
-const DEFAULT_STORE_LOGO = "/store-logo.jpg";
+const DEFAULT_STORE_LOGO = "/vendly.png";
 
 /**
  * Storefront Service for serverless environment
@@ -14,22 +27,7 @@ async function findStoreBySlugFresh(slug: string) {
 
     if (!store) return undefined;
 
-    const igAccount = await db.query.instagramAccounts.findFirst({
-        where: and(eq(instagramAccounts.tenantId, store.tenantId), eq(instagramAccounts.isActive, true))
-    });
-
-    const tenant = await db.query.tenants.findFirst({
-        where: eq(tenants.id, store.tenantId),
-        columns: { status: true, onboardingStep: true },
-    });
-
-    const claimable = tenant?.status === "onboarding" || tenant?.onboardingStep !== "complete";
-
-    if (igAccount?.profilePictureUrl) {
-        return { ...store, logoUrl: igAccount.profilePictureUrl, claimable };
-    }
-
-    return { ...store, logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO, claimable };
+    return { ...store, logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO };
 }
 
 function slugifyName(name: string): string {
@@ -66,6 +64,30 @@ export const storefrontService = {
         return findStoreBySlugFresh(slug);
     },
 
+    async getStoreCollections(storeId: string, query?: string) {
+        const normalizedQuery = query?.trim().toLowerCase() || "";
+
+        const collections = await db.query.storeCollections.findMany({
+            where: eq(storeCollections.storeId, storeId),
+            columns: {
+                id: true,
+                name: true,
+                slug: true,
+                image: true,
+                sortOrder: true,
+            },
+            orderBy: [asc(storeCollections.name)],
+        });
+
+        if (!normalizedQuery) return collections;
+
+        return collections.filter(
+            (collection) =>
+                collection.name.toLowerCase().includes(normalizedQuery) ||
+                collection.slug.toLowerCase().includes(normalizedQuery)
+        );
+    },
+
     /**
      * Get all products for a store
      */
@@ -84,8 +106,11 @@ export const storefrontService = {
                 productName: true,
                 description: true,
                 priceAmount: true,
+                originalPriceAmount: true,
                 currency: true,
                 quantity: true,
+                createdAt: true,
+                variants: true,
             },
             with: {
                 media: {
@@ -154,8 +179,11 @@ export const storefrontService = {
                 productName: true,
                 description: true,
                 priceAmount: true,
+                originalPriceAmount: true,
                 currency: true,
                 quantity: true,
+                createdAt: true,
+                variants: true,
             },
             with: {
                 media: {
@@ -211,20 +239,23 @@ export const storefrontService = {
     },
 
     async getStoreProductsByCategorySlug(storeId: string, categorySlug: string, query?: string) {
+        return this.getStoreProductsByCollectionSlug(storeId, categorySlug, query);
+    },
+
+    async getStoreProductsByCollectionSlug(storeId: string, collectionSlug: string, query?: string) {
         const normalizedQuery = query?.trim().toLowerCase() || "";
-        const { productCategories, categories } = await import("@shopvendly/db");
 
         const matches = await db
             .select({ id: products.id })
             .from(products)
-            .innerJoin(productCategories, eq(productCategories.productId, products.id))
-            .innerJoin(categories, eq(categories.id, productCategories.categoryId))
+            .innerJoin(productCollections, eq(productCollections.productId, products.id))
+            .innerJoin(storeCollections, eq(storeCollections.id, productCollections.collectionId))
             .where(
                 and(
                     eq(products.storeId, storeId),
                     eq(products.status, "active"),
                     isNull(products.deletedAt),
-                    eq(categories.slug, categorySlug)
+                    eq(storeCollections.slug, collectionSlug)
                 )
             );
 
@@ -239,8 +270,11 @@ export const storefrontService = {
                 productName: true,
                 description: true,
                 priceAmount: true,
+                originalPriceAmount: true,
                 currency: true,
                 quantity: true,
+                createdAt: true,
+                variants: true,
             },
             with: {
                 media: {

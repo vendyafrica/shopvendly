@@ -112,17 +112,11 @@ export const auth = betterAuth({
 
   socialProviders: {
     google: {
-      prompt: "select_account", 
+      prompt: "select_account",
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     },
-    /// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tiktok: {
-      clientKey: process.env.TIKTOK_CLIENT_KEY as string,
-      clientId: process.env.TIKTOK_CLIENT_KEY as string,
-      clientSecret: process.env.TIKTOK_CLIENT_SECRET as string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any,
+
   },
 
   plugins: [
@@ -180,7 +174,7 @@ export const auth = betterAuth({
   account: {
     accountLinking: {
       enabled: true,
-      trustedProviders: ["instagram", "google", "tiktok"],
+      trustedProviders: ["instagram", "google"],
       allowDifferentEmails: true,
       updateUserInfoOnLink: false,
     },
