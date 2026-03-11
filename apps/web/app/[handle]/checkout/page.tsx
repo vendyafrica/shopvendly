@@ -23,7 +23,7 @@ const geistSans = Bricolage_Grotesque({
   subsets: ["latin"],
 });
 
-type CheckoutPaymentMethod = "cash_on_delivery" | "mobile_money";
+type CheckoutPaymentMethod = "mobile_money";
 type PaymentFlowStatus =
   | "idle"
   | "initiating"
@@ -32,9 +32,9 @@ type PaymentFlowStatus =
   | "failed";
 type PhoneVerificationStatus = "idle" | "verifying" | "verified" | "failed";
 
-const COLLECTO_POLL_INTERVAL_MS = 5000;
-const COLLECTO_MAX_POLL_ATTEMPTS = 24;
-const COLLECTO_INITIATION_TIMEOUT_MS = 9000;
+const COLLECTO_POLL_INTERVAL_MS = 4000;
+const COLLECTO_MAX_POLL_ATTEMPTS = 36;
+const COLLECTO_INITIATION_TIMEOUT_MS = 14000;
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") || getRootUrl("");
 
@@ -52,9 +52,9 @@ const isUsableTransactionId = (value: unknown): value is string => {
 };
 
 const getCollectoPollIntervalMs = (attempt: number) => {
-  if (attempt <= 1) return 1800;
-  if (attempt <= 3) return 2500;
-  if (attempt <= 6) return 4000;
+  if (attempt <= 1) return 1000;
+  if (attempt <= 3) return 2000;
+  if (attempt <= 8) return 3000;
   return COLLECTO_POLL_INTERVAL_MS;
 };
 
@@ -147,7 +147,7 @@ function CheckoutContent() {
     setPaymentReference(null);
     setPaymentStatusMessage(
       message?.trim() ||
-        "Mobile money payment was declined. You can try again or use Cash on Delivery.",
+        "Mobile money payment was declined. Please try again.",
     );
     setError(null);
     setIsSubmitting(false);
@@ -160,19 +160,6 @@ function CheckoutContent() {
     setPaymentReference(null);
     setPaymentStatusMessage(null);
     setError(null);
-  };
-
-  const switchToCashOnDelivery = () => {
-    clearPaymentPoll();
-    setPaymentMethod("cash_on_delivery");
-    setPaymentFlowStatus("idle");
-    setPaymentTransactionId(null);
-    setPaymentReference(null);
-    setPaymentStatusMessage(
-      "Mobile money was declined. You can place this order with Cash on Delivery instead.",
-    );
-    setError(null);
-    setIsSubmitting(false);
   };
 
   useEffect(() => {
@@ -287,30 +274,13 @@ function CheckoutContent() {
     }
   };
 
-  const verifyCollectoPhone = async (
-    phoneValue: string,
-    options?: { force?: boolean },
-  ) => {
+  const runSilentPhoneVerify = async (phoneValue: string): Promise<boolean> => {
     const trimmed = phoneValue.trim();
-
-    if (paymentMethod !== "mobile_money") {
-      return true;
-    }
-
-    if (!trimmed) {
-      setPhoneVerificationStatus("idle");
-      setPhoneVerificationMessage(null);
-      setVerifiedPhone(null);
-      return false;
-    }
-
-    if (!options?.force && verifiedPhone === trimmed && phoneVerificationStatus === "verified") {
-      return true;
-    }
+    if (!trimmed) return false;
+    if (verifiedPhone === trimmed && phoneVerificationStatus === "verified") return true;
 
     setPhoneVerificationStatus("verifying");
-    setPhoneVerificationMessage("Checking your mobile money number...");
-
+    setPhoneVerificationMessage(null);
     try {
       const res = await fetch(
         `${API_BASE}/api/storefront/${store.slug}/payments/collecto/verify-phone`,
@@ -320,7 +290,6 @@ function CheckoutContent() {
           body: JSON.stringify({ phone: trimmed }),
         },
       );
-
       const data = await res.json().catch(() => ({}));
       const message =
         typeof data?.message === "string"
@@ -328,28 +297,41 @@ function CheckoutContent() {
           : typeof data?.error?.message === "string"
             ? data.error.message
             : "We couldn't verify this mobile money number.";
-
       if (!res.ok || data?.valid !== true) {
         setPhoneVerificationStatus("failed");
         setPhoneVerificationMessage(message);
         setVerifiedPhone(null);
         return false;
       }
-
       setPhoneVerificationStatus("verified");
-      setPhoneVerificationMessage(message);
+      setPhoneVerificationMessage(null);
       setVerifiedPhone(trimmed);
       return true;
     } catch (err) {
       setPhoneVerificationStatus("failed");
       setPhoneVerificationMessage(
-        err instanceof Error
-          ? err.message
-          : "We couldn't verify this mobile money number.",
+        err instanceof Error ? err.message : "We couldn't verify this mobile money number.",
       );
       setVerifiedPhone(null);
       return false;
     }
+  };
+
+  const verifyCollectoPhone = async (
+    phoneValue: string,
+    options?: { force?: boolean },
+  ) => {
+    const trimmed = phoneValue.trim();
+    if (!trimmed) {
+      setPhoneVerificationStatus("idle");
+      setPhoneVerificationMessage(null);
+      setVerifiedPhone(null);
+      return false;
+    }
+    if (!options?.force && verifiedPhone === trimmed && phoneVerificationStatus === "verified") {
+      return true;
+    }
+    return runSilentPhoneVerify(trimmed);
   };
 
   const finishSuccess = async () => {
@@ -407,12 +389,7 @@ function CheckoutContent() {
         : typeof initiateData?.error?.message === "string"
           ? initiateData.error.message
           : null;
-    const suggestedPaymentMethod =
-      initiateData?.fallback?.suggestedPaymentMethod === "cash_on_delivery"
-        ? "cash_on_delivery"
-        : null;
-
-    if (initiateData?.ok === false && suggestedPaymentMethod === "cash_on_delivery") {
+    if (initiateData?.ok === false) {
       handlePaymentFailure(fallbackMessage);
       return;
     }
@@ -429,7 +406,7 @@ function CheckoutContent() {
     if (!isUsableTransactionId(transactionId)) {
       handlePaymentFailure(
         fallbackMessage ||
-          "Mobile money is unavailable right now. Please try again or use Cash on Delivery.",
+          "Mobile money is unavailable right now. Please try again.",
       );
       return;
     }
@@ -499,14 +476,14 @@ function CheckoutContent() {
       if (status === "failed") {
         const failureMessage =
           statusMessage ||
-          "Mobile money payment was declined. You can try again or switch to cash on delivery.";
+          "Mobile money payment was declined. Please try again.";
         handlePaymentFailure(failureMessage);
         return;
       }
 
       if (attempt >= COLLECTO_MAX_POLL_ATTEMPTS) {
         handlePaymentFailure(
-          "Mobile money confirmation is taking too long right now. Please try again or use Cash on Delivery.",
+          "Mobile money confirmation is taking too long right now. Please try again.",
         );
         return;
       }
@@ -536,7 +513,7 @@ function CheckoutContent() {
       handlePaymentFailure(
         err instanceof Error
           ? err.message
-          : "Mobile money is unavailable right now. Please try again or use Cash on Delivery.",
+          : "Mobile money is unavailable right now. Please try again.",
       );
     }
   };
@@ -553,21 +530,24 @@ function CheckoutContent() {
     clearPaymentPoll();
 
     try {
-      if (paymentMethod === "mobile_money") {
-        const phoneIsVerified = await verifyCollectoPhone(phone, {
-          force: verifiedPhone !== phone.trim() || phoneVerificationStatus !== "verified",
-        });
-
-        if (!phoneIsVerified) {
-          setIsSubmitting(false);
-          return;
+      // If we already have an order and we're retrying payment, skip order creation
+      if (activeOrderId) {
+        const alreadyVerified = verifiedPhone === phone.trim() && phoneVerificationStatus === "verified";
+        if (!alreadyVerified) {
+          const ok = await runSilentPhoneVerify(phone);
+          if (!ok) {
+            setIsSubmitting(false);
+            return;
+          }
         }
-
-        if (activeOrderId) {
-          await initiateCollectoPayment(activeOrderId);
-          return;
-        }
+        await initiateCollectoPayment(activeOrderId);
+        return;
       }
+
+      // Run phone verification and order creation in parallel.
+      // Phone verify is a UX check — it can be slow (Collecto takes 3-5s).
+      // We don't block order creation on it; we only block Collecto initiation.
+      const verifyPromise = runSilentPhoneVerify(phone);
 
       const payload = {
         customerName: fullName,
@@ -606,29 +586,25 @@ function CheckoutContent() {
       if (!orderId) throw new Error("Missing order ID");
       setActiveOrderId(orderId);
 
-      if (paymentMethod === "mobile_money") {
-        await initiateCollectoPayment(orderId);
-        return;
-      }
-
-      await finishSuccess();
-    } catch (err: unknown) {
-      if (paymentMethod === "mobile_money") {
-        handlePaymentFailure(
-          err instanceof Error
-            ? err.message
-            : "Mobile money is unavailable right now. Please try again or use Cash on Delivery.",
+      // Now wait for phone verification to complete before initiating payment
+      const phoneIsVerified = await verifyPromise;
+      if (!phoneIsVerified) {
+        // Order created but phone verify failed — show error and let user retry payment
+        setIsSubmitting(false);
+        setPaymentFlowStatus("failed");
+        setPaymentStatusMessage(
+          phoneVerificationMessage || "We couldn't verify your mobile money number. Please check the number and retry.",
         );
         return;
       }
 
-      setPaymentFlowStatus("failed");
-      setError(
+      await initiateCollectoPayment(orderId);
+    } catch (err: unknown) {
+      handlePaymentFailure(
         err instanceof Error
           ? err.message
-          : "Something went wrong. Please try again.",
+          : "Mobile money is unavailable right now. Please try again.",
       );
-      setIsSubmitting(false);
     }
   };
 
@@ -807,21 +783,27 @@ function CheckoutContent() {
                             }
                           }}
                           onBlur={() => {
-                            if (paymentMethod === "mobile_money") {
-                              void verifyCollectoPhone(phone, { force: true });
+                            if (phone.trim() && phoneVerificationStatus === "idle") {
+                              void verifyCollectoPhone(phone, { force: false });
                             }
                           }}
-                          className="h-12 rounded-lg text-base"
+                          className={`h-12 rounded-lg text-base transition-colors ${
+                            phoneVerificationStatus === "verified"
+                              ? "border-green-400 ring-1 ring-green-300"
+                              : phoneVerificationStatus === "failed"
+                                ? "border-amber-400"
+                                : ""
+                          }`}
                           required
                         />
-                        {paymentMethod === "mobile_money" &&
-                        phoneVerificationStatus === "failed" &&
-                        phoneVerificationMessage ? (
-                          <div
-                            className={`rounded-lg border px-3 py-2 text-xs ${
-                              "border-amber-200 bg-amber-50 text-amber-700"
-                            }`}
-                          >
+                        {phoneVerificationStatus === "verified" && (
+                          <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                            <span className="h-4 w-4 rounded-full bg-green-100 flex items-center justify-center text-[10px]">✓</span>
+                            Mobile money number verified
+                          </div>
+                        )}
+                        {phoneVerificationStatus === "failed" && phoneVerificationMessage ? (
+                          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
                             {phoneVerificationMessage}
                           </div>
                         ) : null}
@@ -846,63 +828,21 @@ function CheckoutContent() {
                       Payment method
                     </h2>
                     <p className="text-sm text-neutral-500">
-                      Choose how you would like to pay.
+                      Pay securely with mobile money.
                     </p>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPaymentMethod("mobile_money");
-                        resetPaymentRetryState();
-                        if (phone.trim()) {
-                          void verifyCollectoPhone(phone, { force: true });
-                        }
-                      }}
-                      className={`rounded-2xl border p-4 text-left transition-colors focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary/10 ${paymentMethod === "mobile_money" ? "border-primary bg-white" : "border-transparent bg-neutral-50"}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <span
-                          className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border ${paymentMethod === "mobile_money" ? "border-primary/90" : "border-neutral-300"}`}
-                        >
-                          <span
-                            className={`h-2.5 w-2.5 rounded-full ${paymentMethod === "mobile_money" ? "bg-primary/90" : "bg-transparent"}`}
-                          />
-                        </span>
-                        <div>
-                          <div className="text-sm font-semibold text-neutral-900">
-                            Mobile money
-                          </div>
+                  <div className="rounded-2xl border border-primary bg-white p-4">
+                    <div className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border border-primary/90">
+                        <span className="h-2.5 w-2.5 rounded-full bg-primary/90" />
+                      </span>
+                      <div>
+                        <div className="text-sm font-semibold text-neutral-900">
+                          Mobile money
                         </div>
                       </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPaymentMethod("cash_on_delivery");
-                        setActiveOrderId(null);
-                        resetPaymentRetryState();
-                        setPhoneVerificationStatus("idle");
-                        setPhoneVerificationMessage(null);
-                      }}
-                      className={`rounded-2xl border p-4 text-left transition-colors focus-within:border-primary/50 focus-within:ring-[3px] focus-within:ring-primary/10 ${paymentMethod === "cash_on_delivery" ? "border-neutral-900 bg-white" : "border-transparent bg-neutral-50"}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <span
-                          className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border ${paymentMethod === "cash_on_delivery" ? "border-primary/90" : "border-neutral-300"}`}
-                        >
-                          <span
-                            className={`h-2.5 w-2.5 rounded-full ${paymentMethod === "cash_on_delivery" ? "bg-primary/90" : "bg-transparent"}`}
-                          />
-                        </span>
-                        <div>
-                          <div className="text-sm font-semibold text-neutral-900">
-                            Cash on delivery
-                          </div>
-                        </div>
-                      </div>
-                    </button>
+                    </div>
                   </div>
 
                   {paymentTransactionId ? (
@@ -925,7 +865,7 @@ function CheckoutContent() {
                   ) : null}
 
                   {paymentFlowStatus === "failed" ? (
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
                       <Button
                         type="button"
                         variant="outline"
@@ -935,14 +875,6 @@ function CheckoutContent() {
                         }}
                       >
                         Retry payment
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="h-11 w-full rounded-xl border-neutral-300 text-sm font-medium"
-                        onClick={switchToCashOnDelivery}
-                      >
-                        Use cash on delivery
                       </Button>
                     </div>
                   ) : null}
@@ -956,18 +888,9 @@ function CheckoutContent() {
                   <Button
                     type="submit"
                     className="w-full h-12 rounded-xl bg-primary text-white text-sm font-semibold tracking-wide transition-colors hover:bg-primary/70 disabled:bg-neutral-300 disabled:text-neutral-500"
-                    disabled={
-                      isSubmitting ||
-                      !fullName ||
-                      !address ||
-                      !phone ||
-                      (paymentMethod === "mobile_money" &&
-                        phoneVerificationStatus === "verifying")
-                    }
+                    disabled={isSubmitting || !fullName || !address || !phone}
                   >
-                    {paymentMethod === "mobile_money"
-                      ? "Continue to payment"
-                      : "Place order"}
+                    Continue to payment
                   </Button>
 
                   {storePolicy ? (

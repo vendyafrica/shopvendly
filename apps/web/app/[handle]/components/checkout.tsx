@@ -17,7 +17,7 @@ import { Loading03Icon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") || getRootUrl("");
 
-type CheckoutPaymentMethod = "cash_on_delivery" | "mobile_money";
+type CheckoutPaymentMethod = "mobile_money";
 
 interface CheckoutProduct {
     id: string;
@@ -110,7 +110,7 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
         }
 
         if (status === "failed") {
-            setError("Mobile money payment failed. You can try again or use cash on delivery.");
+            setError("Mobile money payment failed. Please try again.");
             setIsSubmitting(false);
             return;
         }
@@ -170,11 +170,6 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                 throw new Error("Missing order ID");
             }
 
-            if (paymentMethod === "cash_on_delivery") {
-                finishSuccess();
-                return;
-            }
-
             const payment = data?.payment;
             const transactionId = typeof payment?.transactionId === "string" ? payment.transactionId : null;
             const reference = typeof payment?.reference === "string" ? payment.reference : null;
@@ -188,9 +183,7 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to place order");
         } finally {
-            if (paymentMethod === "cash_on_delivery") {
-                setIsSubmitting(false);
-            }
+            setIsSubmitting(false);
         }
     };
 
@@ -292,27 +285,11 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
 
                     <div className="space-y-3">
                         <div className="text-sm font-medium">Payment method</div>
-                        <div className="grid gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setPaymentMethod("mobile_money")}
-                                className={`rounded-lg border p-3 text-left text-sm transition-colors ${paymentMethod === "mobile_money" ? "border-foreground bg-background" : "bg-muted/30 text-muted-foreground"}`}
-                            >
-                                <div className="font-medium text-foreground">Mobile money</div>
-                                <div className="mt-1 text-xs text-muted-foreground">
-                                    Pay now with mobile money.
-                                </div>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setPaymentMethod("cash_on_delivery")}
-                                className={`rounded-lg border p-3 text-left text-sm transition-colors ${paymentMethod === "cash_on_delivery" ? "border-foreground bg-background" : "bg-muted/30 text-muted-foreground"}`}
-                            >
-                                <div className="font-medium text-foreground">Cash on delivery</div>
-                                <div className="mt-1 text-xs text-muted-foreground">
-                                    Place your order now and pay later when delivery is arranged.
-                                </div>
-                            </button>
+                        <div className="rounded-lg border border-foreground bg-background p-3 text-sm">
+                            <div className="font-medium text-foreground">Mobile money</div>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                                Pay now with mobile money.
+                            </div>
                         </div>
                     </div>
 
@@ -352,10 +329,10 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                         {isSubmitting ? (
                             <>
                                 <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" />
-                                {paymentMethod === "mobile_money" ? "Processing payment..." : "Placing Order..."}
+                                Processing payment...
                             </>
                         ) : (
-                            paymentMethod === "mobile_money" ? "Pay with mobile money" : "Place order"
+                            "Pay with mobile money"
                         )}
                     </Button>
                 </form>

@@ -107,10 +107,9 @@ function isUsableCollectoTransactionId(transactionId: string | null): transactio
 function buildCollectoSoftFallback(message?: string | null) {
   return {
     recoverable: true,
-    suggestedPaymentMethod: "cash_on_delivery" as const,
     message:
       message?.trim() ||
-      "Mobile money is unavailable right now. Please use Cash on Delivery.",
+      "Mobile money is unavailable right now. Please try again.",
   };
 }
 
@@ -187,7 +186,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/verify-phone"
         valid: false,
         phone,
         message:
-          "We couldn't verify this mobile money number quickly enough. Please try again or use Cash on Delivery.",
+          "We couldn't verify this mobile money number quickly enough. Please try again.",
       });
     }
 
@@ -285,7 +284,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
           amount: order.totalAmount,
           reference,
         },
-        { timeoutMs: 8000 },
+        { timeoutMs: 12000 },
       );
     } catch (error) {
       console.error("[Collecto] initiate:exception", {
@@ -310,7 +309,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
           message: "We couldn't get a payment prompt within 8 seconds.",
         },
         fallback: buildCollectoSoftFallback(
-          "Mobile money did not respond in time. Please use Cash on Delivery.",
+          "Mobile money did not respond in time. Please try again.",
         ),
       });
     }
@@ -328,7 +327,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
         orderId: order.id,
         reference,
         status: "failed",
-        message: "Mobile money is unavailable right now. Please use Cash on Delivery.",
+        message: "Mobile money is unavailable right now. Please try again.",
       });
       await handleFailedOrderTransition({
         orderId: order.id,
@@ -338,7 +337,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
         ok: false,
         error: {
           code: "COLLECTO_INITIATE_FAILED",
-          message: "Mobile money is unavailable right now. Please use Cash on Delivery.",
+          message: "Mobile money is unavailable right now. Please try again.",
           details: response.json || response.text,
         },
         fallback: buildCollectoSoftFallback(),
@@ -364,7 +363,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
         status: "failed",
         message:
           statusMessage ||
-          "Mobile money is unavailable right now. Please use Cash on Delivery.",
+          "Mobile money is unavailable right now. Please try again.",
       });
       await handleFailedOrderTransition({
         orderId: order.id,
@@ -376,16 +375,10 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
           code: "COLLECTO_INITIATE_UNAVAILABLE",
           message:
             statusMessage ||
-            "Mobile money is unavailable right now. Please use Cash on Delivery.",
+            "Mobile money is unavailable right now. Please try again.",
           details: response.json || response.text,
         },
-        fallback: {
-          recoverable: true,
-          suggestedPaymentMethod: "cash_on_delivery",
-          message:
-            statusMessage ||
-            "Mobile money is unavailable right now. Please use Cash on Delivery.",
-        },
+        fallback: buildCollectoSoftFallback(statusMessage),
       });
     }
 
@@ -437,7 +430,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
         {
           transactionId: body.transactionId,
         },
-        { timeoutMs: 12000 },
+        { timeoutMs: 15000 },
       );
     } catch (error) {
       console.error("[Collecto] status:exception", {

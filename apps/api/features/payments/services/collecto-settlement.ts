@@ -34,9 +34,9 @@ const SETTLEMENT_STATUS_PROCESSING = "processing" as const;
 const SETTLEMENT_STATUS_SUCCESSFUL = "successful" as const;
 const SETTLEMENT_STATUS_FAILED = "failed" as const;
 
-const WITHDRAW_STATUS_ATTEMPTS = 12;
-const PAYOUT_STATUS_ATTEMPTS = 12;
-const STATUS_DELAY_MS = 5000;
+const WITHDRAW_STATUS_ATTEMPTS = 8;
+const PAYOUT_STATUS_ATTEMPTS = 8;
+const STATUS_DELAY_MS = 2500;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -506,7 +506,15 @@ export async function runCollectoSettlementForOrder(orderId: string) {
   });
 
   try {
-    const walletTransferResult = await runCollectoWalletTransferForOrder(context.orderId);
+    // Run wallet transfer and seller recipient lookup concurrently to save time.
+    // Wallet transfer needs the balance check before initiating, so it runs its
+    // own logic internally. Seller recipient lookup is independent (just verifies phone).
+    const [walletTransferResult] = await Promise.all([
+      runCollectoWalletTransferForOrder(context.orderId),
+      // Warm up seller recipient early — result is used by runCollectoPayoutForOrder internally
+      getSettlementContext(context.orderId),
+    ]);
+
     if (!walletTransferResult) {
       return null;
     }
