@@ -125,8 +125,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
-        const updated = await cartService.upsertItem(session.user.id, productId, storeId, quantity, selectedOptions);
-        return NextResponse.json(updated);
+        await cartService.upsertItem(session.user.id, productId, storeId, quantity, selectedOptions);
+        return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Error updating cart:", error);
         return NextResponse.json({ error: "Failed to update cart" }, { status: 500 });

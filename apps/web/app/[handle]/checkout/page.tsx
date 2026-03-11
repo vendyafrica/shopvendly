@@ -231,6 +231,75 @@ function CheckoutContent() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isLoaded || !storeId) return;
+
+    const savedState = localStorage.getItem(getStorageKey());
+    if (!savedState) return;
+
+    try {
+      const parsed = JSON.parse(savedState) as {
+        orderId: string;
+        transactionId: string;
+        reference: string | null;
+        storeSlug: string;
+        timestamp: number;
+      };
+
+      // Only recover if it's less than 15 minutes old (900000 ms)
+      if (Date.now() - parsed.timestamp > 900000) {
+        clearCheckoutState();
+        return;
+      }
+
+      // storeSlug must be present — old saved states without it can't recover
+      if (!parsed.storeSlug || !parsed.orderId || !parsed.transactionId) {
+        clearCheckoutState();
+        return;
+      }
+
+      setActiveOrderId(parsed.orderId);
+      setPaymentTransactionId(parsed.transactionId);
+      setPaymentReference(parsed.reference);
+      setPaymentMethod("mobile_money");
+      setPaymentFlowStatus("pending");
+      setPaymentStatusMessage("Resuming your payment check...");
+      setIsSubmitting(true);
+
+      const reconcile = async () => {
+        try {
+          // Use the saved slug — recovery works even when cart/store context is empty after hard refresh
+          const res = await fetch(`${API_BASE}/api/storefront/${parsed.storeSlug}/payments/collecto/reconcile-order`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderId: parsed.orderId, transactionId: parsed.transactionId }),
+          });
+          const data = await res.json().catch(() => ({}));
+
+          if (data?.status === "successful") {
+            clearCheckoutState();
+            setPaymentStatusMessage("Payment confirmed successfully.");
+            await finishSuccess();
+          } else if (data?.status === "failed") {
+            clearCheckoutState();
+            handlePaymentFailure(data?.message || "Mobile money payment was declined.");
+          } else {
+            // Still pending — resume polling normally
+            void pollCollectoStatus(parsed.transactionId, 1, parsed.orderId);
+          }
+        } catch {
+          // If network error, just resume polling
+          void pollCollectoStatus(parsed.transactionId, 1, parsed.orderId);
+        }
+      };
+
+      void reconcile();
+    } catch {
+      clearCheckoutState();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, storeId]);
+
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-white pt-20 pb-24">
@@ -274,7 +343,7 @@ function CheckoutContent() {
     (acc, item) => acc + item.product.price * item.quantity,
     0,
   );
-  const storeTotal = storeSubtotal; // Add shipping here if implemented
+  const storeTotal = storeSubtotal; 
   const currency = storeItems[0]?.product.currency || "UGX";
   const FALLBACK_PRODUCT_IMAGE =
     "https://cdn.cosmos.so/25e7ef9d-3d95-486d-b7db-f0d19c1992d7?format=jpeg";
@@ -536,75 +605,6 @@ function CheckoutContent() {
       );
     }
   };
-
-  useEffect(() => {
-    if (!isLoaded || !storeId) return;
-
-    const savedState = localStorage.getItem(getStorageKey());
-    if (!savedState) return;
-
-    try {
-      const parsed = JSON.parse(savedState) as {
-        orderId: string;
-        transactionId: string;
-        reference: string | null;
-        storeSlug: string;
-        timestamp: number;
-      };
-
-      // Only recover if it's less than 15 minutes old (900000 ms)
-      if (Date.now() - parsed.timestamp > 900000) {
-        clearCheckoutState();
-        return;
-      }
-
-      // storeSlug must be present — old saved states without it can't recover
-      if (!parsed.storeSlug || !parsed.orderId || !parsed.transactionId) {
-        clearCheckoutState();
-        return;
-      }
-
-      setActiveOrderId(parsed.orderId);
-      setPaymentTransactionId(parsed.transactionId);
-      setPaymentReference(parsed.reference);
-      setPaymentMethod("mobile_money");
-      setPaymentFlowStatus("pending");
-      setPaymentStatusMessage("Resuming your payment check...");
-      setIsSubmitting(true);
-
-      const reconcile = async () => {
-        try {
-          // Use the saved slug — recovery works even when cart/store context is empty after hard refresh
-          const res = await fetch(`${API_BASE}/api/storefront/${parsed.storeSlug}/payments/collecto/reconcile-order`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ orderId: parsed.orderId, transactionId: parsed.transactionId }),
-          });
-          const data = await res.json().catch(() => ({}));
-
-          if (data?.status === "successful") {
-            clearCheckoutState();
-            setPaymentStatusMessage("Payment confirmed successfully.");
-            await finishSuccess();
-          } else if (data?.status === "failed") {
-            clearCheckoutState();
-            handlePaymentFailure(data?.message || "Mobile money payment was declined.");
-          } else {
-            // Still pending — resume polling normally
-            void pollCollectoStatus(parsed.transactionId, 1, parsed.orderId);
-          }
-        } catch {
-          // If network error, just resume polling
-          void pollCollectoStatus(parsed.transactionId, 1, parsed.orderId);
-        }
-      };
-
-      void reconcile();
-    } catch {
-      clearCheckoutState();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, storeId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
