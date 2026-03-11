@@ -104,12 +104,30 @@ function isUsableCollectoTransactionId(transactionId: string | null): transactio
   return normalized !== "" && normalized !== "0" && normalized !== "null" && normalized !== "undefined";
 }
 
+function getCollectoFailureMessage(message?: string | null) {
+  const trimmed = message?.trim();
+  if (!trimmed) {
+    return "Mobile money is unavailable right now. Please try again.";
+  }
+
+  const normalized = trimmed.toLowerCase();
+  if (
+    normalized === "request failed" ||
+    normalized === "failed" ||
+    normalized === "error" ||
+    normalized === "request failed." ||
+    normalized === "error."
+  ) {
+    return "Mobile money is unavailable right now. Please try again.";
+  }
+
+  return trimmed;
+}
+
 function buildCollectoSoftFallback(message?: string | null) {
   return {
     recoverable: true,
-    message:
-      message?.trim() ||
-      "Mobile money is unavailable right now. Please try again.",
+    message: getCollectoFailureMessage(message),
   };
 }
 
@@ -356,14 +374,13 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
       normalizedInitiateStatus === "failed" ||
       isCollectoFailureMessage(statusMessage)
     ) {
+      const failureMessage = getCollectoFailureMessage(statusMessage);
       await updateCollectoCollectionState({
         orderId: order.id,
         reference,
         transactionId,
         status: "failed",
-        message:
-          statusMessage ||
-          "Mobile money is unavailable right now. Please try again.",
+        message: failureMessage,
       });
       await handleFailedOrderTransition({
         orderId: order.id,
@@ -373,12 +390,10 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
         ok: false,
         error: {
           code: "COLLECTO_INITIATE_UNAVAILABLE",
-          message:
-            statusMessage ||
-            "Mobile money is unavailable right now. Please try again.",
+          message: failureMessage,
           details: response.json || response.text,
         },
-        fallback: buildCollectoSoftFallback(statusMessage),
+        fallback: buildCollectoSoftFallback(failureMessage),
       });
     }
 
