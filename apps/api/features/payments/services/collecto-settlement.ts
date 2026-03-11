@@ -214,17 +214,21 @@ async function getSellerRecipient(tenantId: string): Promise<CollectoPayoutRecip
   const phone = normalizePhone(tenant.phoneNumber);
   const verification = await collectoApiFetch("verifyPhoneNumber", { phone }, { timeoutMs: 4000 });
   const payload = (verification.json ?? {}) as CollectoPayload;
+  const nested = getCollectoPayloadRecord(payload);
+  const nestedData = getCollectoPayloadRecord(nested ?? {});
   const message = readCollectoMessage(payload);
   const verificationStatus = normalizeStatus(readCollectoStatus(payload));
   const verificationFlag = readCollectoBooleanFlag(payload, ["verifyPhoneNumber"]);
+  const accountName =
+    readCollectoName(nestedData ?? {}) || readCollectoName(nested ?? {}) || readCollectoName(payload) || null;
 
-  if (!verification.ok || verificationStatus === "failed" || verificationFlag === false) {
+  if (!verification.ok || verificationStatus === "failed" || verificationFlag !== true || !accountName) {
     throw new Error(message || "Seller payout phone could not be verified.");
   }
 
   return {
     phone,
-    accountName: readCollectoName(payload) || tenant.fullName,
+    accountName,
   };
 }
 

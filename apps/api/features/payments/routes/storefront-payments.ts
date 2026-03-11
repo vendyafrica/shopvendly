@@ -8,7 +8,6 @@ import {
   normalizeCollectoBusinessStatus,
   readCollectoBooleanFlag,
   readCollectoMessage,
-  readCollectoName,
   readCollectoReference,
   readCollectoStatus,
   readCollectoTransactionId,
@@ -119,6 +118,39 @@ function logCollectoDebug(event: string, payload: Record<string, unknown>) {
   console.info(`[Collecto] ${event}`, payload);
 }
 
+function getCollectoNestedObject(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+
+  return null;
+}
+
+function readCollectoVerifiedName(payload: Record<string, unknown>) {
+  const levelOne = getCollectoNestedObject(payload.data);
+  const levelTwo = getCollectoNestedObject(levelOne?.data);
+  const candidates = [
+    levelTwo?.registeredName,
+    levelTwo?.name,
+    levelTwo?.accountName,
+    levelTwo?.customerName,
+    levelTwo?.fullName,
+    levelOne?.registeredName,
+    levelOne?.name,
+    levelOne?.accountName,
+    levelOne?.customerName,
+    levelOne?.fullName,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
+}
+
 storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/verify-phone", async (req, res, next) => {
   try {
     if (getCollectoMode() === "disabled" || !isCollectoConfiguredForLive()) {
@@ -161,12 +193,13 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/verify-phone"
 
     const payload = (response.json ?? {}) as Record<string, unknown>;
     const message = readCollectoMessage(payload);
-    const name = readCollectoName(payload);
+    const name = readCollectoVerifiedName(payload);
     const verificationFlag = readCollectoBooleanFlag(payload, ["verifyPhoneNumber"]);
     const valid =
       response.ok &&
+      verificationFlag === true &&
+      Boolean(name) &&
       normalizeCollectoBusinessStatus(readCollectoStatus(payload)) !== "failed" &&
-      verificationFlag !== false &&
       !isCollectoFailureMessage(message);
 
     logCollectoDebug("verify:response", {
@@ -177,6 +210,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/verify-phone"
       valid,
       message,
       name,
+      verificationFlag,
       payload,
     });
 
