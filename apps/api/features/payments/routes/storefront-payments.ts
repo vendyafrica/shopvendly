@@ -61,8 +61,28 @@ function parseCollectoReference(reference: string | null | undefined) {
   return { storeSlug, orderId: parsedOrderId.data };
 }
 
-function buildCollectoReference(storeSlug: string, orderId: string) {
-  return `${storeSlug}${COLLECTO_REFERENCE_SEPARATOR}${orderId}${COLLECTO_REFERENCE_SEPARATOR}${Date.now()}`;
+function normalizeCollectoReferenceSegment(value: string | null | undefined, fallback: string) {
+  const normalized = (value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 24);
+
+  return normalized || fallback;
+}
+
+function buildCollectoReference(
+  storeSlug: string,
+  sellerName: string | null | undefined,
+  buyerName: string | null | undefined,
+  orderNumber: string | null | undefined,
+) {
+  const storeSegment = normalizeCollectoReferenceSegment(storeSlug, "store");
+  const sellerSegment = normalizeCollectoReferenceSegment(sellerName, "seller");
+  const buyerSegment = normalizeCollectoReferenceSegment(buyerName, "buyer");
+  const orderSegment = normalizeCollectoReferenceSegment(orderNumber, "1");
+  return `${storeSegment}-${sellerSegment},${buyerSegment}-${orderSegment}`;
 }
 
 function getCollectoMode(): "disabled" | "live" {
@@ -84,7 +104,7 @@ function normalizeCollectoPhone(phone: string): string {
 async function assertStoreAndOrder(storeSlug: string, orderId: string) {
   const store = await db.query.stores.findFirst({
     where: and(eq(stores.slug, storeSlug), isNull(stores.deletedAt)),
-    columns: { id: true },
+    columns: { id: true, name: true, slug: true },
   });
 
   if (!store) {
@@ -99,7 +119,42 @@ async function assertStoreAndOrder(storeSlug: string, orderId: string) {
     throw new Error("Order not found");
   }
 
-  return order;
+  return { store, order };
+}
+
+async function findOrderByCollectoReference(reference: string | null | undefined) {
+  const trimmedReference = reference?.trim();
+  if (!trimmedReference) {
+    return null;
+  }
+
+  const candidateOrders = await db.query.orders.findMany({
+    where: and(eq(orders.paymentMethod, "mobile_money"), isNull(orders.deletedAt)),
+    columns: {
+      id: true,
+      collectoMeta: true,
+    },
+    with: {
+      store: {
+        columns: {
+          slug: true,
+        },
+      },
+    },
+  });
+
+  const matchedOrder = candidateOrders.find(
+    (candidate) => candidate.collectoMeta?.collection?.reference?.trim() === trimmedReference,
+  );
+
+  if (!matchedOrder) {
+    return null;
+  }
+
+  return {
+    storeSlug: matchedOrder.store?.slug ?? null,
+    orderId: matchedOrder.id,
+  };
 }
 
 function isUsableCollectoTransactionId(transactionId: string | null): transactionId is string {
@@ -267,7 +322,7 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
 
     const { slug } = req.params;
     const body = collectoInitiateBodySchema.parse(req.body);
-    const order = await assertStoreAndOrder(slug, body.orderId);
+    const { store, order } = await assertStoreAndOrder(slug, body.orderId);
 
     if (order.paymentMethod !== "mobile_money") {
       return res.status(400).json({
@@ -284,7 +339,12 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
       paymentStatus: "pending",
     });
 
-    const reference = buildCollectoReference(slug, order.id);
+    const reference = buildCollectoReference(
+      slug,
+      store.name,
+      order.customerName,
+      order.orderNumber || "1",
+    );
     const phone = normalizeCollectoPhone(body.phone);
 
     logCollectoDebug("initiate:request", {
@@ -521,7 +581,14 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
     });
 
     const reference = readCollectoReference(payload);
-    const { storeSlug, orderId: referenceOrderId } = parseCollectoReference(reference);
+    const parsedReference = parseCollectoReference(reference);
+    const matchedReference = parsedReference.orderId
+      ? parsedReference
+      : await findOrderByCollectoReference(reference);
+    const { storeSlug, orderId: referenceOrderId } = matchedReference ?? {
+      storeSlug: null,
+      orderId: null,
+    };
     const fallbackOrderId = body.orderId ?? null;
     const resolvedOrderId = referenceOrderId ?? fallbackOrderId;
     const resolvedStoreSlug = storeSlug ?? (resolvedOrderId ? slug : null);
@@ -580,7 +647,11 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
 storefrontPaymentsRouter.post("/payments/collecto/callback", async (req, res, next) => {
   try {
     const body = collectoCallbackBodySchema.parse(req.body ?? {});
-    const { storeSlug, orderId } = parseCollectoReference(body.reference || null);
+    const parsedReference = parseCollectoReference(body.reference || null);
+    const matchedReference = parsedReference.orderId
+      ? parsedReference
+      : await findOrderByCollectoReference(body.reference || null);
+    const { storeSlug, orderId } = matchedReference ?? { storeSlug: null, orderId: null };
     const normalizedStatus = normalizeCollectoBusinessStatus(body.status);
 
     logCollectoDebug("callback:received", {

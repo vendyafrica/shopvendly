@@ -28,12 +28,14 @@ type PaymentFlowStatus =
   | "idle"
   | "initiating"
   | "pending"
+  | "pending_review"
   | "successful"
   | "failed";
 type PhoneVerificationStatus = "idle" | "verifying" | "verified" | "failed";
 
 const COLLECTO_POLL_INTERVAL_MS = 4000;
-const COLLECTO_MAX_POLL_ATTEMPTS = 36;
+const COLLECTO_ACTIVE_POLL_WINDOW_MS = 30000;
+
 const COLLECTO_INITIATION_TIMEOUT_MS = 14000;
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") || getRootUrl("");
@@ -78,6 +80,10 @@ const getCheckoutLoadingCopy = (
       return "Approve the payment prompt on your phone. We’ll confirm your order automatically once payment is received.";
     }
 
+    if (paymentFlowStatus === "pending_review") {
+      return "We have not received a final response from Collecto yet. Please refresh shortly to check again.";
+    }
+
     return `We’re preparing your checkout with ${storeName}.`;
   }
 
@@ -91,6 +97,10 @@ const getCheckoutLoadingLabel = (
   if (paymentMethod === "mobile_money") {
     if (paymentFlowStatus === "pending") {
       return "Waiting for payment approval";
+    }
+
+    if (paymentFlowStatus === "pending_review") {
+      return "Payment still pending";
     }
 
     if (paymentFlowStatus === "initiating") {
@@ -140,6 +150,7 @@ function CheckoutContent() {
     string | null
   >(null);
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
+  const paymentFlowStartedAtRef = useRef<number | null>(null);
 
   const getStorageKey = () => `vendly_checkout_${storeId}`;
 
@@ -159,6 +170,7 @@ function CheckoutContent() {
   const handlePaymentFailure = (message?: string | null) => {
     clearPaymentPoll();
     clearCheckoutState();
+    paymentFlowStartedAtRef.current = null;
     setPaymentFlowStatus("failed");
     setPaymentTransactionId(null);
     setPaymentReference(null);
@@ -173,6 +185,7 @@ function CheckoutContent() {
   const resetPaymentRetryState = () => {
     clearPaymentPoll();
     clearCheckoutState();
+    paymentFlowStartedAtRef.current = null;
     setPaymentFlowStatus("idle");
     setPaymentTransactionId(null);
     setPaymentReference(null);
@@ -423,7 +436,9 @@ function CheckoutContent() {
 
   const finishSuccess = async () => {
     clearCheckoutState();
+    paymentFlowStartedAtRef.current = null;
     await clearStoreFromCart(store.id);
+
     setActiveOrderId(null);
     setPaymentFlowStatus("successful");
     setPaymentStatusMessage(
@@ -436,7 +451,9 @@ function CheckoutContent() {
   };
 
   const initiateCollectoPayment = async (orderId: string) => {
+    paymentFlowStartedAtRef.current = Date.now();
     setPaymentFlowStatus("initiating");
+
     setPaymentStatusMessage("Sending the payment request to your phone...");
 
     const controller = new AbortController();
@@ -508,11 +525,63 @@ function CheckoutContent() {
     await pollCollectoStatus(transactionId, 1, orderId);
   };
 
+  const finalizeCollectoPendingState = async (
+    transactionId: string,
+    orderId: string | null,
+  ) => {
+    clearPaymentPoll();
+
+    if (orderId) {
+      try {
+        const reconcileRes = await fetch(
+          `${API_BASE}/api/storefront/${store.slug}/payments/collecto/reconcile-order`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderId, transactionId }),
+          },
+        );
+        const reconcileData = await reconcileRes.json().catch(() => ({}));
+        const status =
+          typeof reconcileData?.status === "string" ? reconcileData.status : "pending";
+        const statusMessage =
+          typeof reconcileData?.message === "string" ? reconcileData.message : null;
+
+        if (status === "successful") {
+          setPaymentStatusMessage("Payment confirmed successfully.");
+          await finishSuccess();
+          return;
+        }
+
+        if (status === "failed") {
+          handlePaymentFailure(
+            statusMessage || "Mobile money payment was declined. Please try again.",
+          );
+          return;
+        }
+      } catch {
+        // noop
+      }
+    }
+
+    setPaymentFlowStatus("pending_review");
+    setPaymentStatusMessage(
+      "Payment is still pending with Collecto after 30 seconds. Please refresh shortly to check again.",
+    );
+    setError(null);
+    setIsSubmitting(false);
+  };
+
   const pollCollectoStatus = async (
     transactionId: string,
     attempt = 1,
     orderId: string | null = activeOrderId,
   ) => {
+    const startedAt = paymentFlowStartedAtRef.current ?? Date.now();
+    if (!paymentFlowStartedAtRef.current) {
+      paymentFlowStartedAtRef.current = startedAt;
+    }
+
     try {
       const statusRes = await fetch(
         `${API_BASE}/api/storefront/${store.slug}/payments/collecto/status`,
@@ -529,15 +598,13 @@ function CheckoutContent() {
       const statusData = await statusRes.json().catch(() => ({}));
 
       if (!statusRes.ok) {
-        if (attempt >= COLLECTO_MAX_POLL_ATTEMPTS) {
-          throw new Error(
-            typeof statusData?.error?.message === "string"
-              ? statusData.error.message
-              : "Unable to check mobile money payment status.",
-          );
+        if (Date.now() - startedAt >= COLLECTO_ACTIVE_POLL_WINDOW_MS) {
+          await finalizeCollectoPendingState(transactionId, orderId);
+          return;
         }
 
         setPaymentFlowStatus("pending");
+
         setPaymentStatusMessage(
           "We are still confirming your payment. If you already approved the prompt, please keep this page open for a moment.",
         );
@@ -551,9 +618,7 @@ function CheckoutContent() {
       const status =
         typeof statusData?.status === "string" ? statusData.status : "pending";
       const statusMessage =
-        typeof statusData?.message === "string"
-          ? statusData.message
-          : undefined;
+        typeof statusData?.message === "string" ? statusData.message : null;
 
       if (status === "successful") {
         setPaymentStatusMessage("Payment confirmed successfully.");
@@ -570,10 +635,8 @@ function CheckoutContent() {
         return;
       }
 
-      if (attempt >= COLLECTO_MAX_POLL_ATTEMPTS) {
-        handlePaymentFailure(
-          "Mobile money confirmation is taking too long right now. Please try again.",
-        );
+      if (Date.now() - startedAt >= COLLECTO_ACTIVE_POLL_WINDOW_MS) {
+        await finalizeCollectoPendingState(transactionId, orderId);
         return;
       }
 
@@ -586,8 +649,8 @@ function CheckoutContent() {
       paymentPollRef.current = setTimeout(() => {
         void pollCollectoStatus(transactionId, attempt + 1, orderId);
       }, getCollectoPollIntervalMs(attempt));
-    } catch (err) {
-      if (attempt < COLLECTO_MAX_POLL_ATTEMPTS) {
+    } catch {
+      if (Date.now() - startedAt < COLLECTO_ACTIVE_POLL_WINDOW_MS) {
         setPaymentFlowStatus("pending");
         setPaymentStatusMessage(
           "We are still confirming your payment. If you already approved the prompt, please keep this page open for a moment.",
@@ -599,11 +662,7 @@ function CheckoutContent() {
         return;
       }
 
-      handlePaymentFailure(
-        err instanceof Error
-          ? err.message
-          : "Mobile money is unavailable right now. Please try again.",
-      );
+      await finalizeCollectoPendingState(transactionId, orderId);
     }
   };
 

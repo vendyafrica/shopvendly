@@ -82,6 +82,15 @@ export function normalizeCollectoBusinessStatus(value: unknown): "pending" | "su
   const normalized = value.trim().toLowerCase();
   if (["success", "successful", "completed", "paid"].includes(normalized)) return "successful";
   if (
+    normalized.includes("success") ||
+    normalized.includes("successful") ||
+    normalized.includes("complete") ||
+    normalized.includes("completed") ||
+    normalized.includes("paid")
+  ) {
+    return "successful";
+  }
+  if (
     ["failed", "error", "cancelled", "canceled", "rejected", "declined", "decline", "denied", "deny", "expired"].includes(
       normalized,
     )
