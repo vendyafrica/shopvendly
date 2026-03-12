@@ -7,7 +7,7 @@ import { shutdownPosthog } from "./shared/utils/posthog.js";
 
 const PORT = process.env.PORT || 8000;
 
-// Add request logging
+// Add request logging 
 app.use(morgan("dev"));
 
 app.listen(PORT, () => {

@@ -90,6 +90,25 @@ function buildCollectoReference(
   return `${storeSegment}:${buyerSegment}:${orderSegment}`;
 }
 
+function buildCollectoAttemptReference(reference: string) {
+  const suffix = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  return `${reference}:${suffix}`.slice(0, 64);
+}
+
+function getCollectoInitiationFailureMessage(message: string | null | undefined) {
+  const normalized = (message ?? "").trim();
+  if (!normalized) {
+    return "Mobile money is unavailable right now. Please try again.";
+  }
+  if (/unique reference/i.test(normalized)) {
+    return "This payment attempt expired. Please try again.";
+  }
+  if (/request failed/i.test(normalized)) {
+    return "We couldn't send the payment prompt. Please try again.";
+  }
+  return normalized;
+}
+
 function getCollectoMode(): "disabled" | "live" {
   const value = (process.env.COLLECTO_PAYMENT_MODE || "disabled").trim().toLowerCase();
   return value === "live" ? "live" : "disabled";
@@ -394,11 +413,13 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
       paymentStatus: "pending",
     });
 
-    const reference = buildCollectoReference(
+    const reference = buildCollectoAttemptReference(
+      buildCollectoReference(
       slug,
       store.name,
       order.customerName,
       order.orderNumber || "1",
+      ),
     );
     const phone = normalizeCollectoPhone(body.phone);
 
@@ -493,7 +514,9 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
       normalizedInitiateStatus === "failed" ||
       isCollectoFailureMessage(statusMessage)
     ) {
-      const failureMessage = getCollectoFailureMessage(statusMessage);
+      const failureMessage = getCollectoInitiationFailureMessage(
+        getCollectoFailureMessage(statusMessage),
+      );
       await updateCollectoCollectionState({
         orderId: order.id,
         reference,
