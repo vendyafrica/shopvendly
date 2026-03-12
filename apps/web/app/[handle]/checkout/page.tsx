@@ -34,7 +34,7 @@ type PaymentFlowStatus =
 type PhoneVerificationStatus = "idle" | "verifying" | "verified" | "failed";
 
 const COLLECTO_POLL_INTERVAL_MS = 5000;
-const COLLECTO_ACTIVE_POLL_WINDOW_MS = 30000;
+const COLLECTO_ACTIVE_POLL_WINDOW_MS = 90000;
 
 const COLLECTO_INITIATION_TIMEOUT_MS = 14000;
 
@@ -253,8 +253,19 @@ function CheckoutContent() {
         timestamp: number;
       };
 
-      // Only recover if it's less than 15 minutes old (900000 ms)
-      if (Date.now() - parsed.timestamp > 900000) {
+      // Only recover if it's less than 90 seconds old (90000 ms)
+      if (Date.now() - parsed.timestamp > 90000) {
+        // Too old — proactively abandon on server and clear so we don't resume stale polls
+        if (parsed.orderId) {
+          const effectiveSlug = parsed.storeSlug || store?.slug || storeSlug;
+          if (effectiveSlug) {
+            void fetch(`${API_BASE}/api/storefront/${effectiveSlug}/payments/collecto/abandon`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ orderId: parsed.orderId, transactionId: parsed.transactionId, reason: "expired_after_90_seconds_resume" }),
+            }).catch(() => undefined);
+          }
+        }
         clearCheckoutState();
         return;
       }
@@ -497,15 +508,25 @@ function CheckoutContent() {
     orderId: string | null,
   ) => {
     clearPaymentPoll();
-    setPaymentFlowStatus("awaiting_confirmation");
-    setPaymentTransactionId(transactionId);
+    // After 90s, cancel this attempt and ask user to retry later
+    setPaymentFlowStatus("failed");
+    setPaymentTransactionId(null);
     setActiveOrderId(orderId);
     setPaymentStatusMessage(
-      "Give us a few seconds to confirm your payment. You can leave this page and once the transaction is successful you will receive a WhatsApp notification.",
+      "Payment prompt expired. Please try again after 5 minutes.",
     );
     setError(null);
     setIsSubmitting(false);
     paymentFlowStartedAtRef.current = null;
+    clearCheckoutState();
+
+    if (orderId) {
+      void fetch(`${API_BASE}/api/storefront/${store.slug}/payments/collecto/abandon`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, transactionId, reason: "expired_after_90_seconds" }),
+      }).catch(() => undefined);
+    }
   };
 
   const pollCollectoStatus = async (

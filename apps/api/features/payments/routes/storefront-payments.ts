@@ -34,6 +34,12 @@ const collectoStatusBodySchema = z.object({
   orderId: z.string().uuid().optional(),
 });
 
+const collectoAbandonBodySchema = z.object({
+  orderId: z.string().uuid(),
+  transactionId: z.string().min(1).optional(),
+  reason: z.string().min(1).optional(),
+});
+
 const collectoCallbackBodySchema = z.object({
   reference: z.string().optional(),
   transactionId: z.string().optional(),
@@ -302,6 +308,56 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/verify-phone"
             : "Mobile money number verified."
           : "We couldn't verify this mobile money number."),
       raw: response.json,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/abandon", async (req, res, next) => {
+  try {
+    if (getCollectoMode() === "disabled" || !isCollectoConfiguredForLive()) {
+      return res.status(503).json({
+        error: {
+          code: "COLLECTO_DISABLED",
+          message: "Mobile money is not enabled for this storefront.",
+        },
+      });
+    }
+
+    const { slug } = req.params;
+    const body = collectoAbandonBodySchema.parse(req.body);
+
+    const { order } = await assertStoreAndOrder(slug, body.orderId);
+
+    logCollectoDebug("abandon:request", {
+      slug,
+      orderId: order.id,
+      transactionId: body.transactionId ?? null,
+      reason: body.reason ?? "timeout",
+    });
+
+    // If already paid, don't mark failed
+    if (order.paymentStatus === "paid") {
+      return res.status(200).json({ ok: true, status: "successful", message: "Payment already confirmed." });
+    }
+
+    await updateCollectoCollectionState({
+      orderId: order.id,
+      transactionId: body.transactionId ?? undefined,
+      status: "failed",
+      message: body.reason ?? "Payment prompt expired without approval.",
+    });
+
+    await handleFailedOrderTransition({
+      orderId: order.id,
+      paymentMethod: "mobile_money",
+    });
+
+    return res.status(200).json({
+      ok: true,
+      status: "failed",
+      message: body.reason ?? "Payment prompt expired without approval.",
     });
   } catch (err) {
     next(err);
