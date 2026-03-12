@@ -87,20 +87,43 @@ export function readCollectoBooleanFlag(payload: CollectoPayload, keys: string[]
 export function normalizeCollectoBusinessStatus(value: unknown): "pending" | "successful" | "failed" {
   if (typeof value !== "string") return "pending";
   const normalized = value.trim().toLowerCase();
-  if (["success", "successful", "completed", "paid"].includes(normalized)) return "successful";
+  if (["success", "successful", "completed", "paid", "complete", "approved", "confirmed"].includes(normalized)) {
+    return "successful";
+  }
   if (
     normalized.includes("success") ||
     normalized.includes("successful") ||
     normalized.includes("complete") ||
     normalized.includes("completed") ||
-    normalized.includes("paid")
+    normalized.includes("paid") ||
+    normalized.includes("approv") ||
+    normalized.includes("confirm")
   ) {
     return "successful";
   }
   if (
-    ["failed", "error", "cancelled", "canceled", "rejected", "declined", "decline", "denied", "deny", "expired"].includes(
-      normalized,
-    )
+    [
+      "failed",
+      "error",
+      "cancelled",
+      "canceled",
+      "rejected",
+      "declined",
+      "decline",
+      "denied",
+      "deny",
+      "expired",
+      "timeout",
+      "timed_out",
+      "aborted",
+      "cancelled_by_user",
+      "canceled_by_user",
+      "user_cancelled",
+      "user_canceled",
+      "user_rejected",
+      "incorrect_pin",
+      "wrong_pin",
+    ].includes(normalized)
   ) {
     return "failed";
   }
@@ -108,6 +131,10 @@ export function normalizeCollectoBusinessStatus(value: unknown): "pending" | "su
     normalized.includes("declin") ||
     normalized.includes("reject") ||
     normalized.includes("cancel") ||
+    normalized.includes("abort") ||
+    normalized.includes("time out") ||
+    normalized.includes("timed out") ||
+    normalized.includes("timeout") ||
     normalized.includes("deni") ||
     normalized.includes("invalid") ||
     normalized.includes("insufficient") ||
@@ -118,7 +145,11 @@ export function normalizeCollectoBusinessStatus(value: unknown): "pending" | "su
     normalized.includes("mismatch") ||
     normalized.includes("could not verify") ||
     normalized.includes("couldnot verify") ||
-    normalized.includes("unavailable")
+    normalized.includes("unavailable") ||
+    normalized.includes("wrong pin") ||
+    normalized.includes("incorrect pin") ||
+    normalized.includes("user cancel") ||
+    normalized.includes("user reject")
   ) {
     return "failed";
   }

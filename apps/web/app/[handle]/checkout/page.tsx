@@ -34,7 +34,8 @@ type PaymentFlowStatus =
 type PhoneVerificationStatus = "idle" | "verifying" | "verified" | "failed";
 
 const COLLECTO_POLL_INTERVAL_MS = 5000;
-const COLLECTO_ACTIVE_POLL_WINDOW_MS = 90000;
+const COLLECTO_ACTIVE_POLL_WINDOW_MS = 120000;
+const COLLECTO_STALE_HINT_MS = 45000;
 
 const COLLECTO_INITIATION_TIMEOUT_MS = 14000;
 
@@ -66,15 +67,15 @@ const getCheckoutLoadingCopy = (
 
   if (paymentMethod === "mobile_money") {
     if (paymentFlowStatus === "initiating") {
-      return "We’re creating your order and sending a mobile money prompt to your phone.";
+      return "Sending a mobile money prompt to your phone.";
     }
 
     if (paymentFlowStatus === "pending") {
-      return "Approve the payment prompt on your phone. We’ll confirm your order automatically once payment is received.";
+      return "Approve the payment prompt on your phone.";
     }
 
     if (paymentFlowStatus === "awaiting_confirmation") {
-      return "Give us a few seconds to confirm your payment. You can leave this page and once the transaction is successful you will receive a WhatsApp notification.";
+      return "We’re confirming your payment now.";
     }
 
     return `We’re preparing your checkout with ${storeName}.`;
@@ -143,6 +144,8 @@ function CheckoutContent() {
     string | null
   >(null);
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
+  const [showPaymentCancelHint, setShowPaymentCancelHint] = useState(false);
+  const [showStorePolicy, setShowStorePolicy] = useState(false);
   const paymentFlowStartedAtRef = useRef<number | null>(null);
 
   const getStorageKey = () => `vendly_checkout_${storeId}`;
@@ -164,6 +167,7 @@ function CheckoutContent() {
     clearPaymentPoll();
     clearCheckoutState();
     paymentFlowStartedAtRef.current = null;
+    setShowPaymentCancelHint(false);
     setPaymentFlowStatus("failed");
     setPaymentTransactionId(null);
     setPaymentReference(null);
@@ -179,6 +183,7 @@ function CheckoutContent() {
     clearPaymentPoll();
     clearCheckoutState();
     paymentFlowStartedAtRef.current = null;
+    setShowPaymentCancelHint(false);
     setPaymentFlowStatus("idle");
     setPaymentTransactionId(null);
     setPaymentReference(null);
@@ -415,6 +420,7 @@ function CheckoutContent() {
   const finishSuccess = async () => {
     clearCheckoutState();
     paymentFlowStartedAtRef.current = null;
+    setShowPaymentCancelHint(false);
     await clearStoreFromCart(store.id);
 
     setActiveOrderId(null);
@@ -430,6 +436,7 @@ function CheckoutContent() {
 
   const initiateCollectoPayment = async (orderId: string) => {
     paymentFlowStartedAtRef.current = Date.now();
+    setShowPaymentCancelHint(false);
     setPaymentFlowStatus("initiating");
 
     setPaymentStatusMessage("Sending the payment request to your phone...");
@@ -508,7 +515,7 @@ function CheckoutContent() {
     orderId: string | null,
   ) => {
     clearPaymentPoll();
-    // After 90s, cancel this attempt and ask user to retry later
+    setShowPaymentCancelHint(false);
     setPaymentFlowStatus("failed");
     setPaymentTransactionId(null);
     setActiveOrderId(orderId);
@@ -529,14 +536,41 @@ function CheckoutContent() {
     }
   };
 
+  const cancelCollectoPayment = async (
+    transactionId: string | null,
+    orderId: string | null,
+    reason: string,
+  ) => {
+    clearPaymentPoll();
+    setShowPaymentCancelHint(false);
+    paymentFlowStartedAtRef.current = null;
+    clearCheckoutState();
+    setIsSubmitting(false);
+    setPaymentFlowStatus("failed");
+    setPaymentStatusMessage("Payment cancelled. You can retry when you're ready.");
+    setPaymentTransactionId(null);
+    setPaymentReference(null);
+    setError(null);
+
+    if (transactionId && orderId) {
+      void fetch(`${API_BASE}/api/storefront/${store.slug}/payments/collecto/abandon`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, transactionId, reason }),
+      }).catch(() => undefined);
+    }
+  };
+
   const pollCollectoStatus = async (
     transactionId: string,
     orderId: string | null = activeOrderId,
   ) => {
     const startedAt = paymentFlowStartedAtRef.current ?? Date.now();
+    const elapsedMs = Date.now() - startedAt;
     if (!paymentFlowStartedAtRef.current) {
       paymentFlowStartedAtRef.current = startedAt;
     }
+    setShowPaymentCancelHint(elapsedMs >= COLLECTO_STALE_HINT_MS);
 
     try {
       const statusRes = await fetch(
@@ -590,14 +624,16 @@ function CheckoutContent() {
         return;
       }
 
-      if (Date.now() - startedAt >= COLLECTO_ACTIVE_POLL_WINDOW_MS) {
+      if (elapsedMs >= COLLECTO_ACTIVE_POLL_WINDOW_MS) {
         finalizeCollectoPendingState(transactionId, orderId);
         return;
       }
 
       setPaymentFlowStatus("pending");
       setPaymentStatusMessage(
-        "Waiting for payment confirmation from Collecto. Keep this page open for a moment.",
+        elapsedMs >= COLLECTO_STALE_HINT_MS
+          ? "Still waiting for confirmation. If you declined the prompt or entered the wrong PIN, cancel and try again."
+          : "Waiting for payment confirmation from Collecto.",
       );
 
       clearPaymentPoll();
@@ -605,11 +641,13 @@ function CheckoutContent() {
         void pollCollectoStatus(transactionId, orderId);
       }, COLLECTO_POLL_INTERVAL_MS);
     } catch {
-      if (Date.now() - startedAt < COLLECTO_ACTIVE_POLL_WINDOW_MS) {
+      if (elapsedMs < COLLECTO_ACTIVE_POLL_WINDOW_MS) {
         setPaymentFlowStatus("pending");
 
         setPaymentStatusMessage(
-          "We are still confirming your payment. If you already approved the prompt, please keep this page open for a moment.",
+          elapsedMs >= COLLECTO_STALE_HINT_MS
+            ? "We still can't confirm this payment. If the prompt was declined, cancel and retry."
+            : "We are still confirming your payment. Please keep this page open for a moment.",
         );
         clearPaymentPoll();
         paymentPollRef.current = setTimeout(() => {
@@ -726,7 +764,7 @@ function CheckoutContent() {
 
     return (
       <div className="fixed inset-0 z-999 flex items-center justify-center bg-white/95 px-4">
-        <div className="w-full max-w-md rounded-3xl border border-neutral-200 bg-white p-6 sm:p-8 text-center shadow-xl">
+        <div className="w-full max-w-sm rounded-3xl border border-neutral-200 bg-white p-6 text-center shadow-xl">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/8 text-primary">
             <HugeiconsIcon
               icon={Loading03Icon}
@@ -738,27 +776,30 @@ function CheckoutContent() {
             {loadingLabel}
           </div>
           <h1
-            className={`${geistSans.className} mb-3 text-2xl font-semibold leading-tight tracking-tight text-neutral-950 sm:text-3xl`}
+            className={`${geistSans.className} mb-2 text-2xl font-semibold leading-tight tracking-tight text-neutral-950`}
           >
             {paymentMethod === "mobile_money"
               ? "Complete the payment on your phone"
               : "Finalizing your order"}
           </h1>
-          <p className="mx-auto mb-6 max-w-sm text-sm leading-6 text-neutral-600">
+          <p className="mx-auto text-sm leading-6 text-neutral-600">
             {loadingCopy}
           </p>
-          <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-left">
-            <div className="text-xs font-medium text-neutral-900">
-              {paymentMethod === "mobile_money"
-                ? "What happens next"
-                : "Order progress"}
-            </div>
-            <div className="mt-1 text-xs leading-5 text-neutral-500">
-              {paymentMethod === "mobile_money"
-                ? "Keep this page open while we confirm the transaction. If approval takes longer than expected, you’ll get retry options."
-                : "We’re saving your details and creating the order for the seller."}
-            </div>
-          </div>
+          {showPaymentCancelHint ? (
+            <button
+              type="button"
+              className="mt-5 text-sm font-medium text-neutral-500 underline underline-offset-4 transition-colors hover:text-neutral-900"
+              onClick={() => {
+                void cancelCollectoPayment(
+                  paymentTransactionId,
+                  activeOrderId,
+                  "cancelled_by_customer",
+                );
+              }}
+            >
+              Cancel payment
+            </button>
+          ) : null}
         </div>
       </div>
     );
@@ -949,17 +990,6 @@ function CheckoutContent() {
                     </div>
                   </div>
 
-                  {paymentTransactionId ? (
-                    <div className="p-4 rounded-xl border border-neutral-200 bg-white text-sm text-neutral-600">
-                      <div className="font-medium text-neutral-900">
-                        Payment reference
-                      </div>
-                      <div className="mt-1 break-all">
-                        {paymentReference || paymentTransactionId}
-                      </div>
-                    </div>
-                  ) : null}
-
                   {paymentMethod === "mobile_money" &&
                   paymentFlowStatus !== "idle" &&
                   paymentStatusMessage ? (
@@ -999,12 +1029,21 @@ function CheckoutContent() {
 
                   {storePolicy ? (
                     <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-linear-to-br from-white to-neutral-50/80">
-                      <div className="border-b border-neutral-200/80 px-4 py-3">
+                      <div className="flex items-center justify-between border-b border-neutral-200/80 px-4 py-3">
                         <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-neutral-500">
                           Store Policy
                         </div>
+                        <button
+                          type="button"
+                          className="text-xs font-medium text-neutral-500 transition-colors hover:text-neutral-900"
+                          onClick={() => {
+                            setShowStorePolicy((current) => !current);
+                          }}
+                        >
+                          {showStorePolicy ? "Hide" : "Show"}
+                        </button>
                       </div>
-                      <div className="px-4 py-3.5">
+                      <div className={`${showStorePolicy ? "block" : "hidden"} px-4 py-3.5`}>
                         <div className="whitespace-pre-wrap text-[14px] leading-6 text-neutral-700">
                           {storePolicy}
                         </div>
