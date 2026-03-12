@@ -28,12 +28,12 @@ type PaymentFlowStatus =
   | "idle"
   | "initiating"
   | "pending"
-  | "pending_review"
+  | "awaiting_confirmation"
   | "successful"
   | "failed";
 type PhoneVerificationStatus = "idle" | "verifying" | "verified" | "failed";
 
-const COLLECTO_POLL_INTERVAL_MS = 4000;
+const COLLECTO_POLL_INTERVAL_MS = 5000;
 const COLLECTO_ACTIVE_POLL_WINDOW_MS = 30000;
 
 const COLLECTO_INITIATION_TIMEOUT_MS = 14000;
@@ -52,13 +52,6 @@ const isUsableTransactionId = (value: unknown): value is string => {
   if (typeof value !== "string") return false;
   const normalized = value.trim().toLowerCase();
   return normalized !== "" && normalized !== "0" && normalized !== "null" && normalized !== "undefined";
-};
-
-const getCollectoPollIntervalMs = (attempt: number) => {
-  if (attempt <= 1) return 1000;
-  if (attempt <= 3) return 2000;
-  if (attempt <= 8) return 3000;
-  return COLLECTO_POLL_INTERVAL_MS;
 };
 
 const getCheckoutLoadingCopy = (
@@ -80,8 +73,8 @@ const getCheckoutLoadingCopy = (
       return "Approve the payment prompt on your phone. We’ll confirm your order automatically once payment is received.";
     }
 
-    if (paymentFlowStatus === "pending_review") {
-      return "We have not received a final response from Collecto yet. Please refresh shortly to check again.";
+    if (paymentFlowStatus === "awaiting_confirmation") {
+      return "Give us a few seconds to confirm your payment. You can leave this page and once the transaction is successful you will receive a WhatsApp notification.";
     }
 
     return `We’re preparing your checkout with ${storeName}.`;
@@ -99,8 +92,8 @@ const getCheckoutLoadingLabel = (
       return "Waiting for payment approval";
     }
 
-    if (paymentFlowStatus === "pending_review") {
-      return "Payment still pending";
+    if (paymentFlowStatus === "awaiting_confirmation") {
+      return "Confirming your payment";
     }
 
     if (paymentFlowStatus === "initiating") {
@@ -280,34 +273,8 @@ function CheckoutContent() {
       setPaymentStatusMessage("Resuming your payment check...");
       setIsSubmitting(true);
 
-      const reconcile = async () => {
-        try {
-          // Use the saved slug — recovery works even when cart/store context is empty after hard refresh
-          const res = await fetch(`${API_BASE}/api/storefront/${parsed.storeSlug}/payments/collecto/reconcile-order`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ orderId: parsed.orderId, transactionId: parsed.transactionId }),
-          });
-          const data = await res.json().catch(() => ({}));
-
-          if (data?.status === "successful") {
-            clearCheckoutState();
-            setPaymentStatusMessage("Payment confirmed successfully.");
-            await finishSuccess();
-          } else if (data?.status === "failed") {
-            clearCheckoutState();
-            handlePaymentFailure(data?.message || "Mobile money payment was declined.");
-          } else {
-            // Still pending — resume polling normally
-            void pollCollectoStatus(parsed.transactionId, 1, parsed.orderId);
-          }
-        } catch {
-          // If network error, just resume polling
-          void pollCollectoStatus(parsed.transactionId, 1, parsed.orderId);
-        }
-      };
-
-      void reconcile();
+      paymentFlowStartedAtRef.current = Date.now();
+      void pollCollectoStatus(parsed.transactionId, parsed.orderId);
     } catch {
       clearCheckoutState();
     }
@@ -522,59 +489,27 @@ function CheckoutContent() {
       "Payment request sent. Check your phone and approve the mobile money prompt.",
     );
     saveCheckoutState(orderId, transactionId, reference, store.slug);
-    await pollCollectoStatus(transactionId, 1, orderId);
+    await pollCollectoStatus(transactionId, orderId);
   };
 
-  const finalizeCollectoPendingState = async (
+  const finalizeCollectoPendingState = (
     transactionId: string,
     orderId: string | null,
   ) => {
     clearPaymentPoll();
-
-    if (orderId) {
-      try {
-        const reconcileRes = await fetch(
-          `${API_BASE}/api/storefront/${store.slug}/payments/collecto/reconcile-order`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ orderId, transactionId }),
-          },
-        );
-        const reconcileData = await reconcileRes.json().catch(() => ({}));
-        const status =
-          typeof reconcileData?.status === "string" ? reconcileData.status : "pending";
-        const statusMessage =
-          typeof reconcileData?.message === "string" ? reconcileData.message : null;
-
-        if (status === "successful") {
-          setPaymentStatusMessage("Payment confirmed successfully.");
-          await finishSuccess();
-          return;
-        }
-
-        if (status === "failed") {
-          handlePaymentFailure(
-            statusMessage || "Mobile money payment was declined. Please try again.",
-          );
-          return;
-        }
-      } catch {
-        // noop
-      }
-    }
-
-    setPaymentFlowStatus("pending_review");
+    setPaymentFlowStatus("awaiting_confirmation");
+    setPaymentTransactionId(transactionId);
+    setActiveOrderId(orderId);
     setPaymentStatusMessage(
-      "Payment is still pending with Collecto after 30 seconds. Please refresh shortly to check again.",
+      "Give us a few seconds to confirm your payment. You can leave this page and once the transaction is successful you will receive a WhatsApp notification.",
     );
     setError(null);
     setIsSubmitting(false);
+    paymentFlowStartedAtRef.current = null;
   };
 
   const pollCollectoStatus = async (
     transactionId: string,
-    attempt = 1,
     orderId: string | null = activeOrderId,
   ) => {
     const startedAt = paymentFlowStartedAtRef.current ?? Date.now();
@@ -599,19 +534,18 @@ function CheckoutContent() {
 
       if (!statusRes.ok) {
         if (Date.now() - startedAt >= COLLECTO_ACTIVE_POLL_WINDOW_MS) {
-          await finalizeCollectoPendingState(transactionId, orderId);
+          finalizeCollectoPendingState(transactionId, orderId);
           return;
         }
 
         setPaymentFlowStatus("pending");
-
         setPaymentStatusMessage(
           "We are still confirming your payment. If you already approved the prompt, please keep this page open for a moment.",
         );
         clearPaymentPoll();
         paymentPollRef.current = setTimeout(() => {
-          void pollCollectoStatus(transactionId, attempt + 1, orderId);
-        }, getCollectoPollIntervalMs(attempt));
+          void pollCollectoStatus(transactionId, orderId);
+        }, COLLECTO_POLL_INTERVAL_MS);
         return;
       }
 
@@ -636,7 +570,7 @@ function CheckoutContent() {
       }
 
       if (Date.now() - startedAt >= COLLECTO_ACTIVE_POLL_WINDOW_MS) {
-        await finalizeCollectoPendingState(transactionId, orderId);
+        finalizeCollectoPendingState(transactionId, orderId);
         return;
       }
 
@@ -647,22 +581,23 @@ function CheckoutContent() {
 
       clearPaymentPoll();
       paymentPollRef.current = setTimeout(() => {
-        void pollCollectoStatus(transactionId, attempt + 1, orderId);
-      }, getCollectoPollIntervalMs(attempt));
+        void pollCollectoStatus(transactionId, orderId);
+      }, COLLECTO_POLL_INTERVAL_MS);
     } catch {
       if (Date.now() - startedAt < COLLECTO_ACTIVE_POLL_WINDOW_MS) {
         setPaymentFlowStatus("pending");
+
         setPaymentStatusMessage(
           "We are still confirming your payment. If you already approved the prompt, please keep this page open for a moment.",
         );
         clearPaymentPoll();
         paymentPollRef.current = setTimeout(() => {
-          void pollCollectoStatus(transactionId, attempt + 1, orderId);
-        }, getCollectoPollIntervalMs(attempt));
+          void pollCollectoStatus(transactionId, orderId);
+        }, COLLECTO_POLL_INTERVAL_MS);
         return;
       }
 
-      await finalizeCollectoPendingState(transactionId, orderId);
+      finalizeCollectoPendingState(transactionId, orderId);
     }
   };
 

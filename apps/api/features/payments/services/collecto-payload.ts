@@ -9,12 +9,16 @@ export function getCollectoPayloadRecord(payload: CollectoPayload) {
   return null;
 }
 
+function collectPayloadCandidates(payload: CollectoPayload) {
+  const levelOne = getCollectoPayloadRecord(payload);
+  const levelTwo = levelOne ? getCollectoPayloadRecord(levelOne) : null;
+  return [levelTwo, levelOne, payload].filter(Boolean) as CollectoPayload[];
+}
+
 function readStringCandidate(payload: CollectoPayload, keys: string[]) {
-  const nested = getCollectoPayloadRecord(payload);
-  const candidates = [
-    ...(nested ? keys.map((key) => nested[key]) : []),
-    ...keys.map((key) => payload[key]),
-  ];
+  const candidates = collectPayloadCandidates(payload).flatMap((candidate) =>
+    keys.map((key) => candidate[key]),
+  );
 
   for (const candidate of candidates) {
     if (typeof candidate === "string" && candidate.trim()) {
@@ -33,19 +37,24 @@ export function readCollectoMessage(payload: CollectoPayload) {
 }
 
 export function readCollectoStatus(payload: CollectoPayload): unknown {
-  const nested = getCollectoPayloadRecord(payload);
+  const [levelTwo, levelOne, root] = collectPayloadCandidates(payload);
 
   return (
-    nested?.status ??
-    nested?.paymentStatus ??
-    nested?.transactionStatus ??
-    nested?.state ??
-    payload.status ??
-    payload.paymentStatus ??
-    payload.transactionStatus ??
-    payload.state ??
-    nested?.message ??
-    payload.message
+    levelTwo?.status ??
+    levelTwo?.paymentStatus ??
+    levelTwo?.transactionStatus ??
+    levelTwo?.state ??
+    levelOne?.status ??
+    levelOne?.paymentStatus ??
+    levelOne?.transactionStatus ??
+    levelOne?.state ??
+    root?.status ??
+    root?.paymentStatus ??
+    root?.transactionStatus ??
+    root?.state ??
+    levelTwo?.message ??
+    levelOne?.message ??
+    root?.message
   );
 }
 
@@ -62,11 +71,9 @@ export function readCollectoTransactionId(payload: CollectoPayload) {
 }
 
 export function readCollectoBooleanFlag(payload: CollectoPayload, keys: string[]) {
-  const nested = getCollectoPayloadRecord(payload);
-  const candidates = [
-    ...(nested ? keys.map((key) => nested[key]) : []),
-    ...keys.map((key) => payload[key]),
-  ];
+  const candidates = collectPayloadCandidates(payload).flatMap((candidate) =>
+    keys.map((key) => candidate[key]),
+  );
 
   for (const candidate of candidates) {
     if (typeof candidate === "boolean") {

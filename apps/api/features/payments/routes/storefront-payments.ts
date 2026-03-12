@@ -78,11 +78,10 @@ function buildCollectoReference(
   buyerName: string | null | undefined,
   orderNumber: string | null | undefined,
 ) {
-  const storeSegment = normalizeCollectoReferenceSegment(storeSlug, "store");
-  const sellerSegment = normalizeCollectoReferenceSegment(sellerName, "seller");
+  const storeSegment = normalizeCollectoReferenceSegment(sellerName || storeSlug, "store");
   const buyerSegment = normalizeCollectoReferenceSegment(buyerName, "buyer");
   const orderSegment = normalizeCollectoReferenceSegment(orderNumber, "1");
-  return `${storeSegment}-${sellerSegment},${buyerSegment}-${orderSegment}`;
+  return `${storeSegment}:${buyerSegment}:${orderSegment}`;
 }
 
 function getCollectoMode(): "disabled" | "live" {
