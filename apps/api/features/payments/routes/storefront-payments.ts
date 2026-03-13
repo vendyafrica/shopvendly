@@ -459,6 +459,12 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
         reference,
         status: "failed",
         message: "Mobile money did not respond in time.",
+        payerPhone: phone,
+        payerName: order.customerName,
+        rawMetadata: {
+          stage: "initiate_exception",
+          error: error instanceof Error ? error.message : String(error),
+        },
       });
       return res.status(200).json({
         ok: false,
@@ -486,6 +492,12 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
         reference,
         status: "failed",
         message: "Mobile money is unavailable right now. Please try again.",
+        payerPhone: phone,
+        payerName: order.customerName,
+        rawMetadata: {
+          stage: "initiate_http_failure",
+          response: (response.json ?? {}) as Record<string, unknown>,
+        },
       });
       await handleFailedOrderTransition({
         orderId: order.id,
@@ -523,6 +535,12 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
         transactionId,
         status: "failed",
         message: failureMessage,
+        payerPhone: phone,
+        payerName: order.customerName,
+        rawMetadata: {
+          stage: "initiate_rejected",
+          response: payload,
+        },
       });
       await handleFailedOrderTransition({
         orderId: order.id,
@@ -545,6 +563,12 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/initiate", as
       transactionId,
       status: "pending",
       message: statusMessage || "Awaiting customer confirmation.",
+      payerPhone: phone,
+      payerName: order.customerName,
+      rawMetadata: {
+        stage: "initiate_pending",
+        response: payload,
+      },
     });
 
     return res.status(202).json({
@@ -678,6 +702,10 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
         transactionId: body.transactionId,
         status: normalizedStatus,
         message: statusMessage,
+        rawMetadata: {
+          stage: "status_poll",
+          response: payload,
+        },
       });
     }
 
@@ -751,6 +779,10 @@ storefrontPaymentsRouter.post("/payments/collecto/callback", async (req, res, ne
       transactionId: body.transactionId ?? null,
       status: normalizedStatus,
       message: body.status ?? null,
+      rawMetadata: {
+        stage: "callback",
+        payload: body,
+      },
     });
 
     if (normalizedStatus === "successful") {

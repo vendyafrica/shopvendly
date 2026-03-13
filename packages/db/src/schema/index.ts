@@ -8,6 +8,7 @@ export * from "./instagram-schema";
 export * from "./customer-schema";
 export * from "./media-schema";
 export * from "./order-schema";
+export * from "./collecto-observability-schema";
 
 export * from "./cart-schema";
 export * from "./category-schema";

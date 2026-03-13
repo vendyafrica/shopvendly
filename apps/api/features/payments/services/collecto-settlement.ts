@@ -11,6 +11,7 @@ import {
   readCollectoTransactionId,
   type CollectoPayload,
 } from "./collecto-payload.js";
+import { trackCollectoCollection, trackCollectoSettlement } from "./collecto-observability.js";
 
 type CollectoStepStatus = "pending" | "successful" | "failed";
 
@@ -22,6 +23,7 @@ type CollectoPayoutRecipient = {
 type CollectoSettlementContext = {
   orderId: string;
   tenantId: string;
+  storeId: string;
   orderNumber: string;
   existingMeta: CollectoMeta;
   settlementOrderIds: string[];
@@ -108,10 +110,40 @@ async function patchCollectoMeta(orderId: string, patch: Partial<CollectoMeta>) 
 }
 
 async function markSettlementFailed(orderId: string, message: string, patch?: Partial<CollectoMeta>) {
-  await patchCollectoMeta(orderId, {
+  const nextMeta = await patchCollectoMeta(orderId, {
     ...(patch ?? {}),
     settlementStatus: SETTLEMENT_STATUS_FAILED,
     lastError: message,
+  });
+  const order = await orderService.getOrderById(orderId);
+  if (!order) {
+    return;
+  }
+  await trackCollectoSettlement({
+    orderId: order.id,
+    tenantId: order.tenantId,
+    storeId: order.storeId,
+    settlementBatchOrderIds: nextMeta.settlementBatchOrderIds ?? [order.id],
+    settlementAmount: nextMeta.payout?.amount ?? nextMeta.walletTransfer?.amount ?? order.totalAmount,
+    settlementStatus: SETTLEMENT_STATUS_FAILED,
+    walletTransferReference: nextMeta.walletTransfer?.reference ?? null,
+    walletTransferTransactionId: nextMeta.walletTransfer?.transactionId ?? null,
+    walletTransferAmount: nextMeta.walletTransfer?.amount ?? null,
+    walletTransferStatus: nextMeta.walletTransfer?.status ?? null,
+    walletTransferMessage: nextMeta.walletTransfer?.message ?? null,
+    payoutReference: nextMeta.payout?.reference ?? null,
+    payoutTransactionId: nextMeta.payout?.transactionId ?? null,
+    payoutGateway: nextMeta.payout?.gateway ?? null,
+    payoutAmount: nextMeta.payout?.amount ?? null,
+    payoutRecipientPhone: nextMeta.payout?.phone ?? null,
+    payoutRecipientName: nextMeta.payout?.accountName ?? null,
+    payoutStatus: nextMeta.payout?.status ?? null,
+    payoutMessage: nextMeta.payout?.message ?? null,
+    rawMetadata: {
+      lastError: message,
+      collectoMeta: nextMeta as unknown as Record<string, unknown>,
+    },
+    failedAt: new Date(),
   });
 }
 
@@ -244,6 +276,7 @@ async function getSettlementContext(orderId: string): Promise<CollectoSettlement
     return {
       orderId: order.id,
       tenantId: order.tenantId,
+      storeId: order.storeId,
       orderNumber: order.orderNumber,
       existingMeta,
       settlementOrderIds: [order.id],
@@ -262,6 +295,7 @@ async function getSettlementContext(orderId: string): Promise<CollectoSettlement
   return {
     orderId: order.id,
     tenantId: order.tenantId,
+    storeId: order.storeId,
     orderNumber: order.orderNumber,
     existingMeta,
     settlementOrderIds,
@@ -271,12 +305,23 @@ async function getSettlementContext(orderId: string): Promise<CollectoSettlement
 }
 
 export async function runCollectoWalletTransferForOrder(orderId: string) {
+  console.info("[Collecto] settlement:wallet-transfer:triggered", { orderId });
+
   const context = await getSettlementContext(orderId);
   if (!context) {
+    console.warn("[Collecto] settlement:wallet-transfer:skipped", {
+      orderId,
+      reason: "getSettlementContext returned null",
+    });
     return null;
   }
 
   const { orderId: targetOrderId, existingMeta, settlementAmount, settlementOrderIds } = context;
+  console.info("[Collecto] settlement:wallet-transfer:start", {
+    orderId: targetOrderId,
+    settlementOrderIds,
+    settlementAmount,
+  });
 
   await patchCollectoMeta(targetOrderId, {
     settlementStatus: SETTLEMENT_STATUS_PROCESSING,
@@ -301,6 +346,22 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
         status: SETTLEMENT_STATUS_SUCCESSFUL,
         message: "Bulk balance already had enough funds for payout.",
         updatedAt: new Date().toISOString(),
+      },
+    });
+    await trackCollectoSettlement({
+      orderId: targetOrderId,
+      tenantId: context.tenantId,
+      storeId: context.storeId,
+      settlementBatchOrderIds: settlementOrderIds,
+      settlementAmount,
+      settlementStatus: SETTLEMENT_STATUS_PROCESSING,
+      walletTransferReference: walletTransferReference,
+      walletTransferAmount: 0,
+      walletTransferStatus: SETTLEMENT_STATUS_SUCCESSFUL,
+      walletTransferMessage: "Bulk balance already had enough funds for payout.",
+      rawMetadata: {
+        stage: "wallet_transfer_skipped",
+        bulkBalance,
       },
     });
     return getOrderCollectoMeta(targetOrderId);
@@ -331,6 +392,31 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
         updatedAt: new Date().toISOString(),
       },
     });
+    await trackCollectoSettlement({
+      orderId: targetOrderId,
+      tenantId: context.tenantId,
+      storeId: context.storeId,
+      settlementBatchOrderIds: settlementOrderIds,
+      settlementAmount,
+      settlementStatus: SETTLEMENT_STATUS_PROCESSING,
+      walletTransferReference,
+      walletTransferTransactionId: walletTransactionId,
+      walletTransferAmount,
+      walletTransferStatus,
+      walletTransferMessage,
+      rawMetadata: {
+        stage: "wallet_transfer_initiated",
+        response: transferPayload,
+      },
+    });
+    console.info("[Collecto] settlement:wallet-transfer:initiate-result", {
+      orderId: targetOrderId,
+      settlementOrderIds,
+      walletTransferReference,
+      walletTransactionId,
+      walletTransferStatus,
+      walletTransferMessage,
+    });
 
     if (!transferResponse.ok || !walletTransactionId || walletTransferStatus === SETTLEMENT_STATUS_FAILED) {
       await markSettlementFailed(targetOrderId, walletTransferMessage || "Collecto wallet to bulk transfer failed.");
@@ -360,6 +446,31 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
         updatedAt: new Date().toISOString(),
       },
     });
+    await trackCollectoSettlement({
+      orderId: targetOrderId,
+      tenantId: context.tenantId,
+      storeId: context.storeId,
+      settlementBatchOrderIds: settlementOrderIds,
+      settlementAmount,
+      settlementStatus: transferStatusResult.status === SETTLEMENT_STATUS_SUCCESSFUL ? SETTLEMENT_STATUS_PROCESSING : SETTLEMENT_STATUS_FAILED,
+      walletTransferReference,
+      walletTransferTransactionId: walletTransactionId,
+      walletTransferAmount,
+      walletTransferStatus: transferStatusResult.status,
+      walletTransferMessage: transferStatusResult.message,
+      rawMetadata: {
+        stage: "wallet_transfer_status",
+        response: transferStatusResult.payload,
+      },
+    });
+    console.info("[Collecto] settlement:wallet-transfer:status-result", {
+      orderId: targetOrderId,
+      settlementOrderIds,
+      walletTransferReference,
+      walletTransactionId,
+      walletTransferStatus: transferStatusResult.status,
+      walletTransferMessage: transferStatusResult.message,
+    });
 
     if (transferStatusResult.status !== SETTLEMENT_STATUS_SUCCESSFUL) {
       await markSettlementFailed(
@@ -374,12 +485,23 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
 }
 
 export async function runCollectoPayoutForOrder(orderId: string) {
+  console.info("[Collecto] settlement:payout:triggered", { orderId });
+
   const context = await getSettlementContext(orderId);
   if (!context) {
+    console.warn("[Collecto] settlement:payout:skipped", {
+      orderId,
+      reason: "getSettlementContext returned null",
+    });
     return null;
   }
 
   const { orderId: targetOrderId, tenantId, existingMeta, settlementAmount, settlementLabel, settlementOrderIds } = context;
+  console.info("[Collecto] settlement:payout:start", {
+    orderId: targetOrderId,
+    settlementOrderIds,
+    settlementAmount,
+  });
 
   await patchCollectoMeta(targetOrderId, {
     settlementStatus: SETTLEMENT_STATUS_PROCESSING,
@@ -435,6 +557,35 @@ export async function runCollectoPayoutForOrder(orderId: string) {
         updatedAt: new Date().toISOString(),
       },
     });
+    await trackCollectoSettlement({
+      orderId: targetOrderId,
+      tenantId: context.tenantId,
+      storeId: context.storeId,
+      settlementBatchOrderIds: settlementOrderIds,
+      settlementAmount,
+      settlementStatus: SETTLEMENT_STATUS_PROCESSING,
+      payoutReference,
+      payoutTransactionId,
+      payoutGateway,
+      payoutAmount: settlementAmount,
+      payoutRecipientPhone: recipient.phone,
+      payoutRecipientName: recipient.accountName,
+      payoutStatus,
+      payoutMessage,
+      rawMetadata: {
+        stage: "payout_initiated",
+        response: payoutPayload,
+      },
+    });
+    console.info("[Collecto] settlement:payout:initiate-result", {
+      orderId: targetOrderId,
+      settlementOrderIds,
+      payoutReference,
+      payoutTransactionId,
+      payoutStatus,
+      payoutMessage,
+      payoutRecipientPhone: recipient.phone,
+    });
 
     if (!payoutResponse.ok || payoutStatus === SETTLEMENT_STATUS_FAILED) {
       await markSettlementFailed(targetOrderId, payoutMessage || "Collecto payout initiation failed.");
@@ -457,6 +608,35 @@ export async function runCollectoPayoutForOrder(orderId: string) {
         updatedAt: new Date().toISOString(),
       },
     });
+    await trackCollectoSettlement({
+      orderId: targetOrderId,
+      tenantId: context.tenantId,
+      storeId: context.storeId,
+      settlementBatchOrderIds: settlementOrderIds,
+      settlementAmount,
+      settlementStatus: payoutStatusResult.status === SETTLEMENT_STATUS_SUCCESSFUL ? SETTLEMENT_STATUS_PROCESSING : SETTLEMENT_STATUS_FAILED,
+      payoutReference,
+      payoutTransactionId,
+      payoutGateway,
+      payoutAmount: settlementAmount,
+      payoutRecipientPhone: recipient.phone,
+      payoutRecipientName: recipient.accountName,
+      payoutStatus: payoutStatusResult.status,
+      payoutMessage: payoutStatusResult.message,
+      rawMetadata: {
+        stage: "payout_status",
+        response: payoutStatusResult.payload,
+      },
+    });
+    console.info("[Collecto] settlement:payout:status-result", {
+      orderId: targetOrderId,
+      settlementOrderIds,
+      payoutReference,
+      payoutTransactionId,
+      payoutStatus: payoutStatusResult.status,
+      payoutMessage: payoutStatusResult.message,
+      payoutRecipientPhone: recipient.phone,
+    });
 
     if (payoutStatusResult.status !== SETTLEMENT_STATUS_SUCCESSFUL) {
       await markSettlementFailed(targetOrderId, payoutStatusResult.message || "Collecto payout did not complete successfully.");
@@ -466,6 +646,41 @@ export async function runCollectoPayoutForOrder(orderId: string) {
 
   const settledAtIso = new Date().toISOString();
   await markSettlementBatchSuccessful(settlementOrderIds, settledAtIso);
+  const finalMeta = await getOrderCollectoMeta(targetOrderId);
+  await trackCollectoSettlement({
+    orderId: targetOrderId,
+    tenantId: context.tenantId,
+    storeId: context.storeId,
+    settlementBatchOrderIds: settlementOrderIds,
+    settlementAmount,
+    settlementStatus: SETTLEMENT_STATUS_SUCCESSFUL,
+    walletTransferReference: finalMeta.walletTransfer?.reference ?? null,
+    walletTransferTransactionId: finalMeta.walletTransfer?.transactionId ?? null,
+    walletTransferAmount: finalMeta.walletTransfer?.amount ?? null,
+    walletTransferStatus: finalMeta.walletTransfer?.status ?? null,
+    walletTransferMessage: finalMeta.walletTransfer?.message ?? null,
+    payoutReference,
+    payoutTransactionId,
+    payoutGateway,
+    payoutAmount: settlementAmount,
+    payoutRecipientPhone: recipient.phone,
+    payoutRecipientName: recipient.accountName,
+    payoutStatus: SETTLEMENT_STATUS_SUCCESSFUL,
+    payoutMessage: finalMeta.payout?.message ?? null,
+    completedAt: new Date(settledAtIso),
+    rawMetadata: {
+      stage: "settlement_completed",
+      settledAt: settledAtIso,
+      settlementOrderIds,
+    },
+  });
+  console.info("[Collecto] settlement:success", {
+    orderId: targetOrderId,
+    settlementOrderIds,
+    settlementAmount,
+    payoutReference,
+    payoutTransactionId,
+  });
 
   return getOrderCollectoMeta(targetOrderId);
 }
@@ -476,8 +691,13 @@ export async function updateCollectoCollectionState(params: {
   transactionId?: string | null;
   status?: CollectoStepStatus;
   message?: string | null;
+  payerPhone?: string | null;
+  payerName?: string | null;
+  rawMetadata?: Record<string, unknown> | null;
+  recordedAt?: Date;
 }) {
-  const timestamp = new Date().toISOString();
+  const recordedAt = params.recordedAt ?? new Date();
+  const timestamp = recordedAt.toISOString();
   await patchCollectoMeta(params.orderId, {
     collection: {
       reference: params.reference ?? undefined,
@@ -487,11 +707,38 @@ export async function updateCollectoCollectionState(params: {
       updatedAt: timestamp,
     },
   });
+  const order = await orderService.getOrderById(params.orderId);
+  if (!order) {
+    return;
+  }
+  await trackCollectoCollection({
+    orderId: order.id,
+    tenantId: order.tenantId,
+    storeId: order.storeId,
+    amount: order.totalAmount,
+    currency: order.currency,
+    providerReference: params.reference ?? null,
+    providerTransactionId: params.transactionId ?? null,
+    payerPhone: params.payerPhone ?? order.customerPhone ?? null,
+    payerName: params.payerName ?? order.customerName ?? null,
+    status: params.status,
+    providerMessage: params.message ?? null,
+    rawMetadata: params.rawMetadata ?? null,
+    initiatedAt: params.status === "pending" ? recordedAt : null,
+    confirmedAt: params.status === "successful" ? recordedAt : null,
+    failedAt: params.status === "failed" ? recordedAt : null,
+  });
 }
 
 export async function runCollectoSettlementForOrder(orderId: string) {
+  console.info("[Collecto] settlement:triggered", { orderId });
+
   const context = await getSettlementContext(orderId);
   if (!context) {
+    console.warn("[Collecto] settlement:skipped", {
+      orderId,
+      reason: "getSettlementContext returned null (order not found, not mobile_money, or not paid)",
+    });
     return null;
   }
 
@@ -503,6 +750,19 @@ export async function runCollectoSettlementForOrder(orderId: string) {
   await patchCollectoMeta(context.orderId, {
     settlementStatus: SETTLEMENT_STATUS_PROCESSING,
     lastError: null,
+  });
+  await trackCollectoSettlement({
+    orderId: context.orderId,
+    tenantId: context.tenantId,
+    storeId: context.storeId,
+    settlementBatchOrderIds: context.settlementOrderIds,
+    settlementAmount: context.settlementAmount,
+    settlementStatus: SETTLEMENT_STATUS_PROCESSING,
+    rawMetadata: {
+      stage: "settlement_start",
+      settlementOrderIds: context.settlementOrderIds,
+    },
+    initiatedAt: new Date(),
   });
 
   try {

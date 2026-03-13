@@ -351,6 +351,13 @@
       "when": 1773152400000,
       "tag": "0049_collecto_meta",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1773379081175,
+      "tag": "0050_purple_grey_gargoyle",
+      "breakpoints": true
     }
   ]
 }
