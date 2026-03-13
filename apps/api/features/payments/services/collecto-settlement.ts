@@ -75,9 +75,11 @@ function messageIndicatesSuccessfulWalletTransfer(message: string | null | undef
 
 function readNumericCandidate(payload: CollectoPayload, keys: string[]): number | null {
   const nested = getCollectoPayloadRecord(payload);
+  const nestedData = nested ? getCollectoPayloadRecord(nested) : null;
   const candidates = [
     ...keys.map((key) => payload[key]),
     ...(nested ? keys.map((key) => nested[key]) : []),
+    ...(nestedData ? keys.map((key) => nestedData[key]) : []),
   ];
 
   for (const candidate of candidates) {

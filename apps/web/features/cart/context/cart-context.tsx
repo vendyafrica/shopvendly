@@ -51,6 +51,13 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const resolveMaxQuantity = (availableQuantity?: number | null) => {
+    if (typeof availableQuantity === "number" && Number.isFinite(availableQuantity)) {
+        return Math.max(availableQuantity, 0);
+    }
+    return Number.POSITIVE_INFINITY;
+};
+
 const normalizeSelectedOptions = (value: unknown): CartSelectedOption[] => {
     if (!Array.isArray(value)) return [];
     return value
@@ -90,7 +97,7 @@ const mergeCartItems = (primary: CartItem[], secondary: CartItem[]) => {
     for (const item of secondary) {
         const existing = merged.get(item.id);
         if (existing) {
-            const maxQuantity = existing.product.availableQuantity ?? Number.POSITIVE_INFINITY;
+            const maxQuantity = resolveMaxQuantity(existing.product.availableQuantity);
             merged.set(item.id, {
                 ...existing,
                 quantity: Math.min(existing.quantity + item.quantity, maxQuantity),
@@ -112,6 +119,10 @@ const sanitizeCartItems = (items: unknown): CartItem[] => {
             product: {
                 ...item.product,
                 originalPrice: typeof item.product?.originalPrice === "number" ? item.product.originalPrice : null,
+                availableQuantity:
+                    typeof item.product?.availableQuantity === "number" && Number.isFinite(item.product.availableQuantity)
+                        ? Math.max(item.product.availableQuantity, 0)
+                        : undefined,
                 selectedOptions: normalizeSelectedOptions(item.product?.selectedOptions),
             },
             id: buildCartLineId(
@@ -336,7 +347,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const normalizedOptions = normalizeSelectedOptions(newItem.product.selectedOptions ?? []);
         const lineId = buildCartLineId(newItem.product.id, normalizedOptions);
         let nextQuantity = quantity;
-        const maxQuantity = newItem.product.availableQuantity ?? Number.POSITIVE_INFINITY;
+        const maxQuantity = resolveMaxQuantity(newItem.product.availableQuantity);
 
         // Optimistic update (also computes the exact quantity we should persist)
         setItems((prev) => {
@@ -415,7 +426,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const item = items.find(i => i.id === productId);
         if (!item) return;
 
-        const maxQuantity = item.product.availableQuantity ?? Number.POSITIVE_INFINITY;
+        const maxQuantity = resolveMaxQuantity(item.product.availableQuantity);
         const clampedQuantity = Math.min(quantity, maxQuantity);
 
         if (clampedQuantity <= 0) {
