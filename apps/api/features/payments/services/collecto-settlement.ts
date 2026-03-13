@@ -324,7 +324,7 @@ export async function runCollectoWalletTransferForOrder(orderId: string, retryCo
     settlementBatchOrderIds: settlementOrderIds,
   });
 
-  const bulkBalanceResponse = await collectoApiFetch("currentBalance", { type: "BULK" }, { timeoutMs: 5000 });
+  const bulkBalanceResponse = await collectoApiFetch("currentBalance", { type: "BULK" }, { timeoutMs: 10000 });
   const bulkBalancePayload = (bulkBalanceResponse.json ?? {}) as CollectoPayload;
   const bulkBalance = bulkBalanceResponse.ok ? readBalance(bulkBalancePayload) ?? 0 : 0;
   const walletTransferAmount = Math.max(settlementAmount - bulkBalance, 0);
@@ -372,7 +372,7 @@ export async function runCollectoWalletTransferForOrder(orderId: string, retryCo
         withDrawTo: "BULK",
         withdrawTo: "BULK",
       },
-      { timeoutMs: 8000 },
+      { timeoutMs: 15000 },
     );
     const transferPayload = (transferResponse.json ?? {}) as CollectoPayload;
     walletTransactionId = readCollectoTransactionId(transferPayload);
@@ -547,7 +547,7 @@ export async function runCollectoPayoutForOrder(orderId: string) {
         message: `Shopvendly payout for ${settlementLabel}`,
         phone: Number(recipient.phone),
       },
-      { timeoutMs: 8000 },
+      { timeoutMs: 15000 },
     );
     const payoutPayload = (payoutResponse.json ?? {}) as CollectoPayload;
     payoutTransactionId = readCollectoTransactionId(payoutPayload);
@@ -744,7 +744,7 @@ export async function runCollectoBatchPayout(tenantId: string, storeId: string, 
         message: `Shopvendly batch payout for ${storeName}`,
         phone: Number(recipient.phone),
       },
-      { timeoutMs: 8000 },
+      { timeoutMs: 15000 },
   );
 
   const payoutPayload = (payoutResponse.json ?? {}) as CollectoPayload;
