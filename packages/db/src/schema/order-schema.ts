@@ -43,6 +43,7 @@ export type CollectoMeta = {
         phone?: string | null;
         accountName?: string | null;
         amount?: number | null;
+        fee?: number | null;
         status?: CollectoStepStatus;
         message?: string | null;
         updatedAt?: string | null;

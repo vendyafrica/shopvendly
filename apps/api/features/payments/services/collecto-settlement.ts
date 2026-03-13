@@ -43,6 +43,7 @@ const STATUS_DELAY_MS = 2500;
 const BULK_BALANCE_WAIT_ATTEMPTS = 6;
 const BULK_BALANCE_DELAY_MS = 5000;
 const COLLECTO_COLLECTION_FEE_RATE = 0.03;
+const COLLECTO_PAYOUT_FEE = 1200;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -506,9 +507,15 @@ export async function runCollectoPayoutForOrder(orderId: string) {
 
   const payoutReference = existingMeta.payout?.reference || `COLLECTO-PAYOUT-${targetOrderId}`;
   const payoutGateway = existingMeta.payout?.gateway || "mobilemoney";
+  const payoutAmount = Math.max(settlementAmount - COLLECTO_PAYOUT_FEE, 0);
   let payoutTransactionId = existingMeta.payout?.transactionId || null;
   let payoutStatus = existingMeta.payout?.status ?? SETTLEMENT_STATUS_PENDING;
   let payoutMessage = existingMeta.payout?.message ?? null;
+
+  if (payoutAmount <= 0) {
+    await markSettlementFailed(targetOrderId, `Payout amount after fee is zero or negative. Settlement: ${settlementAmount}, Fee: ${COLLECTO_PAYOUT_FEE}`);
+    return null;
+  }
 
   if (!payoutTransactionId || payoutStatus === SETTLEMENT_STATUS_FAILED) {
     const payoutResponse = await collectoApiFetch(
@@ -519,7 +526,7 @@ export async function runCollectoPayoutForOrder(orderId: string) {
         reference: payoutReference,
         accountName: recipient.accountName,
         accountNumber: Number(recipient.phone),
-        amount: String(settlementAmount),
+        amount: String(payoutAmount),
         message: `Shopvendly payout for ${settlementLabel}`,
         phone: Number(recipient.phone),
       },
@@ -537,7 +544,8 @@ export async function runCollectoPayoutForOrder(orderId: string) {
         gateway: payoutGateway,
         phone: recipient.phone,
         accountName: recipient.accountName,
-        amount: settlementAmount,
+        amount: payoutAmount,
+        fee: COLLECTO_PAYOUT_FEE,
         status: payoutStatus,
         message: payoutMessage,
         updatedAt: new Date().toISOString(),
@@ -553,7 +561,7 @@ export async function runCollectoPayoutForOrder(orderId: string) {
       payoutReference,
       payoutTransactionId,
       payoutGateway,
-      payoutAmount: settlementAmount,
+      payoutAmount,
       payoutRecipientPhone: recipient.phone,
       payoutRecipientName: recipient.accountName,
       payoutStatus,
@@ -568,6 +576,8 @@ export async function runCollectoPayoutForOrder(orderId: string) {
       settlementOrderIds,
       payoutReference,
       payoutTransactionId,
+      payoutAmount,
+      payoutFee: COLLECTO_PAYOUT_FEE,
       payoutStatus,
       payoutMessage,
       payoutRecipientPhone: recipient.phone,
@@ -588,7 +598,8 @@ export async function runCollectoPayoutForOrder(orderId: string) {
         gateway: payoutGateway,
         phone: recipient.phone,
         accountName: recipient.accountName,
-        amount: settlementAmount,
+        amount: payoutAmount,
+        fee: COLLECTO_PAYOUT_FEE,
         status: payoutStatusResult.status,
         message: payoutStatusResult.message,
         updatedAt: new Date().toISOString(),
@@ -604,7 +615,7 @@ export async function runCollectoPayoutForOrder(orderId: string) {
       payoutReference,
       payoutTransactionId,
       payoutGateway,
-      payoutAmount: settlementAmount,
+      payoutAmount,
       payoutRecipientPhone: recipient.phone,
       payoutRecipientName: recipient.accountName,
       payoutStatus: payoutStatusResult.status,
@@ -653,7 +664,7 @@ export async function runCollectoPayoutForOrder(orderId: string) {
     payoutReference,
     payoutTransactionId,
     payoutGateway,
-    payoutAmount: settlementAmount,
+    payoutAmount,
     payoutRecipientPhone: recipient.phone,
     payoutRecipientName: recipient.accountName,
     payoutStatus: SETTLEMENT_STATUS_SUCCESSFUL,
