@@ -221,6 +221,8 @@ async function fetchBulkBalance(requiredAmount: number) {
     currentBalance: balance,
     ok: response.ok,
     sufficient: balance >= requiredAmount,
+    rawResponse: JSON.stringify(response.json),
+    rawText: response.text,
   });
 
   return {
