@@ -38,11 +38,11 @@ const SETTLEMENT_STATUS_PROCESSING = "processing" as const;
 const SETTLEMENT_STATUS_SUCCESSFUL = "successful" as const;
 const SETTLEMENT_STATUS_FAILED = "failed" as const;
 
-const WITHDRAW_STATUS_ATTEMPTS = 12;
 const PAYOUT_STATUS_ATTEMPTS = 8;
 const STATUS_DELAY_MS = 2500;
+const BULK_BALANCE_WAIT_ATTEMPTS = 6;
+const BULK_BALANCE_DELAY_MS = 5000;
 const COLLECTO_COLLECTION_FEE_RATE = 0.03;
-const RATE_LIMIT_RETRY_DELAY_MS = 125000; // 125 seconds (5s buffer after 120s block)
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -71,12 +71,6 @@ function messageIndicatesSuccessfulWalletTransfer(message: string | null | undef
   if (!message) return false;
   const normalized = message.toLowerCase();
   return normalized.includes("withdraw completed successfully");
-}
-
-function isRateLimitError(message: string | null | undefined): boolean {
-  if (!message) return false;
-  const normalized = message.toLowerCase();
-  return normalized.includes("rate limit") || normalized.includes("blocked for");
 }
 
 function readNumericCandidate(payload: CollectoPayload, keys: string[]): number | null {
@@ -191,33 +185,6 @@ async function listUnsettledSuccessfulMobileMoneyOrders(tenantId: string) {
   return tenantOrders.filter((candidate) => candidate.collectoMeta?.settlementStatus !== SETTLEMENT_STATUS_SUCCESSFUL);
 }
 
-async function pollTransactionStatus(method: string, transactionId: string, attempts: number) {
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    const response = await collectoApiFetch(method, { transactionId }, { timeoutMs: 5000 });
-    const payload = (response.json ?? {}) as CollectoPayload;
-    const status = normalizeStatus(readCollectoStatus(payload));
-    const message = readCollectoMessage(payload);
-
-    if (!response.ok || status === "failed") {
-      return { status: "failed" as const, message, payload };
-    }
-
-    if (status === "successful") {
-      return { status: "successful" as const, message, payload };
-    }
-
-    if (method === "withdrawFromWalletStatus" && messageIndicatesSuccessfulWalletTransfer(message)) {
-      return { status: "successful" as const, message, payload };
-    }
-
-    if (attempt < attempts) {
-      await sleep(STATUS_DELAY_MS);
-    }
-  }
-
-  return { status: "pending" as const, message: "Collecto status is still pending.", payload: {} as CollectoPayload };
-}
-
 async function pollPayoutStatus(reference: string, gateway: string, attempts: number) {
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const response = await collectoApiFetch("payoutStatus", { gateway, reference }, { timeoutMs: 5000 });
@@ -239,6 +206,45 @@ async function pollPayoutStatus(reference: string, gateway: string, attempts: nu
   }
 
   return { status: "pending" as const, message: "Collecto payout is still pending.", payload: {} as CollectoPayload };
+}
+
+async function waitForBulkBalance(requiredAmount: number, attempts = BULK_BALANCE_WAIT_ATTEMPTS) {
+  let lastKnownBalance = 0;
+  let lastMessage: string | null = null;
+  let lastPayload = {} as CollectoPayload;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const response = await collectoApiFetch("currentBalance", { type: "BULK" }, { timeoutMs: 10000 });
+    const payload = (response.json ?? {}) as CollectoPayload;
+    const balance = response.ok ? readBalance(payload) ?? 0 : 0;
+    const message = readCollectoMessage(payload);
+
+    lastKnownBalance = balance;
+    lastMessage = message;
+    lastPayload = payload;
+
+    if (response.ok && balance >= requiredAmount) {
+      return {
+        status: "successful" as const,
+        balance,
+        message: message ?? `Bulk balance is ready for payout (${balance}).`,
+        payload,
+      };
+    }
+
+    if (attempt < attempts) {
+      await sleep(BULK_BALANCE_DELAY_MS);
+    }
+  }
+
+  return {
+    status: "pending" as const,
+    balance: lastKnownBalance,
+    message:
+      lastMessage ??
+      `Bulk balance is still below the required payout amount. Available: ${lastKnownBalance}, required: ${requiredAmount}.`,
+    payload: lastPayload,
+  };
 }
 
 async function getSellerRecipient(tenantId: string): Promise<CollectoPayoutRecipient | null> {
@@ -299,8 +305,8 @@ async function getSettlementContext(orderId: string): Promise<CollectoSettlement
   };
 }
 
-export async function runCollectoWalletTransferForOrder(orderId: string, retryCount = 0) {
-  console.info("[Collecto] settlement:wallet-transfer:triggered", { orderId, retryCount });
+export async function runCollectoWalletTransferForOrder(orderId: string) {
+  console.info("[Collecto] settlement:wallet-transfer:triggered", { orderId });
 
   const context = await getSettlementContext(orderId);
   if (!context) {
@@ -378,6 +384,15 @@ export async function runCollectoWalletTransferForOrder(orderId: string, retryCo
     walletTransactionId = readCollectoTransactionId(transferPayload);
     walletTransferStatus = normalizeStatus(readCollectoStatus(transferPayload));
     walletTransferMessage = readCollectoMessage(transferPayload);
+    const walletTransferAccepted =
+      transferResponse.ok &&
+      (walletTransferStatus === SETTLEMENT_STATUS_SUCCESSFUL ||
+        messageIndicatesSuccessfulWalletTransfer(walletTransferMessage) ||
+        (!!walletTransactionId && walletTransferStatus !== SETTLEMENT_STATUS_FAILED));
+
+    if (walletTransferAccepted) {
+      walletTransferStatus = SETTLEMENT_STATUS_SUCCESSFUL;
+    }
 
     await patchCollectoMeta(targetOrderId, {
       walletTransfer: {
@@ -402,7 +417,7 @@ export async function runCollectoWalletTransferForOrder(orderId: string, retryCo
       walletTransferStatus,
       walletTransferMessage,
       rawMetadata: {
-        stage: "wallet_transfer_initiated",
+        stage: walletTransferAccepted ? "wallet_transfer_funded" : "wallet_transfer_initiated",
         response: transferPayload,
       },
     });
@@ -415,81 +430,8 @@ export async function runCollectoWalletTransferForOrder(orderId: string, retryCo
       walletTransferMessage,
     });
 
-    if (!transferResponse.ok || !walletTransactionId || walletTransferStatus === SETTLEMENT_STATUS_FAILED) {
+    if (!walletTransferAccepted) {
       await markSettlementFailed(targetOrderId, walletTransferMessage || "Collecto wallet to bulk transfer failed.");
-      return null;
-    }
-  }
-
-  if (walletTransferStatus !== SETTLEMENT_STATUS_SUCCESSFUL) {
-    if (!walletTransactionId) {
-      await markSettlementFailed(targetOrderId, "Collecto wallet transfer did not return a transaction ID.");
-      return null;
-    }
-
-    const transferStatusResult = await pollTransactionStatus(
-      "withdrawFromWalletStatus",
-      walletTransactionId,
-      WITHDRAW_STATUS_ATTEMPTS,
-    );
-
-    await patchCollectoMeta(targetOrderId, {
-      walletTransfer: {
-        reference: walletTransferReference,
-        transactionId: walletTransactionId,
-        amount: walletTransferAmount,
-        status: transferStatusResult.status,
-        message: transferStatusResult.message,
-        updatedAt: new Date().toISOString(),
-      },
-    });
-    await trackCollectoSettlement({
-      orderId: targetOrderId,
-      tenantId: context.tenantId,
-      storeId: context.storeId,
-      settlementBatchOrderIds: settlementOrderIds,
-      settlementAmount,
-      settlementStatus: transferStatusResult.status === SETTLEMENT_STATUS_SUCCESSFUL ? SETTLEMENT_STATUS_PROCESSING : SETTLEMENT_STATUS_FAILED,
-      walletTransferReference,
-      walletTransferTransactionId: walletTransactionId,
-      walletTransferAmount,
-      walletTransferStatus: transferStatusResult.status,
-      walletTransferMessage: transferStatusResult.message,
-      rawMetadata: {
-        stage: "wallet_transfer_status",
-        response: transferStatusResult.payload,
-      },
-    });
-    console.info("[Collecto] settlement:wallet-transfer:status-result", {
-      orderId: targetOrderId,
-      settlementOrderIds,
-      walletTransferReference,
-      walletTransactionId,
-      walletTransferStatus: transferStatusResult.status,
-      walletTransferMessage: transferStatusResult.message,
-    });
-
-    if (transferStatusResult.status !== SETTLEMENT_STATUS_SUCCESSFUL) {
-      // Check if it's a rate limit error and retry if we haven't exceeded max retries
-      if (isRateLimitError(transferStatusResult.message) && retryCount < 2) {
-        console.warn("[Collecto] Rate limit detected, scheduling retry", {
-          orderId: targetOrderId,
-          retryCount,
-          delayMs: RATE_LIMIT_RETRY_DELAY_MS,
-        });
-        await patchCollectoMeta(targetOrderId, {
-          settlementStatus: SETTLEMENT_STATUS_PENDING,
-          lastError: `Rate limited. Retry ${retryCount + 1}/2 scheduled.`,
-        });
-        // Schedule retry after rate limit cooldown
-        await sleep(RATE_LIMIT_RETRY_DELAY_MS);
-        return runCollectoWalletTransferForOrder(targetOrderId, retryCount + 1);
-      }
-      
-      await markSettlementFailed(
-        targetOrderId,
-        transferStatusResult.message || "Collecto wallet transfer did not complete successfully.",
-      );
       return null;
     }
   }
@@ -527,6 +469,40 @@ export async function runCollectoPayoutForOrder(orderId: string) {
     await markSettlementFailed(targetOrderId, "Seller phone number is missing for Collecto payout.");
     return null;
   }
+
+  const bulkBalanceResult = await waitForBulkBalance(settlementAmount);
+  if (bulkBalanceResult.status !== SETTLEMENT_STATUS_SUCCESSFUL) {
+    await markSettlementFailed(
+      targetOrderId,
+      `Bulk balance not ready for payout. Available: ${bulkBalanceResult.balance}, required: ${settlementAmount}.`,
+      {
+        walletTransfer: {
+          message: bulkBalanceResult.message ?? undefined,
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    );
+    return null;
+  }
+
+  await trackCollectoSettlement({
+    orderId: targetOrderId,
+    tenantId: context.tenantId,
+    storeId: context.storeId,
+    settlementBatchOrderIds: settlementOrderIds,
+    settlementAmount,
+    settlementStatus: SETTLEMENT_STATUS_PROCESSING,
+    walletTransferReference: existingMeta.walletTransfer?.reference ?? null,
+    walletTransferTransactionId: existingMeta.walletTransfer?.transactionId ?? null,
+    walletTransferAmount: existingMeta.walletTransfer?.amount ?? null,
+    walletTransferStatus: existingMeta.walletTransfer?.status ?? null,
+    walletTransferMessage: existingMeta.walletTransfer?.message ?? null,
+    rawMetadata: {
+      stage: "bulk_balance_ready",
+      bulkBalance: bulkBalanceResult.balance,
+      response: bulkBalanceResult.payload,
+    },
+  });
 
   const payoutReference = existingMeta.payout?.reference || `COLLECTO-PAYOUT-${targetOrderId}`;
   const payoutGateway = existingMeta.payout?.gateway || "mobilemoney";
@@ -727,6 +703,11 @@ export async function runCollectoBatchPayout(tenantId: string, storeId: string, 
   const recipient = await getSellerRecipient(tenantId);
   if (!recipient) {
       throw new Error("Seller phone number is missing for Collecto payout.");
+  }
+
+  const bulkBalanceResult = await waitForBulkBalance(payoutAmount);
+  if (bulkBalanceResult.status !== SETTLEMENT_STATUS_SUCCESSFUL) {
+      throw new Error(`Bulk balance not ready for payout. Available: ${bulkBalanceResult.balance}, required: ${payoutAmount}.`);
   }
 
   const payoutReference = `COLLECTO-BATCH-${Date.now()}`;

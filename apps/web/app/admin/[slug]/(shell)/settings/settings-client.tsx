@@ -166,15 +166,15 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
     }
   };
 
-  const fetchPayoutBalance = async () => {
+  const fetchPayoutBalance = React.useCallback(async () => {
     setIsLoadingBalance(true);
     setError(null);
     try {
       const res = await fetch(`/api/stores/${encodeURIComponent(storeId)}/collecto/available-balance`);
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error("Failed to fetch payout balance");
+        throw new Error(data?.error || "Failed to fetch payout balance");
       }
-      const data = await res.json();
       setPayoutBalance({
         availableBalance: data.availableBalance,
         payoutAmount: data.payoutAmount,
@@ -185,7 +185,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
     } finally {
       setIsLoadingBalance(false);
     }
-  };
+  }, [storeId]);
 
   const handleInitiatePayout = async () => {
     if (!payoutBalance || payoutBalance.payoutAmount <= 0) {
@@ -206,9 +206,9 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || "Payout initiation failed");
+        throw new Error(data?.error || "Payout initiation failed");
       }
       setSuccess(`Payout of UGX ${data.payoutAmount.toLocaleString()} initiated successfully!`);
       setPayoutBalance(null);
@@ -223,7 +223,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
     if (storeId) {
       void fetchPayoutBalance();
     }
-  }, [storeId]);
+  }, [fetchPayoutBalance, storeId]);
 
   return (
     <div className="space-y-8 p-6">
