@@ -81,7 +81,7 @@ Move collected funds from your Collecto Wallet into your Bulk Account. This is t
 {
   "amount": "500000",
   "reference": "BATCH-2026-03-10",
-  "withDrawTo": "mobilemoney"
+  "withDrawTo": "BULK"
 }
 ```
 

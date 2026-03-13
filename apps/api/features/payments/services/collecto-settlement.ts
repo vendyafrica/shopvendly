@@ -25,6 +25,8 @@ type CollectoSettlementContext = {
   tenantId: string;
   storeId: string;
   orderNumber: string;
+  grossAmount: number;
+  feeAmount: number;
   existingMeta: CollectoMeta;
   settlementOrderIds: string[];
   settlementAmount: number;
@@ -39,6 +41,7 @@ const SETTLEMENT_STATUS_FAILED = "failed" as const;
 const WITHDRAW_STATUS_ATTEMPTS = 8;
 const PAYOUT_STATUS_ATTEMPTS = 8;
 const STATUS_DELAY_MS = 2500;
+const COLLECTO_COLLECTION_FEE_RATE = 0.03;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -53,6 +56,14 @@ function normalizePhone(phone: string): string {
 
 function normalizeStatus(value: unknown): CollectoStepStatus {
   return normalizeCollectoBusinessStatus(value);
+}
+
+function calculateCollectoFee(amount: number) {
+  return Math.round(amount * COLLECTO_COLLECTION_FEE_RATE);
+}
+
+function calculateNetSettlementAmount(amount: number) {
+  return Math.max(amount - calculateCollectoFee(amount), 0);
 }
 
 function readNumericCandidate(payload: CollectoPayload, keys: string[]): number | null {
@@ -167,26 +178,6 @@ async function listUnsettledSuccessfulMobileMoneyOrders(tenantId: string) {
   return tenantOrders.filter((candidate) => candidate.collectoMeta?.settlementStatus !== SETTLEMENT_STATUS_SUCCESSFUL);
 }
 
-async function markSettlementBatchSuccessful(orderIds: string[], settledAtIso: string) {
-  await Promise.all(
-    orderIds.map(async (id) => {
-      const currentMeta = await getOrderCollectoMeta(id);
-      const batchIds = Array.from(new Set([...(currentMeta.settlementBatchOrderIds ?? []), ...orderIds]));
-
-      await patchCollectoMeta(id, {
-        settlementStatus: SETTLEMENT_STATUS_SUCCESSFUL,
-        settlementBatchOrderIds: batchIds,
-        settledAt: settledAtIso,
-        lastError: null,
-      });
-    }),
-  );
-}
-
-async function patchSettlementBatch(orderIds: string[], patch: Partial<CollectoMeta>) {
-  await Promise.all(orderIds.map((id) => patchCollectoMeta(id, patch)));
-}
-
 async function pollTransactionStatus(method: string, transactionId: string, attempts: number) {
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const response = await collectoApiFetch(method, { transactionId }, { timeoutMs: 5000 });
@@ -272,35 +263,22 @@ async function getSettlementContext(orderId: string): Promise<CollectoSettlement
 
   const existingMeta = order.collectoMeta ?? {};
   const unsettledOrders = await listUnsettledSuccessfulMobileMoneyOrders(order.tenantId);
-  if (!unsettledOrders.some((candidate) => candidate.id === order.id)) {
-    return {
-      orderId: order.id,
-      tenantId: order.tenantId,
-      storeId: order.storeId,
-      orderNumber: order.orderNumber,
-      existingMeta,
-      settlementOrderIds: [order.id],
-      settlementAmount: order.totalAmount,
-      settlementLabel: order.orderNumber,
-    };
-  }
-
-  const settlementOrderIds = unsettledOrders.map((candidate) => candidate.id);
-  const settlementAmount = unsettledOrders.reduce((sum, candidate) => sum + candidate.totalAmount, 0);
-  const settlementLabel =
-    unsettledOrders.length === 1
-      ? unsettledOrders[0]?.orderNumber || order.orderNumber
-      : `${unsettledOrders.length} mobile money orders`;
+  const targetOrder = unsettledOrders.find((candidate) => candidate.id === order.id);
+  const grossAmount = targetOrder?.totalAmount ?? order.totalAmount;
+  const feeAmount = calculateCollectoFee(grossAmount);
+  const settlementAmount = calculateNetSettlementAmount(grossAmount);
 
   return {
     orderId: order.id,
     tenantId: order.tenantId,
     storeId: order.storeId,
     orderNumber: order.orderNumber,
+    grossAmount,
+    feeAmount,
     existingMeta,
-    settlementOrderIds,
+    settlementOrderIds: [order.id],
     settlementAmount,
-    settlementLabel,
+    settlementLabel: order.orderNumber,
   };
 }
 
@@ -326,9 +304,6 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
   await patchCollectoMeta(targetOrderId, {
     settlementStatus: SETTLEMENT_STATUS_PROCESSING,
     lastError: null,
-  });
-
-  await patchSettlementBatch(settlementOrderIds, {
     settlementBatchOrderIds: settlementOrderIds,
   });
 
@@ -339,7 +314,7 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
   const walletTransferReference = existingMeta.walletTransfer?.reference || `COLLECTO-BULK-${targetOrderId}`;
 
   if (walletTransferAmount <= 0) {
-    await patchSettlementBatch(settlementOrderIds, {
+    await patchCollectoMeta(targetOrderId, {
       walletTransfer: {
         reference: walletTransferReference,
         amount: 0,
@@ -374,7 +349,12 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
   if (!walletTransactionId || walletTransferStatus === SETTLEMENT_STATUS_FAILED) {
     const transferResponse = await collectoApiFetch(
       "withdrawFromWallet",
-      { amount: String(walletTransferAmount), reference: walletTransferReference, withDrawTo: "BULK" },
+      {
+        amount: String(walletTransferAmount),
+        reference: walletTransferReference,
+        withDrawTo: "BULK",
+        withdrawTo: "BULK",
+      },
       { timeoutMs: 8000 },
     );
     const transferPayload = (transferResponse.json ?? {}) as CollectoPayload;
@@ -382,7 +362,7 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
     walletTransferStatus = normalizeStatus(readCollectoStatus(transferPayload));
     walletTransferMessage = readCollectoMessage(transferPayload);
 
-    await patchSettlementBatch(settlementOrderIds, {
+    await patchCollectoMeta(targetOrderId, {
       walletTransfer: {
         reference: walletTransferReference,
         transactionId: walletTransactionId,
@@ -436,7 +416,7 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
       WITHDRAW_STATUS_ATTEMPTS,
     );
 
-    await patchSettlementBatch(settlementOrderIds, {
+    await patchCollectoMeta(targetOrderId, {
       walletTransfer: {
         reference: walletTransferReference,
         transactionId: walletTransactionId,
@@ -506,9 +486,6 @@ export async function runCollectoPayoutForOrder(orderId: string) {
   await patchCollectoMeta(targetOrderId, {
     settlementStatus: SETTLEMENT_STATUS_PROCESSING,
     lastError: null,
-  });
-
-  await patchSettlementBatch(settlementOrderIds, {
     settlementBatchOrderIds: settlementOrderIds,
   });
 
@@ -544,7 +521,7 @@ export async function runCollectoPayoutForOrder(orderId: string) {
     payoutStatus = normalizeStatus(readCollectoStatus(payoutPayload));
     payoutMessage = readCollectoMessage(payoutPayload);
 
-    await patchSettlementBatch(settlementOrderIds, {
+    await patchCollectoMeta(targetOrderId, {
       payout: {
         reference: payoutReference,
         transactionId: payoutTransactionId,
@@ -595,7 +572,7 @@ export async function runCollectoPayoutForOrder(orderId: string) {
 
   if (payoutStatus !== SETTLEMENT_STATUS_SUCCESSFUL) {
     const payoutStatusResult = await pollPayoutStatus(payoutReference, payoutGateway, PAYOUT_STATUS_ATTEMPTS);
-    await patchSettlementBatch(settlementOrderIds, {
+    await patchCollectoMeta(targetOrderId, {
       payout: {
         reference: payoutReference,
         transactionId: payoutTransactionId,
@@ -645,7 +622,12 @@ export async function runCollectoPayoutForOrder(orderId: string) {
   }
 
   const settledAtIso = new Date().toISOString();
-  await markSettlementBatchSuccessful(settlementOrderIds, settledAtIso);
+  await patchCollectoMeta(targetOrderId, {
+    settlementStatus: SETTLEMENT_STATUS_SUCCESSFUL,
+    settlementBatchOrderIds: settlementOrderIds,
+    settledAt: settledAtIso,
+    lastError: null,
+  });
   const finalMeta = await getOrderCollectoMeta(targetOrderId);
   await trackCollectoSettlement({
     orderId: targetOrderId,
@@ -672,6 +654,9 @@ export async function runCollectoPayoutForOrder(orderId: string) {
       stage: "settlement_completed",
       settledAt: settledAtIso,
       settlementOrderIds,
+      grossAmount: context.grossAmount,
+      feeAmount: context.feeAmount,
+      netSettlementAmount: settlementAmount,
     },
   });
   console.info("[Collecto] settlement:success", {
