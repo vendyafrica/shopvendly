@@ -42,6 +42,7 @@ const WITHDRAW_STATUS_ATTEMPTS = 12;
 const PAYOUT_STATUS_ATTEMPTS = 8;
 const STATUS_DELAY_MS = 2500;
 const COLLECTO_COLLECTION_FEE_RATE = 0.03;
+const RATE_LIMIT_RETRY_DELAY_MS = 125000; // 125 seconds (5s buffer after 120s block)
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -70,6 +71,12 @@ function messageIndicatesSuccessfulWalletTransfer(message: string | null | undef
   if (!message) return false;
   const normalized = message.toLowerCase();
   return normalized.includes("withdraw completed successfully");
+}
+
+function isRateLimitError(message: string | null | undefined): boolean {
+  if (!message) return false;
+  const normalized = message.toLowerCase();
+  return normalized.includes("rate limit") || normalized.includes("blocked for");
 }
 
 function readNumericCandidate(payload: CollectoPayload, keys: string[]): number | null {
@@ -292,8 +299,8 @@ async function getSettlementContext(orderId: string): Promise<CollectoSettlement
   };
 }
 
-export async function runCollectoWalletTransferForOrder(orderId: string) {
-  console.info("[Collecto] settlement:wallet-transfer:triggered", { orderId });
+export async function runCollectoWalletTransferForOrder(orderId: string, retryCount = 0) {
+  console.info("[Collecto] settlement:wallet-transfer:triggered", { orderId, retryCount });
 
   const context = await getSettlementContext(orderId);
   if (!context) {
@@ -463,6 +470,22 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
     });
 
     if (transferStatusResult.status !== SETTLEMENT_STATUS_SUCCESSFUL) {
+      // Check if it's a rate limit error and retry if we haven't exceeded max retries
+      if (isRateLimitError(transferStatusResult.message) && retryCount < 2) {
+        console.warn("[Collecto] Rate limit detected, scheduling retry", {
+          orderId: targetOrderId,
+          retryCount,
+          delayMs: RATE_LIMIT_RETRY_DELAY_MS,
+        });
+        await patchCollectoMeta(targetOrderId, {
+          settlementStatus: SETTLEMENT_STATUS_PENDING,
+          lastError: `Rate limited. Retry ${retryCount + 1}/2 scheduled.`,
+        });
+        // Schedule retry after rate limit cooldown
+        await sleep(RATE_LIMIT_RETRY_DELAY_MS);
+        return runCollectoWalletTransferForOrder(targetOrderId, retryCount + 1);
+      }
+      
       await markSettlementFailed(
         targetOrderId,
         transferStatusResult.message || "Collecto wallet transfer did not complete successfully.",
@@ -678,6 +701,82 @@ export async function runCollectoPayoutForOrder(orderId: string) {
   });
 
   return getOrderCollectoMeta(targetOrderId);
+}
+
+export async function fetchAvailableBalance(tenantId: string): Promise<{ balance: number, orderIds: string[] }> {
+  const unsettledOrders = await listUnsettledSuccessfulMobileMoneyOrders(tenantId);
+  const orderIds: string[] = [];
+  let totalBalance = 0;
+  for (const order of unsettledOrders) {
+    if (order.collectoMeta?.walletTransfer?.status === "successful") {
+        totalBalance += (order.collectoMeta?.walletTransfer?.amount ?? 0);
+        orderIds.push(order.id);
+    }
+  }
+  return { balance: totalBalance, orderIds };
+}
+
+export async function runCollectoBatchPayout(tenantId: string, storeId: string, storeName: string) {
+  const { balance, orderIds } = await fetchAvailableBalance(tenantId);
+  const payoutAmount = balance - 1200;
+
+  if (payoutAmount <= 0) {
+      throw new Error(`Insufficient funds for withdrawal. Balance is UGX ${balance}`);
+  }
+
+  const recipient = await getSellerRecipient(tenantId);
+  if (!recipient) {
+      throw new Error("Seller phone number is missing for Collecto payout.");
+  }
+
+  const payoutReference = `COLLECTO-BATCH-${Date.now()}`;
+  const payoutGateway = "mobilemoney";
+
+  const payoutResponse = await collectoApiFetch(
+      "initiatePayout",
+      {
+        gateway: payoutGateway,
+        swiftCode: "",
+        reference: payoutReference,
+        accountName: recipient.accountName,
+        accountNumber: Number(recipient.phone),
+        amount: String(payoutAmount),
+        message: `Shopvendly batch payout for ${storeName}`,
+        phone: Number(recipient.phone),
+      },
+      { timeoutMs: 8000 },
+  );
+
+  const payoutPayload = (payoutResponse.json ?? {}) as CollectoPayload;
+  const payoutTransactionId = readCollectoTransactionId(payoutPayload);
+  const payoutStatus = normalizeStatus(readCollectoStatus(payoutPayload));
+  const payoutMessage = readCollectoMessage(payoutPayload);
+
+  if (!payoutResponse.ok || payoutStatus === SETTLEMENT_STATUS_FAILED) {
+      throw new Error(payoutMessage || "Collecto payout initiation failed.");
+  }
+
+  // Update all the orders participating in this batch
+  for (const orderId of orderIds) {
+      await patchCollectoMeta(orderId, {
+          settlementStatus: SETTLEMENT_STATUS_SUCCESSFUL,
+          settlementBatchOrderIds: orderIds,
+          settledAt: new Date().toISOString(),
+          payout: {
+              reference: payoutReference,
+              transactionId: payoutTransactionId,
+              gateway: payoutGateway,
+              phone: recipient.phone,
+              accountName: recipient.accountName,
+              amount: payoutAmount,
+              status: payoutStatus,
+              message: payoutMessage,
+              updatedAt: new Date().toISOString()
+          }
+      });
+  }
+
+  return { success: true, payoutAmount, payoutStatus, payoutMessage };
 }
 
 export async function updateCollectoCollectionState(params: {

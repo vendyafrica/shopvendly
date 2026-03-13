@@ -1,13 +1,13 @@
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
-import { and, db, eq, gt, isNull, orders } from "@shopvendly/db";
+import { and, db, eq, gt, isNull, orders, stores } from "@shopvendly/db";
 import { collectoApiFetch } from "./collecto-http.js";
 import {
   normalizeCollectoBusinessStatus,
   readCollectoMessage,
   readCollectoStatus,
 } from "../services/collecto-payload.js";
-import { updateCollectoCollectionState } from "../services/collecto-settlement.js";
+import { updateCollectoCollectionState, fetchAvailableBalance, runCollectoBatchPayout } from "../services/collecto-settlement.js";
 import { handlePaidOrderTransition, handleFailedOrderTransition } from "../services/payment-order-transition.js";
 
 export const collectoReconcileRouter: ExpressRouter = Router();
@@ -340,6 +340,75 @@ collectoReconcileRouter.post("/storefront/:slug/payments/collecto/reconcile-orde
       });
     }
   } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/stores/:storeId/collecto/available-balance
+ * 
+ * Fetch the available balance for manual payout (orders with successful wallet transfer)
+ */
+collectoReconcileRouter.get("/api/stores/:storeId/collecto/available-balance", async (req, res, next) => {
+  try {
+    const { storeId } = req.params;
+
+    const store = await db.query.stores.findFirst({
+      where: and(eq(stores.id, storeId), isNull(stores.deletedAt)),
+      columns: { id: true, tenantId: true },
+    });
+
+    if (!store || !store.tenantId) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    const { balance, orderIds } = await fetchAvailableBalance(store.tenantId);
+    const payoutAmount = Math.max(balance - 1200, 0);
+
+    return res.status(200).json({
+      ok: true,
+      availableBalance: balance,
+      payoutAmount,
+      payoutFee: 1200,
+      orderCount: orderIds.length,
+      orderIds,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/stores/:storeId/collecto/initiate-payout
+ * 
+ * Manually initiate batch payout for all unsettled orders
+ */
+collectoReconcileRouter.post("/api/stores/:storeId/collecto/initiate-payout", async (req, res, next) => {
+  try {
+    const { storeId } = req.params;
+
+    const store = await db.query.stores.findFirst({
+      where: and(eq(stores.id, storeId), isNull(stores.deletedAt)),
+      columns: { id: true, name: true, tenantId: true },
+    });
+
+    if (!store || !store.tenantId) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    const result = await runCollectoBatchPayout(store.tenantId, store.id, store.name || "Store");
+
+    return res.status(200).json({
+      ok: true,
+      ...result,
+    });
+  } catch (err) {
+    if (err instanceof Error) {
+      return res.status(400).json({ 
+        ok: false,
+        error: err.message 
+      });
+    }
     next(err);
   }
 });

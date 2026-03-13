@@ -76,12 +76,15 @@ export async function handlePaidOrderTransition(params: HandlePaidOrderTransitio
   await Promise.allSettled(jobs);
 
   if (full.paymentMethod === "mobile_money" && full.paymentStatus === "paid") {
-    void runCollectoSettlementForOrder(full.id).catch((error) => {
-      console.error("[Collecto] settlement:background-error", {
-        orderId: full.id,
-        error,
+    // Add 5-second delay before settlement to avoid rate limiting
+    setTimeout(() => {
+      void runCollectoSettlementForOrder(full.id).catch((error) => {
+        console.error("[Collecto] settlement:background-error", {
+          orderId: full.id,
+          error,
+        });
       });
-    });
+    }, 5000);
   }
 
   return full;

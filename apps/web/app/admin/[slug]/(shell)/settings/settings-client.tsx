@@ -57,6 +57,9 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
   const [isSavingPolicy, setIsSavingPolicy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
+  const [payoutBalance, setPayoutBalance] = React.useState<{ availableBalance: number; payoutAmount: number; orderCount: number } | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = React.useState(false);
+  const [isInitiatingPayout, setIsInitiatingPayout] = React.useState(false);
   const storeId = bootstrap?.storeId ?? store.id;
   const isCurrencyBusy = isSavingCurrency;
   const isLogoBusy = isSavingLogo || isUploading;
@@ -162,6 +165,65 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
       return;
     }
   };
+
+  const fetchPayoutBalance = async () => {
+    setIsLoadingBalance(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/stores/${encodeURIComponent(storeId)}/collecto/available-balance`);
+      if (!res.ok) {
+        throw new Error("Failed to fetch payout balance");
+      }
+      const data = await res.json();
+      setPayoutBalance({
+        availableBalance: data.availableBalance,
+        payoutAmount: data.payoutAmount,
+        orderCount: data.orderCount,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to fetch payout balance");
+    } finally {
+      setIsLoadingBalance(false);
+    }
+  };
+
+  const handleInitiatePayout = async () => {
+    if (!payoutBalance || payoutBalance.payoutAmount <= 0) {
+      setError("Insufficient balance for payout");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Initiate payout of UGX ${payoutBalance.payoutAmount.toLocaleString()} (${payoutBalance.orderCount} orders)?`
+    );
+    if (!confirmed) return;
+
+    setIsInitiatingPayout(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch(`/api/stores/${encodeURIComponent(storeId)}/collecto/initiate-payout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "Payout initiation failed");
+      }
+      setSuccess(`Payout of UGX ${data.payoutAmount.toLocaleString()} initiated successfully!`);
+      setPayoutBalance(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to initiate payout");
+    } finally {
+      setIsInitiatingPayout(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (storeId) {
+      void fetchPayoutBalance();
+    }
+  }, [storeId]);
 
   return (
     <div className="space-y-8 p-6">
@@ -292,6 +354,43 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
                 ) : "Save policy"}
               </Button>
             </div>
+          </div>
+
+          <div className="rounded-lg border bg-card p-4 space-y-3">
+            <div className="text-xs uppercase text-muted-foreground">Collecto Payout</div>
+            {isLoadingBalance ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <HugeiconsIcon icon={Loading03Icon} className="h-4 w-4 animate-spin" />
+                Loading balance...
+              </div>
+            ) : payoutBalance ? (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground">Available Balance</div>
+                  <div className="text-2xl font-bold">UGX {payoutBalance.availableBalance.toLocaleString()}</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground">After Payout Fee (UGX 1,200)</div>
+                  <div className="text-xl font-semibold text-emerald-600">UGX {payoutBalance.payoutAmount.toLocaleString()}</div>
+                  <div className="text-xs text-muted-foreground">{payoutBalance.orderCount} unsettled order{payoutBalance.orderCount !== 1 ? 's' : ''}</div>
+                </div>
+                <Button 
+                  type="button" 
+                  onClick={handleInitiatePayout} 
+                  disabled={isInitiatingPayout || payoutBalance.payoutAmount <= 0}
+                  className="w-full"
+                >
+                  {isInitiatingPayout ? (
+                    <>
+                      <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" />
+                      Initiating...
+                    </>
+                  ) : `Initiate Payout (UGX ${payoutBalance.payoutAmount.toLocaleString()})`}
+                </Button>
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">No unsettled orders available for payout.</div>
+            )}
           </div>
         </div>
 
