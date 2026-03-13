@@ -40,8 +40,6 @@ const SETTLEMENT_STATUS_FAILED = "failed" as const;
 
 const PAYOUT_STATUS_ATTEMPTS = 8;
 const STATUS_DELAY_MS = 2500;
-const BULK_BALANCE_WAIT_ATTEMPTS = 6;
-const BULK_BALANCE_DELAY_MS = 5000;
 const COLLECTO_COLLECTION_FEE_RATE = 0.03;
 const COLLECTO_PAYOUT_FEE = 1200;
 
@@ -209,42 +207,26 @@ async function pollPayoutStatus(reference: string, gateway: string, attempts: nu
   return { status: "pending" as const, message: "Collecto payout is still pending.", payload: {} as CollectoPayload };
 }
 
-async function waitForBulkBalance(requiredAmount: number, attempts = BULK_BALANCE_WAIT_ATTEMPTS) {
-  let lastKnownBalance = 0;
-  let lastMessage: string | null = null;
-  let lastPayload = {} as CollectoPayload;
+async function fetchBulkBalance(requiredAmount: number) {
+  const response = await collectoApiFetch("currentBalance", { type: "BULK" }, { timeoutMs: 10000 });
+  const payload = (response.json ?? {}) as CollectoPayload;
+  const balance = response.ok ? readBalance(payload) ?? 0 : 0;
+  const message = readCollectoMessage(payload);
 
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    const response = await collectoApiFetch("currentBalance", { type: "BULK" }, { timeoutMs: 10000 });
-    const payload = (response.json ?? {}) as CollectoPayload;
-    const balance = response.ok ? readBalance(payload) ?? 0 : 0;
-    const message = readCollectoMessage(payload);
-
-    lastKnownBalance = balance;
-    lastMessage = message;
-    lastPayload = payload;
-
-    if (response.ok && balance >= requiredAmount) {
-      return {
-        status: "successful" as const,
-        balance,
-        message: message ?? `Bulk balance is ready for payout (${balance}).`,
-        payload,
-      };
-    }
-
-    if (attempt < attempts) {
-      await sleep(BULK_BALANCE_DELAY_MS);
-    }
-  }
+  console.info("[Collecto] settlement:bulk-balance:check", {
+    requiredAmount,
+    currentBalance: balance,
+    ok: response.ok,
+    sufficient: balance >= requiredAmount,
+  });
 
   return {
-    status: "pending" as const,
-    balance: lastKnownBalance,
+    status: response.ok && balance >= requiredAmount ? ("successful" as const) : ("pending" as const),
+    balance,
     message:
-      lastMessage ??
-      `Bulk balance is still below the required payout amount. Available: ${lastKnownBalance}, required: ${requiredAmount}.`,
-    payload: lastPayload,
+      message ??
+      `Bulk balance is below the required payout amount. Available: ${balance}, required: ${requiredAmount}.`,
+    payload,
   };
 }
 
@@ -471,13 +453,25 @@ export async function runCollectoPayoutForOrder(orderId: string) {
     return null;
   }
 
-  const bulkBalanceResult = await waitForBulkBalance(settlementAmount);
+  const payoutReference = existingMeta.payout?.reference || `COLLECTO-PAYOUT-${targetOrderId}`;
+  const payoutGateway = existingMeta.payout?.gateway || "mobilemoney";
+  const payoutAmount = Math.max(settlementAmount - COLLECTO_PAYOUT_FEE, 0);
+  let payoutTransactionId = existingMeta.payout?.transactionId || null;
+  let payoutStatus = existingMeta.payout?.status ?? SETTLEMENT_STATUS_PENDING;
+  let payoutMessage = existingMeta.payout?.message ?? null;
+
+  if (payoutAmount <= 0) {
+    await markSettlementFailed(targetOrderId, `Payout amount after fee is zero or negative. Settlement: ${settlementAmount}, Fee: ${COLLECTO_PAYOUT_FEE}`);
+    return null;
+  }
+
+  const bulkBalanceResult = await fetchBulkBalance(payoutAmount);
   if (bulkBalanceResult.status !== SETTLEMENT_STATUS_SUCCESSFUL) {
     await markSettlementFailed(
       targetOrderId,
-      `Bulk balance not ready for payout. Available: ${bulkBalanceResult.balance}, required: ${settlementAmount}.`,
+      `Bulk balance is insufficient for payout. Available: ${bulkBalanceResult.balance}, required: ${payoutAmount}.`,
       {
-        walletTransfer: {
+        payout: {
           message: bulkBalanceResult.message ?? undefined,
           updatedAt: new Date().toISOString(),
         },
@@ -499,23 +493,12 @@ export async function runCollectoPayoutForOrder(orderId: string) {
     walletTransferStatus: existingMeta.walletTransfer?.status ?? null,
     walletTransferMessage: existingMeta.walletTransfer?.message ?? null,
     rawMetadata: {
-      stage: "bulk_balance_ready",
+      stage: "bulk_balance_checked",
       bulkBalance: bulkBalanceResult.balance,
+      requiredPayoutAmount: payoutAmount,
       response: bulkBalanceResult.payload,
     },
   });
-
-  const payoutReference = existingMeta.payout?.reference || `COLLECTO-PAYOUT-${targetOrderId}`;
-  const payoutGateway = existingMeta.payout?.gateway || "mobilemoney";
-  const payoutAmount = Math.max(settlementAmount - COLLECTO_PAYOUT_FEE, 0);
-  let payoutTransactionId = existingMeta.payout?.transactionId || null;
-  let payoutStatus = existingMeta.payout?.status ?? SETTLEMENT_STATUS_PENDING;
-  let payoutMessage = existingMeta.payout?.message ?? null;
-
-  if (payoutAmount <= 0) {
-    await markSettlementFailed(targetOrderId, `Payout amount after fee is zero or negative. Settlement: ${settlementAmount}, Fee: ${COLLECTO_PAYOUT_FEE}`);
-    return null;
-  }
 
   if (!payoutTransactionId || payoutStatus === SETTLEMENT_STATUS_FAILED) {
     const payoutResponse = await collectoApiFetch(
@@ -716,7 +699,7 @@ export async function runCollectoBatchPayout(tenantId: string, storeId: string, 
       throw new Error("Seller phone number is missing for Collecto payout.");
   }
 
-  const bulkBalanceResult = await waitForBulkBalance(payoutAmount);
+  const bulkBalanceResult = await fetchBulkBalance(payoutAmount);
   if (bulkBalanceResult.status !== SETTLEMENT_STATUS_SUCCESSFUL) {
       throw new Error(`Bulk balance not ready for payout. Available: ${bulkBalanceResult.balance}, required: ${payoutAmount}.`);
   }
