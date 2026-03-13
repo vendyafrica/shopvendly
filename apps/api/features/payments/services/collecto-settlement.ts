@@ -38,7 +38,7 @@ const SETTLEMENT_STATUS_PROCESSING = "processing" as const;
 const SETTLEMENT_STATUS_SUCCESSFUL = "successful" as const;
 const SETTLEMENT_STATUS_FAILED = "failed" as const;
 
-const WITHDRAW_STATUS_ATTEMPTS = 8;
+const WITHDRAW_STATUS_ATTEMPTS = 12;
 const PAYOUT_STATUS_ATTEMPTS = 8;
 const STATUS_DELAY_MS = 2500;
 const COLLECTO_COLLECTION_FEE_RATE = 0.03;
@@ -64,6 +64,12 @@ function calculateCollectoFee(amount: number) {
 
 function calculateNetSettlementAmount(amount: number) {
   return Math.max(amount - calculateCollectoFee(amount), 0);
+}
+
+function messageIndicatesSuccessfulWalletTransfer(message: string | null | undefined) {
+  if (!message) return false;
+  const normalized = message.toLowerCase();
+  return normalized.includes("withdraw completed successfully");
 }
 
 function readNumericCandidate(payload: CollectoPayload, keys: string[]): number | null {
@@ -190,6 +196,10 @@ async function pollTransactionStatus(method: string, transactionId: string, atte
     }
 
     if (status === "successful") {
+      return { status: "successful" as const, message, payload };
+    }
+
+    if (method === "withdrawFromWalletStatus" && messageIndicatesSuccessfulWalletTransfer(message)) {
       return { status: "successful" as const, message, payload };
     }
 
