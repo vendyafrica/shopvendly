@@ -92,6 +92,18 @@ function readNumericCandidate(payload: CollectoPayload, keys: string[]): number 
         return parsed;
       }
     }
+    if (candidate && typeof candidate === "object" && !Array.isArray(candidate)) {
+      const nestedAmount = (candidate as Record<string, unknown>).amount;
+      if (typeof nestedAmount === "number" && Number.isFinite(nestedAmount)) {
+        return nestedAmount;
+      }
+      if (typeof nestedAmount === "string") {
+        const parsed = Number(nestedAmount.replace(/,/g, "").trim());
+        if (Number.isFinite(parsed)) {
+          return parsed;
+        }
+      }
+    }
   }
 
   return null;
