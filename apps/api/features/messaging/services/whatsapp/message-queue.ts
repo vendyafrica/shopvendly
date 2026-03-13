@@ -91,7 +91,7 @@ async function publishToQstash(payload: QueuePayload) {
     return;
   }
 
-  const endpoint = `${qstashBaseUrl.replace(/\/$/, "")}/v2/publish/${encodeURIComponent(deliveryUrl)}`;
+  const endpoint = `${qstashBaseUrl.replace(/\/$/, "")}/v2/publish/${deliveryUrl}`;
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
