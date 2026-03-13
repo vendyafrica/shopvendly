@@ -10,11 +10,11 @@ export function Features() {
         {/* Section Header */}
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-semibold md:text-4xl">
-            Everything you need to run your <br/> social business in one place.
+            Everything you need to run your <br/> online store from social media.
           </h2>
           <p className="text-muted-foreground mt-4 text-lg">
-            Stop juggling DMs, payment screenshots, spreadsheets, and delivery riders.
-            Vendly organizes your entire operation into one simple system.
+            Stop managing orders in DMs, payments by screenshot, and delivery by guesswork.
+            ShopVendly gives social sellers one simple system to run their store.
           </p>
         </div>
 
@@ -25,11 +25,11 @@ export function Features() {
           <Card className="space-y-4 p-6">
             <HugeiconsIcon icon={ShoppingBag01Icon} className="size-6" />
             <h3 className="text-xl font-medium">
-              All Orders in One admin
+              Manage Orders in One Place
             </h3>
             <p className="text-muted-foreground">
-              Capture Instagram and TikTok inquiries automatically. Confirm,
-              track, and manage every order without losing messages in DMs.
+              Collect orders from Instagram, TikTok, and WhatsApp in one admin.
+              Confirm, track, and manage everything without losing sales in DMs.
             </p>
           </Card>
 
@@ -37,10 +37,10 @@ export function Features() {
           <Card className="space-y-4 p-6">
             <HugeiconsIcon icon={CreditCardIcon} className="size-6" />
             <h3 className="text-xl font-medium">
-              Seamless Payments
+              Simple Payments
             </h3>
             <p className="text-muted-foreground">
-              Send secure checkout links and get paid instantly.
+              Send secure checkout links and accept payments without the back-and-forth.
               No more manual confirmations or payment screenshots.
             </p>
           </Card>
@@ -49,11 +49,11 @@ export function Features() {
           <Card className="space-y-4 p-6">
             <HugeiconsIcon icon={DeliveryTruck01Icon} className="size-6" />
             <h3 className="text-xl font-medium">
-              Automated Delivery
+              Delivery Made Easier
             </h3>
             <p className="text-muted-foreground">
-              Book delivery, track parcels, and update customers automatically —
-              from pickup to doorstep.
+              Book delivery, track parcels, and keep customers updated from pickup
+              to doorstep.
             </p>
           </Card>
 
@@ -61,23 +61,22 @@ export function Features() {
           <Card className="space-y-4 p-6">
             <HugeiconsIcon icon={Store02Icon} className="size-6" />
             <h3 className="text-xl font-medium">
-              Instant Storefront
+              Simple Online Store
             </h3>
             <p className="text-muted-foreground">
-              Turn your social profile into a clean, shareable online store.
-              No coding. No design work.
+              Turn your Instagram, TikTok, or WhatsApp business into a clean,
+              shareable online store. No coding. No design work.
             </p>
           </Card>
 
-          {/* Discovery */}
           <Card className="space-y-4 p-6">
             <HugeiconsIcon icon={Search01Icon} className="size-6" />
             <h3 className="text-xl font-medium">
-              Marketplace Discovery
+              Reach More Buyers
             </h3>
             <p className="text-muted-foreground">
-              List your products on shopvendly&apos;s marketplace and reach buyers
-              actively searching — not just your followers.
+              List your products on ShopVendly&apos;s marketplace and reach buyers
+              already searching — not just the people who follow you.
             </p>
           </Card>
 
@@ -85,11 +84,11 @@ export function Features() {
           <Card className="space-y-4 p-6">
             <HugeiconsIcon icon={LoginSquare02Icon} className="size-6" />
             <h3 className="text-xl font-medium">
-              Simple Business Insights
+              Clear Business Insights
             </h3>
             <p className="text-muted-foreground">
-              Track sales, revenue, and performance in real time —
-              so you can grow with clarity.
+              Track sales, revenue, and performance in real time so you can make
+              better decisions as your business grows.
             </p>
           </Card>
 

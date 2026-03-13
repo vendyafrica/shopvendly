@@ -11,21 +11,21 @@ import Link from "next/link";
 const faqs = [
   {
     id: "item-1",
-    question: "Do I need a website to use Vendly?",
+    question: "Do I need a website to use ShopVendly?",
     answer:
-      "No. Vendly creates an instant storefront for you. You can sell directly from Instagram, TikTok, and WhatsApp without building a website.",
+      "No. ShopVendly gives you a simple online store for your Instagram, TikTok, or WhatsApp business without building a website from scratch.",
   },
   {
     id: "item-2",
-    question: "How does Vendly handle orders from Instagram and TikTok?",
+    question: "How does ShopVendly handle orders from Instagram and TikTok?",
     answer:
-      "Customers place orders through your Vendly store link. All orders appear in one admin where you can confirm, track, and manage them easily.",
+      "Customers order through your ShopVendly store link, and every order appears in one admin where you can confirm, track, and manage it easily.",
   },
   {
     id: "item-3",
     question: "How do I receive payments?",
     answer:
-      "Vendly provides secure checkout links for your customers. Payments are processed instantly and recorded automatically in your admin.",
+      "ShopVendly provides secure checkout links so customers can pay easily, and your payment records stay organized in one place.",
   },
   {
     id: "item-4",
@@ -35,9 +35,9 @@ const faqs = [
   },
   {
     id: "item-6",
-    question: "Is Vendly hard to set up?",
+    question: "Is ShopVendly hard to set up?",
     answer:
-      "No. You can create your storefront and start selling in minutes. No coding, design, or technical knowledge required.",
+      "No. You can create your storefront and start selling in minutes without coding, design work, or technical complexity.",
   },
 ];
 
@@ -49,12 +49,12 @@ export function FAQs() {
           <div className="@xl:sticky @xl:top-24 @xl:w-64 shrink-0">
             <h2 className="font-serif text-3xl font-medium">FAQs</h2>
             <p className="text-muted-foreground mt-3 text-sm">
-              Your questions answered
+              Answers for social sellers and growing businesses
             </p>
             <p className="text-muted-foreground @xl:block mt-6 hidden text-sm">
               Need more help?{" "}
               <Link
-                href="#"
+                href="/contact"
                 className="text-primary font-medium hover:underline"
               >
                 Contact us
@@ -79,7 +79,7 @@ export function FAQs() {
             <p className="text-muted-foreground @xl:hidden mt-6 text-sm">
               Need more help?{" "}
               <Link
-                href="#"
+                href="/contact"
                 className="text-primary font-medium hover:underline"
               >
                 Contact us

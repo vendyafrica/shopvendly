@@ -6,7 +6,7 @@ import { CheckmarkSquareFreeIcons } from "@hugeicons/core-free-icons"
 
 const plan = {
   name: "Pro",
-  description: "Everything you need to run your social business.",
+  description: "Everything you need to run your social commerce business simply.",
   price: "UGX 30,000",
   period: "/month",
   trial: "14-day free trial",
@@ -30,7 +30,7 @@ export function Pricing() {
         </h2>
 
         <p className="text-muted-foreground mt-4 text-lg">
-          Start free for 14 days. No setup fees. Cancel anytime.
+          Start free for 14 days and run your online store, orders, payments, and delivery from one simple platform.
         </p>
 
         <div className="mt-12">

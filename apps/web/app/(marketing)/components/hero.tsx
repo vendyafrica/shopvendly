@@ -26,16 +26,17 @@ export function Hero() {
         <div className="relative text-center space-y-4">
           <div className="flex items-center justify-center">
             <Badge variant="secondary" className="rounded-full px-3 red py-1 text-[11px] uppercase tracking-[0.2em]">
-              Social commerce Simplified
+              Built for social sellers in Africa
             </Badge>
           </div>
-          <p className="text-muted-foreground text-sm">Launch and scale your Instagram storefront in minutes.</p>
+          <p className="text-muted-foreground text-sm">Sell from Instagram, TikTok, and WhatsApp without the complexity.</p>
           <h1 className="mt-6 text-4xl font-medium">
-            Run your entire social media <br />shop in one place.
+            The simple way to run your online store from social media
           </h1>
           <p className="text-muted-foreground mx-auto mb-6 mt-4 text-balance text-xl">
-            Stop juggling DMs, payments, and delivery manually. ShopVendly turns
-            your Instagram into a fully managed storefront.
+            ShopVendly helps social sellers and growing businesses in Africa
+            create an online store, manage orders, accept payments, and handle
+            delivery from one simple platform.
           </p>
 
           <div className="flex flex-col items-center gap-2 *:w-full sm:flex-row sm:justify-center sm:*:w-auto">
@@ -47,12 +48,12 @@ export function Hero() {
             >
               <span className="flex items-center gap-2">
                 {isPending && <Loader2 className="size-4 animate-spin" aria-hidden />}
-                <span className="text-nowrap">{isPending ? "Redirecting..." : "Get Started"}</span>
+                <span className="text-nowrap">{isPending ? "Redirecting..." : "Create Your Store"}</span>
               </span>
             </Button>
             <Button variant="ghost" className="px-8 h-11 rounded-full">
-              <Link href="https://vendly.shopvendly.store/" target="_blank" rel="noreferrer">
-                <span className="text-nowrap">View Demo</span>
+              <Link href="/pricing">
+                <span className="text-nowrap">See Pricing</span>
               </Link>
             </Button>
           </div>

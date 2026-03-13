@@ -3,12 +3,12 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
-  description: "Terms and conditions for using the Duuka marketplace.",
+  description: "Terms and conditions for using ShopVendly.",
   alternates: { canonical: "/terms" },
 };
 
-const SUPPORT_EMAIL = "support@vendlyafrica.store";
-const APP_NAME = "Vendly Africa";
+const SUPPORT_EMAIL = "support@shopvendly.store";
+const APP_NAME = "ShopVendly";
 const JURISDICTION = "Uganda";
 
 export default function TermsPage() {
