@@ -40,6 +40,7 @@ const SETTLEMENT_STATUS_FAILED = "failed" as const;
 
 const PAYOUT_STATUS_ATTEMPTS = 8;
 const STATUS_DELAY_MS = 2500;
+const BULK_BALANCE_PROPAGATION_DELAY_MS = 10000;
 const COLLECTO_COLLECTION_FEE_RATE = 0.03;
 const COLLECTO_PAYOUT_FEE = 1200;
 
@@ -463,6 +464,18 @@ export async function runCollectoPayoutForOrder(orderId: string) {
   if (payoutAmount <= 0) {
     await markSettlementFailed(targetOrderId, `Payout amount after fee is zero or negative. Settlement: ${settlementAmount}, Fee: ${COLLECTO_PAYOUT_FEE}`);
     return null;
+  }
+
+  if (
+    existingMeta.walletTransfer?.status === SETTLEMENT_STATUS_SUCCESSFUL &&
+    (existingMeta.walletTransfer?.amount ?? 0) > 0
+  ) {
+    console.info("[Collecto] settlement:payout:awaiting-bulk-propagation", {
+      orderId: targetOrderId,
+      delayMs: BULK_BALANCE_PROPAGATION_DELAY_MS,
+      walletTransferAmount: existingMeta.walletTransfer?.amount ?? 0,
+    });
+    await sleep(BULK_BALANCE_PROPAGATION_DELAY_MS);
   }
 
   const bulkBalanceResult = await fetchBulkBalance(payoutAmount);
