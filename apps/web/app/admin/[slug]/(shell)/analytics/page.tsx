@@ -105,15 +105,32 @@ export default function AnalyticsPage() {
     },
   ];
 
-  const revenueData: RevenuePoint[] = (data?.timeseries || []).map((p) => ({
-    date: p.date,
-    total: p.revenuePaid,
-  }));
+  // Fill missing dates
+  const to = new Date();
+  const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
+  
+  const revenueSeriesMap = new Map((data?.timeseries || []).map((p) => [p.date, p.revenuePaid]));
+  const visitsSeriesMap = new Map((data?.traffic.timeseries || []).map((p) => [p.date, p.visits]));
 
-  const visitsData: VisitsPoint[] = (data?.traffic.timeseries || []).map((p) => ({
-    date: p.date,
-    visits: p.visits,
-  }));
+  const revenueData: RevenuePoint[] = Array.from({ length: 31 }).map((_, i) => {
+    const day = new Date(from.getTime());
+    day.setDate(from.getDate() + i);
+    const isoDate = day.toISOString().slice(0, 10);
+    return {
+      date: isoDate,
+      total: revenueSeriesMap.get(isoDate) ?? 0,
+    };
+  });
+
+  const visitsData: VisitsPoint[] = Array.from({ length: 31 }).map((_, i) => {
+    const day = new Date(from.getTime());
+    day.setDate(from.getDate() + i);
+    const isoDate = day.toISOString().slice(0, 10);
+    return {
+      date: isoDate,
+      visits: visitsSeriesMap.get(isoDate) ?? 0,
+    };
+  });
 
   const revenueTotalLabel = data ? formatCurrency(data.kpis.revenuePaid, currency) : "—";
   const visitsTotalLabel = data ? data.traffic.visits.toLocaleString() : "—";

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   ChartContainer,
   ChartTooltip,
@@ -8,6 +9,7 @@ import {
 } from "@shopvendly/ui/components/chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shopvendly/ui/components/select";
 
 export type VisitsPoint = {
   date: string;
@@ -23,6 +25,10 @@ export function VisitsAreaChartCard({
   totalLabel: string;
   data: VisitsPoint[];
 }) {
+  const [timeRange, setTimeRange] = useState<"7d" | "30d">("30d");
+
+  const filteredData = timeRange === "7d" ? data.slice(-7) : data;
+
   const chartConfig = {
     visits: {
       label: "Visits",
@@ -32,25 +38,50 @@ export function VisitsAreaChartCard({
 
   return (
     <Card className="w-full">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-base">{title}</CardTitle>
-        <div className="text-3xl font-bold text-foreground">{totalLabel}</div>
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+        <div className="space-y-1">
+          <CardTitle className="text-base">{title}</CardTitle>
+          <div className="text-3xl font-bold text-foreground">{totalLabel}</div>
+        </div>
+        <Select value={timeRange} onValueChange={(value: any) => setTimeRange(value)}>
+          <SelectTrigger className="w-[120px] rounded-lg border-border sm:ml-auto h-8 bg-muted/20" size="sm">
+            <SelectValue placeholder="Time range" />
+          </SelectTrigger>
+          <SelectContent align="end" className="rounded-xl">
+            <SelectItem value="30d">Last 30 days</SelectItem>
+            <SelectItem value="7d">Last 7 days</SelectItem>
+          </SelectContent>
+        </Select>
       </CardHeader>
-      <CardContent className="px-3 pb-3">
-        <ChartContainer config={chartConfig} className="aspect-auto h-[260px] w-full md:h-[340px]">
+      <CardContent className="p-0">
+        <ChartContainer config={chartConfig} className="block! aspect-auto! h-[220px] w-full md:h-[320px]">
           <AreaChart
             accessibilityLayer
-            data={data}
+            data={filteredData}
             margin={{
-              left: 18,
-              right: 18,
-              top: 20,
-              bottom: 20,
+              left: 4,
+              right: 8,
+              top: 12,
+              bottom: 0,
             }}
           >
-            <CartesianGrid vertical={false} />
-            <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
-            <YAxis tickLine={false} axisLine={false} width={42} tickMargin={10} padding={{ top: 8, bottom: 8 }} />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />
+            <XAxis 
+              dataKey="date" 
+              tickLine={false} 
+              axisLine={false} 
+              tickMargin={8}
+              minTickGap={32}
+              tick={{ fontSize: 11 }}
+            />
+            <YAxis 
+              tickLine={false} 
+              axisLine={false} 
+              width={28} 
+              tickMargin={2} 
+              padding={{ top: 8, bottom: 8 }} 
+              tick={{ fontSize: 10 }}
+            />
             <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
             <defs>
               <linearGradient id="fillVisits" x1="0" y1="0" x2="0" y2="1">
@@ -59,7 +90,7 @@ export function VisitsAreaChartCard({
               </linearGradient>
             </defs>
             <Area
-              type="monotone"
+              type="natural"
               dataKey="visits"
               stroke="var(--foreground)"
               strokeWidth={2}

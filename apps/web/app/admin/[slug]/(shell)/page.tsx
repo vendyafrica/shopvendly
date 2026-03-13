@@ -121,7 +121,7 @@ export default async function AdminPage({
 
     db
       .select({
-        distinctCustomers: sql<number>`COALESCE(COUNT(DISTINCT ${orders.customerEmail}), 0)::int`,
+        distinctCustomers: sql<number>`COALESCE(COUNT(DISTINCT COALESCE(${orders.customerEmail}, ${orders.customerPhone})), 0)::int`,
       })
       .from(orders)
       .where(wherePaidOrders)
@@ -141,7 +141,7 @@ export default async function AdminPage({
       .select({
         revenuePaid: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)::int`,
         ordersPaid: sql<number>`COALESCE(COUNT(*), 0)::int`,
-        distinctCustomers: sql<number>`COALESCE(COUNT(DISTINCT ${orders.customerEmail}), 0)::int`,
+        distinctCustomers: sql<number>`COALESCE(COUNT(DISTINCT COALESCE(${orders.customerEmail}, ${orders.customerPhone})), 0)::int`,
       })
       .from(orders)
       .where(wherePrevOrders)
