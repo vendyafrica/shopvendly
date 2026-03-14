@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@shopvendly/ui/components/button";
-import { Badge } from "@shopvendly/ui/components/badge";
 
 export function Hero() {
   const router = useRouter();
@@ -24,24 +23,18 @@ export function Hero() {
     <section className="py-20">
       <div className="relative z-10 mx-auto w-full max-w-2xl px-6 lg:px-0">
         <div className="relative text-center space-y-4">
-          <div className="flex items-center justify-center">
-            <Badge variant="secondary" className="rounded-full px-3 red py-1 text-[11px] uppercase tracking-[0.2em]">
-              Built for social sellers in Africa
-            </Badge>
-          </div>
-          <p className="text-muted-foreground text-sm">Sell from Instagram, TikTok, and WhatsApp without the complexity.</p>
+          <p className="text-muted-foreground text-sm">Sell from Instagram, TikTok, and WhatsApp without the chaos.</p>
           <h1 className="mt-6 text-4xl font-medium">
-            The simple way to run your online store from social media
+            Run your online store without juggling apps
           </h1>
           <p className="text-muted-foreground mx-auto mb-6 mt-4 text-balance text-xl">
-            ShopVendly helps social sellers and growing businesses in Africa
-            create an online store, manage orders, accept payments, and handle
-            delivery from one simple platform.
+            ShopVendly gives you one place to run an online store, manage orders, accept payments,
+            and handle delivery.
           </p>
 
           <div className="flex flex-col items-center gap-2 *:w-full sm:flex-row sm:justify-center sm:*:w-auto">
             <Button
-              className="px-8 h-11 rounded-full"
+              className="px-8 h-11 rounded-md"
               onClick={handleGetStarted}
               disabled={isPending}
               aria-live="polite"
@@ -51,7 +44,7 @@ export function Hero() {
                 <span className="text-nowrap">{isPending ? "Redirecting..." : "Create Your Store"}</span>
               </span>
             </Button>
-            <Button variant="ghost" className="px-8 h-11 rounded-full">
+            <Button variant="ghost" className="px-8 h-11 rounded-md">
               <Link href="/pricing">
                 <span className="text-nowrap">See Pricing</span>
               </Link>

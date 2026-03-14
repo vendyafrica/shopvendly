@@ -18,9 +18,9 @@ const geistMono = Geist_Mono({
 
 const siteUrl = "https://shopvendly.store";
 const vendlyUrl = "https://shopvendly.store";
-const defaultTitle = "ShopVendly | Social commerce storefronts & marketplace";
+const defaultTitle = "ShopVendly | Simple Online Store for Social Sellers in Africa";
 const defaultDescription =
-  "Build and shop storefronts from Instagram and TikTok sellers. Onboard in minutes, collect orders, and sell through the ShopVendly marketplace.";
+  "ShopVendly lets Instagram, TikTok, and WhatsApp sellers in Africa run a real store: publish products, track orders, charge mobile money, and dispatch delivery from one dashboard.";
 const defaultImage = `${siteUrl}/og-image.png`;
 
 export const viewport: Viewport = {
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "ShopVendly | Discover & Shop from social sellers",
+    title: "ShopVendly | Online Store for Instagram, TikTok & WhatsApp Sellers",
     description: defaultDescription,
     url: siteUrl,
     siteName: "ShopVendly",
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
         url: defaultImage,
         width: 1200,
         height: 630,
-        alt: "ShopVendly — Marketplace for your favorite social sellers",
+        alt: "ShopVendly — Simple online store for social sellers in Africa",
       },
     ],
     locale: "en_UG",
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ShopVendly | Discover & Shop from social sellers",
+    title: "ShopVendly | Online Store for Instagram, TikTok & WhatsApp Sellers",
     description: defaultDescription,
     images: [defaultImage],
     site: "@vendlyafrica",
@@ -91,11 +91,6 @@ const jsonLdGraph = {
         height: 512,
       },
       description: defaultDescription,
-      parentOrganization: {
-        "@type": "Organization",
-        name: "Vendly Africa",
-        url: vendlyUrl,
-      },
       areaServed: [
         { "@type": "Country", name: "Uganda" },
         { "@type": "Place", name: "East Africa" },
@@ -132,12 +127,12 @@ const jsonLdGraph = {
       browserRequirements: "Requires JavaScript",
       creator: { "@id": `${siteUrl}/#organization` },
       featureList: [
-        "Pinterest-style visual product browsing",
-        "Direct WhatsApp ordering",
-        "Independent African brand storefronts",
-        "Mobile-first marketplace experience",
-        "Category-based store discovery",
-        "Secure mobile money payments",
+        "Create a simple online store from Instagram, TikTok, or WhatsApp",
+        "Collect orders and manage fulfillment in one admin",
+        "Send secure checkout links and accept mobile money payments",
+        "Book delivery and keep customers updated automatically",
+        "List products on ShopVendly to reach buyers already searching",
+        "Mobile-first experience built for African sellers",
       ],
       offers: {
         "@type": "Offer",
@@ -152,7 +147,7 @@ const jsonLdGraph = {
       "@id": `${siteUrl}/#marketplace`,
       name: "African Brands & Stores on ShopVendly",
       description:
-        "Browse curated storefronts from African creators, fashion brands, and small businesses.",
+        "Browse online stores from African creators, boutiques, and growing social commerce brands.",
       itemListOrder: "https://schema.org/ItemListUnordered",
       numberOfItems: 0,
     },

@@ -10,7 +10,7 @@ import { Pricing } from "./components/pricing";
 export const metadata: Metadata = {
   title: "ShopVendly | Online Store for Instagram, TikTok & WhatsApp Sellers",
   description:
-    "Create a simple online store for your Instagram, TikTok, or WhatsApp business. ShopVendly helps you manage orders, payments, and delivery in one place.",
+    "Create a simple online store for your Instagram, TikTok, or WhatsApp business. Run orders, payments, and delivery in one place with ShopVendly.",
   alternates: {
     canonical: "/",
   },

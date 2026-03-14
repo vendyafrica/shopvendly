@@ -52,7 +52,7 @@ export function FAQs() {
               Answers for social sellers and growing businesses
             </p>
             <p className="text-muted-foreground @xl:block mt-6 hidden text-sm">
-              Need more help?{" "}
+              Have questions?{" "}
               <Link
                 href="/contact"
                 className="text-primary font-medium hover:underline"
@@ -77,7 +77,7 @@ export function FAQs() {
               ))}
             </Accordion>
             <p className="text-muted-foreground @xl:hidden mt-6 text-sm">
-              Need more help?{" "}
+              Have questions?{" "}
               <Link
                 href="/contact"
                 className="text-primary font-medium hover:underline"
