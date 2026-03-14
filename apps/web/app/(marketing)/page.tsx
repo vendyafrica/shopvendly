@@ -3,14 +3,11 @@ import { FAQs } from "./components/faq";
 import { Footer } from "./components/footer";
 import { Hero } from "./components/hero";
 import { Features } from "./components/features";
-import { Integrations } from "./components/integrations";
-import { Content } from "./components/content";
-import { Pricing } from "./components/pricing";
 
 export const metadata: Metadata = {
-  title: "ShopVendly | Online Store for Instagram, TikTok & WhatsApp Sellers",
+  title: "ShopVendly | Simpler commerce for African stores",
   description:
-    "Create a simple online store for your Instagram, TikTok, or WhatsApp business. Run orders, payments, and delivery in one place with ShopVendly.",
+    "The simpler, cheaper way to run an African store online. Sell, get paid, book delivery, and get discovered from one place.",
   alternates: {
     canonical: "/",
   },
@@ -20,10 +17,7 @@ export default function LandingPage() {
   return (
     <div className="scroll-smooth">
       <Hero />
-      <Integrations />
       <Features />
-      <Content />
-      <Pricing />
       <FAQs />
       <Footer />
     </div>

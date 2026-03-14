@@ -11,33 +11,33 @@ import Link from "next/link";
 const faqs = [
   {
     id: "item-1",
-    question: "Do I need a website to use ShopVendly?",
+    question: "Why not just sell on Instagram?",
     answer:
-      "No. ShopVendly gives you a simple online store for your Instagram, TikTok, or WhatsApp business without building a website from scratch.",
+      "Instagram is good for attention, but not for running the whole store. ShopVendly gives you checkout, payments, delivery, and order tracking in one place.",
   },
   {
     id: "item-2",
-    question: "How does ShopVendly handle orders from Instagram and TikTok?",
+    question: "Do I need a website first?",
     answer:
-      "Customers order through your ShopVendly store link, and every order appears in one admin where you can confirm, track, and manage it easily.",
+      "No. ShopVendly gives you a storefront you can share from Instagram, TikTok, WhatsApp, and anywhere else you sell.",
   },
   {
     id: "item-3",
-    question: "How do I receive payments?",
+    question: "How do payments work?",
     answer:
-      "ShopVendly provides secure checkout links so customers can pay easily, and your payment records stay organized in one place.",
+      "Customers pay through your ShopVendly checkout, and your payment records stay tied to the right orders inside your dashboard.",
   },
   {
     id: "item-4",
-    question: "Do you handle delivery?",
+    question: "Can I manage delivery too?",
     answer:
-      "Yes. You can book delivery directly from your admin and track parcels in real time. Customers also receive delivery updates automatically.",
+      "Yes. You can book delivery from your admin, track orders, and keep customers updated without handling everything manually.",
   },
   {
     id: "item-6",
-    question: "Is ShopVendly hard to set up?",
+    question: "Who is ShopVendly for?",
     answer:
-      "No. You can create your storefront and start selling in minutes without coding, design work, or technical complexity.",
+      "It is for African stores that want something simpler and cheaper than heavy ecommerce tools, with local payments, delivery, and marketplace reach built in.",
   },
 ];
 
@@ -47,9 +47,9 @@ export function FAQs() {
       <div className="mx-auto max-w-3xl px-6">
         <div className="@xl:flex-row @xl:items-start @xl:gap-12 flex flex-col gap-8">
           <div className="@xl:sticky @xl:top-24 @xl:w-64 shrink-0">
-            <h2 className="font-serif text-3xl font-medium">FAQs</h2>
+            <h2 className="font-serif text-3xl font-medium">Questions</h2>
             <p className="text-muted-foreground mt-3 text-sm">
-              Answers for social sellers and growing businesses
+              Short answers before you create your store.
             </p>
             <p className="text-muted-foreground @xl:block mt-6 hidden text-sm">
               Have questions?{" "}

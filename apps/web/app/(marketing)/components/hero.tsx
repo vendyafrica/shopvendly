@@ -1,11 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@shopvendly/ui/components/button";
+
+const navItems = [
+  { label: "About", href: "/about" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "FAQ", href: "/faq" },
+  { label: "Contact", href: "/contact" },
+  { label: "Marketplace", href: "/m" },
+];
+
+const heroHighlights = [
+  "Local mobile-money payments",
+  "Delivery booking",
+  "Marketplace discovery",
+  "Affordable storefront",
+  "Inventory & order tracking",
+];
 
 export function Hero() {
   const router = useRouter();
@@ -20,56 +35,78 @@ export function Hero() {
   };
 
   return (
-    <section className="py-20">
-      <div className="relative z-10 mx-auto w-full max-w-2xl px-6 lg:px-0">
-        <div className="relative text-center space-y-4">
-          <p className="text-muted-foreground text-sm">Sell from Instagram, TikTok, and WhatsApp without the chaos.</p>
-          <h1 className="mt-6 text-4xl font-medium">
-            Run your online store without juggling apps
-          </h1>
-          <p className="text-muted-foreground mx-auto mb-6 mt-4 text-balance text-xl">
-            ShopVendly gives you one place to run an online store, manage orders, accept payments,
-            and handle delivery.
-          </p>
-
-          <div className="flex flex-col items-center gap-2 *:w-full sm:flex-row sm:justify-center sm:*:w-auto">
-            <Button
-              className="px-8 h-11 rounded-md"
-              onClick={handleGetStarted}
-              disabled={isPending}
-              aria-live="polite"
-            >
-              <span className="flex items-center gap-2">
-                {isPending && <Loader2 className="size-4 animate-spin" aria-hidden />}
-                <span className="text-nowrap">{isPending ? "Redirecting..." : "Create Your Store"}</span>
-              </span>
-            </Button>
-            <Button variant="ghost" className="px-8 h-11 rounded-md">
-              <Link href="/pricing">
-                <span className="text-nowrap">See Pricing</span>
+    <section className="bg-background">
+      <div className="mx-auto flex min-h-[90vh] max-w-6xl flex-col px-6 pb-16 pt-8 lg:px-12">
+        <header className="flex items-center justify-between gap-6">
+          <Link
+            href="/"
+            className="flex items-center text-3xl font-black tracking-tight text-foreground"
+          >
+            <span>sh</span>
+            <span className="text-primary">o</span>
+            <span>pvend</span>
+            <span className="text-primary">ly</span>
+          </Link>
+          <nav className="hidden items-center gap-8 text-[11px] font-medium tracking-[0.16em] text-foreground/70 lg:flex">
+            {navItems.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="transition hover:text-foreground"
+              >
+                {item.label}
               </Link>
-            </Button>
+            ))}
+          </nav>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/account"
+              className="hidden text-xs font-medium  tracking-[0.14em] text-foreground/80 transition hover:text-foreground sm:inline-flex"
+            >
+              Sign In
+            </Link>
           </div>
-        </div>
+        </header>
 
-        <div className="relative mt-12 overflow-hidden rounded-3xl bg-black/10 md:mt-16">
-          <Image
-            src="https://images.unsplash.com/photo-1547623641-d2c56c03e2a7?q=80&w=3087&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-            alt=""
-            className="absolute inset-0 size-full object-cover"
-            width={100}
-            height={100}
-          />
+        <div className="flex flex-1 items-center justify-center text-center">
+          <div className="max-w-3xl py-16">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
+              Shopify for African stores
+            </p>
+            <h1 className="mt-4 text-5xl font-semibold tracking-tight text-foreground sm:text-6xl">
+              Solving your store management problems, one solution at a time.
+            </h1>
+            <p className="mt-6 text-lg text-muted-foreground">
+              Simplify orders, payments, delivery, and marketplace discovery in one dashboard that is
+              cheaper and built for local workflows.
+            </p>
 
-          <div className="bg-background rounded-lg relative m-4 overflow-hidden border border-transparent shadow-xl shadow-black/15 ring-1 ring-black/10 sm:m-8 md:m-12">
-            <video
-              className="size-full object-cover"
-              src="https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYlWrxxrQBAQ3F5fmNoip8XJaL29zWqSOv4EgV"
-              autoPlay
-              muted
-              loop
-              playsInline
-            />
+            <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+              <Button
+                className="h-12 rounded-full px-8 text-sm font-semibold"
+                onClick={handleGetStarted}
+                disabled={isPending}
+              >
+                <span className="flex items-center gap-2">
+                  {isPending && <Loader2 className="size-4 animate-spin" aria-hidden />}
+                  <span>{isPending ? "Redirecting..." : "Get Started"}</span>
+                </span>
+              </Button>
+              <Button variant="outline" className="h-12 rounded-full px-8">
+                <Link href="/pricing">See Pricing</Link>
+              </Button>
+            </div>
+
+            <div className="mt-12 flex flex-wrap justify-center gap-3">
+              {heroHighlights.map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full border border-border/70 bg-white px-4 py-2 text-xs font-medium text-foreground/80 shadow-sm"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </div>

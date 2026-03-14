@@ -20,7 +20,7 @@ const siteUrl = "https://shopvendly.store";
 const vendlyUrl = "https://shopvendly.store";
 const defaultTitle = "ShopVendly | Simple Online Store for Social Sellers in Africa";
 const defaultDescription =
-  "ShopVendly lets Instagram, TikTok, and WhatsApp sellers in Africa run a real store: publish products, track orders, charge mobile money, and dispatch delivery from one dashboard.";
+  "ShopVendly is the simpler, cheaper way to run an African store online with local payments, delivery, and marketplace discovery built in.";
 const defaultImage = `${siteUrl}/og-image.png`;
 
 export const viewport: Viewport = {
