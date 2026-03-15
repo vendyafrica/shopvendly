@@ -21,37 +21,31 @@ interface ProductCardProps {
 
 const FALLBACK_PRODUCT_IMAGE = "https://cdn.cosmos.so/25e7ef9d-3d95-486d-b7db-f0d19c1992d7?format=jpeg";
 
-// More subtle aspect ratio variations
-const aspectVariants = [
-  "aspect-[3/4]",
-  "aspect-[4/5]",
-  "aspect-[4/5]",
-  "aspect-[3/4]",
-  "aspect-[5/6]",
-];
-
 export function ProductCard({ title, slug, price, originalPrice, discountPercent, image, contentType, index = 0, storeSlug }: ProductCardProps) {
   const params = useParams();
-  const [imageError, setImageError] = useState(false);
+  const [mediaError, setMediaError] = useState(false);
 
   const paramsObject = typeof params === "object" ? (params as Record<string, string | undefined>) : {};
   const derivedStoreSlug = storeSlug ?? paramsObject.handle ?? paramsObject.s;
-  const aspectClass = aspectVariants[index % aspectVariants.length];
 
   const originalImageUrl = image || FALLBACK_PRODUCT_IMAGE;
-  const currentImageUrl = imageError ? FALLBACK_PRODUCT_IMAGE : originalImageUrl;
+  const currentImageUrl = mediaError ? FALLBACK_PRODUCT_IMAGE : originalImageUrl;
 
-  const isVideo = !imageError && isLikelyVideoMedia({ url: currentImageUrl, contentType });
+  const isVideo = !mediaError && isLikelyVideoMedia({ url: currentImageUrl, contentType });
 
   const prefetchedHref = derivedStoreSlug ? getStorefrontUrl(derivedStoreSlug, `/${slug}`) : `/${slug}`;
+  const shouldUnoptimize =
+    currentImageUrl.includes(".ufs.sh") ||
+    currentImageUrl.includes("utfs.io") ||
+    currentImageUrl.includes(".cdninstagram.com") ||
+    currentImageUrl.includes(".fbcdn.net");
 
   return (
     <Link
       href={prefetchedHref}
-      className="group block break-inside-avoid mb-6 sm:mb-7 transition-transform duration-300 hover:-translate-y-1"
+      className="group block transition-transform duration-300 hover:-translate-y-1"
     >
-      {/* Image Container */}
-      <div className={`relative overflow-hidden rounded-md ${aspectClass} bg-neutral-100`}>
+      <div className="relative overflow-hidden rounded-md bg-neutral-100 aspect-4/5 sm:aspect-3/4">
         {isVideo ? (
           <video
             src={currentImageUrl}
@@ -60,7 +54,8 @@ export function ProductCard({ title, slug, price, originalPrice, discountPercent
             playsInline
             loop
             preload="metadata"
-            onError={() => setImageError(true)}
+            poster={FALLBACK_PRODUCT_IMAGE}
+            onError={() => setMediaError(true)}
           />
         ) : currentImageUrl ? (
           <Image
@@ -68,10 +63,10 @@ export function ProductCard({ title, slug, price, originalPrice, discountPercent
             alt={title}
             fill
             priority={index < 4}
-            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
-            unoptimized={currentImageUrl.includes(".ufs.sh") || currentImageUrl.includes("utfs.io") || currentImageUrl.includes(".cdninstagram.com") || currentImageUrl.includes(".fbcdn.net")}
-            onError={() => !imageError && setImageError(true)}
+            unoptimized={shouldUnoptimize}
+            onError={() => !mediaError && setMediaError(true)}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground">

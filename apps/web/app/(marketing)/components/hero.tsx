@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@shopvendly/ui/components/button";
+import { Highlighter } from "@/components/ui/highlighter";
+import { Iphone } from "@/components/ui/iphone";
 import { Marquee } from "@/components/ui/marquee";
 import { Header } from "./header";
 
@@ -29,45 +31,76 @@ export function Hero() {
 
   return (
     <section className="bg-background">
-      <div className="mx-auto flex min-h-[78vh] max-w-6xl flex-col px-6 pb-8 pt-6 lg:px-12">
+      <div className="mx-auto max-w-7xl px-6 pb-8 pt-6 lg:px-8">
         <Header />
-        <div className="flex flex-1 items-center justify-center text-center">
-          <div className="max-w-3xl py-16">
-            <h1 className="mt-4 text-5xl text-black/80 font-semibold">
-              The platform your online
-              <br /> business runs on.
-            </h1>
-            <p className="mt-6 text-lg text-muted-foreground">
-              Your store. Your payments. Your delivery. One link to share. Free
-              to start.
-            </p>
-
-            <div className="mt-8 flex items-center gap-4 justify-center">
-              <Button
-                className="h-11 rounded-md px-10 text-sm font-semibold"
-                onClick={handleGetStarted}
-                disabled={isPending}
-              >
-                <span className="flex items-center gap-2">
-                  {isPending && (
-                    <Loader2 className="size-4 animate-spin" aria-hidden />
-                  )}
-                  <span>{isPending ? "Redirecting..." : "Get Started"}</span>
+        <div className="mt-6 overflow-hidden rounded-[2rem] bg-primary/10 px-6 py-12 sm:px-10 lg:px-14 lg:py-16">
+          <div className="grid items-center gap-12 lg:min-h-[620px] lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.75fr)]">
+            <div className="max-w-2xl">
+              <h1 className="text-4xl font-semibold tracking-tight text-black/85 sm:text-5xl lg:text-6xl lg:leading-[1.05]">
+                Sell online with
+                <br />
+                payments and{" "}
+                <span className="rounded-md bg-primary/15 px-1.5 py-0.5">
+                  <Highlighter
+                    action="highlight"
+                    color="hsl(var(--primary) / 0.35)"
+                    strokeWidth={2}
+                    padding={4}
+                  >
+                    delivery
+                  </Highlighter>
                 </span>
-              </Button>
+                <br />
+                built for African businesses
+              </h1>
+
+              <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
+                Publish products, collect mobile money, track orders, and
+                dispatch delivery from one storefront you can share anywhere.
+              </p>
+
+              <div className="mt-8 flex flex-wrap items-center gap-4">
+                <Button
+                  variant="outline"
+                  className="h-11 rounded-full border-white/70 bg-white px-6 text-sm font-semibold text-foreground shadow-sm hover:bg-white"
+                >
+                  See demo
+                </Button>
+                <Button
+                  className="h-11 rounded-full px-6 text-sm font-semibold"
+                  onClick={handleGetStarted}
+                  disabled={isPending}
+                >
+                  <span className="flex items-center gap-2">
+                    {isPending && (
+                      <Loader2 className="size-4 animate-spin" aria-hidden />
+                    )}
+                    <span>{isPending ? "Redirecting..." : "Get started"}</span>
+                  </span>
+                </Button>
+              </div>
+
+              <div className="mt-10">
+                <Marquee className="gap-4" pauseOnHover>
+                  {heroHighlights.map((item) => (
+                    <span
+                      key={item}
+                      className="mx-3 rounded-full border border-border/70 bg-white px-4 py-2 text-xs font-medium text-foreground/80 shadow-sm"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </Marquee>
+              </div>
             </div>
 
-            <div className="mt-12">
-              <Marquee className="gap-4" pauseOnHover>
-                {heroHighlights.map((item) => (
-                  <span
-                    key={item}
-                    className="mx-3 rounded-full border border-border/70 bg-white px-4 py-2 text-xs font-medium text-foreground/80 shadow-sm"
-                  >
-                    {item}
-                  </span>
-                ))}
-              </Marquee>
+            <div className="flex justify-center lg:justify-center">
+              <div className="w-full max-w-[250px] sm:max-w-[290px] lg:max-w-[320px]">
+                <Iphone
+                  src="https://cdn.cosmos.so/ca8ae899-9ce5-40a9-a3d1-da285d32f671?format=jpeg"
+                  className="drop-shadow-[0_30px_70px_rgba(15,23,42,0.28)]"
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -20,8 +20,8 @@ export function Header() {
         <Image
           src="/vendly.png"
           alt="ShopVendly icon"
-          width={36}
-          height={36}
+          width={28}
+          height={28}
           className="mr-2"
         />
         <span className="text-black/80">vend</span>
