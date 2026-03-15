@@ -9,50 +9,14 @@ export function Pricing() {
                 <div className="mx-auto max-w-2xl space-y-6 text-center">
 
                     <h1 className="text-center text-4xl font-semibold lg:text-5xl">
-                        Start free. Grow on your terms.
+                        One plan for serious growth.
                     </h1>
                     <p className="text-muted-foreground">
-                        No setup fees. No hidden costs. Pay only when your business is ready to scale.
+                        Everything you need to run a professional social storefront, take payments, and scale operations in one paid plan.
                     </p>
                 </div>
 
-                <div className="mt-8 grid gap-6 md:mt-20 lg:grid-cols-2">
-                    {/* Free Plan */}
-                    <div className="rounded-(--radius) flex h-full flex-col justify-between space-y-8 border p-6 lg:p-10">
-                        <div className="space-y-4">
-                            <div>
-                                <h2 className="font-medium">Free</h2>
-                                <span className="my-3 block text-2xl font-semibold">UGX 0 / mo</span>
-                                <p className="text-muted-foreground text-sm">
-
-                                    For anyone getting started. No card required.
-                                </p>
-                            </div>
-
-                            <Button variant="outline" className="w-full">
-                                <Link href="/signup">Get Started Free</Link>
-                            </Button>
-
-                            <hr className="border-dashed" />
-
-                            <ul className="list-outside space-y-3 text-sm">
-                                {[
-                                    'Your own Vendly storefront link',
-                                    'Up to 20 product listings',
-                                    'Mobile money checkout',
-                                    'Order and inventory tracking',
-                                    'Vendly marketplace listing',
-                                ].map((item, index) => (
-                                    <li key={index} className="flex items-center gap-2">
-                                        <Check className="size-3" />
-                                        {item}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-
-                    {/* Pro Plan */}
+                <div className="mx-auto mt-8 max-w-2xl md:mt-20">
                     <div className="dark:bg-muted rounded-(--radius) flex h-full flex-col justify-between border p-6 shadow-lg shadow-gray-950/5 lg:p-10 dark:[--color-muted:var(--color-zinc-900)]">
                         <div className="space-y-4">
                             <div>
@@ -67,8 +31,7 @@ export function Pricing() {
                                     For sellers who want advanced tools, stronger branding, and faster operations.
                                 </p>
                             </div>
-
-                            <div className="text-sm font-medium">Everything in Free, plus:</div>
+                            <div className="text-sm font-medium">What&apos;s included:</div>
                             <ul className="list-outside space-y-3 text-sm">
                                 {[
                                     'Unlimited product listings',
@@ -89,13 +52,9 @@ export function Pricing() {
                             </ul>
                         </div>
 
-                        <div className="mt-8 space-y-3">
+                        <div className="mt-8">
                             <Button className="w-full">
                                 <Link href="/signup?plan=pro">Start Pro</Link>
-                            </Button>
-
-                            <Button variant="outline" className="w-full">
-                                <Link href="/students">Apply for Student Access</Link>
                             </Button>
                         </div>
                     </div>
