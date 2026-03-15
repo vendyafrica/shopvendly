@@ -1,93 +1,64 @@
-"use client";
-
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@shopvendly/ui/components/accordion";
-import Link from "next/link";
-
-const faqs = [
-  {
-    id: "item-1",
-    question: "Why not just sell on Instagram?",
-    answer:
-      "Instagram is good for attention, but not for running the whole store. ShopVendly gives you checkout, payments, delivery, and order tracking in one place.",
-  },
-  {
-    id: "item-2",
-    question: "Do I need a website first?",
-    answer:
-      "No. ShopVendly gives you a storefront you can share from Instagram, TikTok, WhatsApp, and anywhere else you sell.",
-  },
-  {
-    id: "item-3",
-    question: "How do payments work?",
-    answer:
-      "Customers pay through your ShopVendly checkout, and your payment records stay tied to the right orders inside your dashboard.",
-  },
-  {
-    id: "item-4",
-    question: "Can I manage delivery too?",
-    answer:
-      "Yes. You can book delivery from your admin, track orders, and keep customers updated without handling everything manually.",
-  },
-  {
-    id: "item-6",
-    question: "Who is ShopVendly for?",
-    answer:
-      "It is for African stores that want something simpler and cheaper than heavy ecommerce tools, with local payments, delivery, and marketplace reach built in.",
-  },
-];
-
 export function FAQs() {
-  return (
-    <section className="bg-background @container py-24">
-      <div className="mx-auto max-w-3xl px-6">
-        <div className="@xl:flex-row @xl:items-start @xl:gap-12 flex flex-col gap-8">
-          <div className="@xl:sticky @xl:top-24 @xl:w-64 shrink-0">
-            <h2 className="font-serif text-3xl font-medium">Questions</h2>
-            <p className="text-muted-foreground mt-3 text-sm">
-              Short answers before you create your store.
-            </p>
-            <p className="text-muted-foreground @xl:block mt-6 hidden text-sm">
-              Have questions?{" "}
-              <Link
-                href="/contact"
-                className="text-primary font-medium hover:underline"
-              >
-                Contact us
-              </Link>
-            </p>
-          </div>
-          <div className="flex-1">
-            <Accordion>
-              {faqs.map((item) => (
-                <AccordionItem key={item.id} value={item.id}>
-                  <AccordionTrigger className="cursor-pointer py-4 text-sm font-medium hover:no-underline">
-                    {item.question}
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <p className="text-muted-foreground pb-2 text-sm">
-                      {item.answer}
-                    </p>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-            <p className="text-muted-foreground @xl:hidden mt-6 text-sm">
-              Have questions?{" "}
-              <Link
-                href="/contact"
-                className="text-primary font-medium hover:underline"
-              >
-                Contact us
-              </Link>
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+    return (
+        <section className="scroll-py-16 py-16 md:scroll-py-32 md:py-32">
+            <div className="mx-auto max-w-5xl px-6">
+                <div className="grid gap-y-12 px-2 lg:grid-cols-[1fr_auto]">
+                    <div className="text-center lg:text-left">
+                        <h2 className="mb-4 text-3xl font-semibold md:text-4xl">
+                            Frequently <br className="hidden lg:block" /> Asked <br className="hidden lg:block" />
+                            Questions
+                        </h2>
+                        <p className="text-muted-foreground">
+                            Can&apos;t find your answer? <br className="hidden lg:block" />
+                            Message us on WhatsApp.
+                        </p>
+                    </div>
+
+                    <div className="divide-y divide-dashed sm:mx-auto sm:max-w-lg lg:mx-0">
+                        <div className="pb-6">
+                            <h3 className="font-medium">Is Vendly really free to start?</h3>
+                            <p className="text-muted-foreground mt-4">
+                                Yes. You can create your store, list up to 20 products, and start accepting mobile money payments at no cost. No credit card required. You only upgrade when you need more.
+                            </p>
+                        </div>
+
+                        <div className="py-6">
+                            <h3 className="font-medium">How does the student plan work?</h3>
+                            <p className="text-muted-foreground mt-4">
+                                If you&apos;re a university student with a valid student ID, you get Vendly Pro free for 12 months. Apply with your student email or ID and we&apos;ll activate your account within 24 hours.
+                            </p>
+                        </div>
+
+                        <div className="py-6">
+                            <h3 className="font-medium">Which payment methods does Vendly support?</h3>
+                            <p className="text-muted-foreground mt-4">
+                                Vendly supports MTN Mobile Money and Airtel Money out of the box. Payments are confirmed automatically — no screenshots, no back and forth.
+                            </p>
+                        </div>
+
+                        <div className="py-6">
+                            <h3 className="font-medium">How does delivery work?</h3>
+                            <p className="text-muted-foreground mt-4">
+                                On the Pro plan you can connect your preferred delivery partner directly in your dashboard. When an order comes in, Vendly coordinates the pickup. Your customer gets updates automatically.
+                            </p>
+                        </div>
+
+                        <div className="py-6">
+                            <h3 className="font-medium">Is Vendly a marketplace like Jumia?</h3>
+                            <p className="text-muted-foreground mt-4">
+                                Not exactly. Vendly gives you your own storefront — your brand, your link, your customers. You also get listed on the Vendly marketplace so buyers who don&apos;t follow you can still find you. You own the relationship.
+                            </p>
+                        </div>
+
+                        <div className="py-6">
+                            <h3 className="font-medium">Do I need technical skills to set up my store?</h3>
+                            <p className="text-muted-foreground mt-4">
+                                No. If you can post on Instagram, you can set up a Vendly store. Most sellers are live in under 10 minutes.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    )
 }

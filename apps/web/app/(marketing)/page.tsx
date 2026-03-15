@@ -3,6 +3,8 @@ import { FAQs } from "./components/faq";
 import { Footer } from "./components/footer";
 import { Hero } from "./components/hero";
 import { Features } from "./components/features";
+import { Pricing } from "./components/pricing";
+
 
 export const metadata: Metadata = {
   title: "ShopVendly | Simpler commerce for African stores",
@@ -18,6 +20,7 @@ export default function LandingPage() {
     <div className="scroll-smooth">
       <Hero />
       <Features />
+      <Pricing/>
       <FAQs />
       <Footer />
     </div>
