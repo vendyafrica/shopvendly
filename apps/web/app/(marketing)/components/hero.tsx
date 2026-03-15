@@ -29,7 +29,7 @@ export function Hero() {
 
   return (
     <section className="bg-background">
-      <div className="mx-auto flex min-h-[90vh] max-w-6xl flex-col px-6 pb-16 pt-8 lg:px-12">
+      <div className="mx-auto flex min-h-[78vh] max-w-6xl flex-col px-6 pb-8 pt-6 lg:px-12">
         <Header />
         <div className="flex flex-1 items-center justify-center text-center">
           <div className="max-w-3xl py-16">
