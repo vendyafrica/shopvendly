@@ -11,10 +11,10 @@ export function Features() {
                             Why Vendly
                         </p>
                         <h2 className="text-foreground mt-3 text-3xl font-semibold md:text-4xl">
-                            Instagram gets the attention. Vendly runs the business behind it.
+                            Turn social media interest into paid orders without chasing people in DMs.
                         </h2>
                         <p className="text-muted-foreground mt-4 text-lg">
-                            Everything that happens after someone says "where do I buy this?" — handled.
+                            Publish products, collect mobile money, and coordinate delivery from one storefront built for sellers who grow on Instagram, TikTok, and WhatsApp.
                         </p>
                     </div>
 
@@ -24,10 +24,10 @@ export function Features() {
                         <Card className="col-span-full overflow-hidden p-8">
                             <ShoppingBag className="text-primary size-5" />
                             <h3 className="text-foreground mt-5 text-lg font-semibold">
-                                A store that works while you sleep.
+                                Publish once. Keep selling all day.
                             </h3>
                             <p className="text-muted-foreground mt-3 max-w-xl text-balance">
-                                Your Vendly store takes orders, confirms payments, and updates inventory on its own. You post the content — the store handles what comes after.
+                                Share one Vendly link in your bio and let customers browse products, place orders, and check out without waiting for a reply. Your inventory and orders stay updated automatically.
                             </p>
                             {/* Add your custom image/illustration here */}
                         </Card>
@@ -36,10 +36,10 @@ export function Features() {
                         <Card className="col-span-1 overflow-hidden p-8 md:col-span-1 lg:col-span-2">
                             <Wallet className="text-primary size-5" />
                             <h3 className="text-foreground mt-5 text-lg font-semibold">
-                                Mobile money, built in from day one.
+                                Charge mobile money like a real business.
                             </h3>
                             <p className="text-muted-foreground mt-3 text-balance">
-                                Accept MTN and Airtel Money without a third-party workaround. Every payment lands in your dashboard, confirmed, recorded, done.
+                                Accept MTN and Airtel Money directly from your storefront. Every payment is tracked, confirmed, and tied to the right order so you can stop relying on screenshots and manual follow-up.
                             </p>
                             {/* Add your custom image/illustration here */}
                         </Card>
@@ -48,10 +48,10 @@ export function Features() {
                         <Card className="col-span-1 overflow-hidden p-8">
                             <Truck className="text-primary size-5" />
                             <h3 className="text-foreground mt-5 text-lg font-semibold">
-                                Delivery without the back and forth.
+                                Dispatch delivery without the chaos.
                             </h3>
                             <p className="text-muted-foreground mt-3 text-balance">
-                                Book a rider, track the parcel, and keep your customer updated — all from the same place you took the order. No calls. No WhatsApp threads.
+                                Move from paid order to delivered package faster. Manage fulfillment, track dispatch, and keep customers updated from the same dashboard you use to sell.
                             </p>
                             {/* Add your custom image/illustration here */}
                         </Card>
