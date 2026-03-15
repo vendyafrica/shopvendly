@@ -32,9 +32,13 @@ export default function AboutPage() {
     <main className="mx-auto max-w-5xl px-6 py-16">
       <section className="max-w-3xl space-y-5">
         <p className="text-sm font-medium text-primary">About ShopVendly</p>
-        <h1 className="text-4xl font-semibold tracking-tight">Online commerce for sellers who grow on social media</h1>
+        <h1 className="text-4xl font-semibold tracking-tight">
+          Online commerce for sellers who grow on social media
+        </h1>
         <p className="text-lg text-muted-foreground">
-          ShopVendly is a social commerce platform that helps sellers create online stores for Instagram and TikTok, manage orders, accept payments, and deliver a more professional shopping experience.
+          ShopVendly is a social commerce platform that helps sellers create online
+          stores for Instagram and TikTok, manage orders, accept payments, and
+          deliver a more professional shopping experience.
         </p>
       </section>
 
@@ -42,7 +46,9 @@ export default function AboutPage() {
         {pillars.map((pillar) => (
           <div key={pillar.title} className="rounded-2xl border bg-card p-6">
             <h2 className="text-xl font-semibold">{pillar.title}</h2>
-            <p className="mt-3 text-sm text-muted-foreground">{pillar.description}</p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {pillar.description}
+            </p>
           </div>
         ))}
       </section>
@@ -50,7 +56,9 @@ export default function AboutPage() {
       <section className="mt-14 max-w-3xl space-y-4">
         <h2 className="text-2xl font-semibold">What sellers use ShopVendly for</h2>
         <p className="text-muted-foreground">
-          Sellers use ShopVendly to organize products, share storefront links, collect orders from social traffic, receive mobile money payments, and get discovered through the marketplace.
+          Sellers use ShopVendly to organize products, share storefront links,
+          collect orders from social traffic, receive mobile money payments, and
+          get discovered through the marketplace.
         </p>
         <div className="flex flex-wrap gap-3 pt-2">
           <Button className="h-11 rounded-full px-6">

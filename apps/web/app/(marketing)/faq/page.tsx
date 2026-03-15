@@ -52,9 +52,12 @@ export default function FAQPage() {
     <main className="mx-auto max-w-4xl px-6 py-16">
       <section className="max-w-2xl space-y-4">
         <p className="text-sm font-medium text-primary">FAQs</p>
-        <h1 className="text-4xl font-semibold tracking-tight">Frequently asked questions about ShopVendly</h1>
+        <h1 className="text-4xl font-semibold tracking-tight">
+          Frequently asked questions about ShopVendly
+        </h1>
         <p className="text-lg text-muted-foreground">
-          Find answers about creating a store, managing orders, receiving payments, and selling more effectively through social commerce.
+          Find answers about creating a store, managing orders, receiving payments,
+          and selling more effectively through social commerce.
         </p>
       </section>
 
@@ -74,7 +77,10 @@ export default function FAQPage() {
       </section>
 
       <section className="mt-10 text-sm text-muted-foreground">
-        Need more help? <Link href="/contact" className="font-medium text-primary hover:underline">Contact us</Link>
+        Need more help?{" "}
+        <Link href="/contact" className="font-medium text-primary hover:underline">
+          Contact us
+        </Link>
       </section>
     </main>
   );

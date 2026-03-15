@@ -16,9 +16,12 @@ export default function ContactPage() {
     <main className="mx-auto max-w-4xl px-6 py-16">
       <section className="max-w-2xl space-y-4">
         <p className="text-sm font-medium text-primary">Contact</p>
-        <h1 className="text-4xl font-semibold tracking-tight">Talk to the ShopVendly team</h1>
+        <h1 className="text-4xl font-semibold tracking-tight">
+          Talk to the ShopVendly team
+        </h1>
         <p className="text-lg text-muted-foreground">
-          Reach out if you need help getting started, setting up your storefront, understanding pricing, or using ShopVendly to sell online.
+          Reach out if you need help getting started, setting up your storefront,
+          understanding pricing, or using ShopVendly to sell online.
         </p>
       </section>
 
@@ -26,10 +29,13 @@ export default function ContactPage() {
         <div className="rounded-2xl border bg-card p-6">
           <h2 className="text-xl font-semibold">Email support</h2>
           <p className="mt-3 text-sm text-muted-foreground">
-            For onboarding help, account questions, or platform support, email us and we will point you in the right direction.
+            For onboarding help, account questions, or platform support, email us
+            and we will point you in the right direction.
           </p>
           <p className="mt-4 text-sm">
-            <Link href={`mailto:${supportEmail}`} className="font-medium text-primary hover:underline">{supportEmail}</Link>
+            <Link href={`mailto:${supportEmail}`} className="font-medium text-primary hover:underline">
+              {supportEmail}
+            </Link>
           </p>
         </div>
 

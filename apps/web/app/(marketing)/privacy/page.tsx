@@ -16,18 +16,17 @@ export default function PrivacyPage() {
     <main className="mx-auto max-w-3xl px-6 py-12 space-y-8">
       <section className="space-y-4">
         <h1 className="text-3xl font-semibold">Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground">Last updated: {new Date().toISOString().split("T")[0]}</p>
+        <p className="text-sm text-muted-foreground">
+          Last updated: {new Date().toISOString().split("T")[0]}
+        </p>
         <p>
-          {APP_NAME} (&quot;we&quot;, &quot;our&quot;, &quot;us&quot;) operates a digital commerce platform that
-          helps businesses and creators run storefronts and manage orders. This
-          Privacy Policy explains what we collect, why we collect it, and how you can
-          exercise your rights.
+          {APP_NAME} (&quot;we&quot;, &quot;our&quot;, &quot;us&quot;) operates a digital commerce platform that helps businesses and creators run storefronts and manage orders. This Privacy Policy explains what we collect, why we collect it, and how you can exercise your rights.
         </p>
       </section>
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Information We Collect</h2>
-        <ul className="list-disc pl-5 space-y-2">
+        <ul className="list-disc space-y-2 pl-5">
           <li>
             <strong>Account & profile:</strong> name, email, phone, business/storefront details you provide.
           </li>
@@ -48,7 +47,7 @@ export default function PrivacyPage() {
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">How We Use Information</h2>
-        <ul className="list-disc pl-5 space-y-2">
+        <ul className="list-disc space-y-2 pl-5">
           <li>Provide and secure your account and storefront.</li>
           <li>Process orders, payments, and support requests.</li>
           <li>Improve performance, reliability, and user experience.</li>
@@ -60,7 +59,7 @@ export default function PrivacyPage() {
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Sharing</h2>
         <p>We do not sell personal data. We may share with:</p>
-        <ul className="list-disc pl-5 space-y-2">
+        <ul className="list-disc space-y-2 pl-5">
           <li>Service providers (hosting, analytics, payments, messaging) under confidentiality obligations.</li>
           <li>Third-party integrations you connect (e.g., payment providers) per your authorization.</li>
           <li>Law enforcement or regulators when required by law.</li>
@@ -70,24 +69,24 @@ export default function PrivacyPage() {
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Analytics & Tracking</h2>
         <p>
-          We may use analytics and performance tools (e.g., Vercel Analytics / Speed Insights) to understand usage and
-          improve reliability. Cookies and similar technologies help maintain sessions and security.
+          We may use analytics and performance tools (e.g., Vercel Analytics / Speed Insights) to understand usage and improve reliability. Cookies and similar technologies help maintain sessions and security.
         </p>
       </section>
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Data Retention</h2>
         <p>
-          We retain personal data while your account is active and as needed for security, compliance, and recordkeeping.
-          You may request deletion at any time.
+          We retain personal data while your account is active and as needed for security, compliance, and recordkeeping. You may request deletion at any time.
         </p>
       </section>
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Your Choices</h2>
-        <ul className="list-disc pl-5 space-y-2">
+        <ul className="list-disc space-y-2 pl-5">
           <li>Access, correct, or update your account information in the app.</li>
-          <li>Request deletion by emailing <Link href={`mailto:${SUPPORT_EMAIL}`} className="text-primary underline">{SUPPORT_EMAIL}</Link>.</li>
+          <li>
+            Request deletion by emailing <Link href={`mailto:${SUPPORT_EMAIL}`} className="text-primary underline">{SUPPORT_EMAIL}</Link>.
+          </li>
           <li>Manage cookies via your browser settings (some features may not work without cookies).</li>
         </ul>
       </section>
@@ -109,8 +108,8 @@ export default function PrivacyPage() {
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Contact</h2>
         <p>
-          Questions or requests: <Link href={`mailto:${SUPPORT_EMAIL}`} className="text-primary underline">{SUPPORT_EMAIL}</Link>
-          {" "} | {APP_NAME} | Governing law: {JURISDICTION}
+          Questions or requests: <Link href={`mailto:${SUPPORT_EMAIL}`} className="text-primary underline">{SUPPORT_EMAIL}</Link>{" "}
+          | {APP_NAME} | Governing law: {JURISDICTION}
         </p>
       </section>
     </main>
