@@ -7,7 +7,7 @@ const navItems = [
   { label: "Pricing", href: "/pricing" },
   { label: "FAQ", href: "/faq" },
   { label: "Contact", href: "/contact" },
-  { label: "Marketplace", href: "/m" },
+  // { label: "Marketplace", href: "/m" },
 ];
 
 export function Header() {
@@ -41,9 +41,7 @@ export function Header() {
       </nav>
 
       <div className="flex items-center gap-3">
-        <Button
-          className="rounded-md px-8 text-white"
-        >
+        <Button variant="ghost" className="rounded-full px-7 border border-black/70">
           Login
         </Button>
       </div>

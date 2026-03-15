@@ -8,44 +8,39 @@ type FeatureSection = {
 
 const featureSections: FeatureSection[] = [
   {
-    eyebrow: "Cheaper",
-    title: "Cheaper to run",
+    eyebrow: "Storefront",
+    title: "A store that works while you sleep.",
     description:
-      "Get the core tools you need without paying Shopify-level costs for features you may never use.",
-    image:
-      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1600&auto=format&fit=crop",
+      "Your Vendly store takes orders, confirms payments, and updates inventory on its own. You post the content — the store handles what comes after.",
+    image: "https://cdn.cosmos.so/ca8ae899-9ce5-40a9-a3d1-da285d32f671?format=jpeg",
   },
   {
     eyebrow: "Payments",
-    title: "Local payments built in",
+    title: "Mobile money, built in from day one.",
     description:
-      "Accept mobile money and keep payment records in the same place you manage orders.",
-    image:
-      "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?q=80&w=1600&auto=format&fit=crop",
+      "Accept MTN and Airtel Money without a third-party workaround. Every payment lands in your dashboard, confirmed, recorded, done.",
+    image: "...",
   },
   {
     eyebrow: "Delivery",
-    title: "Delivery in the workflow",
+    title: "Delivery without the back and forth.",
     description:
-      "Book delivery, track parcels, and keep customers updated without switching tools.",
-    image:
-      "https://images.unsplash.com/photo-1523475472560-d2df97ec485c?q=80&w=1600&auto=format&fit=crop",
+      "Book a rider, track the parcel, and keep your customer updated — all from the same place you took the order. No calls. No WhatsApp threads.",
+    image: "...",
   },
   {
     eyebrow: "Discovery",
-    title: "Marketplace discovery",
+    title: "Customers who were never in your following.",
     description:
-      "Reach buyers who are already searching, not only the people who already follow you.",
-    image:
-      "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?q=80&w=1600&auto=format&fit=crop",
+      "Every Vendly store is listed on our marketplace. Buyers searching for what you sell can find you without ever seeing your Instagram.",
+    image: "...",
   },
   {
-    eyebrow: "Growth",
-    title: "More freedom to grow",
+    eyebrow: "Operations",
+    title: "One place for all of it.",
     description:
-      "Run sales, orders, payments, and delivery from one place so growth does not mean more chaos.",
-    image:
-      "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1600&auto=format&fit=crop",
+      "Orders, payments, delivery, and customer data in a single dashboard. When the business grows, the operations don't have to grow with it.",
+    image: "...",
   },
 ];
 
