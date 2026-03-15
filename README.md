@@ -18,7 +18,7 @@
 ```
 apps/
 ├─ web/    → Customer + merchant-facing Next.js experience
-├─ admin/  → Internal Next.js control panel (port 3001)
+├─ admin/  → Internal Next.js control panel (port 4000)
 └─ api/    → Express + tRPC edge API for automations & webhooks
 
 packages/

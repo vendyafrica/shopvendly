@@ -17,6 +17,7 @@ const nextConfig = {
   ],
   experimental: {
     optimizePackageImports: ["lucide-react"],
+    globalNotFound: true,
   },
   images: {
     remotePatterns: [

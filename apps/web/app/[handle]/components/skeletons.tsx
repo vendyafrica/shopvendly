@@ -62,7 +62,7 @@ export function CategoriesSkeleton() {
 
 export function ProductCardSkeleton() {
     return (
-        <div className="break-inside-avoid mb-4 md:mb-5">
+        <div>
             <div className="aspect-3/4 rounded-lg bg-neutral-200 animate-pulse" />
             <div className="mt-3 space-y-2">
                 <div className="h-4 bg-neutral-200 rounded w-3/4 animate-pulse" />
@@ -74,7 +74,7 @@ export function ProductCardSkeleton() {
 
 export function ProductGridSkeleton() {
     return (
-        <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-5 px-3 sm:px-4 lg:px-6 [column-fill:balance]">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-6 px-3 sm:gap-x-5 sm:gap-y-8 sm:px-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-7 lg:gap-y-10 lg:px-6">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                 <ProductCardSkeleton key={i} />
             ))}

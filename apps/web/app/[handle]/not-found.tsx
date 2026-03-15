@@ -1,21 +1,34 @@
+"use client";
+
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@shopvendly/ui/components/button";
 
 export default function NotFound() {
   return (
-    <main className="min-h-[70vh] bg-background text-foreground">
-      <div className="container mx-auto px-4 py-16">
-        <div className="mx-auto max-w-xl text-center">
-          <h1 className="text-3xl font-semibold tracking-tight">Store not found</h1>
-          <p className="mt-3 text-muted-foreground">
-            This store doesn’t exist yet (or the link is incorrect). If you’re trying to start a store, you can create one now.
-          </p>
-          <div className="mt-8 flex items-center justify-center gap-3">
-            <Link href="/account">
-              <Button>Sell now</Button>
+    <main className="relative isolate h-dvh overflow-hidden bg-linear-to-b from-background via-muted/40 to-background text-foreground">
+      <div className="container mx-auto flex h-dvh items-center justify-center px-4">
+        <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-10 rounded-md text-center">
+          <div className="flex max-w-lg flex-col items-center gap-6">
+            <div className="relative w-full max-w-md">
+              <Image
+                src="/404.png"
+                alt="Store not found illustration"
+                width={480}
+                height={320}
+                priority
+                className="h-auto w-full"
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Link href="/account" className="flex-1 sm:flex-none">
+              <Button className="w-full">Create a store</Button>
             </Link>
-            <Link href="/">
-              <Button variant="outline">Back home</Button>
+            <Link href="/" className="flex-1 sm:flex-none">
+              <Button variant="outline" className="w-full">
+                Explore marketplace
+              </Button>
             </Link>
           </div>
         </div>

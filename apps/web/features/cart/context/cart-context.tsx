@@ -19,6 +19,7 @@ export interface CartItem {
         id: string;
         name: string;
         price: number;
+        originalPrice?: number | null;
         currency: string;
         image?: string;
         contentType?: string;
@@ -50,7 +51,12 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const getBaseProductId = (lineId: string) => lineId.split("::")[0] ?? lineId;
+const resolveMaxQuantity = (availableQuantity?: number | null) => {
+    if (typeof availableQuantity === "number" && Number.isFinite(availableQuantity)) {
+        return Math.max(availableQuantity, 0);
+    }
+    return Number.POSITIVE_INFINITY;
+};
 
 const normalizeSelectedOptions = (value: unknown): CartSelectedOption[] => {
     if (!Array.isArray(value)) return [];
@@ -67,6 +73,43 @@ const normalizeSelectedOptions = (value: unknown): CartSelectedOption[] => {
         .filter((option): option is CartSelectedOption => Boolean(option));
 };
 
+const buildCartLineId = (productId: string, selectedOptions: CartSelectedOption[] = []) => {
+    if (!productId) return crypto.randomUUID();
+    if (selectedOptions.length === 0) return productId;
+    const signature = [...selectedOptions]
+        .sort((a, b) => {
+            const aKey = `${a.name}:${a.value}`.toLowerCase();
+            const bKey = `${b.name}:${b.value}`.toLowerCase();
+            return aKey.localeCompare(bKey);
+        })
+        .map((option) => `${option.name}:${option.value}`)
+        .join("|");
+    return `${productId}::${signature}`;
+};
+
+const mergeCartItems = (primary: CartItem[], secondary: CartItem[]) => {
+    const merged = new Map<string, CartItem>();
+
+    for (const item of primary) {
+        merged.set(item.id, { ...item });
+    }
+
+    for (const item of secondary) {
+        const existing = merged.get(item.id);
+        if (existing) {
+            const maxQuantity = resolveMaxQuantity(existing.product.availableQuantity);
+            merged.set(item.id, {
+                ...existing,
+                quantity: Math.min(existing.quantity + item.quantity, maxQuantity),
+            });
+        } else {
+            merged.set(item.id, { ...item });
+        }
+    }
+
+    return Array.from(merged.values());
+};
+
 const sanitizeCartItems = (items: unknown): CartItem[] => {
     if (!Array.isArray(items)) return [];
     return items
@@ -75,10 +118,90 @@ const sanitizeCartItems = (items: unknown): CartItem[] => {
             ...item,
             product: {
                 ...item.product,
+                originalPrice: typeof item.product?.originalPrice === "number" ? item.product.originalPrice : null,
+                availableQuantity:
+                    typeof item.product?.availableQuantity === "number" && Number.isFinite(item.product.availableQuantity)
+                        ? Math.max(item.product.availableQuantity, 0)
+                        : undefined,
                 selectedOptions: normalizeSelectedOptions(item.product?.selectedOptions),
             },
+            id: buildCartLineId(
+                item.product?.id,
+                normalizeSelectedOptions(item.product?.selectedOptions)
+            )
         }));
 };
+
+async function syncItemsWithLatestProducts(cartItems: CartItem[]): Promise<CartItem[]> {
+    if (cartItems.length === 0) return cartItems;
+
+    const storeSlugs = Array.from(
+        new Set(
+            cartItems
+                .map((item) => item.store.slug)
+                .filter((slug): slug is string => typeof slug === "string" && slug.length > 0)
+        )
+    );
+
+    if (storeSlugs.length === 0) return cartItems;
+
+    const latestProductsByStore = new Map<string, Map<string, {
+        id: string;
+        price: number;
+        originalPrice?: number | null;
+        currency: string;
+        image: string | null;
+        contentType?: string | null;
+        slug: string;
+    }>>();
+
+    await Promise.all(storeSlugs.map(async (storeSlug) => {
+        try {
+            const response = await fetch(`${API_BASE}/api/storefront/${storeSlug}/products`, {
+                cache: "no-store",
+            });
+
+            if (!response.ok) return;
+
+            const products = await response.json() as Array<{
+                id: string;
+                price: number;
+                originalPrice?: number | null;
+                currency: string;
+                image: string | null;
+                contentType?: string | null;
+                slug: string;
+            }>;
+
+            latestProductsByStore.set(
+                storeSlug,
+                new Map(products.map((product) => [product.id, product]))
+            );
+        } catch (error) {
+            console.error(`Failed to refresh cart prices for store ${storeSlug}`, error);
+        }
+    }));
+
+    return cartItems.map((item) => {
+        const latestProduct = latestProductsByStore.get(item.store.slug)?.get(item.product.id);
+        if (!latestProduct) {
+            return item;
+        }
+
+        return {
+            ...item,
+            product: {
+                ...item.product,
+                price: latestProduct.price,
+                originalPrice: latestProduct.originalPrice ?? null,
+                currency: latestProduct.currency,
+                image: latestProduct.image ?? item.product.image,
+                contentType: latestProduct.contentType ?? item.product.contentType,
+                slug: latestProduct.slug || item.product.slug,
+            },
+        };
+    });
+}
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const { session } = useAppSession();
@@ -96,33 +219,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                         headers: { "x-user-id": session.user.id }
                     });
                     if (res.ok) {
-                        const data = sanitizeCartItems(await res.json());
+                        const serverItems = sanitizeCartItems(await res.json());
                         const stored = localStorage.getItem(CART_STORAGE_KEY);
                         const localItems = stored ? sanitizeCartItems(JSON.parse(stored)) : [];
-                        const localWithSelections = localItems.filter((item) => item.product.selectedOptions?.length);
-                        if (localWithSelections.length > 0) {
-                            const localBaseIds = new Set(localItems.map((item) => getBaseProductId(item.id)));
-                            setItems([
-                                ...localItems,
-                                ...data.filter((item) => !localBaseIds.has(item.product.id)),
-                            ]);
-                        } else {
-                            const localByBaseId = new Map(localItems.map((item) => [getBaseProductId(item.id), item]));
-                            setItems(
-                                data.map((item) => {
-                                    const localItem = localByBaseId.get(item.product.id);
-                                    if (!localItem?.product.selectedOptions?.length) return item;
-                                    return {
-                                        ...item,
-                                        id: localItem.id,
-                                        product: {
-                                            ...item.product,
-                                            selectedOptions: localItem.product.selectedOptions,
-                                        },
-                                    };
-                                })
-                            );
-                        }
+                        const mergedItems = mergeCartItems(serverItems, localItems);
+                        setItems(await syncItemsWithLatestProducts(mergedItems));
+                    } else {
+                        setItems([]);
                     }
                 } catch (e) {
                     console.error("Failed to fetch cart", e);
@@ -131,7 +234,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 const stored = localStorage.getItem(CART_STORAGE_KEY);
                 if (stored) {
                     try {
-                        setItems(sanitizeCartItems(JSON.parse(stored)));
+                        const localItems = sanitizeCartItems(JSON.parse(stored));
+                        setItems(await syncItemsWithLatestProducts(localItems));
                     } catch (e) {
                         console.error("Failed to parse cart storage", e);
                     }
@@ -178,28 +282,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 const serverRes = await fetch(`${API_BASE}/api/cart`, {
                     headers: { "x-user-id": userId }
                 });
-                const serverItems: CartItem[] = serverRes.ok ? await serverRes.json() : [];
+                const serverItems: CartItem[] = serverRes.ok ? sanitizeCartItems(await serverRes.json()) : [];
 
-                // Merge by product id; prefer sum of quantities
-                const mergedMap = new Map<string, CartItem>();
-
-                for (const item of serverItems) {
-                    mergedMap.set(item.id, { ...item });
-                }
-
-                for (const item of guestItems) {
-                    const existing = mergedMap.get(item.id);
-                    if (existing) {
-                        mergedMap.set(item.id, {
-                            ...existing,
-                            quantity: existing.quantity + item.quantity,
-                        });
-                    } else {
-                        mergedMap.set(item.id, { ...item });
-                    }
-                }
-
-                const mergedItems = Array.from(mergedMap.values());
+                const mergedItems = mergeCartItems(serverItems, guestItems);
 
                 for (const item of mergedItems) {
                     try {
@@ -259,22 +344,32 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             );
         }
 
+        const normalizedOptions = normalizeSelectedOptions(newItem.product.selectedOptions ?? []);
+        const lineId = buildCartLineId(newItem.product.id, normalizedOptions);
         let nextQuantity = quantity;
-        const maxQuantity = newItem.product.availableQuantity ?? Number.POSITIVE_INFINITY;
+        const maxQuantity = resolveMaxQuantity(newItem.product.availableQuantity);
 
         // Optimistic update (also computes the exact quantity we should persist)
         setItems((prev) => {
-            const existing = prev.find((item) => item.id === newItem.id);
+            const existing = prev.find((item) => item.id === lineId);
             if (existing) {
                 nextQuantity = Math.min(existing.quantity + quantity, maxQuantity);
                 return prev.map((item) =>
-                    item.id === newItem.id
+                    item.id === lineId
                         ? { ...item, quantity: nextQuantity }
                         : item
                 );
             }
             nextQuantity = Math.min(quantity, maxQuantity);
-            return [...prev, { ...newItem, quantity: nextQuantity }];
+            return [
+                ...prev,
+                {
+                    ...newItem,
+                    id: lineId,
+                    product: { ...newItem.product, selectedOptions: normalizedOptions },
+                    quantity: nextQuantity,
+                },
+            ];
         });
 
         // If maxQuantity is zero or less, do not persist to server
@@ -294,7 +389,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                         productId: newItem.product.id,
                         storeId: newItem.store.id,
                         quantity: nextQuantity,
-                        selectedOptions: newItem.product.selectedOptions ?? [],
+                        selectedOptions: normalizedOptions,
                     })
                 });
             } catch (e) {
@@ -331,7 +426,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const item = items.find(i => i.id === productId);
         if (!item) return;
 
-        const maxQuantity = item.product.availableQuantity ?? Number.POSITIVE_INFINITY;
+        const maxQuantity = resolveMaxQuantity(item.product.availableQuantity);
         const clampedQuantity = Math.min(quantity, maxQuantity);
 
         if (clampedQuantity <= 0) {

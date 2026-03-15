@@ -1,262 +1,102 @@
-"use client";
-
+import { Card } from "@shopvendly/ui/components/card";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  CreditCardIcon,
-  DeliveryTruck01Icon,
-  LoginSquare02Icon,
-  Search01Icon,
-  ShoppingBag01Icon,
-  Store02Icon,
+  ChartUpIcon,
+  PaymentSuccess01Icon,
+  Store01Icon,
 } from "@hugeicons/core-free-icons";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@shopvendly/ui/components/chart";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@shopvendly/ui/components/card";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
-const featureChartData = [
-  { month: "Jan", orders: 18, revenue: 10 },
-  { month: "Feb", orders: 26, revenue: 16 },
-  { month: "Mar", orders: 22, revenue: 14 },
-  { month: "Apr", orders: 34, revenue: 24 },
-  { month: "May", orders: 29, revenue: 21 },
-  { month: "Jun", orders: 46, revenue: 33 },
-];
-
-const featureChartConfig = {
-  orders: {
-    label: "Orders",
-    color: "#7c3aed",
-  },
-  revenue: {
-    label: "Revenue",
-    color: "#14b8a6",
-  },
-} satisfies ChartConfig;
-
-const supportingFeatures = [
+const features = [
   {
-    title: "All orders in one workspace",
+    icon: Store01Icon,
+    title: "Your store, always open.",
     description:
-      "Capture Instagram and TikTok orders, confirm faster, and keep every customer request in one clean flow.",
-    icon: ShoppingBag01Icon,
+      "Drop one link in your bio. Customers browse, order, and pay — no DMs, no chasing, no missed sales.",
+    image:
+      "https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYLZfYTtpq90aBj2MZ7ruxwhyb3WcSHPCzIkU8",
+    align: "left",
   },
   {
-    title: "Seamless payments",
+    icon: PaymentSuccess01Icon,
+    title: "Get paid. Instantly.",
     description:
-      "Send checkout links, track confirmations, and reduce the back-and-forth around payment screenshots.",
-    icon: CreditCardIcon,
+      "Accept MTN and Airtel Money straight from your storefront. Every payment confirmed, tracked, and tied to the right order.",
+    image:
+      "https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYhsFsKgqIygxoXmPQzRMEql94cp6JADvHSYGf",
+    align: "right",
   },
   {
-    title: "Automated delivery",
+    icon: ChartUpIcon,
+    title: "Know what's working.",
     description:
-      "Coordinate delivery updates from order confirmation to doorstep without managing every step manually.",
-    icon: DeliveryTruck01Icon,
+      "See visits, conversions, and top products in one dashboard. Real data so every decision moves your business forward.",
+    image:
+      "https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYhsCF1K8IygxoXmPQzRMEql94cp6JADvHSYGf",
+    align: "left",
   },
-  {
-    title: "Instant storefront",
-    description:
-      "Turn your page into a shareable storefront your customers can browse anytime, without custom development.",
-    icon: Store02Icon,
-  },
-  {
-    title: "Marketplace discovery",
-    description:
-      "Reach buyers beyond your followers by listing products where shoppers are already searching.",
-    icon: Search01Icon,
-  },
-  {
-    title: "Clear business insights",
-    description:
-      "See what is selling, where orders come from, and how your storefront is performing at a glance.",
-    icon: LoginSquare02Icon,
-  },
-];
+] as const;
 
 export function Features() {
   return (
-    <section id="features" className="py-24 md:py-28">
-      <div className="mx-auto w-full max-w-5xl px-6">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-medium uppercase tracking-[0.22em] text-muted-foreground">
-            Built for how social sellers actually work
+    <section className="bg-[#faf9f7]">
+      <div className="w-full pt-24">
+        <div className="mx-auto mb-14 max-w-7xl px-6 text-left lg:mb-20 lg:px-8">
+          <p className="text-primary text-sm font-medium uppercase tracking-[0.18em]">
+            Why Vendly
           </p>
-          <h2 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">
-            Everything you need to run your social business in one place.
+          <h2 className="text-foreground mt-3 text-3xl font-semibold md:text-4xl lg:text-5xl">
+            Stop selling in DMs. Start running a real business.
           </h2>
-          <p className="text-muted-foreground mt-4 text-lg leading-8">
-            Stop juggling DMs, spreadsheets, payment proof, and delivery updates.
-            ShopVendly gives you one system to sell, manage, and grow.
+          <p className="text-muted-foreground mt-4 max-w-2xl text-lg">
+            One storefront. Mobile money payments. Delivery coordination.
+            Everything a social seller needs, without the chaos.
           </p>
         </div>
 
-        <div id="solution" className="mt-16 grid gap-0 overflow-hidden rounded-[2rem] border border-border/60 bg-background shadow-[0_20px_80px_-50px_rgba(0,0,0,0.18)] lg:grid-cols-2">
-          <Card className="rounded-none border-0 shadow-none">
-            <CardHeader className="space-y-3 p-8 pb-2 md:p-10 md:pb-4">
-              <CardTitle className="text-xl font-semibold">
-                Powerful analytics dashboard
-              </CardTitle>
-              <CardDescription className="max-w-md text-base leading-7">
-                Track orders and revenue in one view so you can see what is growing,
-                what needs attention, and when to act.
-              </CardDescription>
-              <div className="flex items-end justify-between gap-6 pt-4">
-                <div>
-                  <p className="text-3xl font-semibold tracking-tight">UGX 12.4M</p>
-                  <p className="text-sm text-muted-foreground">Revenue processed this month</p>
-                </div>
-                <div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                  +18.4% this month
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="px-3 pb-3 md:px-5 md:pb-5">
-              <ChartContainer config={featureChartConfig} className="aspect-auto h-72 w-full md:h-80">
-                <AreaChart
-                  accessibilityLayer
-                  data={featureChartData}
-                  margin={{ left: 8, right: 8, top: 16, bottom: 0 }}
+        <div>
+          {features.map((feature) => {
+            const Icon = feature.icon;
+
+            return (
+              <div
+                key={feature.title}
+                className="relative flex min-h-svh items-end overflow-hidden bg-neutral-950"
+              >
+                <div
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${feature.image})` }}
+                />
+                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/25 to-black/10" />
+
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.22),transparent_30%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),transparent_38%,rgba(255,255,255,0.06))]" />
+
+                <div
+                  className={`relative z-10 flex min-h-svh w-full items-end px-6 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12 ${
+                    feature.align === "right" ? "justify-end" : "justify-start"
+                  }`}
                 >
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.18} />
-                  <XAxis
-                    dataKey="month"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={10}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    width={28}
-                    tickMargin={6}
-                    tick={{ fontSize: 11 }}
-                  />
-                  <ChartTooltip
-                    cursor={{ stroke: "hsl(var(--border))", strokeDasharray: "4 4", opacity: 0.8 }}
-                    content={<ChartTooltipContent indicator="line" />}
-                  />
-                  <defs>
-                    <linearGradient id="featureOrders" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.34} />
-                      <stop offset="60%" stopColor="#7c3aed" stopOpacity={0.18} />
-                      <stop offset="95%" stopColor="#7c3aed" stopOpacity={0.02} />
-                    </linearGradient>
-                    <linearGradient id="featureRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#2dd4bf" stopOpacity={0.28} />
-                      <stop offset="60%" stopColor="#14b8a6" stopOpacity={0.16} />
-                      <stop offset="95%" stopColor="#14b8a6" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <Area
-                    type="monotone"
-                    dataKey="orders"
-                    stroke="#7c3aed"
-                    strokeWidth={2.5}
-                    fill="url(#featureOrders)"
-                    dot={{ r: 0, strokeWidth: 0 }}
-                    activeDot={{ r: 5, fill: "#7c3aed", stroke: "white", strokeWidth: 2 }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="#14b8a6"
-                    strokeWidth={2}
-                    fill="url(#featureRevenue)"
-                    dot={{ r: 0, strokeWidth: 0 }}
-                    activeDot={{ r: 5, fill: "#14b8a6", stroke: "white", strokeWidth: 2 }}
-                  />
-                </AreaChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
+                  <Card className="w-full max-w-xl border border-white/20 bg-white/10 p-8 text-white shadow-[0_20px_80px_rgba(15,23,42,0.30)] backdrop-blur-2xl supports-backdrop-filter:bg-white/12 md:p-10">
+                    <div className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[linear-gradient(135deg,rgba(255,255,255,0.24),rgba(255,255,255,0.08)_40%,rgba(255,255,255,0.02))]" />
+                    <div className="pointer-events-none absolute inset-px rounded-[calc(var(--radius)-1px)] border border-white/10" />
 
-          <Card className="rounded-none border-0 border-t shadow-none lg:border-l lg:border-t-0">
-            <CardHeader className="space-y-3 p-8 pb-4 md:p-10 md:pb-6">
-              <CardTitle className="text-xl font-semibold">
-                Streamlined order to payment flow
-              </CardTitle>
-              <CardDescription className="max-w-md text-base leading-7">
-                Keep checkout, payment confirmation, and delivery status connected so sellers and customers always know what is next.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-8 pt-0 md:px-10 md:pb-10">
-              <div className="rounded-[1.75rem] border border-border/60 bg-muted/30 p-6 md:p-7">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                      Order #SV-45789
+                    <div className="relative z-10 flex size-11 items-center justify-center rounded-full bg-white/16 ring-1 ring-white/20">
+                      <HugeiconsIcon icon={Icon} className="size-5 text-white" />
+
+                    </div>
+
+                    <h3 className="relative z-10 mt-6 text-2xl font-semibold text-white md:text-3xl">
+                      {feature.title}
+                    </h3>
+
+                    <p className="relative z-10 mt-4 text-base leading-7 text-white/82 md:text-lg">
+                      {feature.description}
                     </p>
-                    <p className="mt-3 text-3xl font-semibold tracking-tight">UGX 284,000</p>
-                    <p className="mt-2 text-sm text-muted-foreground">Paid and ready for dispatch</p>
-                  </div>
-                  <div className="rounded-2xl border border-border/60 bg-background p-3 shadow-sm">
-                    <div className="space-y-2">
-                      <div className="h-2 w-12 rounded-full bg-muted" />
-                      <div className="h-2 w-10 rounded-full bg-muted" />
-                      <div className="h-2 w-14 rounded-full bg-muted" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-8 space-y-4">
-                  {[
-                    { label: "Customer", value: "Confirmed from Instagram DM" },
-                    { label: "Payment", value: "Mobile money collected instantly" },
-                    { label: "Delivery", value: "Rider assigned with live updates" },
-                  ].map((item) => (
-                    <div key={item.label} className="flex items-center justify-between gap-4 rounded-2xl border border-border/50 bg-background/90 px-4 py-3">
-                      <span className="text-sm text-muted-foreground">{item.label}</span>
-                      <span className="text-sm font-medium text-right">{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-8 rounded-2xl border border-primary/15 bg-primary/5 p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-medium">Average order handling time</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Faster fulfillment with fewer manual follow-ups.
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-semibold">12 min</p>
-                      <p className="text-xs text-primary">-32% faster</p>
-                    </div>
-                  </div>
+                  </Card>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="mt-10 grid gap-px overflow-hidden rounded-[2rem] border border-border/60 bg-border/60 sm:grid-cols-2 lg:grid-cols-3">
-          {supportingFeatures.map((feature) => (
-            <Card key={feature.title} className="rounded-none border-0 bg-background shadow-none">
-              <CardContent className="space-y-4 p-6 md:p-7">
-                <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/8 text-primary">
-                  <HugeiconsIcon icon={feature.icon} className="size-5" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-medium tracking-tight">{feature.title}</h3>
-                  <p className="text-sm leading-7 text-muted-foreground">
-                    {feature.description}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

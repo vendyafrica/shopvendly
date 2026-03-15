@@ -43,6 +43,15 @@ export function createApp():Application {
     res.send("API is running");
   });
 
+  app.get("/health", (_req, res) => {
+    res.status(200).json({
+      ok: true,
+      service: "api",
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   app.use("/api", apiRouter);
 
   app.use((_req, res) => {

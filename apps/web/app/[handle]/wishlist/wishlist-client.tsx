@@ -134,8 +134,7 @@ export default function WishlistClient() {
                           muted
                           playsInline
                           loop
-                          autoPlay
-                          preload="none"
+                          preload="metadata"
                         />
                       ) : (
                         <Image

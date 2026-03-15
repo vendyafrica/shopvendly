@@ -247,13 +247,12 @@ export function ProductDetails({ product, storePolicy }: ProductDetailsProps) {
                                     {isVideo ? (
                                         <video
                                             src={media.url}
-                                            poster={posterFallback}
                                             className="h-full w-full object-cover bg-neutral-100"
                                             muted
                                             loop
                                             playsInline
                                             autoPlay
-                                            preload="none"
+                                            preload="metadata"
                                         />
                                     ) : (
                                         <Image
@@ -292,13 +291,12 @@ export function ProductDetails({ product, storePolicy }: ProductDetailsProps) {
                                         {isVideo ? (
                                             <video
                                                 src={media.url}
-                                                poster={posterFallback}
                                                 className="h-full w-full object-cover bg-neutral-100"
                                                 muted
                                                 loop
                                                 playsInline
                                                 autoPlay
-                                                preload="none"
+                                                preload="metadata"
                                             />
                                         ) : (
                                             <Image
@@ -320,13 +318,13 @@ export function ProductDetails({ product, storePolicy }: ProductDetailsProps) {
                                 <>
                                     <video
                                         src={currentMedia.url}
-                                        poster={posterFallback}
+                                        poster={posterFallback !== FALLBACK_PRODUCT_IMAGE ? posterFallback : undefined}
                                         className="h-full w-full object-cover bg-neutral-100"
                                         muted
                                         loop
                                         autoPlay
                                         playsInline
-                                        preload="none"
+                                        preload="metadata"
                                     />
                                     {/* <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full bg-black/70 text-white text-xs px-2 py-1">
                                         <span aria-hidden>▶</span>

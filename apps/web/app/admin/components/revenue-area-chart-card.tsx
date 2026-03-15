@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   ChartContainer,
   ChartTooltip,
@@ -9,6 +10,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
 import { cn } from "@shopvendly/ui/lib/utils";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shopvendly/ui/components/select";
 
 export type RevenuePoint = {
   date: string;
@@ -26,6 +28,10 @@ export function RevenueAreaChartCard({
   data: RevenuePoint[];
   className?: string;
 }) {
+  const [timeRange, setTimeRange] = useState<"7d" | "30d">("30d");
+
+  const filteredData = timeRange === "7d" ? data.slice(-7) : data;
+
   const chartConfig = {
     total: {
       label: "Revenue",
@@ -35,15 +41,26 @@ export function RevenueAreaChartCard({
 
   return (
     <Card className={cn("w-full", className)}>
-      <CardHeader className="space-y-1 pb-2">
-        <CardTitle className="text-base">{title}</CardTitle>
-        <div className="text-2xl font-bold text-foreground md:text-3xl">{totalLabel}</div>
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+        <div className="space-y-1">
+          <CardTitle className="text-base">{title}</CardTitle>
+          <div className="text-2xl font-bold text-foreground md:text-3xl">{totalLabel}</div>
+        </div>
+        <Select value={timeRange} onValueChange={(value: any) => setTimeRange(value)}>
+          <SelectTrigger className="w-[120px] rounded-lg border-border sm:ml-auto h-8 bg-muted/20" size="sm">
+            <SelectValue placeholder="Time range" />
+          </SelectTrigger>
+          <SelectContent align="end" className="rounded-xl">
+            <SelectItem value="30d">Last 30 days</SelectItem>
+            <SelectItem value="7d">Last 7 days</SelectItem>
+          </SelectContent>
+        </Select>
       </CardHeader>
       <CardContent className="p-0">
         <ChartContainer config={chartConfig} className="block! aspect-auto! h-[220px] w-full md:h-[320px]">
           <AreaChart
             accessibilityLayer
-            data={data}
+            data={filteredData}
             margin={{
               left: 4,  // Reduce left margin for mobile, allow negative for tighter spacing
               right: 8,  // Reduce right margin
@@ -81,7 +98,7 @@ export function RevenueAreaChartCard({
               </linearGradient>
             </defs>
             <Area
-              type="monotone"
+              type="natural"
               dataKey="total"
               stroke="var(--foreground)"
               strokeWidth={2}

@@ -59,12 +59,41 @@ export interface ProductFormData {
 }
 
 interface FilePreview {
+    id: string;
     file: File;
     previewUrl: string;
     isUploading: boolean;
+    progress: number;
+    displayProgress: number;
+    startedAt: number;
     url?: string;
     pathname?: string;
     error?: string;
+}
+
+function UploadProgressSpinner({ progress }: { progress: number }) {
+    const radius = 18;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (Math.max(0, Math.min(progress, 100)) / 100) * circumference;
+
+    return (
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm">
+            <svg className="h-12 w-12 -rotate-90" viewBox="0 0 48 48" aria-hidden="true">
+                <circle cx="24" cy="24" r={radius} className="fill-none stroke-white/20" strokeWidth="4" />
+                <circle
+                    cx="24"
+                    cy="24"
+                    r={radius}
+                    className="fill-none stroke-white transition-all duration-150"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={offset}
+                />
+            </svg>
+            <span className="absolute text-[11px] font-semibold text-white">{progress}%</span>
+        </div>
+    );
 }
 
 export function UploadModal({
@@ -100,6 +129,36 @@ export function UploadModal({
     const [selectedSizes, setSelectedSizes] = React.useState<string[]>([]);
 
     React.useEffect(() => {
+        const hasActiveUpload = files.some((file) => file.isUploading || file.displayProgress < file.progress);
+        if (!hasActiveUpload) return;
+
+        const frame = window.setInterval(() => {
+            setFiles((prev) => prev.map((file) => {
+                if (!file.isUploading && file.displayProgress >= file.progress) {
+                    return file;
+                }
+
+                const nextTarget = file.isUploading
+                    ? Math.max(file.progress, Math.min(file.displayProgress + 8, 95))
+                    : file.progress;
+                const step = file.isUploading ? 4 : 12;
+                const nextDisplayProgress = Math.min(file.displayProgress + step, nextTarget);
+
+                if (nextDisplayProgress === file.displayProgress) {
+                    return file;
+                }
+
+                return {
+                    ...file,
+                    displayProgress: nextDisplayProgress,
+                };
+            }));
+        }, 80);
+
+        return () => window.clearInterval(frame);
+    }, [files]);
+
+    React.useEffect(() => {
         if (!open || !storeId) return;
 
         let active = true;
@@ -130,47 +189,72 @@ export function UploadModal({
     };
 
     const handleUploadFiles = async (selectedFiles: File[]) => {
-        const newFiles = selectedFiles.map(file => ({
+        const startedAt = Date.now();
+        const newFiles = selectedFiles.map((file, index) => ({
+            id: `${file.name}-${file.lastModified}-${Date.now()}-${index}`,
             file,
             previewUrl: URL.createObjectURL(file),
             isUploading: true,
+            progress: 0,
+            displayProgress: 0,
+            startedAt,
             url: undefined,
             pathname: undefined,
-            error: undefined
+            error: undefined,
         }));
 
-        setFiles(prev => [...prev, ...newFiles]);
-
-        const startIndex = files.length;
+        setFiles((prev) => [...prev, ...newFiles]);
 
         if (!tenantId) {
             setError("Tenant not found. Please refresh and try again.");
-            setFiles(prev => prev.filter((_, idx) => idx < startIndex));
+            setFiles((prev) => prev.filter((existing) => !newFiles.some((file) => file.id === existing.id)));
             return;
         }
 
         // Upload in parallel
         await Promise.all(selectedFiles.map(async (file, i) => {
-            const index = startIndex + i;
+            const fileId = newFiles[i]?.id;
+            if (!fileId) return;
             try {
                 const uploaded = await uploadFile(file, {
                     tenantId,
                     endpoint: "productMedia",
                     compressVideo: true,
+                    onUploadProgress: ({ progress }) => {
+                        setFiles((prev) => {
+                            const updated = [...prev];
+                            const targetIndex = updated.findIndex((item) => item.id === fileId);
+                            if (targetIndex >= 0) {
+                                const targetFile = updated[targetIndex];
+                                if (!targetFile) {
+                                    return updated;
+                                }
+
+                                updated[targetIndex] = {
+                                    ...targetFile,
+                                    progress,
+                                };
+                            }
+                            return updated;
+                        });
+                    },
                 });
 
-                setFiles(prev => {
+                setFiles((prev) => {
                     const updated = [...prev];
-                    // Find by index relative to prev state, assuming append
-                    // Warning: concurrency issues if files added quickly. 
-                    // Better to use functional update properly or ID.
-                    // Simplified for now based on index assumption which is risky but standard in this codebase so far.
-                    if (updated[index]) {
-                        updated[index] = {
-                            ...updated[index],
+                    const targetIndex = updated.findIndex((item) => item.id === fileId);
+                    if (targetIndex >= 0) {
+                        const targetFile = updated[targetIndex];
+                        if (!targetFile) {
+                            return updated;
+                        }
+
+                        updated[targetIndex] = {
+                            ...targetFile,
                             url: uploaded.url,
                             pathname: uploaded.pathname,
-                            isUploading: false
+                            isUploading: false,
+                            progress: 100,
                         };
                     }
                     return updated;
@@ -179,10 +263,22 @@ export function UploadModal({
                 const message = err instanceof Error ? err.message : "Upload failed";
                 console.error("Upload failed", err);
                 setError(`Failed to upload ${file.name}: ${message}`);
-                setFiles(prev => {
+                setFiles((prev) => {
                     const updated = [...prev];
-                    if (updated[index]) {
-                        updated[index] = { ...updated[index], isUploading: false, error: message };
+                    const targetIndex = updated.findIndex((item) => item.id === fileId);
+                    if (targetIndex >= 0) {
+                        const targetFile = updated[targetIndex];
+                        if (!targetFile) {
+                            return updated;
+                        }
+
+                        updated[targetIndex] = {
+                            ...targetFile,
+                            isUploading: false,
+                            progress: 0,
+                            displayProgress: 0,
+                            error: message,
+                        };
                     }
                     return updated;
                 });
@@ -419,35 +515,33 @@ export function UploadModal({
                                             {files[0]?.file.type.startsWith("video/") ? (
                                                 <video
                                                     src={files[0]?.previewUrl}
-                                                    className={`h-full w-full rounded-md object-cover transition-opacity ${files[0]?.isUploading ? "opacity-60" : "opacity-100"}`}
+                                                    className={`h-full w-full rounded-md object-cover transition-opacity ${files[0]?.isUploading ? "opacity-55" : "opacity-100"}`}
                                                     muted
                                                     playsInline
                                                     controls
                                                 />
                                             ) : (
-                                                <div className="relative h-full w-full">
+                                                <div className="relative h-full w-full rounded-md bg-muted/30">
                                                     <Image
                                                         src={files[0]?.previewUrl || ""}
                                                         alt="Featured preview"
                                                         fill
-                                                        className={`object-contain rounded-md transition-opacity ${files[0]?.isUploading ? "opacity-60" : "opacity-100"}`}
+                                                        className={`object-contain rounded-md transition-opacity ${files[0]?.isUploading ? "opacity-55" : "opacity-100"}`}
                                                     />
                                                 </div>
                                             )}
-                                            {files[0]?.isUploading && (
+                                            {files[0]?.isUploading ? (
                                                 <div className="absolute inset-0 flex items-center justify-center">
-                                                    <div className="size-10 rounded-full bg-background/80 flex items-center justify-center">
-                                                        <div className="size-7 rounded-full border-2 border-primary/60 border-t-primary animate-spin" />
-                                                    </div>
+                                                    <UploadProgressSpinner progress={files[0].displayProgress} />
                                                 </div>
-                                            )}
+                                            ) : null}
                                         </div>
 
                                         {/* Thumbnail strip */}
                                         <div className="grid grid-cols-5 gap-2 sm:grid-cols-6">
                                             {files.map((f, i) => (
                                                 <div
-                                                    key={i}
+                                                    key={f.id}
                                                     className={`relative aspect-square cursor-pointer border-2 rounded-md ${i === 0 ? "border-primary" : "border-transparent hover:border-border"}`}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -468,11 +562,6 @@ export function UploadModal({
                                                             fill
                                                             className={`object-cover rounded-md transition-opacity ${f.isUploading ? "opacity-60" : "opacity-100"}`}
                                                         />
-                                                    )}
-                                                    {f.isUploading && (
-                                                        <div className="absolute inset-0 flex items-center justify-center">
-                                                            <div className="size-5 rounded-full border-2 border-white/60 border-t-white animate-spin" />
-                                                        </div>
                                                     )}
 
                                                     {!isSaving && !f.isUploading && (

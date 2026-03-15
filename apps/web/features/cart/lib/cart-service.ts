@@ -88,7 +88,10 @@ export const cartService = {
       return null;
     }
 
-    const maxQuantity = product.quantity && product.quantity > 0 ? product.quantity : Number.POSITIVE_INFINITY;
+    const maxQuantity =
+      typeof product.quantity === "number" && Number.isFinite(product.quantity)
+        ? Math.max(product.quantity, 0)
+        : Number.POSITIVE_INFINITY;
     const clampedQuantity = Math.min(quantity, maxQuantity);
 
     const existingItem = await db.query.cartItems.findFirst({

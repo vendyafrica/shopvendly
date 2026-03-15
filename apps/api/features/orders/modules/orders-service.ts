@@ -9,5 +9,4 @@ export type {
   OrderItemInput,
   CreateOrderInput,
   UpdateOrderStatusInput,
-  OrderWithItems,
 } from "../../orders/services/order-service.js";

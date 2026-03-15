@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { Label } from "@shopvendly/ui/components/label";
+import { getRootUrl } from "@/utils/misc";
 import {
     Dialog,
     DialogContent,
@@ -14,7 +15,9 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 
-const API_BASE = "";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") || getRootUrl("");
+
+type CheckoutPaymentMethod = "mobile_money";
 
 interface CheckoutProduct {
     id: string;
@@ -33,62 +36,150 @@ interface CheckoutProps {
 }
 
 export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: CheckoutProps) {
+    const paymentPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [customerName, setCustomerName] = useState("");
-    const [customerEmail, setCustomerEmail] = useState("");
     const [customerPhone, setCustomerPhone] = useState("");
-    const paymentMethod = "cash_on_delivery";
+    const [shippingAddress, setShippingAddress] = useState("");
+    const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("mobile_money");
     const [notes, setNotes] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [paymentTransactionId, setPaymentTransactionId] = useState<string | null>(null);
+    const [paymentReference, setPaymentReference] = useState<string | null>(null);
 
     const totalAmount = product.price * quantity;
 
+    useEffect(() => {
+        return () => {
+            if (paymentPollRef.current) {
+                clearTimeout(paymentPollRef.current);
+            }
+        };
+    }, []);
+
     const resetState = () => {
         setCustomerName("");
-        setCustomerEmail("");
         setCustomerPhone("");
+        setShippingAddress("");
         setIsSuccess(false);
         setError(null);
+        setPaymentMethod("mobile_money");
+        setPaymentTransactionId(null);
+        setPaymentReference(null);
+    };
+
+    const clearPaymentPoll = () => {
+        if (paymentPollRef.current) {
+            clearTimeout(paymentPollRef.current);
+            paymentPollRef.current = null;
+        }
+    };
+
+    const finishSuccess = () => {
+        setIsSuccess(true);
+        setTimeout(() => {
+            if (storeSlug) {
+                window.location.assign(`${window.location.origin}/${storeSlug}`);
+            }
+        }, 1200);
+    };
+
+    const pollCollectoStatus = async (transactionId: string) => {
+        const statusRes = await fetch(`${API_BASE}/api/storefront/${storeSlug}/payments/collecto/status`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ transactionId }),
+        });
+
+        const statusData = await statusRes.json().catch(() => ({}));
+
+        if (!statusRes.ok) {
+            throw new Error(
+                typeof statusData?.error?.message === "string"
+                    ? statusData.error.message
+                    : "Unable to check mobile money payment status."
+            );
+        }
+
+        const status = typeof statusData?.status === "string" ? statusData.status : "pending";
+
+        if (status === "successful") {
+            finishSuccess();
+            return;
+        }
+
+        if (status === "failed") {
+            setError("Mobile money payment failed. Please try again.");
+            setIsSubmitting(false);
+            return;
+        }
+
+        clearPaymentPoll();
+        paymentPollRef.current = setTimeout(() => {
+            void pollCollectoStatus(transactionId);
+        }, 1200);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
         setError(null);
+        setPaymentTransactionId(null);
+        setPaymentReference(null);
+        clearPaymentPoll();
 
         try {
-            const response = await fetch(`${API_BASE}/api/storefront/${storeSlug}/orders`, {
+            const response = await fetch(`${API_BASE}/api/storefront/${storeSlug}/checkout`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
                     customerName,
-                    customerEmail,
                     customerPhone: customerPhone || undefined,
                     paymentMethod,
                     notes: notes || undefined,
+                    shippingAddress: {
+                        street: shippingAddress || undefined,
+                    },
                     items: [
                         {
                             productId: product.id,
                             quantity,
                         },
                     ],
+                    amount: totalAmount,
                 }),
             });
 
+            const data = await response.json().catch(() => ({}));
+
             if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || "Failed to place order");
+                throw new Error(
+                    typeof data?.error?.message === "string"
+                        ? data.error.message
+                        : typeof data?.message === "string"
+                            ? data.message
+                        : "Failed to place order"
+                );
             }
 
-            setIsSuccess(true);
-            setTimeout(() => {
-                if (storeSlug) {
-                    window.location.assign(`${window.location.origin}/${storeSlug}`);
-                }
-            }, 1200);
+            const orderId = typeof data?.id === "string" ? data.id : typeof data?.order?.id === "string" ? data.order.id : null;
+            if (!orderId) {
+                throw new Error("Missing order ID");
+            }
+
+            const payment = data?.payment;
+            const transactionId = typeof payment?.transactionId === "string" ? payment.transactionId : null;
+            const reference = typeof payment?.reference === "string" ? payment.reference : null;
+            if (!transactionId) {
+                throw new Error("Collecto payment started without a transaction reference.");
+            }
+
+            setPaymentTransactionId(transactionId);
+            setPaymentReference(reference);
+            await pollCollectoStatus(transactionId);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to place order");
         } finally {
@@ -108,14 +199,16 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
     if (isSuccess) {
         return (
             <Dialog open={open} onOpenChange={handleClose}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md" disableAutoFocus>
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                         <div className="mb-4 rounded-full bg-green-100 p-3">
                             <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-12 w-12 text-green-600" />
                         </div>
                         <h2 className="text-2xl font-semibold mb-2">Order Placed!</h2>
                         <p className="text-muted-foreground mb-6">
-                            Your order has been received and is being worked on. Delivery coordination will continue by phone/WhatsApp.
+                            {paymentMethod === "mobile_money"
+                                ? "Your mobile money payment has been confirmed and your order is now being processed."
+                                : "Your order has been received and is being worked on. Delivery coordination will continue by phone/WhatsApp."}
                         </p>
                         <Button onClick={handleClose} className="w-full">
                             Continue Shopping
@@ -128,7 +221,7 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" disableAutoFocus>
                 <DialogHeader>
                     <DialogTitle>Checkout</DialogTitle>
                     <DialogDescription>
@@ -137,7 +230,6 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Order Summary */}
                     <div className="rounded-lg border bg-muted/30 p-4">
                         <h3 className="font-medium mb-3">Order Summary</h3>
                         <div className="flex justify-between text-sm">
@@ -150,7 +242,6 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                         </div>
                     </div>
 
-                    {/* Customer Details */}
                     <div className="space-y-4">
                         <h3 className="font-medium">Your Details</h3>
 
@@ -161,18 +252,6 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                                 placeholder="John Doe"
                                 value={customerName}
                                 onChange={(e) => setCustomerName(e.target.value)}
-                                required
-                            />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="email">Email *</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                placeholder="john@example.com"
-                                value={customerEmail}
-                                onChange={(e) => setCustomerEmail(e.target.value)}
                                 required
                             />
                         </div>
@@ -191,13 +270,29 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                                 Enter with country code so seller and delivery provider can reach you.
                             </p>
                         </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="shipping-address">Shipping Address *</Label>
+                            <Input
+                                id="shipping-address"
+                                placeholder="Enter your delivery address"
+                                value={shippingAddress}
+                                onChange={(e) => setShippingAddress(e.target.value)}
+                                required
+                            />
+                        </div>
                     </div>
 
-                    <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                        Payment method: <span className="font-medium text-foreground">Cash on delivery</span>
+                    <div className="space-y-3">
+                        <div className="text-sm font-medium">Payment method</div>
+                        <div className="rounded-lg border border-foreground bg-background p-3 text-sm">
+                            <div className="font-medium text-foreground">Mobile money</div>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                                Pay now with mobile money.
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Notes */}
                     <div className="grid gap-2">
                         <Label htmlFor="notes">Order Notes (Optional)</Label>
                         <Input
@@ -214,23 +309,30 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
                         </div>
                     )}
 
+                    {paymentTransactionId ? (
+                        <div className="rounded-md border p-3 text-sm">
+                            <div className="font-medium">Payment reference</div>
+                            <div className="text-muted-foreground break-all">{paymentReference || paymentTransactionId}</div>
+                        </div>
+                    ) : null}
+
                     <Button
                         type="submit"
                         className="w-full h-12"
                         disabled={
                             isSubmitting ||
                             !customerName ||
-                            !customerEmail ||
-                            !customerPhone
+                            !customerPhone ||
+                            !shippingAddress
                         }
                     >
                         {isSubmitting ? (
                             <>
                                 <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" />
-                                Placing Order...
+                                Processing payment...
                             </>
                         ) : (
-                            "Place order"
+                            "Pay with mobile money"
                         )}
                     </Button>
                 </form>

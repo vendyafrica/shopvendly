@@ -1,13 +1,19 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useUploadThing } from "@/utils/uploadthing";
 
 type UploadEndpoint = "productMedia" | "storeHeroMedia";
+
+type UploadProgressEvent = {
+    file: File;
+    progress: number;
+};
 
 type UploadOptions = {
     tenantId: string;
     endpoint?: UploadEndpoint;
     compressVideo?: boolean;
     skipImageCompression?: boolean;
+    onUploadProgress?: (event: UploadProgressEvent) => void;
 };
 
 const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
@@ -193,12 +199,34 @@ async function prepareFileForUpload(file: File, options: UploadOptions): Promise
 
 export function useUpload() {
     const [isUploading, setIsUploading] = useState(false);
-    const productUpload = useUploadThing("productMedia");
-    const heroUpload = useUploadThing("storeHeroMedia");
+    const activeProgressFileRef = useRef<File | null>(null);
+    const activeProgressFileProgressCallbackRef = useRef<UploadOptions["onUploadProgress"] | undefined>(undefined);
+    const productUpload = useUploadThing("productMedia", {
+        uploadProgressGranularity: "fine",
+        onUploadProgress: (progress) => {
+            if (!activeProgressFileRef.current) return;
+            activeProgressFileProgressCallbackRef.current?.({
+                file: activeProgressFileRef.current,
+                progress,
+            });
+        },
+    });
+    const heroUpload = useUploadThing("storeHeroMedia", {
+        uploadProgressGranularity: "fine",
+        onUploadProgress: (progress) => {
+            if (!activeProgressFileRef.current) return;
+            activeProgressFileProgressCallbackRef.current?.({
+                file: activeProgressFileRef.current,
+                progress,
+            });
+        },
+    });
 
     const uploadFile = useCallback(
         async (file: File, options: UploadOptions): Promise<{ url: string; pathname: string }> => {
             setIsUploading(true);
+            activeProgressFileRef.current = file;
+            activeProgressFileProgressCallbackRef.current = options.onUploadProgress;
             try {
                 const endpoint = options.endpoint ?? "productMedia";
                 const preparedFile = await prepareFileForUpload(file, options);
@@ -229,6 +257,12 @@ export function useUpload() {
                     pathname: uploaded.key,
                 };
             } finally {
+                activeProgressFileProgressCallbackRef.current?.({
+                    file,
+                    progress: 100,
+                });
+                activeProgressFileProgressCallbackRef.current = undefined;
+                activeProgressFileRef.current = null;
                 setIsUploading(false);
             }
         },

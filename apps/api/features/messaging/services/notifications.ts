@@ -99,15 +99,6 @@ function formatItemsSummary(items: Array<OrderItem> | null | undefined): string 
     .join(", ");
 }
 
-function formatCustomerDetails(order: OrderLike): string {
-  const parts: string[] = [];
-  parts.push(order.customerName);
-  if (order.customerPhone) parts.push(order.customerPhone);
-  if (order.deliveryAddress) parts.push(`Address: ${order.deliveryAddress}`);
-  if (order.notes) parts.push(`Note: ${order.notes}`);
-  return parts.join(". ");
-}
-
 async function sendOnce(key: string, fn: () => Promise<unknown>) {
   const result = await fn();
   if (!result) {
@@ -152,9 +143,12 @@ export async function notifyCustomerPreparing(params: { order: OrderLike }) {
 
   const key = `customer:preparing:${order.id}:${to}`;
   await sendOnce(key, () =>
-    enqueueTextMessage({
-      to,
-      body: `✅ Payment received for order ${order.orderNumber}. We are preparing your order now.`,
+    enqueueTemplateMessage({
+      input: templateSend.buyerOrderConfirmed(to, {
+        orderId: order.orderNumber || order.id,
+        storeName: order.store?.name || "the store",
+        total: `${order.currency || "UGX"} ${String(order.totalAmount)}`,
+      }),
       tenantId: order.tenantId,
       orderId: order.id,
       dedupeKey: key,
@@ -172,9 +166,15 @@ export async function notifySellerOrderDetails(params: {
 
   const key = `seller:order_details:${order.id}:${to}`;
   await sendOnce(key, () =>
-    enqueueTextMessage({
-      to,
-      body: `Order ${order.orderNumber} details: ${formatItemsSummary(order.items)}`,
+    enqueueTemplateMessage({
+      input: templateSend.sellerPrepareOrder(to, {
+        orderId: order.orderNumber || order.id,
+        orderItems: formatItemsSummary(order.items),
+        buyerName: order.customerName,
+        customerPhone: order.customerPhone || "N/A",
+        customerLocation: order.deliveryAddress || "N/A",
+        total: `${order.currency || "UGX"} ${String(order.totalAmount)}`,
+      }),
       tenantId: order.tenantId,
       orderId: order.id,
       dedupeKey: key,
@@ -192,9 +192,15 @@ export async function notifySellerCustomerDetails(params: {
 
   const key = `seller:customer_details:${order.id}:${to}`;
   await sendOnce(key, () =>
-    enqueueTextMessage({
-      to,
-      body: `Customer details for ${order.orderNumber}: ${formatCustomerDetails(order)}`,
+    enqueueTemplateMessage({
+      input: templateSend.sellerPrepareOrder(to, {
+        orderId: order.orderNumber || order.id,
+        orderItems: formatItemsSummary(order.items),
+        buyerName: order.customerName,
+        customerPhone: order.customerPhone || "N/A",
+        customerLocation: order.deliveryAddress || "N/A",
+        total: `${order.currency || "UGX"} ${String(order.totalAmount)}`,
+      }),
       tenantId: order.tenantId,
       orderId: order.id,
       dedupeKey: key,

@@ -6,11 +6,9 @@ import { RevenueAreaChartCard, TopProductsBarChartCard } from "@/app/admin/compo
 import { RecentTransactionsTable } from "@/app/admin/components/recent-transactions-table";
 import { IntegrationsPanel } from "@/app/admin/components/integrations-panel";
 import { QuickAddLauncher } from "@/app/admin/components/quick-add-launcher";
-import { SocialConnectPrompt } from "@/app/admin/components/social-connect-prompt";
 import { db } from "@shopvendly/db/db";
 import { orderItems, orders, products, storefrontSessions, stores } from "@shopvendly/db/schema";
 import { and, count, desc, eq, isNull, sql } from "@shopvendly/db";
-import { Button } from "@shopvendly/ui/components/button";
 import { Card, CardContent, CardHeader } from "@shopvendly/ui/components/card";
 import { getStorefrontUrl } from "@/utils/misc";
 import {
@@ -121,7 +119,7 @@ export default async function AdminPage({
 
     db
       .select({
-        distinctCustomers: sql<number>`COALESCE(COUNT(DISTINCT ${orders.customerEmail}), 0)::int`,
+        distinctCustomers: sql<number>`COALESCE(COUNT(DISTINCT COALESCE(${orders.customerEmail}, ${orders.customerPhone})), 0)::int`,
       })
       .from(orders)
       .where(wherePaidOrders)
@@ -141,7 +139,7 @@ export default async function AdminPage({
       .select({
         revenuePaid: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)::int`,
         ordersPaid: sql<number>`COALESCE(COUNT(*), 0)::int`,
-        distinctCustomers: sql<number>`COALESCE(COUNT(DISTINCT ${orders.customerEmail}), 0)::int`,
+        distinctCustomers: sql<number>`COALESCE(COUNT(DISTINCT COALESCE(${orders.customerEmail}, ${orders.customerPhone})), 0)::int`,
       })
       .from(orders)
       .where(wherePrevOrders)
@@ -338,22 +336,12 @@ export default async function AdminPage({
         </div>
 
         {/* Quick actions 2x2 */}
-        <div className="grid grid-cols-2 gap-3 px-1">
-          <QuickAddLauncher className="h-14 w-full justify-start" label="Add product" />
-          {quickActions.slice(1, 3).map((action) => (
-            <Link
-              key={action.label}
-              href={action.href}
-              target={action.external ? "_blank" : undefined}
-              rel={action.external ? "noreferrer" : undefined}
-              className="flex h-14 items-center gap-3 rounded-xl border bg-card/80 px-4 py-3 shadow-sm transition hover:bg-muted/60"
-            >
-              <HugeiconsIcon icon={action.icon} className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold">{action.label}</span>
-            </Link>
-          ))}
-          <SocialConnectPrompt className="h-14" />
-        </div>
+        <QuickAddLauncher
+          layout="grid"
+          className="px-1"
+          actions={quickActions.slice(1, 3)}
+          socialConnect={{ enabled: true }}
+        />
 
         {/* Activity feed (orders and product updates via transactions) */}
         <div className="space-y-3 px-1">
@@ -407,32 +395,13 @@ export default async function AdminPage({
                 <HugeiconsIcon icon={ArrowRight01Icon} className="h-3.5 w-3.5 opacity-50" />
               </Link>
               {/* Quick action buttons */}
-              <div className="flex items-center gap-2 shrink-0">
-                <QuickAddLauncher
-                  className="h-9 px-3 text-sm gap-2"
-                  label="Add product"
-                />
-                {quickActions.slice(1, 3).map((action) => (
-                  <Link
-                    key={action.label}
-                    href={action.href}
-                    target={(action as { external?: boolean }).external ? "_blank" : undefined}
-                    rel={(action as { external?: boolean }).external ? "noreferrer" : undefined}
-                  >
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <HugeiconsIcon icon={action.icon} className="h-4 w-4" />
-                      {action.label}
-                    </Button>
-                  </Link>
-                ))}
-                <SocialConnectPrompt variant="compact" />
-                <Link href={storefrontUrl} target="_blank" rel="noreferrer">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <HugeiconsIcon icon={Share01Icon} className="h-4 w-4" />
-                    Share store
-                  </Button>
-                </Link>
-              </div>
+              <QuickAddLauncher
+                layout="inline"
+                className="shrink-0"
+                actions={quickActions.slice(1, 3)}
+                socialConnect={{ enabled: true, variant: "compact" }}
+                shareAction={quickActions[3]}
+              />
             </div>
 
             {/* Performance strip */}

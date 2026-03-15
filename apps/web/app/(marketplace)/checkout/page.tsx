@@ -32,7 +32,7 @@ function CheckoutContent() {
     const [fullName, setFullName] = useState("");
     const [address, setAddress] = useState("");
     const [phone, setPhone] = useState("");
-    const paymentMethod = "cash_on_delivery";
+    const paymentMethod = "mobile_money";
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -188,7 +188,7 @@ function CheckoutContent() {
                         />
 
                         <div className="p-3 rounded-lg bg-neutral-50 border text-sm text-neutral-600">
-                            Payment method: Cash on delivery. Seller and delivery provider will coordinate delivery by phone/WhatsApp.
+                            Payment method: Mobile money. You will receive a payment prompt on your phone.
                         </div>
 
                         {error && (

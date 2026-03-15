@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -40,21 +40,41 @@ interface ProductActionsProps {
 }
 
 const createCartLineId = (productId: string, selectedOptions: SelectedOption[] = []) => {
+  if (!productId) return crypto.randomUUID();
   if (selectedOptions.length === 0) return productId;
-  const signature = selectedOptions
+  const signature = [...selectedOptions]
+    .map((option) => ({
+      name: option.name.trim(),
+      value: option.value.trim(),
+    }))
+    .filter((option) => option.name && option.value)
+    .sort((a, b) => {
+      const aKey = `${a.name}:${a.value}`.toLowerCase();
+      const bKey = `${b.name}:${b.value}`.toLowerCase();
+      return aKey.localeCompare(bKey);
+    })
     .map((option) => `${option.name}:${option.value}`)
     .join("|");
   return `${productId}::${signature}`;
 };
 
 export function ProductActions({ product, selectedOptions = [] }: ProductActionsProps) {
-  const { addItem } = useCart();
+  const { addItem, items } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
 
-  const [quantity, setQuantity] = useState(1);
-  const [isAdded, setIsAdded] = useState(false);
-  const maxQuantity = product.availableQuantity ?? Number.POSITIVE_INFINITY;
+  const maxQuantity =
+    typeof product.availableQuantity === "number" && Number.isFinite(product.availableQuantity)
+      ? Math.max(product.availableQuantity, 0)
+      : Number.POSITIVE_INFINITY;
   const isOutOfStock = maxQuantity <= 0;
+  const [quantity, setQuantity] = useState(isOutOfStock ? 0 : 1);
+  const [isAdded, setIsAdded] = useState(false);
+  const lineId = useMemo(
+    () => createCartLineId(product.id, selectedOptions),
+    [product.id, selectedOptions],
+  );
+  const existingCartItem = items.find((item) => item.id === lineId);
+  const isAlreadyInCart = Boolean(existingCartItem);
 
   const handleToggleWishlist = () => {
     toggleWishlist({
@@ -73,17 +93,18 @@ export function ProductActions({ product, selectedOptions = [] }: ProductActions
   };
 
   const handleQuantityChange = (delta: number) => {
+    if (isOutOfStock) return;
     setQuantity((prev) => Math.max(1, Math.min(maxQuantity, prev + delta)));
   };
 
   const handleAddToCart = () => {
     if (!product) return;
 
-    if (isOutOfStock) return;
+    if (isOutOfStock || isAlreadyInCart) return;
 
     addItem(
       {
-        id: createCartLineId(product.id, selectedOptions),
+        id: lineId,
         product: {
           id: product.id,
           name: product.name,
@@ -117,7 +138,11 @@ export function ProductActions({ product, selectedOptions = [] }: ProductActions
       <div className="flex items-center justify-between border-b border-neutral-100 pb-5">
         <div className="flex flex-col gap-1">
           <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500">Quantity</span>
-          {Number.isFinite(maxQuantity) && maxQuantity > 0 ? (
+          {isOutOfStock ? (
+            <span className="text-xs font-medium text-neutral-400">
+              Sold out
+            </span>
+          ) : Number.isFinite(maxQuantity) && maxQuantity > 0 ? (
             <span className="text-xs font-medium text-neutral-400">
               Only {maxQuantity} left
             </span>
@@ -127,15 +152,17 @@ export function ProductActions({ product, selectedOptions = [] }: ProductActions
           <button
             onClick={() => handleQuantityChange(-1)}
             className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 transition-all hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-35"
-            disabled={quantity <= 1}
+            disabled={isOutOfStock || quantity <= 1}
           >
             <HugeiconsIcon icon={MinusSignIcon} size={20} />
           </button>
-          <span className="min-w-8 text-center text-lg font-semibold tabular-nums text-neutral-950">{quantity}</span>
+          <span className="min-w-8 text-center text-lg font-semibold tabular-nums text-neutral-950">
+            {isOutOfStock ? 0 : quantity}
+          </span>
           <button
             onClick={() => handleQuantityChange(1)}
             className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 transition-all hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-35"
-            disabled={quantity >= maxQuantity}
+            disabled={isOutOfStock || quantity >= maxQuantity}
           >
             <HugeiconsIcon icon={PlusSignIcon} size={20} />
           </button>
@@ -147,15 +174,20 @@ export function ProductActions({ product, selectedOptions = [] }: ProductActions
         <Button
           onClick={handleAddToCart}
           className="mb-3 h-14 w-full rounded-xl bg-primary px-5 text-sm font-semibold uppercase tracking-[0.22em] text-white transition-colors hover:bg-primary/90"
-          disabled={isAdded || isOutOfStock}
+          disabled={isAdded || isOutOfStock || isAlreadyInCart}
         >
-          {isAdded ? (
+          {isAlreadyInCart ? (
+            <span className="flex items-center gap-2">
+              <HugeiconsIcon icon={Tick02Icon} size={18} />
+              Added already
+            </span>
+          ) : isAdded ? (
             <span className="flex items-center gap-2">
               <HugeiconsIcon icon={Tick02Icon} size={18} />
               Added
             </span>
           ) : (
-            `Add to Cart`
+            isOutOfStock ? "Sold out" : "Add to Cart"
           )}
         </Button>
 

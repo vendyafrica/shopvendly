@@ -74,6 +74,7 @@ export async function GET() {
                     id: item.product.id,
                     name: item.product.productName,
                     price: item.product.priceAmount,
+                    originalPrice: (item.product as { originalPriceAmount?: number | null }).originalPriceAmount ?? null,
                     currency: item.product.currency,
                     image: item.product.media?.[0]?.media?.blobUrl ?? null,
                     contentType: item.product.media?.[0]?.media?.contentType ?? null,
@@ -124,8 +125,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
-        const updated = await cartService.upsertItem(session.user.id, productId, storeId, quantity, selectedOptions);
-        return NextResponse.json(updated);
+        await cartService.upsertItem(session.user.id, productId, storeId, quantity, selectedOptions);
+        return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Error updating cart:", error);
         return NextResponse.json({ error: "Failed to update cart" }, { status: 500 });

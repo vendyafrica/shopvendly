@@ -146,8 +146,7 @@ export default function StoreCartPage() {
                                                 muted
                                                 playsInline
                                                 loop
-                                                autoPlay
-                                                preload="none"
+                                                preload="metadata"
                                             />
                                         ) : (
                                             <Image
@@ -182,9 +181,16 @@ export default function StoreCartPage() {
                                                 )}
                                             </div>
                                             <div className="text-left sm:text-right">
-                                                <span className="font-semibold text-neutral-900">
-                                                    {item.product.currency} {item.product.price.toLocaleString(undefined, { minimumFractionDigits: item.product.currency === "USD" ? 2 : 0, maximumFractionDigits: item.product.currency === "USD" ? 2 : 0 })}
-                                                </span>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="font-semibold text-neutral-900">
+                                                        {item.product.currency} {item.product.price.toLocaleString(undefined, { minimumFractionDigits: item.product.currency === "USD" ? 2 : 0, maximumFractionDigits: item.product.currency === "USD" ? 2 : 0 })}
+                                                    </span>
+                                                    {typeof item.product.originalPrice === "number" && item.product.originalPrice > item.product.price ? (
+                                                        <span className="text-xs text-red-500">
+                                                            {Math.round(((item.product.originalPrice - item.product.price) / item.product.originalPrice) * 100)}% off
+                                                        </span>
+                                                    ) : null}
+                                                </div>
                                             </div>
                                         </div>
 

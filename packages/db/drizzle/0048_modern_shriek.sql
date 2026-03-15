@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ALTER COLUMN "customer_email" DROP NOT NULL;

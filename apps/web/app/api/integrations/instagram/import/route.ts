@@ -8,6 +8,8 @@ import { z } from "zod";
 import { parseInstagramCaption } from "@/lib/instagram/parse-caption";
 import { mediaService } from "@/features/media/lib/media-service";
 
+const MAX_INSTAGRAM_IMPORT_ITEMS = 30;
+
 type InstagramMediaChild = {
   id: string | number;
   media_type?: string | null;
@@ -124,6 +126,10 @@ export async function POST(request: NextRequest) {
     );
     const userData = await userRes.json();
 
+    if (!userRes.ok || userData?.error) {
+      throw new Error(userData?.error?.message || "Failed to fetch Instagram profile");
+    }
+
     // 2. Fetch Media
     // Using 'children' field for carousel items
     const mediaRes = await fetch(
@@ -136,8 +142,7 @@ export async function POST(request: NextRequest) {
     }
 
     const mediaItems: InstagramMediaItem[] = Array.isArray(mediaData?.data) ? mediaData.data : [];
-    // Cap imports to first 50 items to avoid overloading the store
-    const limitedMediaItems = mediaItems.slice(0, 50);
+    const limitedMediaItems = mediaItems.slice(0, MAX_INSTAGRAM_IMPORT_ITEMS);
 
     // 3. Update Account with Profile Picture
     const existing = await db.query.instagramAccounts.findFirst({
@@ -169,6 +174,16 @@ export async function POST(request: NextRequest) {
       throw new Error("Failed to upsert Instagram account");
     }
 
+    if (userData.profile_picture_url && store.logoUrl !== userData.profile_picture_url) {
+      await db
+        .update(stores)
+        .set({
+          logoUrl: userData.profile_picture_url,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(stores.id, storeId), eq(stores.tenantId, membership.tenantId)));
+    }
+
     const accountId = igAccount.id;
 
     // 4. Create Sync Job
@@ -195,6 +210,21 @@ export async function POST(request: NextRequest) {
     const { products, mediaObjects, productMedia } = await import("@shopvendly/db/schema");
 
     for (const item of limitedMediaItems) {
+      const sourceId = String(item.id);
+      const existingProduct = await db.query.products.findFirst({
+        where: and(
+          eq(products.tenantId, membership.tenantId),
+          eq(products.storeId, storeId),
+          eq(products.source, "instagram"),
+          eq(products.sourceId, sourceId),
+        ),
+        columns: { id: true },
+      });
+
+      if (existingProduct) {
+        continue;
+      }
+
       const caption = (item.caption as string | null | undefined) || "";
       const parsed = parseInstagramCaption(caption, store.defaultCurrency);
       const slug = slugify(parsed.productName);
@@ -211,9 +241,9 @@ export async function POST(request: NextRequest) {
           currency: parsed.currency,
           status: "draft",
           source: "instagram",
-          sourceId: String(item.id),
+          sourceId,
           sourceUrl: item.permalink ? String(item.permalink) : null,
-          variants: [],
+          variants: null,
         })
         .returning();
 
@@ -224,8 +254,6 @@ export async function POST(request: NextRequest) {
       const productId = product.id;
 
       createdCount++;
-
-      const variantEntries: Array<{ name: string; sourceMediaId: string; mediaObjectId: string; mediaType?: string }> = [];
 
       if (item.media_type === "CAROUSEL_ALBUM" && Array.isArray(item.children?.data)) {
         let idx = 0;
@@ -266,13 +294,6 @@ export async function POST(request: NextRequest) {
             isFeatured: idx === 1,
             sortOrder: idx - 1,
           });
-
-          variantEntries.push({
-            name: `Option ${idx}`,
-            sourceMediaId: childId,
-            mediaObjectId: mediaObj.id,
-            mediaType: childMediaType,
-          });
         }
       } else {
         const itemId = String(item.id);
@@ -310,13 +331,6 @@ export async function POST(request: NextRequest) {
             sortOrder: 0,
           });
         }
-      }
-
-      if (variantEntries.length) {
-        await db
-          .update(products)
-          .set({ variants: variantEntries, updatedAt: new Date() })
-          .where(eq(products.id, productId));
       }
     }
 

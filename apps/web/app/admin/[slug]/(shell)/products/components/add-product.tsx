@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Add01Icon, Upload04Icon, Cancel01Icon, Loading03Icon } from "@hugeicons/core-free-icons";
+import { Add01Icon, Upload04Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import {
     Dialog,
     DialogContent,
@@ -24,11 +24,13 @@ interface AddProductProps {
 }
 
 interface UploadedFile {
+    id: string;
     url: string;
     pathname: string;
     contentType: string;
     previewUrl: string; // local preview
     isUploading: boolean;
+    progress: number;
 }
 
 export function AddProduct({ storeId, onProductCreated }: AddProductProps) {
@@ -46,30 +48,48 @@ export function AddProduct({ storeId, onProductCreated }: AddProductProps) {
 
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+    const startProgressSimulation = React.useCallback((fileId: string) => {
+        const interval = window.setInterval(() => {
+            setFiles((prev) => prev.map((file) => {
+                if (file.id !== fileId || !file.isUploading) return file;
+                const nextProgress = file.progress >= 95
+                    ? file.progress
+                    : Math.min(file.progress + Math.max(3, Math.ceil((95 - file.progress) / 4)), 95);
+
+                return {
+                    ...file,
+                    progress: nextProgress,
+                };
+            }));
+        }, 250);
+
+        return interval;
+    }, []);
+
     const handleUploadFiles = async (selectedFiles: File[]) => {
         // Create placeholders first for immediate UI feedback
-        const newFiles = selectedFiles.map(file => ({
+        const newFiles = selectedFiles.map((file, index) => ({
+            id: `${file.name}-${file.lastModified}-${Date.now()}-${index}`,
             url: "",
             pathname: "",
             contentType: file.type,
             previewUrl: URL.createObjectURL(file), // immediate local preview
-            isUploading: true
+            isUploading: true,
+            progress: 0,
         }));
 
         setFiles(prev => [...prev, ...newFiles]);
 
-        // Process uploads
-        // We'll map the index from the end of the previous array
-        const startIndex = files.length;
-
         if (!tenantId) {
             console.error("Missing tenantId for upload");
-            setFiles(prev => prev.filter((_, idx) => idx < startIndex));
+            setFiles(prev => prev.filter((existing) => !newFiles.some((file) => file.id === existing.id)));
             return;
         }
 
         await Promise.all(selectedFiles.map(async (file, i) => {
-            const index = startIndex + i;
+            const fileId = newFiles[i]?.id;
+            if (!fileId) return;
+            const interval = startProgressSimulation(fileId);
 
             try {
                 const uploaded = await uploadFile(file, {
@@ -80,12 +100,19 @@ export function AddProduct({ storeId, onProductCreated }: AddProductProps) {
 
                 setFiles(prev => {
                     const updated = [...prev];
-                    if (updated[index]) {
-                        updated[index] = {
-                            ...updated[index],
+                    const targetIndex = updated.findIndex((item) => item.id === fileId);
+                    if (targetIndex >= 0) {
+                        const targetFile = updated[targetIndex];
+                        if (!targetFile) {
+                            return updated;
+                        }
+
+                        updated[targetIndex] = {
+                            ...targetFile,
                             url: uploaded.url,
                             pathname: uploaded.pathname,
-                            isUploading: false
+                            isUploading: false,
+                            progress: 100,
                         };
                     }
 
@@ -94,7 +121,9 @@ export function AddProduct({ storeId, onProductCreated }: AddProductProps) {
             } catch (error) {
                 console.error("Upload failed", error);
                 // Remove failed file
-                setFiles(prev => prev.filter((_, idx) => idx !== index));
+                setFiles(prev => prev.filter((existing) => existing.id !== fileId));
+            } finally {
+                window.clearInterval(interval);
             }
         }));
     };
@@ -282,7 +311,7 @@ export function AddProduct({ storeId, onProductCreated }: AddProductProps) {
                                 {files.length > 0 && (
                                     <div className="mt-2 flex gap-3 overflow-x-auto pb-1">
                                         {files.map((f, i) => (
-                                            <div key={i} className="relative aspect-square w-24 shrink-0 overflow-hidden rounded-md border border-border/60">
+                                            <div key={f.id} className="relative aspect-square w-24 shrink-0 overflow-hidden rounded-md border border-border/60">
                                                 {f.contentType.startsWith("video/") ? (
                                                     <video
                                                         src={f.previewUrl}
@@ -299,8 +328,17 @@ export function AddProduct({ storeId, onProductCreated }: AddProductProps) {
                                                     />
                                                 )}
                                                 {f.isUploading && (
-                                                    <div className="absolute inset-0 flex items-center justify-center">
-                                                        <HugeiconsIcon icon={Loading03Icon} className="size-5 animate-spin text-white" />
+                                                    <div className="absolute inset-x-0 bottom-0 bg-black/65 px-2 py-1.5 text-white">
+                                                        <div className="mb-1 flex items-center justify-between text-[10px] font-medium">
+                                                            <span>Uploading</span>
+                                                            <span>{f.progress}%</span>
+                                                        </div>
+                                                        <div className="h-1.5 overflow-hidden rounded-full bg-white/25">
+                                                            <div
+                                                                className="h-full rounded-full bg-white transition-all duration-200"
+                                                                style={{ width: `${f.progress}%` }}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 )}
                                                 <button
@@ -327,14 +365,7 @@ export function AddProduct({ storeId, onProductCreated }: AddProductProps) {
                                 Cancel
                             </Button>
                             <Button type="submit" disabled={isSubmitting || files.some(f => f.isUploading)}>
-                                {isSubmitting ? (
-                                    <>
-                                        <HugeiconsIcon icon={Loading03Icon} className="size-4 mr-2 animate-spin" />
-                                        Creating...
-                                    </>
-                                ) : (
-                                    "Create Product"
-                                )}
+                                {isSubmitting ? "Creating..." : "Create Product"}
                             </Button>
                         </DialogFooter>
                     </div>

@@ -14,6 +14,42 @@ import { tenants } from "./tenant-schema";
 import { stores } from "./storefront-schema";
 import { products } from "./product-schema";
 
+export type CollectoStepStatus = "pending" | "successful" | "failed";
+
+export type CollectoMeta = {
+    settlementStatus?: "pending" | "processing" | "successful" | "failed";
+    settledAt?: string | null;
+    lastError?: string | null;
+    settlementBatchOrderIds?: string[];
+    collection?: {
+        reference?: string | null;
+        transactionId?: string | null;
+        status?: CollectoStepStatus;
+        message?: string | null;
+        updatedAt?: string | null;
+    };
+    walletTransfer?: {
+        reference?: string | null;
+        transactionId?: string | null;
+        status?: CollectoStepStatus;
+        amount?: number | null;
+        message?: string | null;
+        updatedAt?: string | null;
+    };
+    payout?: {
+        reference?: string | null;
+        transactionId?: string | null;
+        gateway?: string | null;
+        phone?: string | null;
+        accountName?: string | null;
+        amount?: number | null;
+        fee?: number | null;
+        status?: CollectoStepStatus;
+        message?: string | null;
+        updatedAt?: string | null;
+    };
+};
+
 export const orders = pgTable(
     "orders",
     {
@@ -28,7 +64,7 @@ export const orders = pgTable(
         orderNumber: text("order_number").notNull(),
 
         customerName: text("customer_name").notNull(),
-        customerEmail: text("customer_email").notNull(),
+        customerEmail: text("customer_email"),
         customerPhone: text("customer_phone"),
 
         status: text("status").notNull().default("pending_seller_acceptance"),
@@ -41,6 +77,7 @@ export const orders = pgTable(
 
         notes: text("notes"),
         deliveryAddress: text("delivery_address"),
+        collectoMeta: jsonb("collecto_meta").$type<CollectoMeta>().notNull().default({}),
         deliveryProvider: text("delivery_provider"),
         deliveryProviderDispatchId: text("delivery_provider_dispatch_id"),
         deliveryStatus: text("delivery_status"),
@@ -139,5 +176,5 @@ export type OrderStatus =
     | "cancelled"
     | "delivery_exception"
     | "refunded";
-export type PaymentMethod = "card" | "mpesa" | "mtn_momo" | "mobile_money" | "paystack" | "cash_on_delivery";
+export type PaymentMethod = "mobile_money" | "cash_on_delivery";
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";

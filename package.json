@@ -9,7 +9,9 @@
     "check-types": "turbo run check-types",
     "web": "pnpm --filter @shopvendly/web dev",
     "admin": "pnpm --filter @shopvendly/admin dev",
-    "api": "pnpm --filter @shopvendly/api dev"
+    "api": "pnpm --filter @shopvendly/api dev",
+    "generate": "pnpm --filter @shopvendly/db run generate",
+    "push": "pnpm --filter @shopvendly/db run push"
   },
   "devDependencies": {
     "prettier": "^3.7.4",

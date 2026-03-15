@@ -215,31 +215,43 @@ export default function StorefrontHeaderClient({
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  className="relative flex h-12 w-12 items-center justify-center bg-transparent p-0 text-neutral-700 shadow-none"
+                  className="group relative flex h-12 w-12 items-center justify-center bg-transparent p-0 text-neutral-700 shadow-none cursor-pointer"
                   onClick={() => router.push(`/${store.slug}/wishlist`)}
                   aria-label="Liked Items"
                 >
-                  <HugeiconsIcon icon={FavouriteIcon} size={24} />
+                  <HugeiconsIcon
+                    icon={FavouriteIcon}
+                    size={24}
+                    className="transition-colors group-hover:text-primary"
+                  />
                   <Badge count={wishlistCount} dark />
                 </button>
                 <button
                   type="button"
-                  className="relative flex h-12 w-12 items-center justify-center bg-transparent p-0 text-neutral-700 shadow-none"
+                  className="group relative flex h-12 w-12 items-center justify-center bg-transparent p-0 text-neutral-700 shadow-none cursor-pointer"
                   onClick={() => router.push(`/${store.slug}/cart`)}
                   aria-label="Cart"
                 >
-                  <HugeiconsIcon icon={ShoppingBag01Icon} size={24} />
-                  <Badge count={storeItemCount} dark />
+                  <HugeiconsIcon
+                    icon={ShoppingBag01Icon}
+                    size={24}
+                    className="transition-colors group-hover:text-primary"
+                  />
+                  <Badge count={storeItemCount} dark={false} />
+                </button>
+                <button
+                  type="button"
+                  onClick={navigateToAdmin}
+                  className="group relative flex h-12 w-12 items-center justify-center bg-transparent p-0 text-red-600 shadow-none cursor-pointer"
+                  aria-label="Admin"
+                >
+                  <HugeiconsIcon
+                    icon={ManagerIcon}
+                    size={26}
+                    className="transition-colors group-hover:text-red-400"
+                  />
                 </button>
               </div>
-              <button
-                type="button"
-                onClick={navigateToAdmin}
-                className="relative flex h-12 w-12 items-center justify-center bg-transparent p-0 text-red-600 shadow-none"
-                aria-label="Admin"
-              >
-                <HugeiconsIcon icon={ManagerIcon} size={26} />
-              </button>
             </div>
           </div>
         </div>
@@ -251,7 +263,7 @@ export default function StorefrontHeaderClient({
 
   // ─── Shared icon button classes ────────────────────────────────────────────
   const iconBtnBase =
-    "relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors shrink-0 sm:h-12 sm:w-12";
+    "group relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors shrink-0 sm:h-12 sm:w-12 cursor-pointer";
   const iconBtnOverlay = `${iconBtnBase} hover:bg-white/10`;
   const iconBtnSolid = `${iconBtnBase} hover:bg-black/5`;
 
@@ -341,7 +353,7 @@ export default function StorefrontHeaderClient({
           <HugeiconsIcon
             icon={FavouriteIcon}
             size={24}
-            className={overlay ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
+            className={`${overlay ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : "text-neutral-900"} transition-colors group-hover:text-primary`}
           />
           <Badge count={wishlistCount} dark={!overlay} />
         </button>
@@ -355,7 +367,7 @@ export default function StorefrontHeaderClient({
           <HugeiconsIcon
             icon={ShoppingBag01Icon}
             size={24}
-            className={overlay ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
+            className={`${overlay ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : "text-neutral-900"} transition-colors group-hover:text-primary`}
           />
           <Badge count={storeItemCount} dark={!overlay} />
         </button>
@@ -369,7 +381,7 @@ export default function StorefrontHeaderClient({
           <HugeiconsIcon
             icon={ManagerIcon}
             size={24}
-            className={overlay ? "drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : ""}
+            className={`${overlay ? "drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : ""} transition-colors group-hover:text-primary`}
           />
         </button>
       </div>

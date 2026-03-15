@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const VIDEO_MIME_MAP: Record<string, string> = {
   ".mp4": "video/mp4",
@@ -19,27 +19,34 @@ function guessMimeType(url: string): string | undefined {
 export function DeferredHeroVideo({
   src,
   className,
-  fallbackPoster,
 }: {
   src: string;
   className?: string;
-  fallbackPoster?: string;
 }) {
   const type = guessMimeType(src);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    setIsReady(false);
     console.info("[HeroVideo] mounting", { src, type });
 
     const videoEl = videoRef.current;
     if (!videoEl) return;
 
-    const onLoaded = () => console.info("[HeroVideo] loadedmetadata", { src, duration: videoEl.duration });
+    const onLoaded = () => {
+      console.info("[HeroVideo] loadedmetadata", { src, duration: videoEl.duration });
+      setIsReady(true);
+    };
     const onCanPlay = () => {
       console.info("[HeroVideo] canplay", { src });
+      setIsReady(true);
       videoEl.play().catch(() => { });
     };
-    const onPlay = () => console.info("[HeroVideo] play", { src });
+    const onPlay = () => {
+      console.info("[HeroVideo] play", { src });
+      setIsReady(true);
+    };
     const onError = () => console.error("[HeroVideo] error", { src, error: videoEl.error });
 
     videoEl.addEventListener("loadedmetadata", onLoaded);
@@ -56,20 +63,21 @@ export function DeferredHeroVideo({
   }, [src, type]);
 
   return (
-    <video
-      ref={videoRef}
-      autoPlay
-      muted
-      loop
-      playsInline
-      preload="none"
-      poster={fallbackPoster}
-      className={`${className || ""} bg-neutral-100`}
-      src={src}
-      // Adding a key forces React to replace the node if the src changes
-      key={src}
-    >
-      {type ? <source src={src} type={type} /> : <source src={src} type="video/mp4" />}
-    </video>
+    <div className="relative h-full w-full bg-neutral-100">
+      <video
+        ref={videoRef}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        className={`${className || ""} transition-opacity duration-700 ${isReady ? "opacity-100" : "opacity-0"}`}
+        src={src}
+        key={src}
+      >
+        {type ? <source src={src} type={type} /> : <source src={src} type="video/mp4" />}
+      </video>
+      {!isReady ? <div className="absolute inset-0 animate-pulse bg-neutral-100" /> : null}
+    </div>
   );
 }

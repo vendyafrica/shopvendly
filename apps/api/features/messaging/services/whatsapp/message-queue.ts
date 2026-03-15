@@ -63,22 +63,35 @@ function shouldUseDirectSend() {
   return process.env.NODE_ENV === "development";
 }
 
+function isValidHttpUrl(value: string | null | undefined) {
+  if (!value) return false;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 async function publishToQstash(payload: QueuePayload) {
   const qstashBaseUrl = process.env.QSTASH_BASE_URL;
   const qstashToken = process.env.QSTASH_TOKEN;
   const deliveryUrl = process.env.QSTASH_DELIVERY_URL;
+  const deliveryUrlValid = isValidHttpUrl(deliveryUrl);
 
-  if (!qstashBaseUrl || !qstashToken || !deliveryUrl) {
+  if (!qstashBaseUrl || !qstashToken || !deliveryUrl || !deliveryUrlValid) {
     console.warn("[WhatsAppQueue] Missing QStash config; payload not published", {
       hasBaseUrl: Boolean(qstashBaseUrl),
       hasToken: Boolean(qstashToken),
       hasDeliveryUrl: Boolean(deliveryUrl),
+      deliveryUrlValid,
+      deliveryUrl,
       type: payload.type,
     });
     return;
   }
 
-  const endpoint = `${qstashBaseUrl.replace(/\/$/, "")}/v2/publish/${encodeURIComponent(deliveryUrl)}`;
+  const endpoint = `${qstashBaseUrl.replace(/\/$/, "")}/v2/publish/${deliveryUrl}`;
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
@@ -121,7 +134,12 @@ export async function enqueueTextMessage(payload: TextMessageOptions): Promise<{
   try {
     await publishToQstash(queuePayload);
   } catch (error) {
-    console.error("[WhatsAppQueue] QStash publish failed for text; falling back to direct send", { id, error });
+    console.error("[WhatsAppQueue] QStash publish failed for text; falling back to direct send", {
+      id,
+      error,
+      deliveryUrl: process.env.QSTASH_DELIVERY_URL,
+      deliveryUrlValid: isValidHttpUrl(process.env.QSTASH_DELIVERY_URL),
+    });
     await dispatchDirect(queuePayload);
   }
   return { id };
@@ -142,7 +160,12 @@ export async function enqueueTemplateMessage(payload: TemplateMessageOptions): P
   try {
     await publishToQstash(queuePayload);
   } catch (error) {
-    console.error("[WhatsAppQueue] QStash publish failed for template; falling back to direct send", { id, error });
+    console.error("[WhatsAppQueue] QStash publish failed for template; falling back to direct send", {
+      id,
+      error,
+      deliveryUrl: process.env.QSTASH_DELIVERY_URL,
+      deliveryUrlValid: isValidHttpUrl(process.env.QSTASH_DELIVERY_URL),
+    });
     await dispatchDirect(queuePayload);
   }
   return { id };

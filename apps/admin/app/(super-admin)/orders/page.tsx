@@ -17,6 +17,14 @@ interface Order {
     tenantName: string | null;
 }
 
+const normalizeStatus = (value: string) => value.trim().toLowerCase();
+
+const formatStatusLabel = (value: string) =>
+    value
+        .split("_")
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+
 export default function OrdersPage() {
     const [orders, setOrders] = React.useState<Order[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
@@ -34,12 +42,14 @@ export default function OrdersPage() {
             });
     }, []);
 
-    // Calculate stats
     const totalOrders = orders.length;
-    const completedOrders = orders.filter(o => o.status === "COMPLETED" || o.status === "DELIVERED").length;
-    const paidOrders = orders.filter(o => o.paymentStatus === "PAID").length;
+    const completedOrders = orders.filter((o) => {
+        const status = normalizeStatus(o.status);
+        return status === "completed" || status === "delivered";
+    }).length;
+    const paidOrders = orders.filter((o) => normalizeStatus(o.paymentStatus) === "paid").length;
     const totalRevenue = orders
-        .filter(o => o.paymentStatus === "PAID")
+        .filter((o) => normalizeStatus(o.paymentStatus) === "paid")
         .reduce((sum, o) => sum + o.totalAmount, 0);
 
     return (
@@ -103,48 +113,53 @@ export default function OrdersPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {orders.map((order) => (
-                                        <tr key={order.id} className="border-b border-border/50 last:border-0">
-                                            <td className="p-3 text-sm font-medium">{order.orderNumber}</td>
-                                            <td className="p-3 text-sm">{order.storeName || 'N/A'}</td>
-                                            <td className="p-3">
-                                                <Badge
-                                                    variant="outline"
-                                                    className={cn(
-                                                        "px-2 py-0.5 rounded-full text-xs font-normal border-0",
-                                                        (order.status === "COMPLETED" || order.status === "DELIVERED")
-                                                            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-700"
-                                                            : order.status === "CANCELLED"
-                                                                ? "bg-rose-100 text-rose-700 hover:bg-rose-100 hover:text-rose-700"
-                                                                : "bg-amber-100 text-amber-700 hover:bg-amber-100 hover:text-amber-700"
-                                                    )}
-                                                >
-                                                    {order.status}
-                                                </Badge>
-                                            </td>
-                                            <td className="p-3">
-                                                <Badge
-                                                    variant="outline"
-                                                    className={cn(
-                                                        "px-2 py-0.5 rounded-full text-xs font-normal border-0",
-                                                        order.paymentStatus === "PAID"
-                                                            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-700"
-                                                            : order.paymentStatus === "FAILED"
-                                                                ? "bg-rose-100 text-rose-700 hover:bg-rose-100 hover:text-rose-700"
-                                                                : "bg-amber-100 text-amber-700 hover:bg-amber-100 hover:text-amber-700"
-                                                    )}
-                                                >
-                                                    {order.paymentStatus}
-                                                </Badge>
-                                            </td>
-                                            <td className="p-3 text-right text-sm font-medium">
-                                                {new Intl.NumberFormat('en-UG', { style: 'currency', currency: order.currency }).format(order.totalAmount)}
-                                            </td>
-                                            <td className="p-3 text-sm text-muted-foreground">
-                                                {new Date(order.createdAt).toLocaleDateString()}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {orders.map((order) => {
+                                        const normalizedOrderStatus = normalizeStatus(order.status);
+                                        const normalizedPaymentStatus = normalizeStatus(order.paymentStatus);
+
+                                        return (
+                                            <tr key={order.id} className="border-b border-border/50 last:border-0">
+                                                <td className="p-3 text-sm font-medium">{order.orderNumber}</td>
+                                                <td className="p-3 text-sm">{order.storeName || 'N/A'}</td>
+                                                <td className="p-3">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={cn(
+                                                            "px-2 py-0.5 rounded-full text-xs font-normal border-0",
+                                                            (normalizedOrderStatus === "completed" || normalizedOrderStatus === "delivered")
+                                                                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-700"
+                                                                : normalizedOrderStatus === "cancelled" || normalizedOrderStatus === "delivery_exception"
+                                                                    ? "bg-rose-100 text-rose-700 hover:bg-rose-100 hover:text-rose-700"
+                                                                    : "bg-amber-100 text-amber-700 hover:bg-amber-100 hover:text-amber-700"
+                                                        )}
+                                                    >
+                                                        {formatStatusLabel(order.status)}
+                                                    </Badge>
+                                                </td>
+                                                <td className="p-3">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={cn(
+                                                            "px-2 py-0.5 rounded-full text-xs font-normal border-0",
+                                                            normalizedPaymentStatus === "paid"
+                                                                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-700"
+                                                                : normalizedPaymentStatus === "failed"
+                                                                    ? "bg-rose-100 text-rose-700 hover:bg-rose-100 hover:text-rose-700"
+                                                                    : "bg-amber-100 text-amber-700 hover:bg-amber-100 hover:text-amber-700"
+                                                        )}
+                                                    >
+                                                        {formatStatusLabel(order.paymentStatus)}
+                                                    </Badge>
+                                                </td>
+                                                <td className="p-3 text-right text-sm font-medium">
+                                                    {new Intl.NumberFormat('en-UG', { style: 'currency', currency: order.currency }).format(order.totalAmount)}
+                                                </td>
+                                                <td className="p-3 text-sm text-muted-foreground">
+                                                    {new Date(order.createdAt).toLocaleDateString()}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

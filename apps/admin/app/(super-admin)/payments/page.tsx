@@ -8,7 +8,7 @@ import { cn } from "@shopvendly/ui/lib/utils";
 interface Payment {
     id: string;
     provider: string;
-    providerReference: string | null;
+    payerPhone: string | null;
     status: string;
     amount: number;
     currency: string;
@@ -94,7 +94,7 @@ export default function PaymentsPage() {
                                 <thead>
                                     <tr className="border-b border-border/70">
                                         <th className="text-left p-3 text-xs font-medium text-muted-foreground">Provider</th>
-                                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">Reference</th>
+                                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">Payer Phone</th>
                                         <th className="text-left p-3 text-xs font-medium text-muted-foreground">Store</th>
                                         <th className="text-left p-3 text-xs font-medium text-muted-foreground">Order #</th>
                                         <th className="text-left p-3 text-xs font-medium text-muted-foreground">Status</th>
@@ -106,7 +106,7 @@ export default function PaymentsPage() {
                                     {payments.map((payment) => (
                                         <tr key={payment.id} className="border-b border-border/50 last:border-0">
                                             <td className="p-3 text-sm">{payment.provider}</td>
-                                            <td className="p-3 font-mono text-xs text-muted-foreground">{payment.providerReference || 'N/A'}</td>
+                                            <td className="p-3 font-mono text-xs text-muted-foreground">{payment.payerPhone || 'N/A'}</td>
                                             <td className="p-3 text-sm">{payment.storeName || 'N/A'}</td>
                                             <td className="p-3 text-sm">{payment.orderNumber || 'N/A'}</td>
                                             <td className="p-3">

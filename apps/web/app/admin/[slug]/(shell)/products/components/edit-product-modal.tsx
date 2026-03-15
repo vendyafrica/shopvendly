@@ -65,12 +65,41 @@ interface EditProductModalProps {
 }
 
 interface UploadedFile {
+    id: string;
     url: string;
     pathname: string;
     contentType: string;
     previewUrl: string;
     isUploading: boolean;
     isNew: boolean;
+    progress: number;
+    displayProgress: number;
+    startedAt: number;
+}
+
+function UploadProgressSpinner({ progress }: { progress: number }) {
+    const radius = 18;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (Math.max(0, Math.min(progress, 100)) / 100) * circumference;
+
+    return (
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm">
+            <svg className="h-12 w-12 -rotate-90" viewBox="0 0 48 48" aria-hidden="true">
+                <circle cx="24" cy="24" r={radius} className="fill-none stroke-white/20" strokeWidth="4" />
+                <circle
+                    cx="24"
+                    cy="24"
+                    r={radius}
+                    className="fill-none stroke-white transition-all duration-150"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={offset}
+                />
+            </svg>
+            <span className="absolute text-[11px] font-semibold text-white">{progress}%</span>
+        </div>
+    );
 }
 
 export function EditProductModal({
@@ -104,6 +133,36 @@ export function EditProductModal({
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const initialMediaSignatureRef = React.useRef<string>("[]");
 
+    React.useEffect(() => {
+        const hasActiveUpload = files.some((file) => file.isUploading || file.displayProgress < file.progress);
+        if (!hasActiveUpload) return;
+
+        const frame = window.setInterval(() => {
+            setFiles((prev) => prev.map((file) => {
+                if (!file.isUploading && file.displayProgress >= file.progress) {
+                    return file;
+                }
+
+                const nextTarget = file.isUploading
+                    ? Math.max(file.progress, Math.min(file.displayProgress + 8, 95))
+                    : file.progress;
+                const step = file.isUploading ? 4 : 12;
+                const nextDisplayProgress = Math.min(file.displayProgress + step, nextTarget);
+
+                if (nextDisplayProgress === file.displayProgress) {
+                    return file;
+                }
+
+                return {
+                    ...file,
+                    displayProgress: nextDisplayProgress,
+                };
+            }));
+        }, 80);
+
+        return () => window.clearInterval(frame);
+    }, [files]);
+
     // Populate form when product changes
     React.useEffect(() => {
         if (product) {
@@ -111,7 +170,7 @@ export function EditProductModal({
             setDescription(product.description || "");
             setPriceAmount(product.priceAmount ? String(product.priceAmount) : "");
             setOriginalPriceAmount(product.originalPriceAmount ? String(product.originalPriceAmount) : "");
-            setQuantity(product.quantity ? String(product.quantity) : "");
+            setQuantity(String(product.quantity ?? 0));
             setSelectedCollectionIds(product.collectionIds ?? []);
 
             const nextVariantOptions = product.variants?.enabled ? product.variants.options ?? [] : [];
@@ -126,22 +185,30 @@ export function EditProductModal({
             // Delay the heavy media array generation so the drawer can animate in smoothly on mobile
             const timeout = setTimeout(() => {
                 const existingMedia: UploadedFile[] = (product.media || []).map(m => ({
+                    id: m.blobPathname || m.blobUrl,
                     url: m.blobUrl,
                     pathname: m.blobPathname || "",
                     contentType: m.contentType || "image/jpeg",
                     previewUrl: m.blobUrl,
                     isUploading: false,
-                    isNew: false
+                    isNew: false,
+                    progress: 100,
+                    displayProgress: 100,
+                    startedAt: Date.now(),
                 }));
 
                 if (existingMedia.length === 0 && product.thumbnailUrl) {
                     existingMedia.push({
+                        id: product.thumbnailUrl,
                         url: product.thumbnailUrl,
                         pathname: "",
                         contentType: "image/jpeg",
                         previewUrl: product.thumbnailUrl,
                         isUploading: false,
-                        isNew: false
+                        isNew: false,
+                        progress: 100,
+                        displayProgress: 100,
+                        startedAt: Date.now(),
                     });
                 }
 
@@ -182,43 +249,72 @@ export function EditProductModal({
     }, [open, storeId]);
 
     const handleUploadFiles = async (selectedFiles: File[]) => {
-        const newFiles = selectedFiles.map(file => ({
+        const startedAt = Date.now();
+        const newFiles = selectedFiles.map((file, index) => ({
+            id: `${file.name}-${file.lastModified}-${Date.now()}-${index}`,
             url: "",
             pathname: "",
             contentType: file.type,
             previewUrl: URL.createObjectURL(file),
             isUploading: true,
-            isNew: true
+            isNew: true,
+            progress: 0,
+            displayProgress: 0,
+            startedAt,
         }));
 
         setFiles(prev => [...prev, ...newFiles]);
 
-        const startIndex = files.length;
-
         if (!tenantId) {
             setError("Tenant not found. Please refresh and try again.");
-            setFiles(prev => prev.filter((_, idx) => idx < startIndex));
+            setFiles(prev => prev.filter((existing) => !newFiles.some((file) => file.id === existing.id)));
             return;
         }
 
         void Promise.all(selectedFiles.map(async (file, i) => {
-            const index = startIndex + i;
+            const fileId = newFiles[i]?.id;
+            if (!fileId) return;
             try {
                 const uploaded = await uploadFile(file, {
                     tenantId,
                     endpoint: "productMedia",
                     compressVideo: true,
                     skipImageCompression: true,
+                    onUploadProgress: ({ progress }) => {
+                        setFiles((prev) => {
+                            const updated = [...prev];
+                            const targetIndex = updated.findIndex((item) => item.id === fileId);
+                            if (targetIndex >= 0) {
+                                const targetFile = updated[targetIndex];
+                                if (!targetFile) {
+                                    return updated;
+                                }
+
+                                updated[targetIndex] = {
+                                    ...targetFile,
+                                    progress,
+                                };
+                            }
+                            return updated;
+                        });
+                    },
                 });
 
                 setFiles(prev => {
                     const updated = [...prev];
-                    if (updated[index]) {
-                        updated[index] = {
-                            ...updated[index],
+                    const targetIndex = updated.findIndex((item) => item.id === fileId);
+                    if (targetIndex >= 0) {
+                        const targetFile = updated[targetIndex];
+                        if (!targetFile) {
+                            return updated;
+                        }
+
+                        updated[targetIndex] = {
+                            ...targetFile,
                             url: uploaded.url,
                             pathname: uploaded.pathname,
-                            isUploading: false
+                            isUploading: false,
+                            progress: 100,
                         };
                     }
                     return updated;
@@ -229,7 +325,20 @@ export function EditProductModal({
                 setError(`Failed to upload ${file.name}: ${message}`);
                 setFiles(prev => {
                     const next = [...prev];
-                    if (next[index]) next[index].isUploading = false;
+                    const targetIndex = next.findIndex((item) => item.id === fileId);
+                    if (targetIndex >= 0) {
+                        const targetFile = next[targetIndex];
+                        if (!targetFile) {
+                            return next;
+                        }
+
+                        next[targetIndex] = {
+                            ...targetFile,
+                            isUploading: false,
+                            progress: 0,
+                            displayProgress: 0,
+                        };
+                    }
                     return next;
                 });
             }
@@ -358,6 +467,149 @@ export function EditProductModal({
 
     if (!product) return null;
 
+    const mediaManager = (
+        <div className="rounded-2xl border border-border/60 bg-muted/20 p-4 sm:p-5">
+            <div className="mb-4 space-y-1">
+                <Label className="text-sm font-medium text-foreground">Product Images</Label>
+                <p className="text-xs text-muted-foreground">Upload, reorder, and remove media for this product.</p>
+            </div>
+            <div className={`flex flex-col items-start gap-3 rounded-xl border border-dashed border-border/70 bg-background px-4 py-4 ${isSaving ? "opacity-70" : "hover:bg-muted/40"}`}>
+                <div className="flex items-start gap-3">
+                    <div className="rounded-xl bg-muted p-2.5">
+                        <HugeiconsIcon icon={ImageUpload01Icon} className="size-5 text-muted-foreground" />
+                    </div>
+                    <div className="text-left text-sm text-muted-foreground">
+                        <p className="font-medium text-foreground">Add product media</p>
+                        <p className="text-xs text-muted-foreground/70">Images or videos up to 10MB</p>
+                    </div>
+                </div>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9 rounded-lg px-4"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                    }}
+                    disabled={isSaving}
+                >
+                    Upload media
+                </Button>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileChange}
+                    disabled={isSaving}
+                />
+            </div>
+
+            {files.length > 0 ? (
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                    {files.map((f, i) => (
+                        <div
+                            key={f.id}
+                            className={`group relative aspect-square overflow-hidden rounded-xl border bg-background ${i === 0 ? "border-primary ring-1 ring-primary/25" : "border-border/60"}`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (i !== 0) {
+                                    setFiles((prev) => {
+                                        const updated = [...prev];
+                                        const [moved] = updated.splice(i, 1);
+                                        if (!moved) return prev;
+                                        updated.unshift(moved);
+                                        return updated;
+                                    });
+                                }
+                            }}
+                        >
+                            {i === 0 ? (
+                                f.contentType.startsWith("video/") ? (
+                                    <video
+                                        src={f.previewUrl}
+                                        className={`h-full w-full object-cover bg-neutral-100 transition-opacity ${f.isUploading ? "opacity-55" : "opacity-100"}`}
+                                        muted
+                                        playsInline
+                                        preload="none"
+                                    />
+                                ) : (
+                                    <Image
+                                        src={f.previewUrl}
+                                        alt="Preview"
+                                        fill
+                                        unoptimized={f.previewUrl.includes(".ufs.sh") || f.previewUrl.startsWith("blob:")}
+                                        loading="lazy"
+                                        sizes="(min-width: 1024px) 220px, 50vw"
+                                        className={`object-cover bg-neutral-100 transition-opacity ${f.isUploading ? "opacity-55" : "opacity-100"}`}
+                                    />
+                                )
+                            ) : f.contentType.startsWith("video/") ? (
+                                <video
+                                    src={f.previewUrl}
+                                    className={`h-full w-full object-cover transition-opacity bg-neutral-100 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
+                                    muted
+                                    playsInline
+                                    preload="none"
+                                />
+                            ) : (
+                                <Image
+                                    src={f.previewUrl}
+                                    alt="Preview"
+                                    fill
+                                    unoptimized={f.previewUrl.includes(".ufs.sh") || f.previewUrl.startsWith("blob:")}
+                                    loading="lazy"
+                                    sizes="(min-width: 1024px) 220px, 50vw"
+                                    className={`object-cover transition-opacity bg-neutral-100 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
+                                />
+                            )}
+                            {i === 0 ? (
+                                <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-foreground shadow-sm">
+                                    Cover
+                                </span>
+                            ) : null}
+                            {i === 0 && f.isUploading ? (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <UploadProgressSpinner progress={f.displayProgress} />
+                                </div>
+                            ) : null}
+
+                            {!isSaving && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeFile(i);
+                                    }}
+                                    className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground shadow-sm"
+                                >
+                                    <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
+                                </button>
+                            )}
+                        </div>
+                    ))}
+
+                    <button
+                        type="button"
+                        className="relative flex aspect-square items-center justify-center rounded-xl border border-dashed border-border/70 bg-background hover:bg-muted/10"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            fileInputRef.current?.click();
+                        }}
+                        disabled={isSaving}
+                    >
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <HugeiconsIcon icon={Add01Icon} className="size-4" />
+                            <span className="text-xs font-medium">Add more</span>
+                        </div>
+                    </button>
+                </div>
+            ) : null}
+        </div>
+    );
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogPortal>
@@ -379,126 +631,7 @@ export function EditProductModal({
                     <div className="flex h-full overflow-hidden">
                         <div className="hidden w-[360px] shrink-0 overflow-y-auto border-r border-border/60 bg-muted/10 lg:block">
                             <div className="space-y-4 px-7 py-6">
-                                <div className="rounded-2xl border border-border/60 bg-muted/20 p-4 sm:p-5">
-                                    <div className="mb-4 space-y-1">
-                                        <Label className="text-sm font-medium text-foreground">Product Images</Label>
-                                        <p className="text-xs text-muted-foreground">Upload, reorder, and remove media for this product.</p>
-                                    </div>
-                                    <div className={`flex flex-col items-start gap-3 rounded-xl border border-dashed border-border/70 bg-background px-4 py-4 ${isSaving ? "opacity-70" : "hover:bg-muted/40"}`}>
-                                        <div className="flex items-start gap-3">
-                                            <div className="rounded-xl bg-muted p-2.5">
-                                                <HugeiconsIcon icon={ImageUpload01Icon} className="size-5 text-muted-foreground" />
-                                            </div>
-                                            <div className="text-left text-sm text-muted-foreground">
-                                                <p className="font-medium text-foreground">Add product media</p>
-                                                <p className="text-xs text-muted-foreground/70">Images or videos up to 10MB</p>
-                                            </div>
-                                        </div>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-9 rounded-lg px-4"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                fileInputRef.current?.click();
-                                            }}
-                                            disabled={isSaving}
-                                        >
-                                            Upload media
-                                        </Button>
-                                        <input
-                                            ref={fileInputRef}
-                                            type="file"
-                                            accept="image/*,video/*"
-                                            multiple
-                                            className="hidden"
-                                            onChange={handleFileChange}
-                                            disabled={isSaving}
-                                        />
-                                    </div>
-
-                                    {files.length > 0 ? (
-                                        <div className="mt-4 grid grid-cols-2 gap-3">
-                                            {files.map((f, i) => (
-                                                <div
-                                                    key={i}
-                                                    className={`group relative aspect-square overflow-hidden rounded-xl border bg-background ${i === 0 ? "border-primary ring-1 ring-primary/25" : "border-border/60"}`}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (i !== 0) {
-                                                            setFiles((prev) => {
-                                                                const updated = [...prev];
-                                                                const [moved] = updated.splice(i, 1);
-                                                                if (!moved) return prev;
-                                                                updated.unshift(moved);
-                                                                return updated;
-                                                            });
-                                                        }
-                                                    }}
-                                                >
-                                                    {f.contentType.startsWith("video/") ? (
-                                                        <video
-                                                            src={f.previewUrl}
-                                                            className={`h-full w-full object-cover transition-opacity bg-neutral-100 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
-                                                            muted
-                                                            playsInline
-                                                            preload="none"
-                                                        />
-                                                    ) : (
-                                                        <Image
-                                                            src={f.previewUrl}
-                                                            alt="Preview"
-                                                            fill
-                                                            unoptimized={f.previewUrl.includes(".ufs.sh") || f.previewUrl.startsWith("blob:")}
-                                                            loading="lazy"
-                                                            sizes="(min-width: 1024px) 220px, 50vw"
-                                                            className={`object-cover transition-opacity bg-neutral-100 ${f.isUploading ? "opacity-60" : "opacity-100"}`}
-                                                        />
-                                                    )}
-                                                    {i === 0 ? (
-                                                        <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-foreground shadow-sm">
-                                                            Cover
-                                                        </span>
-                                                    ) : null}
-                                                    {f.isUploading && (
-                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                                            <div className="size-5 animate-spin rounded-full border-2 border-white/60 border-t-white" />
-                                                        </div>
-                                                    )}
-
-                                                    {!isSaving && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                removeFile(i);
-                                                            }}
-                                                            className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground shadow-sm"
-                                                        >
-                                                            <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ))}
-
-                                            <button
-                                                type="button"
-                                                className="relative flex aspect-square items-center justify-center rounded-xl border border-dashed border-border/70 bg-background hover:bg-muted/10"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    fileInputRef.current?.click();
-                                                }}
-                                                disabled={isSaving}
-                                            >
-                                                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                                    <HugeiconsIcon icon={Add01Icon} className="size-4" />
-                                                    <span className="text-xs font-medium">Add more</span>
-                                                </div>
-                                            </button>
-                                        </div>
-                                    ) : null}
-                                </div>
+                                {mediaManager}
                             </div>
                         </div>
 
@@ -510,6 +643,10 @@ export function EditProductModal({
                             )}
 
                             <div className="space-y-5">
+                                <div className="lg:hidden">
+                                    {mediaManager}
+                                </div>
+
                                 <div className="rounded-2xl border border-border/60 bg-background p-4 sm:p-5">
                                     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                                         <div className="space-y-2 lg:col-span-2">
