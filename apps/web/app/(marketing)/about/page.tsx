@@ -29,13 +29,13 @@ const pillars = [
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto max-w-5xl px-6 py-16">
+    <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
       <section className="max-w-3xl space-y-5">
         <p className="text-sm font-medium text-primary">About ShopVendly</p>
-        <h1 className="text-4xl font-semibold tracking-tight">
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           Online commerce for sellers who grow on social media
         </h1>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-base text-muted-foreground sm:text-lg">
           ShopVendly is a social commerce platform that helps sellers create online
           stores for Instagram and TikTok, manage orders, accept payments, and
           deliver a more professional shopping experience.
@@ -54,17 +54,17 @@ export default function AboutPage() {
       </section>
 
       <section className="mt-14 max-w-3xl space-y-4">
-        <h2 className="text-2xl font-semibold">What sellers use ShopVendly for</h2>
+        <h2 className="text-xl font-semibold sm:text-2xl">What sellers use ShopVendly for</h2>
         <p className="text-muted-foreground">
           Sellers use ShopVendly to organize products, share storefront links,
           collect orders from social traffic, receive mobile money payments, and
           get discovered through the marketplace.
         </p>
-        <div className="flex flex-wrap gap-3 pt-2">
-          <Button className="h-11 rounded-full px-6">
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:flex-wrap">
+          <Button className="h-11 w-full rounded-full px-6 sm:w-auto">
             <Link href="/account">Create Your Store</Link>
           </Button>
-          <Button variant="ghost" className="h-11 rounded-full px-6">
+          <Button variant="ghost" className="h-11 w-full rounded-full px-6 sm:w-auto">
             <Link href="/pricing">View Pricing</Link>
           </Button>
         </div>

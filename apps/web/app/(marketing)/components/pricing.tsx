@@ -7,7 +7,6 @@ export function Pricing() {
         <section className="bg-[#faf9f7] py-16 md:py-32">
             <div className="mx-auto max-w-5xl px-6">
                 <div className="mx-auto max-w-2xl space-y-6 text-center">
-
                     <h1 className="text-center text-4xl font-semibold lg:text-5xl">
                         One plan for serious growth.
                     </h1>

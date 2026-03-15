@@ -22,6 +22,20 @@ It is written to be beginner-friendly and assumes:
   - served through nginx
   - kept alive by PM2
 
+  # QUICK GUIDE
+
+      cd /var/www/shopvendly/shopvendly
+      git pull origin main
+      pnpm install --frozen-lockfile
+      pnpm --filter @shopvendly/api build
+      pm2 restart shopvendly-api
+      pm2 save
+
+      curl http://127.0.0.1:8000/health
+
+  curl https://api.shopvendly.store/health
+  pm2 logs shopvendly-api --lines 50
+
 - `apps/web`
   - stays on Vercel
   - calls the API through `https://api.shopvendly.store`

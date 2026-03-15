@@ -49,13 +49,13 @@ const faqs = [
 
 export default function FAQPage() {
   return (
-    <main className="mx-auto max-w-4xl px-6 py-16">
+    <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
       <section className="max-w-2xl space-y-4">
         <p className="text-sm font-medium text-primary">FAQs</p>
-        <h1 className="text-4xl font-semibold tracking-tight">
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           Frequently asked questions about ShopVendly
         </h1>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-base text-muted-foreground sm:text-lg">
           Find answers about creating a store, managing orders, receiving payments,
           and selling more effectively through social commerce.
         </p>

@@ -13,13 +13,13 @@ const supportEmail = "support@shopvendly.store";
 
 export default function ContactPage() {
   return (
-    <main className="mx-auto max-w-4xl px-6 py-16">
+    <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
       <section className="max-w-2xl space-y-4">
         <p className="text-sm font-medium text-primary">Contact</p>
-        <h1 className="text-4xl font-semibold tracking-tight">
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           Talk to the ShopVendly team
         </h1>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-base text-muted-foreground sm:text-lg">
           Reach out if you need help getting started, setting up your storefront,
           understanding pricing, or using ShopVendly to sell online.
         </p>
@@ -50,7 +50,7 @@ export default function ContactPage() {
       </section>
 
       <section className="mt-10">
-        <Button className="h-11 rounded-full px-6">
+        <Button className="h-11 w-full rounded-full px-6 sm:w-auto">
           <Link href="/account">Create Your Store</Link>
         </Button>
       </section>

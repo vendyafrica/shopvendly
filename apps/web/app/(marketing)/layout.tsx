@@ -9,7 +9,7 @@ export default function MarketingLayout({
 }) {
   return (
     <div className="bg-[#faf9f7] min-h-screen">
-      <div className="mx-auto max-w-7xl px-6 pt-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
         <Header />
       </div>
       {children}
