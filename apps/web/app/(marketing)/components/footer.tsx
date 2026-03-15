@@ -56,7 +56,7 @@ export function Footer() {
         </div>
         <div className="my-8 flex flex-wrap justify-center gap-6 text-sm">
           <Link
-            href="#"
+            href="https://www.instagram.com/shopvendly/"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Threads"
@@ -81,7 +81,7 @@ export function Footer() {
             </svg>
           </Link>
           <Link
-            href="#"
+            href="https://www.instagram.com/shopvendly/"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Instagram"
@@ -101,7 +101,7 @@ export function Footer() {
             </svg>
           </Link>
           <Link
-            href="#"
+            href="https://www.tiktok.com/@shopvendly?_r=1&_t=ZS-94iLCgVXH6e"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="TikTok"
