@@ -47,11 +47,25 @@ function normalizeMediaUrls(urls: unknown): string[] {
 export async function GET(request: NextRequest, { params }: RouteParams) {
     try {
         const { slug } = await params;
+        console.info("[storefront.api] lookup:start", {
+            slug,
+            url: request.url,
+        });
         const store = await storefrontService.findStoreBySlug(slug);
 
         if (!store) {
+            console.warn("[storefront.api] lookup:miss", {
+                slug,
+            });
             return NextResponse.json({ error: "Store not found" }, { status: 404 });
         }
+
+        console.info("[storefront.api] lookup:hit", {
+            slug,
+            storeId: store.id,
+            storeSlug: store.slug,
+            hasDeletedAt: Boolean((store as { deletedAt?: string | null }).deletedAt),
+        });
 
         const rating = await storefrontService.getStoreRatingAggregate(store.id);
 

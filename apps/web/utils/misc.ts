@@ -11,13 +11,34 @@ type MediaHint = {
     contentType?: string | null;
 };
 
-const VIDEO_EXTENSION_REGEX = /\.(mp4|webm|mov|ogg)(?:$|\?)/i;
+const VIDEO_EXTENSION_REGEX = /\.(mp4|webm|mov|ogg)(?:$|[?#])/i;
+const IMAGE_EXTENSION_REGEX = /\.(jpg|jpeg|png|webp|gif|avif|svg)(?:$|[?#])/i;
 
 export function isLikelyVideoMedia({ url, contentType }: MediaHint) {
-    if (contentType?.startsWith("video/")) return true;
+    const normalizedContentType = contentType?.toLowerCase() ?? null;
+    if (normalizedContentType?.startsWith("video/")) return true;
 
     if (!url) return false;
-    return VIDEO_EXTENSION_REGEX.test(url);
+
+    try {
+        const parsed = new URL(url);
+        const pathname = parsed.pathname.toLowerCase();
+        const hintedFileType = parsed.searchParams.get("x-ut-file-type") || parsed.searchParams.get("file-type");
+
+        if (hintedFileType?.toLowerCase().startsWith("video")) return true;
+        if (VIDEO_EXTENSION_REGEX.test(pathname)) return true;
+
+        const isUploadThingUrl = parsed.hostname.endsWith(".ufs.sh") || parsed.hostname === "utfs.io";
+        const looksLikeImage = IMAGE_EXTENSION_REGEX.test(pathname);
+
+        if (isUploadThingUrl && !looksLikeImage && !normalizedContentType?.startsWith("image/")) {
+            return true;
+        }
+
+        return false;
+    } catch {
+        return VIDEO_EXTENSION_REGEX.test(url);
+    }
 }
 
 // from storefront.ts

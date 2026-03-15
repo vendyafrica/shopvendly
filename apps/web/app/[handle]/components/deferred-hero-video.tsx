@@ -19,9 +19,11 @@ function guessMimeType(url: string): string | undefined {
 export function DeferredHeroVideo({
   src,
   className,
+  fallbackPoster,
 }: {
   src: string;
   className?: string;
+  fallbackPoster?: string;
 }) {
   const type = guessMimeType(src);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -62,6 +64,7 @@ export function DeferredHeroVideo({
       playsInline
       preload="metadata"
       className={`${className || ""} bg-neutral-100`}
+      poster={fallbackPoster}
       src={src}
       key={src}
     >

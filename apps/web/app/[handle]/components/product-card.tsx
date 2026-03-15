@@ -50,6 +50,7 @@ export function ProductCard({ title, slug, price, originalPrice, discountPercent
           <video
             src={currentImageUrl}
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
+            autoPlay
             muted
             playsInline
             loop
