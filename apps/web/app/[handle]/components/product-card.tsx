@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getStorefrontUrl } from "@/utils/misc";
 import { isLikelyVideoMedia } from "@/utils/misc";
 
@@ -24,6 +24,7 @@ const FALLBACK_PRODUCT_IMAGE = "https://cdn.cosmos.so/25e7ef9d-3d95-486d-b7db-f0
 export function ProductCard({ title, slug, price, originalPrice, discountPercent, image, contentType, index = 0, storeSlug }: ProductCardProps) {
   const params = useParams();
   const [mediaError, setMediaError] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
 
   const paramsObject = typeof params === "object" ? (params as Record<string, string | undefined>) : {};
   const derivedStoreSlug = storeSlug ?? paramsObject.handle ?? paramsObject.s;
@@ -32,6 +33,10 @@ export function ProductCard({ title, slug, price, originalPrice, discountPercent
   const currentImageUrl = mediaError ? FALLBACK_PRODUCT_IMAGE : originalImageUrl;
 
   const isVideo = !mediaError && isLikelyVideoMedia({ url: currentImageUrl, contentType });
+
+  useEffect(() => {
+    setIsVideoReady(false);
+  }, [currentImageUrl, isVideo]);
 
   const prefetchedHref = derivedStoreSlug ? getStorefrontUrl(derivedStoreSlug, `/${slug}`) : `/${slug}`;
   const shouldUnoptimize =
@@ -47,17 +52,24 @@ export function ProductCard({ title, slug, price, originalPrice, discountPercent
     >
       <div className="relative overflow-hidden rounded-md bg-neutral-100 aspect-4/5 sm:aspect-3/4">
         {isVideo ? (
-          <video
-            src={currentImageUrl}
-            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
-            autoPlay
-            muted
-            playsInline
-            loop
-            preload="metadata"
-            poster={FALLBACK_PRODUCT_IMAGE}
-            onError={() => setMediaError(true)}
-          />
+          <>
+            <video
+              src={currentImageUrl}
+              className={`h-full w-full object-cover transition-all duration-700 ease-out group-hover:scale-[1.035] ${isVideoReady ? "opacity-100" : "opacity-0"}`}
+              autoPlay
+              muted
+              playsInline
+              loop
+              preload="metadata"
+              onLoadedData={() => setIsVideoReady(true)}
+              onCanPlay={() => setIsVideoReady(true)}
+              onPlaying={() => setIsVideoReady(true)}
+              onError={() => setMediaError(true)}
+            />
+            {!isVideoReady ? (
+              <div className="absolute inset-0 animate-pulse bg-neutral-100" />
+            ) : null}
+          </>
         ) : currentImageUrl ? (
           <Image
             src={currentImageUrl}

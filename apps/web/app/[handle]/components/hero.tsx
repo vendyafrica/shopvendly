@@ -100,7 +100,6 @@ export function Hero({ store }: HeroProps) {
 
   const shouldUseNativeImg =
     typeof mediaUrl === "string" && isUploadThing && looksLikeImage;
-  const fallbackPoster = "/og-image.png";
 
   const heroDescription =
     store.description ||
@@ -148,7 +147,6 @@ export function Hero({ store }: HeroProps) {
           <DeferredHeroVideo
             src={mediaUrl}
             className="w-full h-full object-cover"
-            fallbackPoster={fallbackPoster}
           />
         ) : (
           shouldUseNativeImg ? (
