@@ -30,7 +30,7 @@ export function Hero() {
   };
 
   return (
-    <section className="bg-background">
+    <section className="bg-[#faf9f7]">
       <div className="mx-auto max-w-7xl px-6 pb-8 pt-6 lg:px-8">
         <Header />
         <div className="mt-6 overflow-hidden rounded-[2rem] bg-primary/10 px-6 py-12 sm:px-10 lg:px-14 lg:py-16">

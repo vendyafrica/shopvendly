@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 export function Pricing() {
     return (
-        <section className="py-16 md:py-32">
+        <section className="bg-[#faf9f7] py-16 md:py-32">
             <div className="mx-auto max-w-5xl px-6">
                 <div className="mx-auto max-w-2xl space-y-6 text-center">
 
