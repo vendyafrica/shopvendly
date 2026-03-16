@@ -125,40 +125,40 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
 
   const baseUrl = await getApiBaseUrl();
 
-  const storeRes = await fetch(`${baseUrl}/api/storefront/${handle}`, {
-    ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 60, tags: [`storefront:store:${handle}`] } })
-  });
-  const store = storeRes.ok ? ((await storeRes.json()) as StorefrontStore) : null;
-  if (!store) notFound();
-
   const productUrl = new URL(`${baseUrl}/api/storefront/${handle}/products`);
   if (query) productUrl.searchParams.set("q", query);
   if (activeCollectionSlug) productUrl.searchParams.set("collection", activeCollectionSlug);
   if (activeSection) productUrl.searchParams.set("section", activeSection);
-  const productsRes = await fetch(productUrl.toString(), {
-    ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 30, tags: [`storefront:store:${handle}:products`] } })
-  });
 
   const saleUrl = new URL(`${baseUrl}/api/storefront/${handle}/products`);
   saleUrl.searchParams.set("section", "sale");
 
-  const [saleResult] = await Promise.allSettled([
+  const [storeRes, productsRes, saleResult, collectionsRes] = await Promise.all([
+    fetch(`${baseUrl}/api/storefront/${handle}`, {
+      ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 60, tags: [`storefront:store:${handle}`] } })
+    }),
+    fetch(productUrl.toString(), {
+      ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 30, tags: [`storefront:store:${handle}:products`] } })
+    }),
     fetch(saleUrl.toString(), {
       ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 30, tags: [`storefront:store:${handle}:products:sale`] } })
-    })
+    }),
+    fetch(`${baseUrl}/api/storefront/${handle}/collections`, {
+      ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 60, tags: [`storefront:store:${handle}:collections`] } })
+    }),
   ]);
+
+  const store = storeRes.ok ? ((await storeRes.json()) as StorefrontStore) : null;
+  if (!store) notFound();
 
   const products = productsRes.ok
     ? ((await productsRes.json()) as StorefrontProduct[])
     : [];
 
-  const saleProducts = saleResult.status === "fulfilled" && saleResult.value.ok
-    ? ((await saleResult.value.json()) as StorefrontProduct[])
+  const saleProducts = saleResult.ok
+    ? ((await saleResult.json()) as StorefrontProduct[])
     : [];
 
-  const collectionsRes = await fetch(`${baseUrl}/api/storefront/${handle}/collections`, {
-    ...(process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 60, tags: [`storefront:store:${handle}:collections`] } })
-  });
   const collections = collectionsRes.ok
     ? ((await collectionsRes.json()) as StorefrontCollection[])
     : [];

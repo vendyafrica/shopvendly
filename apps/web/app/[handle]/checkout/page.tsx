@@ -16,12 +16,7 @@ import { Input } from "@shopvendly/ui/components/input";
 import { useCart } from "@/features/cart/context/cart-context";
 import { useAppSession } from "@/contexts/app-session-context";
 import { getRootUrl } from "@/utils/misc";
-import { Bricolage_Grotesque } from "next/font/google";
-
-const geistSans = Bricolage_Grotesque({
-  variable: "--font-bricolage-grotesque",
-  subsets: ["latin"],
-});
+import { bricolage as geistSans } from "@/utils/fonts";
 
 type CheckoutPaymentMethod = "mobile_money";
 type PaymentFlowStatus =
@@ -858,13 +853,13 @@ function CheckoutContent() {
   return (
     <div className="min-h-screen bg-white pt-20 pb-24">
       <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-24">
-        <div className="rounded-2xl border border-neutral-200 bg-white/90 shadow-sm overflow-hidden">
-          <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="bg-white overflow-hidden">
+          <div className="grid lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 xl:gap-20">
             {/* LEFT — CHECKOUT FORM */}
-            <div className="order-2 lg:order-1 p-5 sm:p-7 lg:p-10 bg-white">
+            <div className="order-2 lg:order-1 p-0 py-6 sm:py-8 lg:py-10 bg-white">
               <form
                 onSubmit={handleSubmit}
-                className="w-full max-w-2xl space-y-10"
+                className="w-full max-w-2xl space-y-8 sm:space-y-10"
               >
                 <div className="space-y-6">
                   <div className="flex flex-wrap items-center gap-3">
@@ -893,7 +888,7 @@ function CheckoutContent() {
                     </Link>
                   </div>
 
-                  <div className="space-y-5 rounded-md border border-neutral-200 bg-neutral-50/60 p-5 sm:p-6 shadow-sm">
+                  <div className="space-y-5 rounded-none sm:rounded-2xl border-y sm:border border-neutral-200 bg-neutral-50/30 p-5 sm:p-6 pb-6">
                     <h2
                       className="text-lg font-semibold"
                     >
@@ -967,7 +962,7 @@ function CheckoutContent() {
                   </div>
                 </div>
 
-                <div className="space-y-5 rounded-md border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm">
+                <div className="space-y-5 rounded-none sm:rounded-2xl border-y sm:border sm:border-t-0 border-neutral-200 bg-white p-5 sm:p-6 sm:pt-6 pt-5">
                   <div>
                     <h2 className="text-base font-semibold text-neutral-900">
                       Payment method
@@ -1055,9 +1050,9 @@ function CheckoutContent() {
             </div>
 
             {/* RIGHT — ORDER SUMMARY */}
-            <div className="order-1 lg:order-2 bg-neutral-50/70 border-b lg:border-b-0 lg:border-l border-neutral-200 p-5 sm:p-7 lg:p-10">
-              <div className="w-full max-w-xl mx-auto space-y-6">
-                <div className="flex items-center justify-between">
+            <div className="order-1 lg:order-2 bg-white pb-6 pt-4 lg:py-10">
+              <div className="w-full max-w-xl mx-auto space-y-6 lg:sticky lg:top-24">
+                <div className="flex items-center justify-between pb-2 border-b border-neutral-200/60">
                   <h2
                     className={`${geistSans.className} text-lg uppercase tracking-widest font-semibold`}
                   >
@@ -1065,14 +1060,14 @@ function CheckoutContent() {
                   </h2>
                 </div>
 
-                <div className="space-y-4">
-                  {storeItems.map((item) => (
+                <div className="space-y-0">
+                  {storeItems.map((item, index) => (
                     <div
                       key={item.id}
-                      className="group flex gap-4 items-center rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                      className={`group flex gap-4 items-center py-4 ${index !== 0 ? "border-t border-neutral-200/60" : ""}`}
                     >
                       <div className="relative h-20 w-20 shrink-0">
-                        <div className="relative h-full w-full bg-white overflow-hidden rounded-xl border border-neutral-200 shadow-sm">
+                        <div className="relative h-full w-full bg-neutral-100 overflow-hidden rounded-xl">
                           {item.product.contentType?.startsWith("video/") ||
                           item.product.image?.match(/\.(mp4|webm|mov|ogg)$/i) ||
                           ((item.product.image || "").includes(".ufs.sh") &&
@@ -1139,14 +1134,7 @@ function CheckoutContent() {
                   ))}
                 </div>
 
-                <div className="rounded-xl border border-neutral-200 bg-white p-4 space-y-3 shadow-sm">
-                  <div className="flex justify-between text-sm text-neutral-600">
-                    {/* <span>Subtotal</span>
-                                        <span className="font-semibold text-neutral-900">
-                                            <sub className="mr-0.5">{currency}</sub>
-                                            {storeSubtotal.toLocaleString(undefined, { minimumFractionDigits: currency === "USD" ? 2 : 0, maximumFractionDigits: currency === "USD" ? 2 : 0 })}
-                                        </span> */}
-                  </div>
+                <div className="bg-transparent space-y-3 pt-4 border-t border-neutral-200/60">
                   <div className="flex justify-between text-sm text-neutral-600">
                     <span>Shipping</span>
                     <span>Calculated after order confirmation</span>

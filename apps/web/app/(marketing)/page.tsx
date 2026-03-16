@@ -18,7 +18,6 @@ export const metadata: Metadata = {
 export default function LandingPage() {
   return (
     <div className="scroll-smooth">
-      <Header />
       <Hero />
       <Features />
       <Pricing/>

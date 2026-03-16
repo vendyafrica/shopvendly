@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FavouriteIcon, Menu01Icon, ShoppingBag01Icon } from "@hugeicons/core-free-icons";
-import { Bricolage_Grotesque } from "next/font/google";
+import { bricolage } from "@/utils/fonts";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,11 +17,6 @@ import { getRootUrl } from "@/utils/misc";
 
 import { DeferredHeroVideo } from "./deferred-hero-video";
 import { HeroScrollCta } from "./hero-scroll-cta.client";
-
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage-grotesque",
-  subsets: ["latin"],
-});
 
 function Badge({ count }: { count: number }) {
   if (count <= 0) return null;

@@ -9,12 +9,12 @@ import {
   ShoppingBag01Icon,
   FavouriteIcon,
   Menu01Icon,
-  ManagerIcon,
+  UserLock01Icon,
 } from "@hugeicons/core-free-icons";
 import { HeaderSkeleton } from "./skeletons";
 import { useCart } from "@/features/cart/context/cart-context";
 import { useWishlist } from "@/hooks/use-wishlist";
-import { Bricolage_Grotesque } from "next/font/google";
+import { bricolage } from "@/utils/fonts";
 import { getRootUrl } from "@/utils/misc";
 import {
   DropdownMenu,
@@ -23,11 +23,6 @@ import {
   DropdownMenuTrigger,
 } from "@shopvendly/ui/components/dropdown-menu";
 import { Button } from "@shopvendly/ui/components/button";
-
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage-grotesque",
-  subsets: ["latin"],
-});
 
 export interface StoreData {
   name: string;
@@ -246,7 +241,7 @@ export default function StorefrontHeaderClient({
                   aria-label="Admin"
                 >
                   <HugeiconsIcon
-                    icon={ManagerIcon}
+                    icon={UserLock01Icon}
                     size={26}
                     className="transition-colors group-hover:text-red-400"
                   />
@@ -379,7 +374,7 @@ export default function StorefrontHeaderClient({
           aria-label="Admin"
         >
           <HugeiconsIcon
-            icon={ManagerIcon}
+            icon={UserLock01Icon}
             size={24}
             className={`${overlay ? "drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : ""} transition-colors group-hover:text-primary`}
           />

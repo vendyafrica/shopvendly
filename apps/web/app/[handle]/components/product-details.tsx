@@ -180,6 +180,13 @@ export function ProductDetails({ product, storePolicy }: ProductDetailsProps) {
         setFailedImageUrls((prev) => (prev[url] ? prev : { ...prev, [url]: true }));
     };
 
+    const shouldUnoptimize = (url: string) => {
+        return url.includes(".ufs.sh") ||
+            url.includes("utfs.io") ||
+            url.includes(".cdninstagram.com") ||
+            url.includes(".fbcdn.net");
+    };
+
     const isVideoUrl = (url: string, contentType?: string | null) => {
         if (failedImageUrls[url]) return true;
         return isLikelyVideoMedia({ url, contentType });
@@ -261,7 +268,7 @@ export function ProductDetails({ product, storePolicy }: ProductDetailsProps) {
                                             fill
                                             className="object-cover bg-neutral-100"
                                             priority={index === 0}
-                                            unoptimized={media.url.includes(".ufs.sh")}
+                                            unoptimized={shouldUnoptimize(media.url)}
                                             onError={() => handleImageError(media.url)}
                                         />
                                     )}
@@ -281,9 +288,9 @@ export function ProductDetails({ product, storePolicy }: ProductDetailsProps) {
                                         onClick={() => setSelectedMediaIndex(index)}
                                         onMouseEnter={() => setSelectedMediaIndex(index)}
                                         className={`
-                                            relative w-full aspect-3/4 overflow-hidden transition-all duration-300 rounded-2xl
+                                            relative w-full aspect-3/4 transition-all duration-300 rounded-2xl overflow-hidden
                                             ${safeSelectedIndex === index
-                                                ? "ring-1 ring-black opacity-100"
+                                                ? "opacity-100"
                                                 : "opacity-60 hover:opacity-100"
                                             }
                                         `}
@@ -303,8 +310,8 @@ export function ProductDetails({ product, storePolicy }: ProductDetailsProps) {
                                                 src={media.url}
                                                 alt={`View ${index + 1}`}
                                                 fill
-                                                className="object-cover bg-neutral-100"
-                                                unoptimized={media.url.includes(".ufs.sh")}
+                                                className="object-cover rounded-2xl"
+                                                unoptimized={shouldUnoptimize(media.url)}
                                                 onError={() => handleImageError(media.url)}
                                             />
                                         )}
@@ -339,7 +346,7 @@ export function ProductDetails({ product, storePolicy }: ProductDetailsProps) {
                                     sizes="(max-width: 1024px) 100vw, 60vw"
                                     className="object-cover object-center bg-neutral-100"
                                     priority
-                                    unoptimized={currentMedia.url.includes(".ufs.sh")}
+                                    unoptimized={shouldUnoptimize(currentMedia.url)}
                                     onError={() => handleImageError(currentMedia.url)}
                                 />
                             )}
@@ -364,6 +371,49 @@ export function ProductDetails({ product, storePolicy }: ProductDetailsProps) {
                                     ) : null}
                                 </>
                             ) : null}
+                        </div>
+
+                        {/* Rating row under price */}
+                        <div className="flex items-center gap-3 pt-1">
+                            <div className="flex items-center gap-0.5">
+                                {Array.from({ length: 5 }).map((_, idx) => {
+                                    const activeValue = hoverRating ?? userRating ?? Math.round(averageRating);
+                                    const filled = activeValue >= idx + 1;
+                                    return (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={() => handleSubmitRating(idx + 1)}
+                                            onMouseEnter={() => setHoverRating(idx + 1)}
+                                            onMouseLeave={() => setHoverRating(null)}
+                                            disabled={isSubmittingRating}
+                                            className="p-0.5 text-yellow-500 transition-transform duration-150 hover:-translate-y-0.5 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200 disabled:opacity-50"
+                                            aria-label={`Rate ${idx + 1} stars`}
+                                        >
+                                            <HugeiconsIcon
+                                                icon={StarIcon}
+                                                size={16}
+                                                className={filled ? "fill-yellow-400 text-yellow-400" : "text-neutral-300"}
+                                            />
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-sm">
+                                <span className="font-semibold text-neutral-900">
+                                    {Number.isFinite(averageRating) && averageRating > 0 ? averageRating.toFixed(1) : "0.0"}
+                                </span>
+                                <span className="text-neutral-400">·</span>
+                                {userRating ? (
+                                    <span className="text-neutral-600">You rated {userRating}★</span>
+                                ) : (
+                                    <span className="text-neutral-500 cursor-pointer hover:text-neutral-800 transition-colors" onClick={() => {
+                                        if (!session?.user?.id) {
+                                            void signInWithOneTap({ callbackURL: window.location.href });
+                                        }
+                                    }}>Tap to rate</span>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -400,14 +450,26 @@ export function ProductDetails({ product, storePolicy }: ProductDetailsProps) {
                             <div className="flex flex-wrap gap-3">
                                 {colorValues.map((value) => {
                                     const isActive = selectedColor === value;
+
+                                    const cssColor = value.toLowerCase().replace(/\s+/g, '');
+                                    const isWhiteLike = cssColor === 'white' || cssColor === '#fff' || cssColor === '#ffffff';
+
                                     return (
                                         <button
                                             key={value}
                                             type="button"
                                             onClick={() => setSelectedColor(value)}
-                                            className={`rounded-full border px-4 py-2.5 text-[15px] font-medium transition-colors ${isActive ? "border-neutral-950 bg-neutral-950 text-white" : "border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400"}`}
+                                            className={`group flex items-center gap-2.5 rounded-full border px-4 py-2 text-[15px] font-medium transition-all ${isActive
+                                                    ? "border-transparent bg-neutral-50 shadow-[0_0_0_2px_var(--tw-shadow-color)] ring-offset-1"
+                                                    : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50"
+                                                }`}
+                                            style={isActive ? { "--tw-shadow-color": isWhiteLike ? "#e5e5e5" : cssColor } as React.CSSProperties : undefined}
                                         >
-                                            {value}
+                                            <span
+                                                className={`h-4 w-4 rounded-full ${isWhiteLike ? "border border-neutral-200" : "shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]"}`}
+                                                style={{ backgroundColor: cssColor }}
+                                            />
+                                            <span className={isActive ? "text-neutral-950" : ""}>{value}</span>
                                         </button>
                                     );
                                 })}
@@ -416,43 +478,6 @@ export function ProductDetails({ product, storePolicy }: ProductDetailsProps) {
                     ) : null}
 
                     <div className={`mt-6 ${hasColorOptions || hasSizeOptions ? "" : "border-t border-neutral-100 pt-6"}`}>
-                        <div className="mb-5 border-b border-neutral-100 pb-4">
-                            <div className="mb-2 flex flex-col gap-2">
-                                <div className="flex items-center gap-0.5 sm:gap-1">
-                                    {Array.from({ length: 5 }).map((_, idx) => {
-                                        const activeValue = hoverRating ?? userRating ?? Math.round(averageRating);
-                                        const filled = activeValue >= idx + 1;
-                                        return (
-                                            <button
-                                                key={idx}
-                                                type="button"
-                                                onClick={() => handleSubmitRating(idx + 1)}
-                                                onMouseEnter={() => setHoverRating(idx + 1)}
-                                                onMouseLeave={() => setHoverRating(null)}
-                                                disabled={isSubmittingRating}
-                                                className="rounded-full p-1 text-yellow-500 transition-transform duration-150 hover:-translate-y-0.5 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200 disabled:opacity-50"
-                                                aria-label={`Rate ${idx + 1} stars`}
-                                            >
-                                                <HugeiconsIcon
-                                                    icon={StarIcon}
-                                                    size={18}
-                                                    className={filled ? "fill-yellow-400 text-yellow-400" : "text-neutral-300"}
-                                                />
-                                            </button>
-                                        );
-                                    })}
-                                    <span className="ml-2 text-sm font-semibold text-neutral-900 sm:text-base">
-                                        {Number.isFinite(averageRating) ? averageRating.toFixed(1) : "0.0"}
-                                    </span>
-                                </div>
-                                {userRating ? (
-                                    <span className="text-sm text-neutral-600">You rated this {userRating}★</span>
-                                ) : (
-                                    <span className="text-sm text-neutral-400">Tap a star to rate this product</span>
-                                )}
-                            </div>
-                        </div>
-
                         <div className="mb-6 w-full">
                             <ProductActions product={product} selectedOptions={selectedOptions} />
                         </div>

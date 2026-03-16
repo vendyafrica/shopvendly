@@ -4,14 +4,9 @@ import {
   InstagramIcon,
   WhatsappIcon,
 } from "@hugeicons/core-free-icons";
-import { Bricolage_Grotesque } from "next/font/google";
+import { bricolage } from "@/utils/fonts";
 import { getRootUrl } from "@/utils/misc";
 import { Button } from "@shopvendly/ui/components/button";
-
-const geistSans = Bricolage_Grotesque({
-  variable: "--font-bricolage-grotesque",
-  subsets: ["latin"],
-});
 
 interface StorefrontFooterProps {
   store: {
@@ -33,7 +28,7 @@ export function StorefrontFooter({ store }: StorefrontFooterProps) {
           <div>
             <Link
               href="/"
-              className={`${geistSans.className} font-bold text-2xl tracking-tight transition-colors flex items-center gap-2`}
+              className={`${bricolage.className} font-bold text-2xl tracking-tight transition-colors flex items-center gap-2`}
             >
               {storeName}
             </Link>
@@ -116,7 +111,7 @@ export function StorefrontFooter({ store }: StorefrontFooterProps) {
             Powered by{" "}
             <Link
               href="https://shopvendly.store"
-              className={`${geistSans.className} font-medium text-foreground hover:text-primary transition-all duration-200 ease-in-out`}
+              className={`${bricolage.className} font-medium text-foreground hover:text-primary transition-all duration-200 ease-in-out`}
               target="_blank"
               rel="noopener noreferrer"
             >

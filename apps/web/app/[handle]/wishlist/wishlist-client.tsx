@@ -7,12 +7,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowLeft01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
 import { useWishlist } from "@/hooks/use-wishlist";
-import { Bricolage_Grotesque } from "next/font/google";
-
-const geistSans = Bricolage_Grotesque({
-  variable: "--font-bricolage-grotesque",
-  subsets: ["latin"],
-});
+import { bricolage as geistSans } from "@/utils/fonts";
 
 export default function WishlistClient() {
   const params = useParams();
