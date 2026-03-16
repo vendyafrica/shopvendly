@@ -82,11 +82,11 @@ export default function WishlistClient() {
   return (
     <div className="min-h-screen bg-white pt-24 pb-24">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="rounded-2xl border border-neutral-200 bg-white/90 shadow-sm p-4 sm:p-6 lg:p-8 space-y-8">
-          <div className="flex flex-wrap items-center gap-3 pb-2 border-b border-neutral-200">
+        <div className="space-y-8">
+          <div className="flex flex-wrap items-center gap-3 pb-4">
             <button
               onClick={handleBack}
-              className="p-2 -ml-1 rounded-full text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors"
+              className="p-2 -ml-2 rounded-full text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors"
             >
               <HugeiconsIcon icon={ArrowLeft01Icon} className="h-5 w-5" />
             </button>
@@ -95,26 +95,26 @@ export default function WishlistClient() {
             >
               Wishlist
             </h1>
-            <span className="text-xs sm:text-sm font-semibold text-neutral-600 uppercase tracking-widest bg-neutral-100 px-3 py-1 rounded-full ml-auto">
+            <span className="text-xs sm:text-sm font-semibold text-neutral-600 uppercase tracking-widest bg-neutral-100 px-3 py-1.5 rounded-full ml-auto">
               {storeItems.length} {storeItems.length === 1 ? "Item" : "Items"}
             </span>
           </div>
 
-          <div className="grid lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
+          <div className="grid lg:grid-cols-[1fr_360px] gap-10 lg:gap-14">
             {/* Items List */}
-            <div className="space-y-4">
-              {storeItems.map((item) => {
+            <div className="space-y-0">
+              {storeItems.map((item, index) => {
                 const href = item.slug
                   ? `/${storeSlug}/${item.slug}`
                   : `/${storeSlug}`;
                 return (
                   <div
                     key={item.id}
-                    className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:gap-6"
+                    className={`flex flex-col sm:flex-row gap-5 sm:gap-6 py-6 ${index !== storeItems.length - 1 ? "border-b border-neutral-100" : ""}`}
                   >
                     <Link
                       href={href}
-                      className="relative w-full sm:w-28 aspect-3/4 bg-white rounded-xl overflow-hidden shadow-sm"
+                      className="relative w-24 sm:w-32 aspect-3/4 bg-neutral-100 rounded-lg overflow-hidden shrink-0"
                     >
                       {item.contentType?.startsWith("video/") ||
                         item.image?.match(/\.(mp4|webm|mov|ogg)$/i) ||
@@ -125,7 +125,7 @@ export default function WishlistClient() {
                           !item.contentType?.startsWith("image/")) ? (
                         <video
                           src={item.image || ""}
-                          className="h-full w-full object-cover bg-neutral-100"
+                          className="h-full w-full object-cover"
                           muted
                           playsInline
                           loop
@@ -136,14 +136,14 @@ export default function WishlistClient() {
                           src={item.image || FALLBACK_PRODUCT_IMAGE}
                           alt={item.name}
                           fill
-                          sizes="160px"
-                          className="object-cover bg-neutral-100"
+                          sizes="(max-width: 640px) 96px, 128px"
+                          className="object-cover"
                           unoptimized={item.image?.includes(".ufs.sh")}
                         />
                       )}
                     </Link>
 
-                    <div className="flex-1 flex flex-col gap-4">
+                    <div className="flex-1 flex flex-col gap-3">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div className="space-y-2">
                           <h3 className="font-serif text-lg leading-tight">
@@ -164,19 +164,19 @@ export default function WishlistClient() {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-end justify-between gap-3 sm:gap-4 mt-auto">
-                        <Link href={href} className="w-full sm:w-auto">
+                      <div className="flex flex-wrap items-center gap-4 mt-auto">
+                        <Link href={href}>
                           <Button
                             variant="outline"
-                            className="w-full sm:w-auto h-12 rounded-md uppercase text-xs tracking-widest font-semibold transition-colors"
+                            className="h-10 rounded-md px-5 text-xs font-semibold"
                           >
-                            View Product
+                            View
                           </Button>
                         </Link>
 
                         <button
                           onClick={() => removeFromWishlist(item.id)}
-                          className="text-xs uppercase tracking-widest text-neutral-400 hover:text-red-600 transition-colors underline underline-offset-4 self-end"
+                          className="text-xs font-medium text-neutral-400 hover:text-red-600 transition-colors underline underline-offset-4"
                           aria-label="Remove from wishlist"
                         >
                           Remove
@@ -189,53 +189,54 @@ export default function WishlistClient() {
             </div>
 
             {/* Wishlist Summary */}
-            <div className="rounded-2xl border border-neutral-200 bg-neutral-50/80 p-5 sm:p-6 flex flex-col shadow-sm">
-              <h2
-                className={`${geistSans.className} text-sm uppercase tracking-widest font-semibold mb-5`}
-              >
-                Wishlist Summary
-              </h2>
-
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-sm">
-                  <span className="text-neutral-600">Total Items</span>
-                  <span className="font-semibold text-neutral-900">
-                    {storeItems.length}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-neutral-600">Total Value</span>
-                  <span className="font-semibold text-neutral-900">
-                    {storeItems.reduce(
-                      (sum, item) => sum + (item.price || 0),
-                      0,
-                    ) > 0
-                      ? formatPrice(
-                        storeItems.reduce(
-                          (sum, item) => sum + (item.price || 0),
-                          0,
-                        ),
-                        storeItems[0]?.currency,
-                      )
-                      : "—"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="border-t border-neutral-200 pt-5 mb-6">
-                <p className="text-xs text-neutral-500 text-center">
-                  Keep track of items you love and purchase them later.
-                </p>
-              </div>
-
-              <Link href={`/${storeSlug}`} className="mt-auto">
-                <Button
-                  variant="outline"
-                  className="w-full h-12 rounded-md uppercase text-xs tracking-widest font-semibold transition-colors"
+            <div className="lg:sticky lg:top-24 h-fit">
+              <div className="rounded-2xl bg-neutral-50 p-6 sm:p-8 flex flex-col">
+                <h2
+                  className={`${geistSans.className} text-base uppercase tracking-widest font-semibold mb-6`}
                 >
-                  Continue Shopping
-                </Button>
-              </Link>
+                  Summary
+                </h2>
+
+                <div className="space-y-4 mb-8">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-neutral-500 font-medium tracking-wide">Total Items</span>
+                    <span className="font-semibold text-neutral-900">
+                      {storeItems.length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-neutral-500 font-medium tracking-wide">Total Value</span>
+                    <span className="font-semibold text-neutral-900 text-base">
+                      {storeItems.reduce(
+                        (sum, item) => sum + (item.price || 0),
+                        0,
+                      ) > 0
+                        ? formatPrice(
+                          storeItems.reduce(
+                            (sum, item) => sum + (item.price || 0),
+                            0,
+                          ),
+                          storeItems[0]?.currency,
+                        )
+                        : "—"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="border-t border-neutral-200/50 pt-6 mb-8">
+                  <p className="text-[13px] leading-relaxed text-neutral-500">
+                    Keep track of items you love and purchase them later when you are ready.
+                  </p>
+                </div>
+
+                <Link href={`/${storeSlug}`} className="mt-auto w-full">
+                  <Button
+                    className="w-full h-12 rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    Continue Shopping
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
