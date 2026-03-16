@@ -184,9 +184,9 @@ export function IntegrationsPanel({
   return (
     <div className={isCompact ? "flex h-full flex-col space-y-4" : "space-y-6"}>
       {!isCompact && (
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight">Integrations</h2>
-          <p className="text-sm text-muted-foreground">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-neutral-900">Integrations</h2>
+          <p className="text-sm text-neutral-500">
             Connect your tools to keep Vendly in sync.
           </p>
         </div>
@@ -199,23 +199,23 @@ export function IntegrationsPanel({
         </div>
       )}
 
-      <div className={isCompact ? "grid gap-6" : "grid gap-6 lg:grid-cols-2"}>
-        <div className="rounded-md border border-border/70 overflow-hidden shadow-sm">
-          <div className="px-6 py-2 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="mr-3 h-10 w-10 rounded-md p-2 text-pink-500">
-                <HugeiconsIcon icon={InstagramIcon} className="h-full w-full" />
+      <div className={isCompact ? "grid gap-6" : "grid gap-6"}>
+        <div className="rounded-2xl border border-neutral-200 bg-white p-1 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 border-b border-neutral-100 pb-5">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-pink-50 text-pink-500 border border-pink-100">
+                <HugeiconsIcon icon={InstagramIcon} className="h-6 w-6" strokeWidth={1.5} />
               </div>
               <div>
-                <p className="font-semibold text-white text-sm">Instagram</p>
-                <p className="text-xs text-white/70">
+                <p className="font-medium text-neutral-900 text-base">Instagram</p>
+                <p className="text-sm text-neutral-500">
                   Import posts as products automatically
                 </p>
               </div>
             </div>
 
             {connected ? (
-              <span className="gap-2 rounded-md px-2 py-1 text-xs font-semibold">
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 text-emerald-700 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider border border-emerald-100/50 self-start sm:self-auto">
                 <HugeiconsIcon
                   icon={CheckmarkCircle01Icon}
                   className="h-3.5 w-3.5"
@@ -223,15 +223,15 @@ export function IntegrationsPanel({
                 Connected
               </span>
             ) : (
-              <span className="gap-2 rounded-md px-2 py-1 text-xs font-semibold">
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-100 text-neutral-600 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider border border-neutral-200/50 self-start sm:self-auto">
                 Not connected
               </span>
             )}
           </div>
 
-          <div className="p-6 space-y-5 bg-card">
+          <div className="flex flex-col gap-6 p-5">
             {syncError && (
-              <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
+              <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm font-medium text-red-700">
                 <HugeiconsIcon
                   icon={AlertCircleIcon}
                   className="h-4 w-4 shrink-0"
@@ -240,12 +240,12 @@ export function IntegrationsPanel({
               </div>
             )}
 
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="max-w-md">
+                <p className="text-sm font-semibold text-neutral-900">
                   {connected ? "Account linked" : "Connect your account"}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-sm text-neutral-500 mt-1">
                   {connected
                     ? "Your Instagram account is connected and syncing."
                     : "Link your Instagram to import products from posts."}
@@ -254,35 +254,32 @@ export function IntegrationsPanel({
               <Button
                 onClick={handleConnect}
                 disabled={isConnecting || !bootstrap?.storeSlug}
-                variant={connected ? "default" : "outline"}
-                size="sm"
-                className="shrink-0 rounded-md"
+                variant={connected ? "outline" : "default"}
+                className="h-10 rounded-xl px-5 font-semibold shrink-0"
               >
                 {isConnecting ? (
                   <>
                     <HugeiconsIcon
                       icon={Loading03Icon}
-                      className="mr-2 h-3.5 w-3.5 animate-spin"
+                      className="mr-2 h-4 w-4 animate-spin"
                     />
                     Connecting…
                   </>
                 ) : connected ? (
                   "Reconnect"
                 ) : (
-                  <>
-                    Connect Instagram
-                  </>
+                  "Connect Instagram"
                 )}
               </Button>
             </div>
 
             {connected && (
-              <div className="rounded-lg border border-border/60 bg-muted/20 px-4 py-4 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm font-medium">
+              <div className="rounded-xl border border-neutral-200 bg-neutral-50/50 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="max-w-md">
+                  <p className="text-sm font-semibold text-neutral-900">
                     {syncPostsSuccess ? "Posts synced" : "Sync posts"}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-[13px] text-neutral-500 mt-1 leading-relaxed">
                     {syncPostsSuccess
                       ? "Sync complete. Imported Instagram posts are saved as Draft. Publish them in Products to show on storefront."
                       : "Fallback manual sync for posts if webhook delivery misses updates."}
@@ -292,14 +289,13 @@ export function IntegrationsPanel({
                   onClick={handleSyncPosts}
                   disabled={isSyncingPosts || !bootstrap?.storeId}
                   variant="outline"
-                  size="sm"
-                  className="shrink-0"
+                  className="h-10 rounded-xl px-5 font-semibold shrink-0 bg-white"
                 >
                   {isSyncingPosts ? (
                     <>
                       <HugeiconsIcon
                         icon={Loading03Icon}
-                        className="mr-2 h-3.5 w-3.5 animate-spin"
+                        className="mr-2 h-4 w-4 animate-spin"
                       />
                       Syncing…
                     </>
@@ -315,7 +311,7 @@ export function IntegrationsPanel({
                     <>
                       <HugeiconsIcon
                         icon={Download01Icon}
-                        className="h-4 w-4"
+                        className="mr-2 h-4 w-4"
                       />
                       Sync Posts
                     </>
@@ -325,14 +321,14 @@ export function IntegrationsPanel({
             )}
 
             {connected && (
-              <div className="rounded-lg border border-amber-300/60 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-[13px] text-amber-800 leading-relaxed">
                 Instagram imports are saved as <span className="font-semibold">Draft</span> by default.
                 Publish them from <span className="font-semibold">Products</span> before they appear on your storefront.
               </div>
             )}
 
             {syncPostsError && (
-              <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
+              <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm font-medium text-red-700">
                 <HugeiconsIcon
                   icon={AlertCircleIcon}
                   className="h-4 w-4 shrink-0"
@@ -343,13 +339,13 @@ export function IntegrationsPanel({
           </div>
 
           {connected && (
-            <div className="border-t border-border/50 bg-muted/10">
+            <div className="border-t border-neutral-100 bg-neutral-50/50 rounded-b-2xl">
               <button
                 type="button"
                 onClick={() => setShowDangerZone((v) => !v)}
-                className="w-full flex items-center justify-between px-6 py-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="w-full flex items-center justify-between px-5 py-4 text-xs font-semibold text-neutral-500 hover:text-neutral-900 transition-colors"
               >
-                <span className="font-medium uppercase tracking-wider">
+                <span className="uppercase tracking-wider">
                   Danger Zone
                 </span>
                 <HugeiconsIcon
@@ -359,14 +355,14 @@ export function IntegrationsPanel({
               </button>
 
               {showDangerZone && (
-                <div className="px-6 pb-5 space-y-3">
-                  <p className="text-xs text-muted-foreground">
+                <div className="px-5 pb-5 pt-1 space-y-4">
+                  <p className="text-[13px] text-neutral-500 leading-relaxed max-w-md">
                     Disconnects your Instagram account and removes Instagram
                     products, media, jobs, and stored tokens.
                   </p>
                   <Button
                     variant="destructive"
-                    size="sm"
+                    className="h-10 rounded-xl px-5 font-semibold text-sm"
                     onClick={handleDelete}
                     disabled={isDeleting}
                   >
@@ -374,7 +370,7 @@ export function IntegrationsPanel({
                       <>
                         <HugeiconsIcon
                           icon={Loading03Icon}
-                          className="mr-2 h-3.5 w-3.5 animate-spin"
+                          className="mr-2 h-4 w-4 animate-spin"
                         />
                         Disconnecting…
                       </>
@@ -382,17 +378,17 @@ export function IntegrationsPanel({
                       <>
                         <HugeiconsIcon
                           icon={Delete02Icon}
-                          className="mr-2 h-3.5 w-3.5"
+                          className="mr-2 h-4 w-4"
                         />
-                        Disconnect & delete data
+                        Disconnect & Delete Data
                       </>
                     )}
                   </Button>
                   {deleteError && (
-                    <p className="text-xs text-destructive">{deleteError}</p>
+                    <p className="text-[13px] font-medium text-red-600">{deleteError}</p>
                   )}
                   {deleteSuccess && (
-                    <p className="text-xs text-emerald-600">
+                    <p className="text-[13px] font-medium text-emerald-600">
                       Instagram connection removed successfully.
                     </p>
                   )}

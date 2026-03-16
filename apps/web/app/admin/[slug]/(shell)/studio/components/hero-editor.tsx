@@ -125,8 +125,8 @@ export function HeroEditor({
     };
 
     return (
-        <div className="rounded-2xl border bg-card/80 p-4 sm:p-6 space-y-6">
-            <div className="space-y-1">
+        <div className="space-y-6">
+            <div className="space-y-1 hidden">
                 <h3 className="text-lg font-semibold">Storefront header</h3>
                 <p className="text-sm text-muted-foreground">
                     Update your hero here
@@ -148,9 +148,9 @@ export function HeroEditor({
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 className={cn(
-                    "relative overflow-hidden rounded-xl border border-dashed px-6 py-12 text-center transition",
-                    !tenantId || isSaving || isUploading ? "cursor-not-allowed opacity-60" : "cursor-pointer",
-                    isDragging ? "border-primary bg-primary/5" : "border-border bg-muted/30"
+                    "relative overflow-hidden rounded-xl border border-dashed px-6 py-12 text-center transition group",
+                    !tenantId || isSaving || isUploading ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-neutral-400 hover:bg-neutral-50/50",
+                    isDragging ? "border-primary bg-primary/5" : "border-neutral-300 bg-neutral-50/30"
                 )}
             >
                 {hasHeroMedia ? (
@@ -170,7 +170,7 @@ export function HeroEditor({
                         )}
 
                         <div className="absolute inset-0 bg-black/40 opacity-0 transition group-hover:opacity-100" />
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white drop-shadow-sm pointer-events-none">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white drop-shadow-sm opacity-0 transition group-hover:opacity-100 pointer-events-none">
                             <HugeiconsIcon icon={Image02Icon} size={32} />
                             <p className="text-base font-medium">Drag & drop to replace</p>
                             <p className="text-xs text-white/80">Or click to browse</p>
