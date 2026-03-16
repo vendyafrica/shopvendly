@@ -18,9 +18,9 @@ const geistMono = Geist_Mono({
 
 const siteUrl = "https://shopvendly.store";
 const vendlyUrl = "https://shopvendly.store";
-const defaultTitle = "ShopVendly | Simple Online Store for Social Sellers in Africa";
+const defaultTitle = "Shopvendly | Simple Online Store for Social Sellers in Africa";
 const defaultDescription =
-  "ShopVendly is the simpler, cheaper way to run an African store online with local payments, delivery, and marketplace discovery built in.";
+  "Shopvendly is the simpler, cheaper way to run an African store online with local payments, delivery, and marketplace discovery built in.";
 const defaultImage = `${siteUrl}/og-image.png`;
 
 export const viewport: Viewport = {
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: defaultTitle,
-    template: "%s | ShopVendly",
+    template: "%s | Shopvendly",
   },
   description: defaultDescription,
   robots: { index: true, follow: true },
@@ -44,16 +44,16 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "ShopVendly | Online Store for Instagram, TikTok & WhatsApp Sellers",
+    title: "Shopvendly | Online Store for Instagram, TikTok & WhatsApp Sellers",
     description: defaultDescription,
     url: siteUrl,
-    siteName: "ShopVendly",
+    siteName: "Shopvendly",
     images: [
       {
         url: defaultImage,
         width: 1200,
         height: 630,
-        alt: "ShopVendly — Simple online store for social sellers in Africa",
+        alt: "Shopvendly — Simple online store for social sellers in Africa",
       },
     ],
     locale: "en_UG",
@@ -61,11 +61,11 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ShopVendly | Online Store for Instagram, TikTok & WhatsApp Sellers",
+    title: "Shopvendly | Online Store for Instagram, TikTok & WhatsApp Sellers",
     description: defaultDescription,
     images: [defaultImage],
-    site: "@vendlyafrica",
-    creator: "@vendlyafrica",
+    site: "@shopvendly",
+    creator: "@shopvendly",
   },
   other: {
     "geo.region": "UG",
@@ -82,7 +82,7 @@ const jsonLdGraph = {
     {
       "@type": "Organization",
       "@id": `${siteUrl}/#organization`,
-      name: "ShopVendly",
+      name: "Shopvendly",
       url: siteUrl,
       logo: {
         "@type": "ImageObject",
@@ -106,7 +106,7 @@ const jsonLdGraph = {
       "@type": "WebSite",
       "@id": `${siteUrl}/#website`,
       url: siteUrl,
-      name: "ShopVendly",
+      name: "Shopvendly",
       publisher: { "@id": `${siteUrl}/#organization` },
       potentialAction: {
         "@type": "SearchAction",
@@ -120,7 +120,7 @@ const jsonLdGraph = {
     {
       "@type": "WebApplication",
       "@id": `${siteUrl}/#app`,
-      name: "ShopVendly Marketplace",
+      name: "Shopvendly Marketplace",
       url: siteUrl,
       applicationCategory: "ShoppingApplication",
       operatingSystem: "Web",
@@ -175,4 +175,3 @@ export default async function RootLayout({
     </html>
   );
 }
-

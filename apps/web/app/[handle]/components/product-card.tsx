@@ -17,11 +17,12 @@ interface ProductCardProps {
   contentType?: string | null;
   index?: number;
   storeSlug?: string;
+  averageRating?: number | null;
 }
 
 const FALLBACK_PRODUCT_IMAGE = "https://cdn.cosmos.so/25e7ef9d-3d95-486d-b7db-f0d19c1992d7?format=jpeg";
 
-export function ProductCard({ title, slug, price, originalPrice, discountPercent, image, contentType, index = 0, storeSlug }: ProductCardProps) {
+export function ProductCard({ title, slug, price, originalPrice, discountPercent, image, contentType, index = 0, storeSlug, averageRating }: ProductCardProps) {
   const params = useParams();
   const [mediaError, setMediaError] = useState(false);
   const [isVideoReady, setIsVideoReady] = useState(false);
@@ -108,9 +109,19 @@ export function ProductCard({ title, slug, price, originalPrice, discountPercent
         </div>
 
       </div>
-      <p className="mt-2 text-sm font-semibold leading-tight text-neutral-900 capitalize">
-        {title}
-      </p>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold leading-tight text-neutral-900 capitalize truncate">
+          {title}
+        </p>
+        {typeof averageRating === 'number' && (
+          <div className="flex items-center gap-1 shrink-0 mt-0.5">
+            <svg className="w-3.5 h-3.5 fill-current text-yellow-500" viewBox="0 0 24 24">
+              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+            </svg>
+            {averageRating > 0 && <span className="text-xs font-semibold text-neutral-900">{averageRating.toFixed(1)}</span>}
+          </div>
+        )}
+      </div>
     </Link>
   );
 }

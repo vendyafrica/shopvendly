@@ -2,12 +2,11 @@ import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   InstagramIcon,
-  NewTwitterIcon,
-  Facebook01Icon,
+  WhatsappIcon,
 } from "@hugeicons/core-free-icons";
 import { Bricolage_Grotesque } from "next/font/google";
 import { getRootUrl } from "@/utils/misc";
-import { FooterSubscribeForm } from "./footer-subscribe-form.client";
+import { Button } from "@shopvendly/ui/components/button";
 
 const geistSans = Bricolage_Grotesque({
   variable: "--font-bricolage-grotesque",
@@ -29,132 +28,86 @@ export function StorefrontFooter({ store }: StorefrontFooterProps) {
   return (
     <footer className="pt-12 pb-7 border-t border-border bg-background">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+        <div className="flex flex-col items-center justify-center space-y-8 mb-12">
+          {/* Brand */}
           <div>
             <Link
               href="/"
-              className={`${geistSans.className} font-semibold text-xl sm:text-xl tracking-tight transition-colors`}
+              className={`${geistSans.className} font-bold text-2xl tracking-tight transition-colors flex items-center gap-2`}
             >
               {storeName}
-            </Link>{" "}
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              {storeDescription}
-            </p>
+            </Link>
           </div>
 
-          <div>
-            <h4 className="text-sm font-medium uppercase tracking-wider mb-4 text-muted-foreground">
-              Navigation
-            </h4>
-            <ul className="space-y-3">
-              <li>
-                <Link
-                  href={`/${store.slug}`}
-                  className="text-sm transition-colors duration-200 text-foreground hover:text-muted-foreground"
-                >
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={`/${store.slug}/cart`}
-                  className="text-sm transition-colors duration-200 text-foreground hover:text-muted-foreground"
-                >
-                  Shopping Bag
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/wishlist"
-                  className="text-sm transition-colors duration-200 text-foreground hover:text-muted-foreground"
-                >
-                  Wishlist
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={getRootUrl(`/login?next=${encodeURIComponent(`/${store.slug}`)}`)}
-                  className="text-sm transition-colors duration-200 text-foreground hover:text-muted-foreground"
-                >
-                  Account
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {/* Links */}
+          <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+            <li>
+              <Link
+                href={`/${store.slug}`}
+                className="text-sm transition-colors duration-200 text-muted-foreground hover:text-primary"
+              >
+                Home
+              </Link>
+            </li>
+            <li>
+              <Link
+                href={`/${store.slug}/cart`}
+                className="text-sm transition-colors duration-200 text-muted-foreground hover:text-primary"
+              >
+                Shopping Bag
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/wishlist"
+                className="text-sm transition-colors duration-200 text-muted-foreground hover:text-primary"
+              >
+                Wishlist
+              </Link>
+            </li>
+            <li>
+              <Link
+                href={getRootUrl(`/login?next=${encodeURIComponent(`/${store.slug}`)}`)}
+                className="text-sm transition-colors duration-200 text-muted-foreground hover:text-primary"
+              >
+                Account
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/shop-policies"
+                className="text-sm transition-colors duration-200 text-muted-foreground hover:text-primary"
+              >
+                Shop Policies
+              </Link>
+            </li>
+            <li>
+              <a
+                href={`mailto:hello@vendlyafrica.store?subject=Inquiry for ${store.name}`}
+                className="text-sm transition-colors duration-200 text-muted-foreground hover:text-primary"
+              >
+                Contact Us
+              </a>
+            </li>
+          </ul>
 
-          {/* Support */}
-          <div>
-            <h4 className="text-sm font-medium uppercase tracking-wider mb-4 text-muted-foreground">
-              Support & Legal
-            </h4>
-            <ul className="space-y-3">
-              <li>
-                <a
-                  href={`mailto:hello@vendlyafrica.store?subject=Inquiry for ${store.name}`}
-                  className="text-sm transition-colors duration-200 text-foreground hover:text-muted-foreground"
-                >
-                  Contact Us
-                </a>
-              </li>
-              <li>
-                <Link
-                  href="/shipping-returns"
-                  className="text-sm transition-colors duration-200 text-foreground hover:text-muted-foreground"
-                >
-                  Shipping & Returns
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/privacy-policy"
-                  className="text-sm transition-colors duration-200 text-foreground hover:text-muted-foreground"
-                >
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/terms"
-                  className="text-sm transition-colors duration-200 text-foreground hover:text-muted-foreground"
-                >
-                  Terms of Service
-                </Link>
-              </li>
-            </ul>
+          {/* Social Links */}
+          <div className="flex items-center justify-center gap-6">
+            <a
+              href="#"
+              className="text-muted-foreground hover:text-primary transition-all duration-200 ease-in-out"
+              aria-label="Instagram"
+            >
+              <HugeiconsIcon icon={InstagramIcon} size={20} />
+            </a>
+            <a
+              href="#"
+              className="text-muted-foreground hover:text-primary transition-all duration-200 ease-in-out"
+              aria-label="WhatsApp"
+            >
+              <HugeiconsIcon icon={WhatsappIcon} size={20} />
+            </a>
           </div>
-
-          {/* Newsletter */}
-          <div>
-            <h4 className={`${geistSans.className} text-sm font-medium tracking-wider mb-4 text-muted-foreground`}>
-              Updates
-            </h4>
-            <FooterSubscribeForm />
-          </div>
-        </div>
-
-        {/* Social links */}
-        <div className="flex justify-center gap-6 mb-8">
-          <a
-            href="#"
-            className="text-muted-foreground hover:text-primary transition-all duration-200 ease-in-out"
-            aria-label="Instagram"
-          >
-            <HugeiconsIcon icon={InstagramIcon} size={16} />
-          </a>
-          <a
-            href="#"
-            className="text-muted-foreground hover:text-primary transition-all duration-200 ease-in-out"
-            aria-label="Twitter"
-          >
-            <HugeiconsIcon icon={NewTwitterIcon} size={16} />
-          </a>
-          <a
-            href="#"
-            className="text-muted-foreground hover:text-primary transition-all duration-200 ease-in-out"
-            aria-label="Facebook"
-          >
-            <HugeiconsIcon icon={Facebook01Icon} size={16} />
-          </a>
         </div>
 
         {/* Bottom bar */}
@@ -162,12 +115,12 @@ export function StorefrontFooter({ store }: StorefrontFooterProps) {
           <p className="text-xs text-muted-foreground">
             Powered by{" "}
             <Link
-              href="https://vendlyafrica.store"
+              href="https://shopvendly.store"
               className={`${geistSans.className} font-medium text-foreground hover:text-primary transition-all duration-200 ease-in-out`}
               target="_blank"
               rel="noopener noreferrer"
             >
-              shopVendly
+              shopvendly
             </Link>
           </p>
         </div>

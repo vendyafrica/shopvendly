@@ -171,7 +171,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
                         hasColors: variantOptions.some((option) => option.type === "color" && (option.values?.length ?? 0) > 0),
                         hasSizes: variantOptions.some((option) => option.type === "size" && (option.values?.length ?? 0) > 0),
                     },
-                    rating: product.rating ?? 0,
+                    averageRating: product.rating ?? 0,
                     ratingCount: product.ratingCount ?? 0,
                 };
             })

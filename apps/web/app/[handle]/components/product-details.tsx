@@ -350,7 +350,7 @@ export function ProductDetails({ product, storePolicy }: ProductDetailsProps) {
                 {/* Right: Product Details */}
                 <div className="flex w-full flex-col pt-2 lg:max-w-[520px] lg:justify-self-end lg:pt-2 xl:max-w-[560px]">
 
-                    <div className="space-y-3 border-b border-neutral-100 pb-5 sm:space-y-3.5 sm:pb-6">
+                    <div className="space-y-3 pb-5 sm:space-y-3.5 sm:pb-6">
                         <h1 className="max-w-[18ch] text-[1.95rem] font-semibold tracking-[-0.03em] text-neutral-950 sm:text-[2.5rem] sm:leading-[1.08]">{product.name}</h1>
                         <div className="flex flex-wrap items-end gap-2 sm:gap-2.5">
                             <span className="text-[1.45rem] font-medium leading-none text-neutral-800 sm:text-[1.7rem]">{formatPrice(product.price)}</span>

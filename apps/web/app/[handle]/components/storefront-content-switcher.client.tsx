@@ -14,10 +14,10 @@ type StorefrontProduct = {
   price: number;
   originalPrice?: number | null;
   hasSale?: boolean;
-  discountPercent?: number | null;
   currency: string;
   image: string | null;
   contentType?: string | null;
+  averageRating?: number | null;
 };
 
 type StoreCollection = {

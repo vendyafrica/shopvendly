@@ -10,6 +10,7 @@ interface Product {
     currency: string;
     image: string | null;
     contentType?: string | null;
+    averageRating?: number | null;
 }
 
 interface ProductGridProps {
@@ -47,6 +48,7 @@ export function ProductGrid({ products }: ProductGridProps) {
                         discountPercent={product.discountPercent ?? null}
                         image={product.image}
                         contentType={product.contentType}
+                        averageRating={product.averageRating}
                     />
                 ))}
             </div>
