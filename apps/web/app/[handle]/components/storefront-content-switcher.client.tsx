@@ -53,9 +53,8 @@ export function StorefrontContentSwitcher({
   const [, startTransition] = useTransition();
 
   const query = useMemo(() => {
-    const currentQuery = searchParams.get("q");
-    return currentQuery ?? initialQuery ?? "";
-  }, [initialQuery, searchParams]);
+    return searchParams.get("q") ?? "";
+  }, [searchParams]);
 
   useEffect(() => {
     setDisplayProducts(products);
@@ -74,6 +73,9 @@ export function StorefrontContentSwitcher({
 
   const updateRouteAndProducts = async (nextCollectionSlug?: string, nextSection?: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
+
+    // Clear search query when switching categories/sections
+    nextParams.delete("q");
 
     if (nextCollectionSlug) {
       nextParams.set("collection", nextCollectionSlug);
@@ -123,7 +125,7 @@ export function StorefrontContentSwitcher({
           id="storefront-categories-rail"
           className="w-full"
         >
-          <div className="w-full px-4 md:px-6">
+          <div className="w-full px-4 sm:px-6 lg:px-8">
             <div className="overflow-x-auto overflow-y-hidden scrollbar-hide">
               <Tabs
                 value={tabValue}
@@ -194,7 +196,17 @@ export function StorefrontContentSwitcher({
       </section>
 
       <div id="storefront-main-content" className="w-full pt-6 sm:pt-8">
-        <div className="px-3 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-6 lg:px-8">
+          {query && (
+            <div className="mb-10 text-center">
+              <h2 className="text-xl sm:text-2xl font-medium text-neutral-900 tracking-tight">
+                Results for &ldquo;<span className="text-primary">{query}</span>&rdquo;
+              </h2>
+              <p className="mt-2 text-sm text-neutral-500 uppercase tracking-[0.15em]">
+                {displayProducts.length} {displayProducts.length === 1 ? "product" : "products"} found
+              </p>
+            </div>
+          )}
           <div className="my-8">
             {isLoadingProducts ? <ProductGridSkeleton /> : <ProductGrid products={displayProducts} />}
           </div>
