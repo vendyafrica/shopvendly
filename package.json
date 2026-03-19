@@ -1,5 +1,5 @@
 {
-  "name": "my-turborepo",
+  "name": "shopvendly",
   "private": true,
   "scripts": {
     "build": "turbo run build",
@@ -29,7 +29,6 @@
   },
   "dependencies": {
     "@react-email/components": "1.0.1",
-    "@types/recharts": "^2.0.1",
     "recharts": "^2.15.4"
   }
 }

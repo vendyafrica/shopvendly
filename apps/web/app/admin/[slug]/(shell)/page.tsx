@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { type ReactNode } from "react";
 
-import { SegmentedStatsCard } from "@/app/admin/components/segmented-stats-card";
+
 import { RevenueAreaChartCard, TopProductsBarChartCard } from "@/app/admin/components/dynamic-charts";
 import { RecentTransactionsTable } from "@/app/admin/components/recent-transactions-table";
 import { IntegrationsPanel } from "@/app/admin/components/integrations-panel";
 import { QuickAddLauncher } from "@/app/admin/components/quick-add-launcher";
+import { SimpleLineChartCard } from "@/app/admin/components/simple-line-chart-card";
+import { QuickActionsGrid } from "@/app/admin/components/quick-actions-grid";
 import { db } from "@shopvendly/db/db";
 import { orderItems, orders, products, storefrontSessions, stores } from "@shopvendly/db/schema";
 import { and, count, desc, eq, isNull, sql } from "@shopvendly/db";
@@ -188,6 +190,27 @@ export default async function AdminPage({
     };
   });
 
+  const ordersSeriesRaw = await db
+    .select({
+      date: sql<string>`to_char(date_trunc('day', ${orders.createdAt}), 'YYYY-MM-DD')`,
+      total: sql<number>`COALESCE(COUNT(*), 0)::int`,
+    })
+    .from(orders)
+    .where(wherePaidOrders)
+    .groupBy(sql`date_trunc('day', ${orders.createdAt})`)
+    .orderBy(sql`date_trunc('day', ${orders.createdAt})`);
+
+  const ordersTotalsByDate = new Map(ordersSeriesRaw.map((row) => [row.date, row.total]));
+  const ordersSeries = Array.from({ length: 31 }).map((_, index) => {
+    const day = new Date(from.getTime());
+    day.setDate(from.getDate() + index);
+    const isoDate = day.toISOString().slice(0, 10);
+    return {
+      date: toChartDateLabel(isoDate),
+      total: ordersTotalsByDate.get(isoDate) ?? 0,
+    };
+  });
+
   const topProductsRaw = await db
     .select({
       product: orderItems.productName,
@@ -289,7 +312,6 @@ export default async function AdminPage({
   ];
 
   const hasProducts = productCount > 0;
-
   const quickActions = [
     { label: "Add product", href: `${basePath}/products?quickAdd=1`, icon: Add01Icon },
     { label: "Orders", href: `${basePath}/transactions`, icon: Invoice01Icon },
@@ -307,10 +329,8 @@ export default async function AdminPage({
   }));
 
   return (
-    <div className="space-y-8">
-      {/* Mobile-first: profile header + stats + actions + activity */}
-      <div className="md:hidden space-y-5">
-        {/* Profile header */}
+    <div className="space-y-6">
+      <div className="flex md:hidden flex-col gap-5">
         <div className="flex items-center gap-3 px-1">
           <div className="flex-1 min-w-0">
             <Link
@@ -325,187 +345,108 @@ export default async function AdminPage({
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="flex gap-3 overflow-x-auto no-scrollbar px-1">
-          {statSegments.map((s) => (
-            <div key={s.label} className="min-w-[160px] rounded-xl border bg-card/80 px-4 py-3 shadow-sm">
-              <p className="text-xs text-muted-foreground">{s.label}</p>
-              <p className="text-xl font-semibold mt-1">{s.value}</p>
+        <div className="grid grid-cols-2 gap-3 px-1">
+          {statSegments.slice(0, 4).map((s) => (
+            <div key={s.label} className="rounded-xl border bg-card/80 px-4 py-3 shadow-sm">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground/60">{s.label}</p>
+              <p className="text-xl font-medium mt-1">{s.value}</p>
             </div>
           ))}
         </div>
 
-        {/* Quick actions 2x2 */}
         <QuickAddLauncher
           layout="grid"
           className="px-1"
           actions={quickActions.slice(1, 3)}
           socialConnect={{ enabled: true }}
         />
-
-        {/* Activity feed (orders and product updates via transactions) */}
-        <div className="space-y-3 px-1">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold">Recent activity</p>
-            <Badge variant="outline" className="text-[11px] rounded-md">Live</Badge>
-          </div>
-          {activityItems.length === 0 ? (
-            <div className="rounded-xl border bg-card/80 px-4 py-8 text-center text-sm text-muted-foreground">
-              No recent activity yet.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {activityItems.map((item) => (
-                <div key={item.id} className="rounded-xl border bg-card/80 px-4 py-3 shadow-sm flex items-center gap-3">
-                  <div className="size-10 rounded-full border flex items-center justify-center bg-primary/5 text-primary">
-                    <HugeiconsIcon icon={Invoice01Icon} className="size-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate">{item.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">{item.time}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-semibold">{item.amount}</p>
-                    <span className="text-[10px] uppercase text-muted-foreground">{item.status}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
-
-      {/* ── Desktop hero ─────────────────────────────────────────────────── */}
-      <div className="hidden md:block">
-        {hasProducts ? (
-          /* ── ACTIVE STATE: performance strip + quick actions ─────────── */
-          <div className="rounded-2xl border bg-card/60 shadow-sm overflow-hidden">
-            {/* Top bar: storefront link + quick actions */}
-            <div className="flex items-center justify-between gap-4 px-6 py-4 border-b bg-muted/30">
-              <Link
-                href={storefrontUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <HugeiconsIcon icon={Link01Icon} className="h-4 w-4 shrink-0" />
-                <span className="truncate max-w-[260px]">{storefrontUrl.replace(/^https?:\/\//, "")}</span>
-                <HugeiconsIcon icon={ArrowRight01Icon} className="h-3.5 w-3.5 opacity-50" />
-              </Link>
-              {/* Quick action buttons */}
-              <QuickAddLauncher
-                layout="inline"
-                className="shrink-0"
-                actions={quickActions.slice(1, 3)}
-                socialConnect={{ enabled: true, variant: "compact" }}
-                shareAction={quickActions[3]}
-              />
-            </div>
-
-            {/* Performance strip */}
-            <div className="grid grid-cols-3 divide-x">
-              <div className="px-6 py-5">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">30-day Revenue</p>
-                <p className="text-2xl font-bold tracking-tight">{formatStatCurrency(paidKpis.revenuePaid, currency)}</p>
-                {trendLabel(paidKpis.revenuePaid, prevKpis.revenuePaid) && (
-                  <p className={`text-xs font-medium mt-1 flex items-center gap-1 ${paidKpis.revenuePaid >= prevKpis.revenuePaid ? "text-emerald-600" : "text-rose-500"}`}>
-                    <HugeiconsIcon icon={paidKpis.revenuePaid >= prevKpis.revenuePaid ?AnalyticsUpIcon : AnalyticsDownIcon} className="h-3.5 w-3.5" />
-                    {trendLabel(paidKpis.revenuePaid, prevKpis.revenuePaid)} vs prev 30d
-                  </p>
-                )}
-              </div>
-              <div className="px-6 py-5">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Paid Orders</p>
-                <p className="text-2xl font-bold tracking-tight">{paidKpis.ordersPaid.toLocaleString()}</p>
-                {trendLabel(paidKpis.ordersPaid, prevKpis.ordersPaid) && (
-                  <p className={`text-xs font-medium mt-1 flex items-center gap-1 ${paidKpis.ordersPaid >= prevKpis.ordersPaid ? "text-emerald-600" : "text-rose-500"}`}>
-                    <HugeiconsIcon icon={paidKpis.ordersPaid >= prevKpis.ordersPaid ? AnalyticsUpIcon : AnalyticsDownIcon} className="h-3.5 w-3.5" />
-                    {trendLabel(paidKpis.ordersPaid, prevKpis.ordersPaid)} vs prev 30d
-                  </p>
-                )}
-              </div>
-              <div className="px-6 py-5">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Customers</p>
-                <p className="text-2xl font-bold tracking-tight">{customerAgg.distinctCustomers.toLocaleString()}</p>
-                {trendLabel(customerAgg.distinctCustomers, prevKpis.distinctCustomers) && (
-                  <p className={`text-xs font-medium mt-1 flex items-center gap-1 ${customerAgg.distinctCustomers >= prevKpis.distinctCustomers ? "text-emerald-600" : "text-rose-500"}`}>
-                    <HugeiconsIcon icon={customerAgg.distinctCustomers >= prevKpis.distinctCustomers ? AnalyticsUpIcon : AnalyticsDownIcon} className="h-3.5 w-3.5" />
-                    {trendLabel(customerAgg.distinctCustomers, prevKpis.distinctCustomers)} vs prev 30d
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* ── ONBOARDING STATE: checklist for new stores ───────────────── */
-          <Card className="bg-muted/20 shadow-sm">
-            <CardHeader className="flex flex-col gap-2 pb-2 md:flex-row md:items-center md:justify-between">
-              <Link
-                href={storefrontUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-sm border border-border/70 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/60"
-              >
-                <HugeiconsIcon icon={Link01Icon} className="h-4 w-4" />
+      <div className="hidden md:flex flex-col gap-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Overview</h1>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <HugeiconsIcon icon={Link01Icon} className="size-4" />
+              <Link href={storefrontUrl} target="_blank" className="hover:text-primary transition-colors">
                 {storefrontUrl.replace(/^https?:\/\//, "")}
               </Link>
-            </CardHeader>
-            <CardContent className="space-y-6 pt-6">
-              <div className="grid gap-6 md:grid-cols-2 min-h-[340px]">
-                <div className="flex h-full flex-col gap-4 rounded-2xl border border-dashed bg-background p-6 shadow-sm">
-                  <p className="text-base font-semibold">Get started with Vendly</p>
-                  <p className="text-sm text-muted-foreground -mt-2">Complete these steps to make your first sale.</p>
-                  <div className="flex flex-col gap-3 mt-2">
-                    {[
-                      { label: "Upload your first product", href: `${basePath}/products?quickAdd=1`, done: false },
-                      { label: "Connect Instagram", href: `${basePath}/integrations`, done: false },
-                      { label: "Share your store link", href: storefrontUrl, done: false, external: true },
-                    ].map((step) => (
-                      <Link
-                        key={step.label}
-                        href={step.href}
-                        target={step.external ? "_blank" : undefined}
-                        rel={step.external ? "noreferrer" : undefined}
-                        className="flex items-center gap-3 rounded-xl border bg-muted/20 px-4 py-3 text-sm font-medium hover:bg-muted/40 transition-colors group"
-                      >
-                        <div className="size-6 rounded-full border-2 border-dashed border-border flex items-center justify-center shrink-0 group-hover:border-primary/60 transition-colors" />
-                        <span className="flex-1">{step.label}</span>
-                        <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                      </Link>
-                    ))}
-                  </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-6">
+          <div className="md:col-span-5 lg:col-span-4">
+            <QuickActionsGrid basePath={basePath} storefrontUrl={storefrontUrl} />
+          </div>
+          <div className="md:col-span-7 lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-5 lg:gap-6">
+            <SimpleLineChartCard
+              title="30-Day Revenue"
+              value={formatCurrency(paidKpis.revenuePaid, currency)}
+              data={revenueSeries}
+              trend={trendLabel(paidKpis.revenuePaid, prevKpis.revenuePaid)}
+              trendTone={trendTone(paidKpis.revenuePaid, prevKpis.revenuePaid)}
+            />
+            <SimpleLineChartCard
+              title="Paid Orders"
+              value={paidKpis.ordersPaid.toLocaleString()}
+              data={ordersSeries}
+              trend={trendLabel(paidKpis.ordersPaid, prevKpis.ordersPaid)}
+              trendTone={trendTone(paidKpis.ordersPaid, prevKpis.ordersPaid)}
+            />
+          </div>
+        </div>
+
+
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-6">
+          <RevenueAreaChartCard
+            className="md:col-span-8 lg:col-span-8"
+            title="Revenue Performance"
+            totalLabel={formatCurrency(paidKpis.revenuePaid, currency)}
+            data={revenueSeries}
+          />
+          <TopProductsBarChartCard
+            className="md:col-span-4 lg:col-span-4"
+            title="Top Products"
+            description="Active in the last 30 days"
+            totalLabel={topProducts.reduce((acc, p) => acc + p.sales, 0).toLocaleString()}
+            data={topProducts}
+          />
+        </div>
+
+        <RecentTransactionsTable rows={transactionRows} />
+      </div>
+
+      <div className="md:hidden space-y-4 px-1">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-foreground">Recent transactions</p>
+          <Badge variant="outline" className="text-[10px] rounded-md font-bold uppercase tracking-wider">Live</Badge>
+        </div>
+        {activityItems.length === 0 ? (
+          <div className="rounded-xl border bg-card/80 px-4 py-8 text-center text-sm text-muted-foreground">
+            No transactions yet.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {activityItems.map((item) => (
+              <div key={item.id} className="rounded-xl border bg-card/80 px-4 py-3 shadow-sm flex items-center gap-3">
+                <div className="size-10 rounded-full border flex items-center justify-center bg-primary/5 text-primary">
+                  <HugeiconsIcon icon={Invoice01Icon} className="size-4" />
                 </div>
-                <div className="rounded-2xl border bg-background p-6 shadow-sm">
-                  <IntegrationsPanel variant="compact" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold truncate">{item.title}</p>
+                  <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{item.time}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-semibold">{item.amount}</p>
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground/60">{item.status}</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            ))}
+          </div>
         )}
-      </div>
-
-      <SegmentedStatsCard segments={statSegments} />
-
-
-      <div className="hidden md:grid grid-cols-1 gap-5 md:grid-cols-7 lg:grid-cols-7">
-        <RevenueAreaChartCard
-          className="md:col-span-4"
-          title="Total Revenue"
-          totalLabel={formatCurrency(paidKpis.revenuePaid, currency)}
-          data={revenueSeries}
-        />
-        <TopProductsBarChartCard
-          className="md:col-span-3"
-          title="Top Products"
-          description="By sales volume"
-          totalLabel={topProducts.reduce((acc, p) => acc + p.sales, 0).toLocaleString()}
-          data={topProducts}
-        />
-      </div>
-      <div className="hidden md:block">
-        <RecentTransactionsTable rows={transactionRows} />
       </div>
     </div>
   );
