@@ -1,1 +1,1 @@
-declare module "@vendly/ui/globals.css";
+declare module "@shopvendly/ui/globals.css";
