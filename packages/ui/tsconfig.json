@@ -6,9 +6,13 @@
     "strictNullChecks": true,
     "baseUrl": ".",
     "paths": {
+      "@components": ["src/components"],
       "@components/*": ["src/components/*"],
+      "@hooks": ["src/hooks"],
       "@hooks/*": ["src/hooks/*"],
+      "@lib": ["src/lib"],
       "@lib/*": ["src/lib/*"],
+      "@ui": ["src/components"],
       "@ui/*": ["src/components/*"],
       "@utils": ["src/lib/utils"],
       "@utils/*": ["src/lib/*"]
