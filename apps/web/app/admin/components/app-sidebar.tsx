@@ -33,6 +33,7 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@shopvendly/ui/components/sidebar";
+import { cn } from "@shopvendly/ui/lib/utils";
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
@@ -226,10 +227,12 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+        <SidebarGroup className="px-3">
+          <SidebarGroupLabel className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">
+            Menu
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-1">
+            <SidebarMenu className="gap-2">
               {items.map((item) => {
                 const fullUrl = basePath ? joinPaths(basePath, item.url) : normalizePath(item.url);
                 const isActive = item.url === "/"
@@ -239,12 +242,18 @@ export function AppSidebar({
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
-                      className="cursor-pointer"
-                      isActive={isActive}
+                      className={cn(
+                        "h-10 px-3 transition-all duration-200 hover:bg-sidebar-accent/50",
+                        isActive && "bg-sidebar-accent/80 font-semibold text-primary"
+                      )}
                       render={<Link href={fullUrl} />}
                     >
-                      <HugeiconsIcon icon={item.icon} />
-                      <span>{item.title}</span>
+                      <HugeiconsIcon 
+                        icon={item.icon} 
+                        size={20} 
+                        className={cn("transition-colors", isActive ? "text-primary" : "text-muted-foreground")} 
+                      />
+                      <span className="text-[14px] leading-none">{item.title}</span>
                     </SidebarMenuButton>
                     {item.items?.length ? (
                       <SidebarMenuSub className="ml-0 border-l-0 px-1.5 cursor-pointer">

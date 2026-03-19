@@ -40,11 +40,11 @@ export function RevenueAreaChartCard({
   } satisfies ChartConfig;
 
   return (
-    <Card className={cn("w-full", className)}>
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-        <div className="space-y-1">
-          <CardTitle className="text-base">{title}</CardTitle>
-          <div className="text-2xl font-bold text-foreground md:text-3xl">{totalLabel}</div>
+    <Card className={cn("w-full overflow-hidden", className)}>
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 p-6 pb-2 md:p-8 md:pb-4">
+        <div className="space-y-2">
+          <CardTitle className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">{title}</CardTitle>
+          <div className="text-2xl font-medium tracking-tight text-foreground md:text-4xl">{totalLabel}</div>
         </div>
         <Select value={timeRange} onValueChange={(value: any) => setTimeRange(value)}>
           <SelectTrigger className="w-[120px] rounded-lg border-border sm:ml-auto h-8 bg-muted/20" size="sm">
@@ -100,8 +100,8 @@ export function RevenueAreaChartCard({
             <Area
               type="natural"
               dataKey="total"
-              stroke="var(--foreground)"
-              strokeWidth={2}
+              stroke="hsl(var(--primary))"
+              strokeWidth={3}
               fill="url(#fillRevenue)"
               dot={false}
             />
