@@ -2,9 +2,8 @@ import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { getTenantMembership } from "@/app/admin/lib/tenant-membership";
-import { db } from "@shopvendly/db/db";
-import { and, eq, isNull } from "@shopvendly/db";
-import { stores, superAdmins } from "@shopvendly/db/schema";
+import { storeRepo } from "@/repo/store-repo";
+import { superAdminRepo } from "@/repo/super-admin-repo";
 
 export const GET = async () => {
     const session = await auth.api.getSession({
@@ -23,16 +22,8 @@ export const GET = async () => {
         return NextResponse.json({ hasTenant });
     }
 
-    const [store] = await db
-        .select({ slug: stores.slug })
-        .from(stores)
-        .where(and(eq(stores.tenantId, membership.tenantId), isNull(stores.deletedAt)))
-        .limit(1);
-
-    const superAdmin = await db.query.superAdmins.findFirst({
-        where: eq(superAdmins.userId, session.user.id),
-        columns: { id: true },
-    });
+    const store = await storeRepo.findActiveByTenantId(membership.tenantId);
+    const superAdmin = await superAdminRepo.findByUserId(session.user.id);
 
     const isTenantAdmin = ["owner", "admin"].includes(membership.role) || !!superAdmin;
 

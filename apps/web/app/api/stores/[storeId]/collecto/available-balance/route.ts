@@ -1,10 +1,8 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { storeService } from "@/app/[handle]/lib/store-service";
-import { db } from "@shopvendly/db/db";
-import { tenantMemberships } from "@shopvendly/db/schema";
-import { and, eq } from "@shopvendly/db";
+import { storeService } from "@/repo/store-repo";
+import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
 
 type RouteParams = {
   params: Promise<{ storeId: string }>;
@@ -30,9 +28,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    const membership = await db.query.tenantMemberships.findFirst({
-      where: and(eq(tenantMemberships.userId, session.user.id), eq(tenantMemberships.tenantId, store.tenantId)),
-    });
+    const membership = await tenantMembershipRepo.findByUserAndTenant(session.user.id, store.tenantId);
 
     if (!membership) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });

@@ -1,12 +1,10 @@
 import { auth } from "@shopvendly/auth";
-import { and, eq, inArray } from "@shopvendly/db";
-import { db } from "@shopvendly/db/db";
-import { productCollections, products, storeCollections, stores } from "@shopvendly/db/schema";
 import { headers } from "next/headers";
 import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
+import { storeCollectionsRepo } from "@/repo/store-collections-repo";
 
 const updateProductsSchema = z.object({
   productIds: z.array(z.string().uuid()).default([]),
@@ -25,10 +23,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
     const { collectionId } = await params;
 
-    const collection = await db.query.storeCollections.findFirst({
-      where: eq(storeCollections.id, collectionId),
-      columns: { id: true, storeId: true },
-    });
+    const collection = await storeCollectionsRepo.findBasicById(collectionId);
 
     if (!collection) {
       return NextResponse.json({ error: "Collection not found" }, { status: 404 });
@@ -42,12 +37,9 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const links = await db.query.productCollections.findMany({
-      where: eq(productCollections.collectionId, collectionId),
-      columns: { productId: true },
-    });
+    const productIds = await storeCollectionsRepo.findProductIdsByCollectionId(collectionId);
 
-    return NextResponse.json({ productIds: links.map((link) => link.productId) });
+    return NextResponse.json({ productIds });
   } catch (error) {
     console.error("Error fetching collection products:", error);
     return NextResponse.json({ error: "Failed to fetch collection products" }, { status: 500 });
@@ -64,10 +56,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const { collectionId } = await params;
     const { productIds } = updateProductsSchema.parse(await request.json());
 
-    const collection = await db.query.storeCollections.findFirst({
-      where: eq(storeCollections.id, collectionId),
-      columns: { id: true, storeId: true, tenantId: true },
-    });
+    const collection = await storeCollectionsRepo.findBasicById(collectionId);
 
     if (!collection) {
       return NextResponse.json({ error: "Collection not found" }, { status: 404 });
@@ -83,32 +72,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const normalizedIds = Array.from(new Set(productIds));
 
-    const validProducts = normalizedIds.length
-      ? await db.query.products.findMany({
-        where: and(
-          eq(products.storeId, collection.storeId),
-          eq(products.tenantId, collection.tenantId),
-          inArray(products.id, normalizedIds)
-        ),
-        columns: { id: true },
-      })
-      : [];
+    const validProducts = await storeCollectionsRepo.findValidProductsForCollection(
+      collection.storeId,
+      collection.tenantId,
+      normalizedIds
+    );
 
-    await db.delete(productCollections).where(eq(productCollections.collectionId, collectionId));
+    await storeCollectionsRepo.replaceCollectionProducts(
+      collectionId,
+      validProducts.map((product) => product.id)
+    );
 
-    if (validProducts.length > 0) {
-      await db.insert(productCollections).values(
-        validProducts.map((product) => ({
-          collectionId,
-          productId: product.id,
-        }))
-      );
-    }
-
-    const store = await db.query.stores.findFirst({
-      where: eq(stores.id, collection.storeId),
-      columns: { slug: true },
-    });
+    const store = await storeCollectionsRepo.findStoreSlugByStoreId(collection.storeId);
 
     if (store?.slug) {
       revalidateTag(`storefront:store:${store.slug}:collections`, "max");

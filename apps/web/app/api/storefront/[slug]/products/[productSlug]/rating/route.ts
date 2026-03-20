@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@shopvendly/auth";
-import { db, products, productRatings, eq, sql } from "@shopvendly/db";
 import { storefrontService } from "@/app/[handle]/lib/storefront-service";
+import { productRatingsRepo } from "@/repo/product-ratings-repo";
 
 interface RouteParams {
     params: Promise<{ slug: string; productSlug: string }>;
@@ -40,46 +40,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         }
 
         // Upsert user rating
-        await db
-            .insert(productRatings)
-            .values({
-                productId: product.id,
-                userId: session.user.id,
-                rating: value,
-            })
-            .onConflictDoUpdate({
-                target: [productRatings.productId, productRatings.userId],
-                set: {
-                    rating: value,
-                    updatedAt: new Date(),
-                },
-            });
+        await productRatingsRepo.upsertProductRating(product.id, session.user.id, value);
 
-        // Recalculate aggregates
-        const aggregates = await db
-            .select({
-                average: sql<number>`avg(${productRatings.rating})`,
-                count: sql<number>`count(${productRatings.id})`,
-            })
-            .from(productRatings)
-            .where(eq(productRatings.productId, product.id));
-
-        const avg = aggregates[0]?.average ? Number(aggregates[0].average) : 0;
-        const count = aggregates[0]?.count ? Number(aggregates[0].count) : 0;
-
-        // Persist snapshot on product row for any legacy consumers
-        await db
-            .update(products)
-            .set({
-                rating: Math.round(avg),
-                ratingCount: count,
-            })
-            .where(eq(products.id, product.id));
+        const aggregates = await productRatingsRepo.getProductRatingAggregate(product.id);
+        await productRatingsRepo.syncProductRatingSnapshot(product.id, aggregates.rating, aggregates.ratingCount);
 
         return NextResponse.json({
             success: true,
-            rating: avg || 0,
-            ratingCount: count || 0,
+            rating: aggregates.rating || 0,
+            ratingCount: aggregates.ratingCount || 0,
             userRating: value,
         });
     } catch (error) {

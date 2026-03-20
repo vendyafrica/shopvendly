@@ -6,9 +6,8 @@ import { productService } from "@/features/products/lib/product-service";
 import { getTenantMembership } from "@/app/admin/lib/tenant-membership";
 import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
 import { productQuerySchema, createProductSchema } from "@/features/products/lib/product-models";
-import { db } from "@shopvendly/db/db";
-import { stores, tenants } from "@shopvendly/db/schema";
-import { and, eq, isNull } from "@shopvendly/db";
+import { tenantRepo } from "@/repo/tenant-repo";
+import { storeRepo } from "@/repo/store-repo";
 import { revalidateTag, revalidatePath } from "next/cache";
 
 /**
@@ -133,10 +132,7 @@ export async function POST(request: NextRequest) {
 
         let tenantSlug = membership?.tenant?.slug;
         if (!tenantSlug && access.isSuperAdmin) {
-            const tenant = await db.query.tenants.findFirst({
-                where: eq(tenants.id, access.store.tenantId),
-                columns: { slug: true },
-            });
+            const tenant = await tenantRepo.findSlugById(access.store.tenantId);
             tenantSlug = tenant?.slug;
         }
 
@@ -147,10 +143,7 @@ export async function POST(request: NextRequest) {
         let currency = input.currency;
         let storeSlug: string | undefined;
         if (!currency || !storeSlug) {
-            const store = await db.query.stores.findFirst({
-                where: and(eq(stores.id, input.storeId), eq(stores.tenantId, access.store.tenantId), isNull(stores.deletedAt)),
-                columns: { defaultCurrency: true, slug: true },
-            });
+            const store = await storeRepo.findByIdAndTenant(input.storeId, access.store.tenantId);
             currency = currency || store?.defaultCurrency || "UGX";
             storeSlug = store?.slug;
         }

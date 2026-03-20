@@ -5,26 +5,14 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { productService } from "@/features/products/lib/product-service";
 import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
 import { updateProductSchema } from "@/features/products/lib/product-models";
-import { db } from "@shopvendly/db/db";
-import { products, stores } from "@shopvendly/db/schema";
-import { and, eq, isNull } from "@shopvendly/db";
+import { productRepo } from "@/repo/product-repo";
+import { storeRepo } from "@/repo/store-repo";
 
 type RouteParams = {
     params: Promise<{ productId: string }>;
 };
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-async function resolveProductScope(productId: string) {
-    return db.query.products.findFirst({
-        where: and(eq(products.id, productId), isNull(products.deletedAt)),
-        columns: {
-            id: true,
-            storeId: true,
-            tenantId: true,
-        },
-    });
-}
 
 /**
  * GET /api/products/[productId]
@@ -46,7 +34,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
         }
 
-        const scope = await resolveProductScope(productId);
+        const scope = await productRepo.findScopeById(productId);
         if (!scope) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
@@ -94,7 +82,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
         }
 
-        const scope = await resolveProductScope(productId);
+        const scope = await productRepo.findScopeById(productId);
         if (!scope) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
@@ -120,10 +108,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         // But first let's pass it.
         const updated = await productService.updateProduct(productId, scope.tenantId, { ...input, media: mediaInput });
 
-        const store = await db.query.stores.findFirst({
-            where: and(eq(stores.id, scope.storeId), isNull(stores.deletedAt)),
-            columns: { slug: true }
-        });
+        const store = await storeRepo.findByIdAndTenant(scope.storeId, scope.tenantId);
 
         if (store?.slug) {
             revalidateTag(`storefront:store:${store.slug}`);
@@ -183,10 +168,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
         const deleted = await productService.deleteProduct(productId, scope.tenantId);
 
-        const store = await db.query.stores.findFirst({
-            where: and(eq(stores.id, scope.storeId), isNull(stores.deletedAt)),
-            columns: { slug: true }
-        });
+        const store = await storeRepo.findByIdAndTenant(scope.storeId, scope.tenantId);
 
         if (store?.slug) {
             revalidateTag(`storefront:store:${store.slug}`);

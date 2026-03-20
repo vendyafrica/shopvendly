@@ -1,10 +1,9 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { storeService } from "@/app/[handle]/lib/store-service";
-import { db } from "@shopvendly/db";
-import { tenantMemberships, superAdmins, users } from "@shopvendly/db/schema";
-import { eq } from "@shopvendly/db";
+import { storeService } from "@/repo/store-repo";
+import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
+import { superAdminRepo } from "@/repo/super-admin-repo";
 import { sendNewStoreAlertEmail } from "@shopvendly/transactional";
 import { z } from "zod";
 
@@ -31,9 +30,7 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const membership = await db.query.tenantMemberships.findFirst({
-            where: eq(tenantMemberships.userId, session.user.id),
-        });
+        const membership = await tenantMembershipRepo.findByUserId(session.user.id);
 
         if (!membership) {
             return NextResponse.json({ error: "No tenant found" }, { status: 404 });
@@ -61,9 +58,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const membership = await db.query.tenantMemberships.findFirst({
-            where: eq(tenantMemberships.userId, session.user.id),
-        });
+        const membership = await tenantMembershipRepo.findByUserId(session.user.id);
 
         if (!membership) {
             return NextResponse.json({ error: "No tenant found" }, { status: 404 });
@@ -90,11 +85,7 @@ export async function POST(request: NextRequest) {
 
         // Notify super admins asynchronously
         try {
-            const adminRecords = await db.select({
-                email: users.email
-            })
-                .from(superAdmins)
-                .innerJoin(users, eq(superAdmins.userId, users.id));
+            const adminRecords = await superAdminRepo.listNotificationRecipients();
 
             if (adminRecords.length > 0) {
                 const adminStoreUrl = process.env.NEXT_PUBLIC_ADMIN_URL

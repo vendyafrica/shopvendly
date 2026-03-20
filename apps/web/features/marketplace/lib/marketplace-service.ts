@@ -1,5 +1,5 @@
-import { categoryRepo } from "@/lib/data/category-repo";
-import { storeRepo } from "@/lib/data/store-repo";
+import { categoryRepo } from "@/repo/category-repo";
+import { storeRepo } from "@/repo/store-repo";
 import { withCache, cacheKeys, TTL } from "@shopvendly/db";
 
 const DEFAULT_STORE_LOGO = "/vendly.png";
@@ -31,14 +31,6 @@ type ProductRecordForMarketplace = {
     media?: ProductMediaRow[];
 };
 
-// type ProductRepoListItem = {
-//     id: string;
-//     slug: string | null;
-//     productName: string;
-//     priceAmount: unknown;
-//     currency: string;
-//     media?: ProductMediaRow[];
-// };
 
 function mapProductRecord(product: ProductRecordForMarketplace, store: { id: string; name: string; slug: string; logoUrl?: string | null }) {
     const slug = product.slug || slugifyName(product.productName || "");
@@ -240,7 +232,7 @@ export const marketplaceService = {
 
         const stores = await storeRepo.findByCategory({ slug: category.slug, name: category.name });
 
-        const { productRepo } = await import("@/lib/data/product-repo");
+        const { productRepo } = await import("@/repo/product-repo");
 
         return Promise.all(stores.map(async (store) => {
             const heroImages = Array.isArray((store as { heroMedia?: unknown }).heroMedia)

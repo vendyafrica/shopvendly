@@ -4,9 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { productService } from "@/features/products/lib/product-service";
 import { getTenantMembership } from "@/app/admin/lib/tenant-membership";
 import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
-import { db } from "@shopvendly/db/db";
-import { stores, tenants } from "@shopvendly/db/schema";
-import { eq, and, isNull } from "@shopvendly/db";
+import { tenantRepo } from "@/repo/tenant-repo";
+import { storeRepo } from "@/repo/store-repo";
 import { revalidateTag, revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -50,10 +49,7 @@ export async function POST(request: NextRequest) {
         const tenantId = access.store.tenantId;
         let tenantSlug = membership?.tenant?.slug;
         if (!tenantSlug && access.isSuperAdmin) {
-            const tenant = await db.query.tenants.findFirst({
-                where: eq(tenants.id, tenantId),
-                columns: { slug: true },
-            });
+            const tenant = await tenantRepo.findSlugById(tenantId);
             tenantSlug = tenant?.slug;
         }
 
@@ -61,10 +57,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "No tenant found" }, { status: 404 });
         }
 
-        const store = await db.query.stores.findFirst({
-            where: and(eq(stores.id, storeId), eq(stores.tenantId, tenantId), isNull(stores.deletedAt)),
-            columns: { defaultCurrency: true, slug: true },
-        });
+        const store = await storeRepo.findByIdAndTenant(storeId, tenantId);
 
         if (!store) {
             return NextResponse.json({ error: "Store not found" }, { status: 404 });

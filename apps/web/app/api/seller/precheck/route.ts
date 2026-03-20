@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { db } from "@shopvendly/db/db";
-import { and, eq, isNull } from "@shopvendly/db";
-import { stores, tenants } from "@shopvendly/db/schema";
+import { storeRepo } from "@/repo/store-repo";
+import { tenantRepo } from "@/repo/tenant-repo";
 
 export async function GET(req: Request) {
     try {
@@ -12,21 +11,12 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "email is required" }, { status: 400 });
         }
 
-        const tenant = await db.query.tenants.findFirst({
-            where: and(eq(tenants.billingEmail, email), isNull(tenants.deletedAt)),
-            columns: {
-                id: true,
-                slug: true,
-            },
-        });
+        const tenant = await tenantRepo.findSellerByBillingEmail(email);
 
         let adminStoreSlug: string | null = null;
 
         if (tenant) {
-            const store = await db.query.stores.findFirst({
-                where: and(eq(stores.tenantId, tenant.id), isNull(stores.deletedAt)),
-                columns: { slug: true },
-            });
+            const store = await storeRepo.findFirstByTenantId(tenant.id);
             adminStoreSlug = store?.slug ?? null;
         }
 

@@ -1,10 +1,9 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { storeService } from "@/app/[handle]/lib/store-service";
-import { db } from "@shopvendly/db/db";
-import { products, tenantMemberships } from "@shopvendly/db/schema";
-import { eq, and, isNull } from "@shopvendly/db";
+import { storeService } from "@/repo/store-repo";
+import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
+import { productsAdminRepo } from "@/repo/products-admin-repo";
 import { z } from "zod";
 
 type RouteParams = {
@@ -72,12 +71,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Store not found" }, { status: 404 });
         }
 
-        const membership = await db.query.tenantMemberships.findFirst({
-            where: and(
-                eq(tenantMemberships.userId, session.user.id),
-                eq(tenantMemberships.tenantId, store.tenantId)
-            ),
-        });
+        const membership = await tenantMembershipRepo.findByUserAndTenant(session.user.id, store.tenantId);
 
         if (!membership) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
@@ -97,16 +91,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         }
 
         if (input.defaultCurrency) {
-            await db
-                .update(products)
-                .set({ currency: input.defaultCurrency, updatedAt: new Date() })
-                .where(
-                    and(
-                        eq(products.storeId, storeId),
-                        eq(products.tenantId, membership.tenantId),
-                        isNull(products.deletedAt)
-                    )
-                );
+            await productsAdminRepo.updateCurrencyByStore(storeId, membership.tenantId, input.defaultCurrency);
         }
 
         return NextResponse.json(updated);
@@ -136,12 +121,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Store not found" }, { status: 404 });
         }
 
-        const membership = await db.query.tenantMemberships.findFirst({
-            where: and(
-                eq(tenantMemberships.userId, session.user.id),
-                eq(tenantMemberships.tenantId, store.tenantId)
-            ),
-        });
+        const membership = await tenantMembershipRepo.findByUserAndTenant(session.user.id, store.tenantId);
 
         if (!membership) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });

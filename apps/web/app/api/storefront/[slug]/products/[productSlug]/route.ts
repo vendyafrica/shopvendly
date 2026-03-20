@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { headers } from "next/headers";
 import { auth } from "@shopvendly/auth";
-import { db, eq, and, productRatings } from "@shopvendly/db";
 import { storefrontService } from "@/modules/storefront/data";
+import { productRatingsRepo } from "@/repo/product-ratings-repo";
 
 
 
@@ -111,12 +111,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         let userRating: number | null = null;
 
         if (session?.user?.id) {
-            const existing = await db.query.productRatings.findFirst({
-                where: and(
-                    eq(productRatings.productId, product.id),
-                    eq(productRatings.userId, session.user.id)
-                ),
-            });
+            const existing = await productRatingsRepo.findByProductAndUser(product.id, session.user.id);
             userRating = existing?.rating ?? null;
         }
 
