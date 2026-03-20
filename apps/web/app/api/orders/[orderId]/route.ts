@@ -5,9 +5,7 @@ import { orderService } from "@/features/orders/lib/order-service";
 import { updateOrderStatusSchema } from "@/features/orders/lib/order-models";
 import { ordersRepo } from "@/repo/orders-repo";
 
-type RouteParams = {
-    params: Promise<{ orderId: string }>;
-};
+import { type OrderRouteParams as RouteParams } from "@/models";
 
 /**
  * GET /api/orders/[orderId]

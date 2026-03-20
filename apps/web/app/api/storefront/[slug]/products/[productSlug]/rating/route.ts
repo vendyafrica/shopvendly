@@ -4,13 +4,7 @@ import { auth } from "@shopvendly/auth";
 import { storefrontService } from "@/app/[handle]/lib/storefront-service";
 import { productRatingsRepo } from "@/repo/product-ratings-repo";
 
-interface RouteParams {
-    params: Promise<{ slug: string; productSlug: string }>;
-}
-
-type RatingBody = {
-    rating?: number;
-};
+import { type ProductRatingRouteParams as RouteParams, type RatingBody } from "@/models";
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
     try {

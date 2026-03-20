@@ -6,9 +6,7 @@ import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
 import { productsAdminRepo } from "@/repo/products-admin-repo";
 import { z } from "zod";
 
-type RouteParams = {
-    params: Promise<{ storeId: string }>;
-};
+import { type StoreRouteParams as RouteParams } from "@/models";
 
 const updateStoreSchema = z.object({
     name: z.string().min(1).max(255).optional(),

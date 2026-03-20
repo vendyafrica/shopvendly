@@ -1,0 +1,1 @@
+export const MAX_INSTAGRAM_IMPORT_ITEMS = 30;

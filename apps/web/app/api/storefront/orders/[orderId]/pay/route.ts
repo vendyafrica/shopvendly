@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 
-type RouteParams = {
-  params: Promise<{ orderId: string }>;
-};
+import { type OrderRouteParams as RouteParams } from "@/models";
 
 // POST /api/storefront/orders/[orderId]/pay
 export async function POST(request: Request, { params }: RouteParams) {

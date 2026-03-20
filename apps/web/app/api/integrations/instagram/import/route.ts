@@ -1,111 +1,15 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@shopvendly/db/db";
-import {
-  instagramAccounts,
-  instagramSyncJobs,
-  stores,
-} from "@shopvendly/db/schema";
-import { and, eq } from "@shopvendly/db";
-import { z } from "zod";
 import { parseInstagramCaption } from "@/lib/instagram/parse-caption";
-import { mediaService } from "@/features/media/lib/media-service";
 import { instagramRepo } from "@/repo/instagram-repo";
+import { MAX_INSTAGRAM_IMPORT_ITEMS } from "@/lib/constants/instagram";
 
-const MAX_INSTAGRAM_IMPORT_ITEMS = 30;
-
-type InstagramMediaChild = {
-  id: string | number;
-  media_type?: string | null;
-  media_url?: string | null;
-  thumbnail_url?: string | null;
-};
-
-type InstagramMediaItem = {
-  id: string | number;
-  caption?: string | null;
-  media_type?: string | null;
-  media_url?: string | null;
-  thumbnail_url?: string | null;
-  permalink?: string | null;
-  children?: { data?: InstagramMediaChild[] | null } | null;
-};
-
-const importSchema = z.object({
-  storeId: z.string().uuid(),
-});
-
-// Helper to create slug
-function slugify(text: string) {
-  return (
-    text
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)+/g, "")
-      .slice(0, 50) +
-    "-" +
-    Math.random().toString(36).substring(2, 6)
-  );
-}
-
-async function copyToBlob(params: {
-  tenantId: string;
-  sourceUrl: string;
-  preferredBasename: string;
-  fallbackContentType: string;
-}) {
-  try {
-    const res = await fetch(params.sourceUrl);
-    if (!res.ok) {
-      throw new Error(`Fetch failed: ${res.status}`);
-    }
-
-    const arrayBuf = await res.arrayBuffer();
-    const buffer = Buffer.from(arrayBuf);
-
-    const contentType =
-      res.headers.get("content-type") || params.fallbackContentType;
-    const ext = contentType.includes("png")
-      ? "png"
-      : contentType.includes("webp")
-        ? "webp"
-        : contentType.includes("gif")
-          ? "gif"
-          : contentType.includes("mp4")
-            ? "mp4"
-            : "jpg";
-
-    const uploadResult = await mediaService.uploadSingle(
-      {
-        buffer,
-        originalname: `${params.preferredBasename}.${ext}`,
-        mimetype: contentType,
-      },
-      params.tenantId,
-      "instagram",
-    );
-
-    return {
-      url: uploadResult.url,
-      pathname: uploadResult.pathname,
-      contentType,
-    };
-  } catch (err) {
-    console.warn(
-      "[InstagramImport] Blob copy failed; falling back to source URL",
-      {
-        url: params.sourceUrl,
-        err,
-      },
-    );
-    return {
-      url: params.sourceUrl,
-      pathname: params.preferredBasename,
-      contentType: params.fallbackContentType,
-    };
-  }
-}
+import { 
+  type InstagramMediaItem, 
+  instagramImportSchema 
+} from "@/models";
+import { slugify, copyToBlob } from "@/lib/instagram/instagram-service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -115,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { storeId } = importSchema.parse(body);
+    const { storeId } = instagramImportSchema.parse(body);
 
     const { membership, store, instagramAuthAccount } =
       await instagramRepo.getImportContext(session.user.id, storeId);
@@ -169,7 +73,8 @@ export async function POST(request: NextRequest) {
       session.user.id,
     );
 
-    const accountValues = {
+    // 3. Update Account with Profile Picture
+    const igAccount = await instagramRepo.upsertInstagramAccount(membership.tenantId, session.user.id, {
       tenantId: membership.tenantId,
       userId: session.user.id,
       accountId: instagramAuthAccount.accountId,
@@ -177,21 +82,7 @@ export async function POST(request: NextRequest) {
       profilePictureUrl: userData.profile_picture_url,
       isActive: true,
       lastSyncedAt: new Date(),
-    };
-
-    let igAccount;
-    if (existing) {
-      [igAccount] = await db
-        .update(instagramAccounts)
-        .set(accountValues)
-        .where(eq(instagramAccounts.id, existing.id))
-        .returning();
-    } else {
-      [igAccount] = await db
-        .insert(instagramAccounts)
-        .values(accountValues)
-        .returning();
-    }
+    });
 
     if (!igAccount) {
       throw new Error("Failed to upsert Instagram account");
@@ -201,30 +92,13 @@ export async function POST(request: NextRequest) {
       userData.profile_picture_url &&
       store.logoUrl !== userData.profile_picture_url
     ) {
-      await db
-        .update(stores)
-        .set({
-          logoUrl: userData.profile_picture_url,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(eq(stores.id, storeId), eq(stores.tenantId, membership.tenantId)),
-        );
+      await instagramRepo.updateStoreLogo(storeId, membership.tenantId, userData.profile_picture_url);
     }
 
     const accountId = igAccount.id;
 
     // 4. Create Sync Job
-    const [job] = await db
-      .insert(instagramSyncJobs)
-      .values({
-        tenantId: membership.tenantId,
-        accountId,
-        status: "processing",
-        mediaFetched: limitedMediaItems.length,
-        startedAt: new Date(),
-      })
-      .returning();
+    const job = await instagramRepo.createSyncJob(membership.tenantId, accountId, limitedMediaItems.length);
 
     if (!job) {
       throw new Error("Failed to create sync job");
@@ -235,20 +109,14 @@ export async function POST(request: NextRequest) {
     // 5. Process Media (Inline for simplicity)
     let createdCount = 0;
 
-    const { products, mediaObjects, productMedia } =
-      await import("@shopvendly/db/schema");
-
     for (const item of limitedMediaItems) {
       const sourceId = String(item.id);
-      const existingProduct = await db.query.products.findFirst({
-        where: and(
-          eq(products.tenantId, membership.tenantId),
-          eq(products.storeId, storeId),
-          eq(products.source, "instagram"),
-          eq(products.sourceId, sourceId),
-        ),
-        columns: { id: true },
-      });
+      const existingProduct = await instagramRepo.findExistingProductBySource(
+        membership.tenantId,
+        storeId,
+        "instagram",
+        sourceId
+      );
 
       if (existingProduct) {
         continue;
@@ -258,23 +126,20 @@ export async function POST(request: NextRequest) {
       const parsed = parseInstagramCaption(caption, store.defaultCurrency);
       const slug = slugify(parsed.productName);
 
-      const [product] = await db
-        .insert(products)
-        .values({
-          tenantId: membership.tenantId,
-          storeId: storeId,
-          productName: parsed.productName,
-          slug: slug,
-          description: parsed.description,
-          priceAmount: parsed.priceAmount,
-          currency: parsed.currency,
-          status: "draft",
-          source: "instagram",
-          sourceId,
-          sourceUrl: item.permalink ? String(item.permalink) : null,
-          variants: null,
-        })
-        .returning();
+      const product = await instagramRepo.createProduct({
+        tenantId: membership.tenantId,
+        storeId: storeId,
+        productName: parsed.productName,
+        slug: slug,
+        description: parsed.description,
+        priceAmount: parsed.priceAmount,
+        currency: parsed.currency,
+        status: "draft",
+        source: "instagram",
+        sourceId,
+        sourceUrl: item.permalink ? String(item.permalink) : null,
+        variants: null,
+      });
 
       if (!product) {
         throw new Error("Failed to create product record");
@@ -304,23 +169,21 @@ export async function POST(request: NextRequest) {
             preferredBasename: childId,
             fallbackContentType: contentType,
           });
-          const [mediaObj] = await db
-            .insert(mediaObjects)
-            .values({
-              tenantId: membership.tenantId,
-              blobUrl: copied.url,
-              blobPathname: copied.pathname,
-              contentType: copied.contentType,
-              source: "instagram",
-              sourceMediaId: childId,
-            })
-            .returning();
+          
+          const mediaObj = await instagramRepo.createMediaObject({
+            tenantId: membership.tenantId,
+            blobUrl: copied.url,
+            blobPathname: copied.pathname,
+            contentType: copied.contentType,
+            source: "instagram",
+            sourceMediaId: childId,
+          });
 
           if (!mediaObj) {
             throw new Error("Failed to create media object");
           }
 
-          await db.insert(productMedia).values({
+          await instagramRepo.linkProductMedia({
             tenantId: membership.tenantId,
             productId,
             mediaId: mediaObj.id,
@@ -340,23 +203,21 @@ export async function POST(request: NextRequest) {
             preferredBasename: itemId,
             fallbackContentType: contentType,
           });
-          const [mediaObj] = await db
-            .insert(mediaObjects)
-            .values({
-              tenantId: membership.tenantId,
-              blobUrl: copied.url,
-              blobPathname: copied.pathname,
-              contentType: copied.contentType,
-              source: "instagram",
-              sourceMediaId: itemId,
-            })
-            .returning();
+          
+          const mediaObj = await instagramRepo.createMediaObject({
+            tenantId: membership.tenantId,
+            blobUrl: copied.url,
+            blobPathname: copied.pathname,
+            contentType: copied.contentType,
+            source: "instagram",
+            sourceMediaId: itemId,
+          });
 
           if (!mediaObj) {
             throw new Error("Failed to create media object");
           }
 
-          await db.insert(productMedia).values({
+          await instagramRepo.linkProductMedia({
             tenantId: membership.tenantId,
             productId,
             mediaId: mediaObj.id,
@@ -368,14 +229,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update Job Status
-    await db
-      .update(instagramSyncJobs)
-      .set({
-        status: "completed",
-        productsCreated: createdCount,
-        completedAt: new Date(),
-      })
-      .where(eq(instagramSyncJobs.id, jobId));
+    await instagramRepo.completeSyncJob(jobId, createdCount);
 
     return NextResponse.json({
       ok: true,

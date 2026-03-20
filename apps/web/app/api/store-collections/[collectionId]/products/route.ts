@@ -10,9 +10,7 @@ const updateProductsSchema = z.object({
   productIds: z.array(z.string().uuid()).default([]),
 });
 
-type RouteParams = {
-  params: Promise<{ collectionId: string }>;
-};
+import { type CollectionItemRouteParams as RouteParams } from "@/models";
 
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {

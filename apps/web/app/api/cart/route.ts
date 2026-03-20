@@ -3,28 +3,10 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { cartService } from "@/features/cart/lib/cart-service";
 import { instagramRepo } from "@/repo/instagram-repo";
+import { type CartItemWithRelations, addItemToCartSchema } from "@/models";
+
 const DEFAULT_STORE_LOGO = "/vendly.png";
 
-type CartItemWithRelations = {
-    id: string;
-    productId: string;
-    quantity: number;
-    selectedOptions?: Array<{ name?: string; value?: string }> | null;
-    product: {
-        id: string;
-        productName: string;
-        priceAmount: number;
-        currency: string;
-        media?: { media?: { blobUrl?: string | null; contentType?: string | null } | null }[];
-        store?: {
-            id?: string;
-            name?: string;
-            slug?: string;
-            tenantId?: string;
-            logoUrl?: string | null;
-        };
-    };
-};
 
 /**
  * GET /api/cart
@@ -114,13 +96,10 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { productId, storeId, quantity, selectedOptions } = await request.json();
+        const body = await request.json();
+        const { productId, storeId, quantity, selectedOptions } = addItemToCartSchema.parse(body);
 
-        if (!productId || !storeId || quantity === undefined) {
-            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-        }
-
-        await cartService.upsertItem(session.user.id, productId, storeId, quantity, selectedOptions);
+        await cartService.upsertItem(session.user.id, productId, storeId, quantity, selectedOptions ?? undefined);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Error updating cart:", error);

@@ -1,11 +1,8 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-
-const bodySchema = z.object({
-  storeId: z.string().uuid(),
-});
+import { getApiBaseUrl } from "@/lib/api-utils";
+import { instagramSyncSchema } from "@/models";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,12 +12,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { storeId } = bodySchema.parse(body);
+    const { storeId, limit } = instagramSyncSchema.parse(body);
 
-    const apiBaseFromEnv = process.env.NEXT_PUBLIC_API_URL;
-    const apiBase =
-      apiBaseFromEnv ||
-      (process.env.NODE_ENV === "development" ? "http://127.0.0.1:8000" : undefined);
+    const apiBase = getApiBaseUrl();
 
     if (!apiBase) {
       return NextResponse.json(
@@ -37,7 +31,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${apiBase}/api/internal/instagram/sync`, {
+    const endpoint = limit ? "sync-posts" : "sync";
+    const response = await fetch(`${apiBase}/api/internal/instagram/${endpoint}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -46,6 +41,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         storeId,
         userId: session.user.id,
+        limit,
       }),
       cache: "no-store",
     });

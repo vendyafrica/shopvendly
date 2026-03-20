@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storefrontService } from "@/modules/storefront/data";
 
-type RouteParams = {
-  params: Promise<{ slug: string }>;
-};
+import { type CollectionRouteParams as RouteParams } from "@/models";
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {

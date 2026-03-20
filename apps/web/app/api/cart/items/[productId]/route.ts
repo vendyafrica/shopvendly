@@ -3,9 +3,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { cartService } from "@/features/cart/lib/cart-service";
 
-type RouteParams = {
-    params: Promise<{ productId: string }>;
-};
+import { type CartItemRouteParams as RouteParams } from "@/models";
 
 /**
  * DELETE /api/cart/items/[productId]

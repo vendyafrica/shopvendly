@@ -4,13 +4,9 @@ import { NextResponse } from "next/server";
 import { storeRepo } from "@/repo/store-repo";
 import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
 
-type RouteParams = {
-  params: Promise<{ storeId: string }>;
-};
+import { type StoreRouteParams as RouteParams } from "@/models";
 
-function getApiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "development" ? "http://127.0.0.1:8000" : undefined);
-}
+import { getApiBaseUrl } from "@/lib/api-utils";
 
 export async function POST(_request: Request, { params }: RouteParams) {
   try {
