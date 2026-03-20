@@ -1,9 +1,9 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { db, instagramAccounts, eq, and } from "@shopvendly/db";
-const DEFAULT_STORE_LOGO = "/vendly.png";
 import { cartService } from "@/features/cart/lib/cart-service";
+import { instagramRepo } from "@/repo/instagram-repo";
+const DEFAULT_STORE_LOGO = "/vendly.png";
 
 type CartItemWithRelations = {
     id: string;
@@ -51,12 +51,7 @@ export async function GET() {
 
         const igMap = new Map<string, string>();
         for (const tenantId of tenantIds) {
-            const igAccount = await db.query.instagramAccounts.findFirst({
-                where: and(
-                    eq(instagramAccounts.tenantId, tenantId),
-                    eq(instagramAccounts.isActive, true)
-                )
-            });
+            const igAccount = await instagramRepo.findActiveByTenantId(tenantId);
 
             if (igAccount?.profilePictureUrl) {
                 igMap.set(tenantId, igAccount.profilePictureUrl);

@@ -1,7 +1,7 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { storeService } from "@/repo/store-repo";
+import { storeRepo } from "@/repo/store-repo";
 import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
 
 type RouteParams = {
@@ -23,7 +23,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
     }
 
     const { storeId } = await params;
-    const store = await storeService.findById(storeId);
+    const store = await storeRepo.findById(storeId);
     if (!store) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }

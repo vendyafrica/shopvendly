@@ -1,4 +1,4 @@
-import { db, stores, eq, and, drizzleSql as sql } from "@shopvendly/db";
+import { db, stores, eq, and, isNull, desc, drizzleSql as sql } from "@shopvendly/db";
 
 function isUndefinedColumnError(error: unknown): boolean {
     const err = error as { code?: string; cause?: { code?: string }; message?: string };

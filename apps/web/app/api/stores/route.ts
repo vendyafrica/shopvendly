@@ -1,7 +1,7 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { storeService } from "@/repo/store-repo";
+import { storeRepo } from "@/repo/store-repo";
 import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
 import { superAdminRepo } from "@/repo/super-admin-repo";
 import { sendNewStoreAlertEmail } from "@shopvendly/transactional";
@@ -36,7 +36,7 @@ export async function GET() {
             return NextResponse.json({ error: "No tenant found" }, { status: 404 });
         }
 
-        const storeList = await storeService.findByTenantId(membership.tenantId);
+        const storeList = await storeRepo.findByTenantId(membership.tenantId);
         return NextResponse.json(storeList);
     } catch (error) {
         console.error("Error listing stores:", error);
@@ -68,12 +68,12 @@ export async function POST(request: NextRequest) {
         const input = createStoreSchema.parse(body);
 
         // Check if slug is unique
-        const existing = await storeService.findBySlug(input.slug);
+        const existing = await storeRepo.findBySlug(input.slug);
         if (existing) {
             return NextResponse.json({ error: "Store slug already exists" }, { status: 400 });
         }
 
-        const store = await storeService.create({
+        const store = await storeRepo.create({
             tenantId: membership.tenantId,
             status: true,
             ...input,

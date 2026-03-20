@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
 
         if (storeSlug) {
             revalidateTag(`storefront:store:${storeSlug}:products`, "default");
-            revalidatePath(`/${storeSlug}`);
+            revalidatePath(`/${storeSlug}`, "page");
         }
 
         // If specific media URLs were passed (client-side upload)

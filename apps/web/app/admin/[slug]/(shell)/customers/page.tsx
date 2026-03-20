@@ -73,7 +73,7 @@ export default async function CustomersPage({
 
     return {
       name: r.name || "—",
-      email: r.email,
+      email: r.email || "—",
       orders: r.orders,
       totalSpend: Number(r.totalSpend || 0),
       currency,

@@ -1,7 +1,7 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { storeService } from "@/repo/store-repo";
+import { storeRepo } from "@/repo/store-repo";
 import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
 import { productsAdminRepo } from "@/repo/products-admin-repo";
 import { z } from "zod";
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
 
         const { storeId } = await params;
-        const store = await storeService.findById(storeId);
+        const store = await storeRepo.findById(storeId);
 
         if (!store) {
             return NextResponse.json({ error: "Store not found" }, { status: 404 });
@@ -66,7 +66,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         }
 
         const { storeId } = await params;
-        const store = await storeService.findById(storeId);
+        const store = await storeRepo.findById(storeId);
         if (!store) {
             return NextResponse.json({ error: "Store not found" }, { status: 404 });
         }
@@ -84,7 +84,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             logoUrl: parsed.logoUrl === "" ? null : parsed.logoUrl,
         };
 
-        const updated = await storeService.update(storeId, membership.tenantId, input);
+        const updated = await storeRepo.update(storeId, membership.tenantId, input);
 
         if (!updated) {
             return NextResponse.json({ error: "Store not found" }, { status: 404 });
@@ -116,7 +116,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         }
 
         const { storeId } = await params;
-        const store = await storeService.findById(storeId);
+        const store = await storeRepo.findById(storeId);
         if (!store) {
             return NextResponse.json({ error: "Store not found" }, { status: 404 });
         }
@@ -126,7 +126,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         if (!membership) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
-        await storeService.delete(storeId, membership.tenantId);
+        await storeRepo.delete(storeId, membership.tenantId);
 
         return NextResponse.json({ success: true });
     } catch (error) {

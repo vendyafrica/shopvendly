@@ -1,6 +1,7 @@
+import { cartRepo } from "@/repo/cart-repo";
 import { db } from "@shopvendly/db/db";
-import { carts, cartItems, products } from "@shopvendly/db/schema";
-import { eq, and } from "@shopvendly/db";
+import { products } from "@shopvendly/db/schema";
+import { eq } from "@shopvendly/db";
 
 type CartSelectedOption = {
   name: string;
@@ -26,38 +27,17 @@ export const cartService = {
    * Get or create a cart for a user
    */
   async getUserCart(userId: string) {
-    let cart = await db.query.carts.findFirst({
-      where: eq(carts.userId, userId),
-    });
+    let cart = await cartRepo.findByUserId(userId);
 
     if (!cart) {
-      [cart] = await db.insert(carts).values({ userId }).returning();
+      cart = await cartRepo.create(userId);
     }
 
     if (!cart) {
       throw new Error("Failed to initialize cart");
     }
 
-    const items = await db.query.cartItems.findMany({
-      where: eq(cartItems.cartId, cart.id),
-      with: {
-        product: {
-          with: {
-            media: {
-              with: {
-                media: {
-                  columns: {
-                    blobUrl: true,
-                    contentType: true,
-                  },
-                },
-              },
-            },
-            store: true,
-          },
-        },
-      },
-    });
+    const items = await cartRepo.findItemsByCartId(cart.id);
 
     return { cart, items } as const;
   },
@@ -94,38 +74,23 @@ export const cartService = {
         : Number.POSITIVE_INFINITY;
     const clampedQuantity = Math.min(quantity, maxQuantity);
 
-    const existingItem = await db.query.cartItems.findFirst({
-      where: and(
-        eq(cartItems.cartId, cart.id),
-        eq(cartItems.productId, productId),
-        eq(cartItems.selectedOptions, normalizedSelectedOptions),
-      ),
-    });
+    const existingItem = await cartRepo.findItem(cart.id, productId, normalizedSelectedOptions);
 
     if (existingItem) {
       if (clampedQuantity <= 0) {
-        await db.delete(cartItems).where(eq(cartItems.id, existingItem.id));
+        await cartRepo.deleteItem(existingItem.id);
         return null;
       }
-      const [updated] = await db
-        .update(cartItems)
-        .set({ quantity: clampedQuantity, updatedAt: new Date(), selectedOptions: normalizedSelectedOptions })
-        .where(eq(cartItems.id, existingItem.id))
-        .returning();
-      return updated;
+      return cartRepo.updateItem(existingItem.id, clampedQuantity, normalizedSelectedOptions);
     } else {
       if (clampedQuantity <= 0) return null;
-      const [newItem] = await db
-        .insert(cartItems)
-        .values({
-          cartId: cart.id,
-          productId,
-          storeId,
-          quantity: clampedQuantity,
-          selectedOptions: normalizedSelectedOptions,
-        })
-        .returning();
-      return newItem;
+      return cartRepo.insertItem({
+        cartId: cart.id,
+        productId,
+        storeId,
+        quantity: clampedQuantity,
+        selectedOptions: normalizedSelectedOptions,
+      });
     }
   },
 
@@ -135,15 +100,7 @@ export const cartService = {
   async removeItem(userId: string, productId: string, selectedOptions?: CartSelectedOption[]) {
     const { cart } = await this.getUserCart(userId);
     const normalizedSelectedOptions = normalizeSelectedOptions(selectedOptions);
-    await db
-      .delete(cartItems)
-      .where(
-        and(
-          eq(cartItems.cartId, cart.id),
-          eq(cartItems.productId, productId),
-          eq(cartItems.selectedOptions, normalizedSelectedOptions),
-        ),
-      );
+    await cartRepo.deleteItemsByQuery(cart.id, productId, normalizedSelectedOptions);
   },
 
   /**
@@ -151,15 +108,6 @@ export const cartService = {
    */
   async clearCart(userId: string, storeId?: string) {
     const { cart } = await this.getUserCart(userId);
-
-    if (storeId) {
-      await db
-        .delete(cartItems)
-        .where(
-          and(eq(cartItems.cartId, cart.id), eq(cartItems.storeId, storeId)),
-        );
-    } else {
-      await db.delete(cartItems).where(eq(cartItems.cartId, cart.id));
-    }
+    await cartRepo.clearCart(cart.id, storeId);
   },
 };

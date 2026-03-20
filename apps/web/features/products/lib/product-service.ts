@@ -1,14 +1,5 @@
-import { db } from "@shopvendly/db/db";
-import {
-    products,
-    productMedia,
-    mediaObjects,
-    orderItems,
-    orders,
-    productCollections,
-    storeCollections,
-} from "@shopvendly/db/schema";
-import { eq, and, isNull, desc, sql, like, inArray } from "@shopvendly/db";
+import { db, mediaObjects, productMedia, products, and, eq, isNull, sql, inArray } from "@shopvendly/db";
+import { productRepo } from "@/repo/product-repo";
 import { mediaService, type UploadFile } from "../../media/lib/media-service";
 import type { CreateProductInput, ProductFilters, ProductWithMedia, UpdateProductInput } from "./product-models";
 
@@ -78,30 +69,7 @@ export const productService = {
         storeId: string,
         collectionIds: string[]
     ): Promise<string[]> {
-        await db.delete(productCollections).where(eq(productCollections.productId, productId));
-
-        const normalizedIds = Array.from(new Set(collectionIds.filter(Boolean)));
-        if (normalizedIds.length === 0) return [];
-
-        const validCollections = await db.query.storeCollections.findMany({
-            where: and(
-                eq(storeCollections.tenantId, tenantId),
-                eq(storeCollections.storeId, storeId),
-                inArray(storeCollections.id, normalizedIds)
-            ),
-            columns: { id: true },
-        });
-
-        if (validCollections.length === 0) return [];
-
-        await db.insert(productCollections).values(
-            validCollections.map((collection) => ({
-                collectionId: collection.id,
-                productId,
-            }))
-        );
-
-        return validCollections.map((collection) => collection.id);
+        return productRepo.syncCollections(productId, tenantId, storeId, collectionIds);
     },
 
     /**
@@ -116,10 +84,10 @@ export const productService = {
         const baseSlug = slugifyName(data.title);
 
         let slug = await generateUniqueSlug({ query: db.query }, data.storeId, baseSlug);
-        let product: ProductRow | null = null;
+        let product: ProductRow | undefined = undefined;
 
         try {
-            const insertedProducts = await db.insert(products).values({
+            product = await productRepo.create({
                 tenantId,
                 storeId: data.storeId,
                 productName: data.title,
@@ -134,12 +102,11 @@ export const productService = {
                 sourceUrl: data.sourceUrl,
                 status: data.status,
                 variants: data.variants ?? null,
-            }).returning();
-            product = insertedProducts[0] ?? null;
+            });
         } catch (error: unknown) {
             if (isSlugConflict(error)) {
                 slug = await generateUniqueSlugWithTimestamp({ query: db.query }, data.storeId, baseSlug);
-                const insertedProducts = await db.insert(products).values({
+                product = await productRepo.create({
                     tenantId,
                     storeId: data.storeId,
                     productName: data.title,
@@ -154,8 +121,7 @@ export const productService = {
                     sourceUrl: data.sourceUrl,
                     status: data.status,
                     variants: data.variants ?? null,
-                }).returning();
-                product = insertedProducts[0] ?? null;
+                });
             } else {
                 throw error;
             }
@@ -279,19 +245,7 @@ export const productService = {
      * Get product with media
      */
     async getProductWithMedia(id: string, tenantId: string): Promise<ProductWithMedia> {
-        const product = await db.query.products.findFirst({
-            where: and(
-                eq(products.id, id),
-                eq(products.tenantId, tenantId),
-                isNull(products.deletedAt)
-            ),
-            with: {
-                media: {
-                    with: { media: true },
-                    orderBy: (m, { asc }) => [asc(m.sortOrder)],
-                },
-            },
-        });
+        const product = await productRepo.findWithMedia(id, tenantId);
 
         if (!product) {
             throw new Error("Product not found");
@@ -303,12 +257,7 @@ export const productService = {
             isFeatured: pm.isFeatured,
         }));
 
-        const collectionLinks = await db.query.productCollections.findMany({
-            where: eq(productCollections.productId, id),
-            columns: { collectionId: true },
-        });
-
-        const collectionIds = collectionLinks.map((link) => link.collectionId);
+        const collectionIds = await productRepo.getCollectionIds(id);
 
         return { ...product, media: formattedMedia, collectionIds } as ProductWithMedia;
     },
@@ -323,64 +272,10 @@ export const productService = {
         limit: number;
         totalPages: number;
     }> {
-        const { storeId, source, page, limit, search } = filters;
-        const offset = (page - 1) * limit;
+        const { page, limit } = filters;
+        const { products: productList, total: count } = await productRepo.list(tenantId, filters);
 
-        // Removed caching to ensure admin admin always shows fresh data
-        const conditions = [
-            eq(products.tenantId, tenantId),
-            isNull(products.deletedAt),
-        ];
-
-        if (storeId) conditions.push(eq(products.storeId, storeId));
-        if (source) conditions.push(eq(products.source, source));
-        if (search) conditions.push(like(products.productName, `%${search}%`));
-
-        const whereClause = and(...conditions);
-
-        const productList = await db.query.products.findMany({
-            where: whereClause,
-            with: {
-                media: {
-                    with: { media: true },
-                    orderBy: (m, { asc }) => [asc(m.sortOrder)],
-                    limit: 1,
-                },
-            },
-            orderBy: [desc(products.createdAt)],
-            limit,
-            offset,
-        });
-
-        const countResult = await db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(products)
-            .where(whereClause);
-
-        const count = countResult[0]?.count ?? 0;
-
-        const salesRows = productList.length
-            ? await db
-                .select({
-                    productId: orderItems.productId,
-                    salesAmount: sql<number>`COALESCE(SUM(${orderItems.totalPrice}), 0)::int`,
-                })
-                .from(orderItems)
-                .innerJoin(orders, eq(orders.id, orderItems.orderId))
-                .where(
-                    and(
-                        eq(orderItems.tenantId, tenantId),
-                        eq(orders.paymentStatus, "paid"),
-                        isNull(orders.deletedAt)
-                    )
-                )
-                .groupBy(orderItems.productId)
-            : [];
-
-        const salesMap = new Map<string, number>();
-        salesRows.forEach((row) => {
-            if (row.productId) salesMap.set(row.productId, row.salesAmount || 0);
-        });
+        const salesMap = await productRepo.getSalesMap(tenantId, productList.map(p => p.id));
 
         type ProductListItem = (typeof productList)[number];
         type ProductMediaItem = ProductListItem["media"][number];
@@ -410,17 +305,7 @@ export const productService = {
     async updateProduct(id: string, tenantId: string, data: UpdateProductInput): Promise<ProductWithMedia> {
         const { media, collectionIds, ...productData } = data;
 
-        const [updated] = await db.update(products)
-            .set({
-                ...productData,
-                updatedAt: new Date(),
-            })
-            .where(and(
-                eq(products.id, id),
-                eq(products.tenantId, tenantId),
-                isNull(products.deletedAt)
-            ))
-            .returning();
+        const updated = await productRepo.update(id, tenantId, productData);
 
         if (!updated) {
             throw new Error("Product not found");
@@ -428,18 +313,12 @@ export const productService = {
 
         if (media) {
             // Sync media
-            // 1. Delete existing product media links for this product
-            // (We could be more smart and diff them, but full replace is easier and safer for ordering)
-            // Note: We don't delete the actual MediaObjects here unless we are sure they are orphaned and we want to clean up.
-            // For now, just unlink.
             await db.delete(productMedia).where(and(
                 eq(productMedia.productId, id),
                 eq(productMedia.tenantId, tenantId)
             ));
 
-            // 2. Re-attach or create media objects
             await Promise.all(media.map(async (m, index) => {
-                // Check if mediaObject already exists by blobUrl or pathname
                 let mediaId: string;
 
                 const existing = await db.query.mediaObjects.findFirst({
@@ -452,7 +331,6 @@ export const productService = {
                 if (existing) {
                     mediaId = existing.id;
                 } else {
-                    // Create new media object
                     const [newMedia] = await db.insert(mediaObjects).values({
                         tenantId,
                         blobUrl: m.url,
@@ -466,7 +344,6 @@ export const productService = {
                     mediaId = newMedia.id;
                 }
 
-                // Link to product
                 await db.insert(productMedia).values({
                     tenantId,
                     productId: id,
@@ -487,13 +364,10 @@ export const productService = {
     /**
      * Delete a product and its media
      */
-    async deleteProduct(id: string, tenantId: string): Promise<void> {
+    async deleteProduct(id: string, tenantId: string): Promise<ProductWithMedia> {
         const product = await this.getProductWithMedia(id, tenantId);
 
-        // Soft delete the product
-        await db.update(products)
-            .set({ deletedAt: new Date() })
-            .where(and(eq(products.id, id), eq(products.tenantId, tenantId)));
+        await productRepo.delete(id, tenantId);
 
         // Delete uploaded media from UploadThing by file key
         const uploadedMedia = product.media.filter((m) => m.source === "upload");
@@ -504,6 +378,8 @@ export const productService = {
                     .filter((value): value is string => Boolean(value))
             );
         }
+
+        return product;
     },
 
     /**

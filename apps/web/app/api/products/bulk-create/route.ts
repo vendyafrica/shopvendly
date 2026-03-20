@@ -102,8 +102,8 @@ export async function POST(request: NextRequest) {
         }));
 
         if (store.slug) {
-            revalidateTag(`storefront:store:${store.slug}:products`);
-            revalidatePath(`/${store.slug}`);
+            revalidateTag(`storefront:store:${store.slug}:products`, "default");
+            revalidatePath(`/${store.slug}`, "page");
         }
 
         return NextResponse.json({ count: createdProducts.length, products: createdProducts });

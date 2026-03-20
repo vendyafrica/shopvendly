@@ -169,4 +169,13 @@ export const instagramRepo = {
       .delete(instagramAccounts)
       .where(and(eq(instagramAccounts.tenantId, tenantId), eq(instagramAccounts.userId, userId)));
   },
+
+  async findActiveByTenantId(tenantId: string) {
+    return db.query.instagramAccounts.findFirst({
+      where: and(
+        eq(instagramAccounts.tenantId, tenantId),
+        eq(instagramAccounts.isActive, true)
+      )
+    });
+  },
 };

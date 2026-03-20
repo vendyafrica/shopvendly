@@ -199,7 +199,7 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
     if (isSuccess) {
         return (
             <Dialog open={open} onOpenChange={handleClose}>
-                <DialogContent className="sm:max-w-md" disableAutoFocus>
+                <DialogContent className="sm:max-w-md">
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                         <div className="mb-4 rounded-full bg-green-100 p-3">
                             <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-12 w-12 text-green-600" />
@@ -221,7 +221,7 @@ export function Checkout({ open, onOpenChange, storeSlug, product, quantity }: C
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" disableAutoFocus>
+            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Checkout</DialogTitle>
                     <DialogDescription>

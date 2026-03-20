@@ -313,7 +313,7 @@ export const marketplaceService = {
             cacheKey,
             async () => {
                 // Dynamic import to avoid circular dependency
-                const { productRepo } = await import("@/lib/data/product-repo");
+                const { productRepo } = await import("@/repo/product-repo");
                 const products = await productRepo.findByStoreId(store.id);
 
                 const filtered = normalizedQuery
@@ -367,7 +367,7 @@ export const marketplaceService = {
                 const ids = new Set(matches.map((m) => m.id));
                 if (ids.size === 0) return [];
 
-                const { productRepo } = await import("@/lib/data/product-repo");
+                const { productRepo } = await import("@/repo/product-repo");
                 const productsForStore = await productRepo.findByStoreId(store.id);
 
                 const filteredByCategory = productsForStore.filter((p) => ids.has(p.id));
@@ -394,12 +394,12 @@ export const marketplaceService = {
         const store = await this.getStoreDetails(storeSlug);
         if (!store) return null;
 
-        const { productRepo } = await import("@/lib/data/product-repo");
+        const { productRepo } = await import("@/repo/product-repo");
         // Optimization: Ideally repo has findOneBySlug. For now, we fetch all and find.
         // This mirrors storefrontService logic but we should improve repo later.
         const products = await productRepo.findByStoreId(store.id);
 
-        const product = products.find((p) => {
+        const product = products.find((p: any) => {
             const slug = p.slug || p.productName.toLowerCase().replace(/\s+/g, "-");
             return slug === productSlug;
         });
@@ -422,7 +422,7 @@ export const marketplaceService = {
         const store = await this.getStoreDetails(storeSlug);
         if (!store) return null;
 
-        const { productRepo } = await import("@/lib/data/product-repo");
+        const { productRepo } = await import("@/repo/product-repo");
         const product = (await productRepo.findById(productId)) as (ProductRecordForMarketplace & { storeId: string; status?: string }) | null;
         if (!product) return null;
 

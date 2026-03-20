@@ -111,12 +111,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         const store = await storeRepo.findByIdAndTenant(scope.storeId, scope.tenantId);
 
         if (store?.slug) {
-            revalidateTag(`storefront:store:${store.slug}`);
-            revalidateTag(`storefront:store:${store.slug}:products`);
-            revalidatePath(`/${store.slug}`);
+            revalidateTag(`storefront:store:${store.slug}`, "default");
+            revalidateTag(`storefront:store:${store.slug}:products`, "default");
+            revalidatePath(`/${store.slug}`, "page");
             if (updated.slug) {
-                revalidateTag(`storefront:store:${store.slug}:product:${updated.slug}`);
-                revalidatePath(`/${store.slug}/${updated.slug}`);
+                revalidateTag(`storefront:store:${store.slug}:product:${updated.slug}`, "default");
+                revalidatePath(`/${store.slug}/${updated.slug}`, "page");
             }
         }
 
@@ -152,7 +152,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
         }
 
-        const scope = await resolveProductScope(productId);
+        const scope = await productRepo.findScopeById(productId);
         if (!scope) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
@@ -171,12 +171,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         const store = await storeRepo.findByIdAndTenant(scope.storeId, scope.tenantId);
 
         if (store?.slug) {
-            revalidateTag(`storefront:store:${store.slug}`);
-            revalidateTag(`storefront:store:${store.slug}:products`);
-            revalidatePath(`/${store.slug}`);
+            revalidateTag(`storefront:store:${store.slug}`, "default");
+            revalidateTag(`storefront:store:${store.slug}:products`, "default");
+            revalidatePath(`/${store.slug}`, "page");
             if (deleted?.slug) {
-                revalidateTag(`storefront:store:${store.slug}:product:${deleted.slug}`);
-                revalidatePath(`/${store.slug}/${deleted.slug}`);
+                revalidateTag(`storefront:store:${store.slug}:product:${deleted.slug}`, "default");
+                revalidatePath(`/${store.slug}/${deleted.slug}`, "page");
             }
         }
 

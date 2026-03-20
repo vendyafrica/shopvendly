@@ -1,14 +1,6 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@shopvendly/db/db";
-import {
-  orders,
-  products,
-  storefrontEvents,
-  storefrontSessions,
-} from "@shopvendly/db/schema";
-import { and, desc, eq, isNull, sql } from "@shopvendly/db";
 import { resolveTenantAdminAccess } from "../../../../admin/lib/admin-access";
 
 function parseDate(value: string | null, fallback: Date) {
@@ -47,135 +39,24 @@ export async function GET(request: NextRequest) {
     const from = parseDate(searchParams.get("from"), new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
     const to = parseDate(searchParams.get("to"), now);
 
-    const wherePaidOrders = and(
-      eq(orders.tenantId, store.tenantId),
-      eq(orders.storeId, store.id),
-      eq(orders.paymentStatus, "paid"),
-      isNull(orders.deletedAt),
-      sql`${orders.createdAt} >= ${from}`,
-      sql`${orders.createdAt} <= ${to}`
-    );
+    const { analyticsRepo } = await import("@/repo/analytics-repo");
 
-    const [kpiPaid] = await db
-      .select({
-        revenuePaid: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)::int`,
-        ordersPaid: sql<number>`COALESCE(COUNT(*), 0)::int`,
-      })
-      .from(orders)
-      .where(wherePaidOrders);
-
-    const [kpiRefunds] = await db
-      .select({
-        refunds: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)::int`,
-      })
-      .from(orders)
-      .where(
-        and(
-          eq(orders.tenantId, store.tenantId),
-          eq(orders.storeId, store.id),
-          eq(orders.paymentStatus, "refunded"),
-          isNull(orders.deletedAt),
-          sql`${orders.createdAt} >= ${from}`,
-          sql`${orders.createdAt} <= ${to}`
-        )
-      );
-
-    const aov = kpiPaid?.ordersPaid ? Math.round((kpiPaid.revenuePaid || 0) / kpiPaid.ordersPaid) : 0;
-
-    const timeseriesRevenue = await db
-      .select({
-        date: sql<string>`to_char(date_trunc('day', ${orders.createdAt}), 'YYYY-MM-DD')`,
-        revenuePaid: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)::int`,
-        ordersPaid: sql<number>`COALESCE(COUNT(*), 0)::int`,
-      })
-      .from(orders)
-      .where(wherePaidOrders)
-      .groupBy(sql`date_trunc('day', ${orders.createdAt})`)
-      .orderBy(sql`date_trunc('day', ${orders.createdAt})`);
-
-    const whereSessionsInRange = and(
-      eq(storefrontSessions.tenantId, store.tenantId),
-      eq(storefrontSessions.storeId, store.id),
-      sql`${storefrontSessions.lastSeenAt} >= ${from}`,
-      sql`${storefrontSessions.lastSeenAt} <= ${to}`
-    );
-
-    const [trafficTotals] = await db
-      .select({
-        visits: sql<number>`COALESCE(COUNT(*), 0)::int`,
-        uniqueVisitors: sql<number>`COALESCE(COUNT(DISTINCT ${storefrontSessions.sessionId}), 0)::int`,
-        returningVisitors: sql<number>`COALESCE(SUM(CASE WHEN ${storefrontSessions.firstSeenAt} < ${from} THEN 1 ELSE 0 END), 0)::int`,
-      })
-      .from(storefrontSessions)
-      .where(whereSessionsInRange);
-
-    const visitsTimeseries = await db
-      .select({
-        date: sql<string>`to_char(date_trunc('day', ${storefrontSessions.lastSeenAt}), 'YYYY-MM-DD')`,
-        visits: sql<number>`COALESCE(COUNT(*), 0)::int`,
-        uniqueVisitors: sql<number>`COALESCE(COUNT(DISTINCT ${storefrontSessions.sessionId}), 0)::int`,
-      })
-      .from(storefrontSessions)
-      .where(whereSessionsInRange)
-      .groupBy(sql`date_trunc('day', ${storefrontSessions.lastSeenAt})`)
-      .orderBy(sql`date_trunc('day', ${storefrontSessions.lastSeenAt})`);
-
-    const topViewed = await db
-      .select({
-        productId: storefrontEvents.productId,
-        productName: products.productName,
-        count: sql<number>`COALESCE(COUNT(*), 0)::int`,
-      })
-      .from(storefrontEvents)
-      .leftJoin(products, eq(products.id, storefrontEvents.productId))
-      .where(
-        and(
-          eq(storefrontEvents.tenantId, store.tenantId),
-          eq(storefrontEvents.storeId, store.id),
-          eq(storefrontEvents.eventType, "product_view"),
-          sql`${storefrontEvents.createdAt} >= ${from}`,
-          sql`${storefrontEvents.createdAt} <= ${to}`
-        )
-      )
-      .groupBy(storefrontEvents.productId, products.productName)
-      .orderBy(desc(sql`COUNT(*)`))
-      .limit(5);
-
-    const topAddToCart = await db
-      .select({
-        productId: storefrontEvents.productId,
-        productName: products.productName,
-        count: sql<number>`COALESCE(COUNT(*), 0)::int`,
-      })
-      .from(storefrontEvents)
-      .leftJoin(products, eq(products.id, storefrontEvents.productId))
-      .where(
-        and(
-          eq(storefrontEvents.tenantId, store.tenantId),
-          eq(storefrontEvents.storeId, store.id),
-          eq(storefrontEvents.eventType, "add_to_cart"),
-          sql`${storefrontEvents.createdAt} >= ${from}`,
-          sql`${storefrontEvents.createdAt} <= ${to}`
-        )
-      )
-      .groupBy(storefrontEvents.productId, products.productName)
-      .orderBy(desc(sql`COUNT(*)`))
-      .limit(5);
+    const [kpis, timeseries, trafficTotals, visitsTimeseries, topViewed, topAddToCart] = await Promise.all([
+      analyticsRepo.getKpiTotals(store, { from, to }),
+      analyticsRepo.getRevenueTimeseries(store, { from, to }),
+      analyticsRepo.getTrafficTotals(store, { from, to }),
+      analyticsRepo.getTrafficTimeseries(store, { from, to }),
+      analyticsRepo.getTopProducts(store, { from, to, eventType: "product_view", limit: 5 }),
+      analyticsRepo.getTopProducts(store, { from, to, eventType: "add_to_cart", limit: 5 }),
+    ]);
 
     return NextResponse.json({
       range: { from: from.toISOString(), to: to.toISOString() },
       currency: store.defaultCurrency || "USD",
-      kpis: {
-        revenuePaid: kpiPaid?.revenuePaid || 0,
-        ordersPaid: kpiPaid?.ordersPaid || 0,
-        aov,
-        refunds: kpiRefunds?.refunds || 0,
-      },
-      timeseries: timeseriesRevenue,
+      kpis,
+      timeseries,
       traffic: {
-        visits: trafficTotals?.visits || 0,
-        uniqueVisitors: trafficTotals?.uniqueVisitors || 0,
-        returningVisitors: trafficTotals?.returningVisitors || 0,
+        ...trafficTotals,
         timeseries: visitsTimeseries,
       },
       topViewed,

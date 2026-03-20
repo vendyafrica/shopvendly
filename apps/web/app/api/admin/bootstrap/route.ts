@@ -1,7 +1,4 @@
 import { auth } from "@shopvendly/auth";
-import { db } from "@shopvendly/db/db";
-import { tenants } from "@shopvendly/db/schema";
-import { eq } from "@shopvendly/db";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveTenantAdminAccess } from "../../../admin/lib/admin-access";
@@ -33,10 +30,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const tenant = await db.query.tenants.findFirst({
-        where: eq(tenants.id, store.tenantId),
-        columns: { slug: true },
-    });
+    const { tenantRepo } = await import("@/repo/tenant-repo");
+    const tenant = await tenantRepo.findSlugById(store.tenantId);
 
     return NextResponse.json({
         tenantId: store.tenantId,
