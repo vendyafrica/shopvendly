@@ -1,20 +1,20 @@
-"use client"
+﻿"use client"
 
 import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
 
-import { cn } from "@lib/utils"
+import { cn } from "../lib/utils.js"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@ui/dialog"
+} from "./dialog.js"
 import {
   InputGroup,
   InputGroupAddon,
-} from "@ui/input-group"
+} from "./input-group.js"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { SearchIcon, Tick02Icon } from "@hugeicons/core-free-icons"
 

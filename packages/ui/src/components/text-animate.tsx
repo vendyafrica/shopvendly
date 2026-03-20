@@ -1,9 +1,9 @@
-"use client"
+﻿"use client"
 
 import { ElementType, memo } from "react"
 import { AnimatePresence, motion, MotionProps, Variants } from "motion/react"
 
-import { cn } from "@shopvendly/ui/lib/utils"
+import { cn } from "../lib/utils.js"
 
 type AnimationType = "text" | "word" | "character" | "line"
 type AnimationVariant =

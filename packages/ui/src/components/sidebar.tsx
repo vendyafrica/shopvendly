@@ -1,28 +1,28 @@
-"use client"
+﻿"use client"
 
 import * as React from "react"
 import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
 import { cva, type VariantProps } from "class-variance-authority"
 
-import { useIsMobile } from "@hooks/use-mobile"
-import { cn } from "@lib/utils"
-import { Button } from "@ui/button"
-import { Input } from "@ui/input"
-import { Separator } from "@ui/separator"
+import { useIsMobile } from "../hooks/use-mobile.js"
+import { cn } from "../lib/utils.js"
+import { Button } from "./button.js"
+import { Input } from "./input.js"
+import { Separator } from "./separator.js"
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@ui/sheet"
-import { Skeleton } from "@ui/skeleton"
+} from "./sheet.js"
+import { Skeleton } from "./skeleton.js"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@ui/tooltip"
+} from "./tooltip.js"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { SidebarLeftIcon } from "@hugeicons/core-free-icons"
 
