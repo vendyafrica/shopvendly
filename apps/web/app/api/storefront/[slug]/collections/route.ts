@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { storefrontService } from "@/app/[handle]/lib/storefront-service";
+import { storefrontService } from "@/modules/storefront/data";
 
 type RouteParams = {
   params: Promise<{ slug: string }>;

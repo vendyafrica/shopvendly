@@ -49,6 +49,11 @@
   },
   "include": [
     "app",
+    "actions",
+    "repo",
+    "models",
+    "modules",
+    "providers",
     "features",
     "components",
     "hooks",

@@ -1,0 +1,1 @@
+export type AdminModel = Record<string, unknown>;
