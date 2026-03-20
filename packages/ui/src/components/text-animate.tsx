@@ -3,7 +3,7 @@
 import { ElementType, memo } from "react"
 import { AnimatePresence, motion, MotionProps, Variants } from "motion/react"
 
-import { cn } from "../lib/utils.js"
+import { cn } from "../lib/utils"
 
 type AnimationType = "text" | "word" | "character" | "line"
 type AnimationVariant =
