@@ -1,34 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { FavouriteIcon, Menu01Icon, ShoppingBag01Icon, UserLock01Icon, Search01Icon } from "@hugeicons/core-free-icons";
-import { bricolage } from "@/utils/fonts";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@shopvendly/ui/components/dropdown-menu";
-import { useCart } from "@/features/cart/context/cart-context";
-import { useWishlist } from "@/hooks/use-wishlist";
-import { getRootUrl } from "@/utils/misc";
 
 import { DeferredHeroVideo } from "./deferred-hero-video";
 import { HeroScrollCta } from "./hero-scroll-cta.client";
-import { StorefrontSearch } from "./storefront-search";
-import { StorefrontSearchModal } from "./search-modal.client";
-
-function Badge({ count }: { count: number }) {
-  if (count <= 0) return null;
-  return (
-    <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-white px-0.5 text-[10px] font-bold text-neutral-900 ring-2 ring-black/10">
-      {count > 99 ? "99+" : count}
-    </span>
-  );
-}
 
 interface HeroProps {
   store: {
@@ -85,9 +60,6 @@ function isVideoUrl(url: string) {
 }
 
 export function Hero({ store }: HeroProps) {
-  const { itemsByStore } = useCart();
-  const { items: wishlistItems } = useWishlist();
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const heroMedia = Array.isArray(store.heroMedia) ? store.heroMedia : [];
   const mediaUrl = heroMedia[0] || FALLBACK_HERO_MEDIA;
   const isUploadThing = typeof mediaUrl === "string" && isUploadThingBlobUrl(mediaUrl);
@@ -104,42 +76,8 @@ export function Hero({ store }: HeroProps) {
     store.description ||
     "Discover elevated basics, sculpted silhouettes, and effortless ease.";
 
-  const storeItems = Object.values(itemsByStore).find((items) => items[0]?.store?.slug === store.slug) ?? [];
-  const storeItemCount = storeItems.length;
-  const wishlistCount = wishlistItems?.length ?? 0;
-  const totalCount = storeItemCount + wishlistCount;
-  const adminOrigin = (() => {
-    const envUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (envUrl) return envUrl.trim().replace(/\/$/, "");
-
-    const domain = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
-    if (typeof window !== "undefined" && domain) {
-      const normalizedDomain = domain.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "");
-      return `${window.location.protocol}//${normalizedDomain}`;
-    }
-
-    if (domain) {
-      const normalizedDomain = domain.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "");
-      return `https://${normalizedDomain}`;
-    }
-
-    return getRootUrl();
-  })();
-  const sellerLoginUrl = store.slug
-    ? `${adminOrigin}/admin/${store.slug}/login`
-    : `${adminOrigin}/admin/login`;
-
-  const navigateToAdmin = () => {
-    if (sellerLoginUrl.startsWith("http")) {
-      window.location.href = sellerLoginUrl;
-      return;
-    }
-
-    window.location.href = sellerLoginUrl;
-  };
-
   return (
-    <section className="relative min-h-[80vh] sm:min-h-[90vh] w-full overflow-hidden bg-[#f2f2f2]">
+    <section className="relative min-h-[80vh] sm:min-h-[90vh] w-full overflow-hidden">
       {/* Background media */}
       <div className="absolute inset-0 z-0">
         {isVideo ? (
@@ -173,129 +111,6 @@ export function Hero({ store }: HeroProps) {
         <div className="absolute inset-0 z-10 bg-linear-to-b from-black/30 via-black/10 to-transparent" aria-hidden />
       </div>
 
-      <div className="absolute inset-x-0 top-0 z-30">
-        <div className="mx-auto flex h-[72px] max-w-[1440px] items-center px-4 sm:h-[80px] sm:px-6 lg:px-10">
-          <div className="flex w-full items-center gap-3 sm:gap-4 md:gap-6">
-            <Link
-              href={store.slug ? `/${store.slug}` : "/"}
-              className={`${bricolage.className} shrink-0 text-xl font-semibold tracking-tight text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)] transition-all hover:opacity-80 sm:text-2xl`}
-            >
-              {store.name}
-            </Link>
-            
-            <div className="flex-1" />
-
-            <div className="hidden items-center gap-1 sm:gap-2 md:flex">
-              <button
-                type="button"
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-                onClick={() => setIsSearchModalOpen(true)}
-                aria-label="Search"
-              >
-                <HugeiconsIcon icon={Search01Icon} size={20} className="drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" />
-              </button>
-
-              <Link
-                href={store.slug ? `/${store.slug}/wishlist` : "/wishlist"}
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-                aria-label="Liked Items"
-              >
-                <HugeiconsIcon icon={FavouriteIcon} size={20} className="drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" />
-                <Badge count={wishlistCount} />
-              </Link>
-
-              <Link
-                href={store.slug ? `/${store.slug}/cart` : "/cart"}
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-                aria-label="Cart"
-              >
-                <HugeiconsIcon icon={ShoppingBag01Icon} size={20} className="drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" />
-                <Badge count={storeItemCount} />
-              </Link>
-              <Link
-                href={sellerLoginUrl}
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-                aria-label="Admin"
-              >
-                <HugeiconsIcon icon={UserLock01Icon} size={20} className="drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" />
-              </Link>
-            </div>
-
-            <div className="md:hidden flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setIsSearchModalOpen(true)}
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-                aria-label="Search"
-              >
-                <HugeiconsIcon icon={Search01Icon} size={20} className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" />
-              </button>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <button
-                      type="button"
-                      className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-                      aria-label="Open menu"
-                    >
-                      <HugeiconsIcon icon={Menu01Icon} size={20} className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" />
-                      <Badge count={totalCount} />
-                    </button>
-                  }
-                >
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  sideOffset={8}
-                  className="z-50 flex w-72 flex-col gap-1 rounded-2xl border border-black/8 bg-white p-2 text-neutral-900 shadow-2xl"
-                >
-                  <div className="px-2 py-2 mb-1">
-                    <StorefrontSearch 
-                      storeSlug={store.slug ?? ""} 
-                    />
-                  </div>
-
-                  <DropdownMenuItem
-                    onClick={() => {
-                      window.location.href = store.slug ? `/${store.slug}/cart` : "/cart"
-                    }}
-                    className="cursor-pointer flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 outline-none hover:bg-neutral-100 focus:bg-neutral-100"
-                  >
-                    <span className="flex items-center gap-3">
-                      <HugeiconsIcon icon={ShoppingBag01Icon} size={18} />
-                      <span>Cart</span>
-                    </span>
-                    {storeItemCount > 0 ? <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">{storeItemCount}</span> : null}
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem
-                    onClick={() => {
-                      window.location.href = store.slug ? `/${store.slug}/wishlist` : "/wishlist"
-                    }}
-                    className="cursor-pointer flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 outline-none hover:bg-neutral-100 focus:bg-neutral-100"
-                  >
-                    <span className="flex items-center gap-3">
-                      <HugeiconsIcon icon={FavouriteIcon} size={18} />
-                      <span>Liked Items</span>
-                    </span>
-                    {wishlistCount > 0 ? <span className="flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900 text-[10px] font-bold text-white">{wishlistCount}</span> : null}
-                  </DropdownMenuItem>
-
-                  <div className="my-1 border-t border-black/5" />
-
-                  <DropdownMenuItem
-                    onClick={navigateToAdmin}
-                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 outline-none hover:bg-neutral-100 focus:bg-neutral-100"
-                  >
-                    Sign in to admin
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="relative z-20 max-w-[1200px] mx-auto px-4 sm:px-6 md:px-10 pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 md:pb-20">
         <div className="min-h-[60vh] sm:min-h-[70vh] flex items-end justify-end">
           <div className="flex flex-col gap-6 sm:gap-8 pb-6 sm:pb-8 text-right max-w-lg">
@@ -313,12 +128,6 @@ export function Hero({ store }: HeroProps) {
           </div>
         </div>
       </div>
-
-      <StorefrontSearchModal 
-        storeSlug={store.slug ?? ""} 
-        isOpen={isSearchModalOpen} 
-        onClose={() => setIsSearchModalOpen(false)} 
-      />
     </section>
   );
 }
