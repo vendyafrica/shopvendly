@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@shopvendly/auth";
-import { db } from "@shopvendly/db/db";
-import { verification, stores, tenants, tenantMemberships } from "@shopvendly/db/schema";
-import { eq, and } from "@shopvendly/db";
+import { authRepo } from "@/repo/auth-repo";
+import { verificationRepo } from "@/repo/verification-repo";
 
 /**
  * POST /api/auth/validate-claim-token
@@ -37,12 +36,7 @@ export async function POST(req: Request) {
     }
 
     // Look up the verification record
-    const record = await db.query.verification.findFirst({
-      where: and(
-        eq(verification.identifier, email.toLowerCase()),
-        eq(verification.value, token)
-      ),
-    });
+    const record = await verificationRepo.findByEmailAndToken(email.toLowerCase(), token);
 
     if (!record) {
       return NextResponse.json(
@@ -52,7 +46,7 @@ export async function POST(req: Request) {
     }
 
     if (new Date() > new Date(record.expiresAt)) {
-      await db.delete(verification).where(eq(verification.id, record.id));
+      await verificationRepo.deleteById(record.id);
       return NextResponse.json(
         { error: "Claim token has expired" },
         { status: 410 }
@@ -60,10 +54,7 @@ export async function POST(req: Request) {
     }
 
     // Find the store claimed by this email
-    const store = await db.query.stores.findFirst({
-      where: eq(stores.claimedByEmail, email.toLowerCase()),
-      columns: { id: true, slug: true, name: true, tenantId: true },
-    });
+    const store = await authRepo.findStoreByClaimedEmail(email.toLowerCase());
 
     if (!store) {
       return NextResponse.json(
@@ -73,34 +64,18 @@ export async function POST(req: Request) {
     }
 
     // Check if user is already a member of this tenant
-    const existingMembership = await db.query.tenantMemberships.findFirst({
-      where: and(
-        eq(tenantMemberships.tenantId, store.tenantId),
-        eq(tenantMemberships.userId, session.user.id)
-      ),
-    });
+    const existingMembership = await authRepo.findTenantMembership(store.tenantId, session.user.id);
 
     if (!existingMembership) {
       // Add user as owner of the tenant
-      await db.insert(tenantMemberships).values({
-        tenantId: store.tenantId,
-        userId: session.user.id,
-        role: "owner",
-      });
+      await authRepo.addTenantMembership(store.tenantId, session.user.id, "owner");
     }
 
     // Reset tenant to onboarding state so user can update store details
-    await db
-      .update(tenants)
-      .set({ 
-        status: "onboarding", 
-        onboardingStep: "signup",
-        updatedAt: new Date()
-      })
-      .where(eq(tenants.id, store.tenantId));
+    await authRepo.resetTenantOnboarding(store.tenantId);
 
     // Delete the verification token (single-use)
-    await db.delete(verification).where(eq(verification.id, record.id));
+    await verificationRepo.deleteById(record.id);
 
     return NextResponse.json({
       success: true,

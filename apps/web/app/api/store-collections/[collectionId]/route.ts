@@ -5,17 +5,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
 import { storeCollectionsRepo } from "@/repo/store-collections-repo";
+import type { StoreCollectionRouteParams } from "@/models/storefront";
 
 const updateCollectionSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   image: z.string().url().optional().nullable(),
 });
 
-type RouteParams = {
-  params: Promise<{ collectionId: string }>;
-};
-
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export async function PATCH(request: NextRequest, { params }: StoreCollectionRouteParams) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user) {
@@ -61,7 +58,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+export async function DELETE(_request: NextRequest, { params }: StoreCollectionRouteParams) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user) {

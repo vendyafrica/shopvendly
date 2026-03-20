@@ -1,60 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-
 import { headers } from "next/headers";
 import { auth } from "@shopvendly/auth";
+import { NextRequest, NextResponse } from "next/server";
 import { storefrontService } from "@/modules/storefront/data";
 import { productRatingsRepo } from "@/repo/product-ratings-repo";
+import type { StorefrontProductRouteParams, StorefrontProductMedia } from "@/models/storefront";
 
-
-
-type RouteParams = {
-
-    params: Promise<{ slug: string; productSlug: string }>;
-
-};
-
-
-
-type ProductMedia = {
-    media?: {
-        blobUrl?: string | null;
-        blobPathname?: string | null;
-        contentType?: string | null;
-    } | null;
-};
-
-
-
-type StorefrontProduct = {
-
-    id: string;
-
-    slug: string | null;
-
-    productName: string;
-
-    description: string | null;
-
-    priceAmount: unknown;
-
-    originalPriceAmount?: unknown;
-
-    currency: string;
-
-    quantity?: number | null;
-
-    variants?: {
-        enabled?: boolean;
-        options?: Array<{ type?: string; label?: string; values?: string[]; preset?: string | null }>;
-    } | null;
-
-    media?: ProductMedia[];
-
-    rating?: number;
-    ratingCount?: number;
-};
-
-function resolveMediaUrl(entry?: ProductMedia | null): string | null {
+function resolveMediaUrl(entry?: StorefrontProductMedia | null): string | null {
     if (!entry?.media) return null;
 
     const { blobUrl, blobPathname } = entry.media;
@@ -77,7 +28,7 @@ function resolveMediaUrl(entry?: ProductMedia | null): string | null {
 
  */
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: StorefrontProductRouteParams) {
 
     try {
 
@@ -97,7 +48,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 
 
-        const product = await storefrontService.getStoreProductBySlug(store.id, productSlug) as StorefrontProduct | undefined;
+        const product = await storefrontService.getStoreProductBySlug(store.id, productSlug);
 
 
 

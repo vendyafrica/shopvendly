@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storefrontService } from "@/modules/storefront/data";
+import type { StorefrontStoreRouteParams } from "@/models/storefront";
 
 const DEFAULT_STORE_LOGO = "/vendly.png";
-
-type RouteParams = {
-    params: Promise<{ slug: string }>;
-};
 
 function toCanonicalUploadThingUrl(rawUrl: string) {
     try {
@@ -44,7 +41,7 @@ function normalizeMediaUrls(urls: unknown): string[] {
  * GET /api/storefront/[slug]
  * Returns store header/hero data
  */
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: StorefrontStoreRouteParams) {
     try {
         const { slug } = await params;
         const store = await storefrontService.findStoreBySlug(slug);

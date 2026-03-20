@@ -3,9 +3,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { orderService } from "@/features/orders/lib/order-service";
 import { updateOrderStatusSchema } from "@/features/orders/lib/order-models";
-import { db } from "@shopvendly/db/db";
-import { tenantMemberships } from "@shopvendly/db/schema";
-import { eq } from "@shopvendly/db";
+import { ordersRepo } from "@/repo/orders-repo";
 
 type RouteParams = {
     params: Promise<{ orderId: string }>;
@@ -25,16 +23,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const membership = await db.query.tenantMemberships.findFirst({
-            where: eq(tenantMemberships.userId, session.user.id),
-        });
+        const tenantId = await ordersRepo.findTenantIdByUserId(session.user.id);
 
-        if (!membership) {
+        if (!tenantId) {
             return NextResponse.json({ error: "No tenant found" }, { status: 404 });
         }
 
         const { orderId } = await params;
-        const order = await orderService.getOrder(orderId, membership.tenantId);
+        const order = await orderService.getOrder(orderId, tenantId);
 
         if (!order) {
             return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -61,11 +57,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const membership = await db.query.tenantMemberships.findFirst({
-            where: eq(tenantMemberships.userId, session.user.id),
-        });
+        const tenantId = await ordersRepo.findTenantIdByUserId(session.user.id);
 
-        if (!membership) {
+        if (!tenantId) {
             return NextResponse.json({ error: "No tenant found" }, { status: 404 });
         }
 
@@ -73,7 +67,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         const body = await request.json();
         const input = updateOrderStatusSchema.parse(body);
 
-        const updated = await orderService.updateOrderStatus(orderId, membership.tenantId, input);
+        const updated = await orderService.updateOrderStatus(orderId, tenantId, input);
         return NextResponse.json(updated);
     } catch (error) {
         console.error("Error updating order:", error);

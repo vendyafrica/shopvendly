@@ -3,9 +3,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { orderService } from "@/features/orders/lib/order-service";
 import { orderQuerySchema } from "@/features/orders/lib/order-models";
-import { db } from "@shopvendly/db/db";
-import { tenantMemberships } from "@shopvendly/db/schema";
-import { eq } from "@shopvendly/db";
+import { ordersRepo } from "@/repo/orders-repo";
 import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
 
 /**
@@ -36,14 +34,12 @@ export async function GET(request: NextRequest) {
             }
             tenantId = access.store.tenantId;
         } else {
-            const membership = await db.query.tenantMemberships.findFirst({
-                where: eq(tenantMemberships.userId, session.user.id),
-            });
+            const tenantIdResult = await ordersRepo.findTenantIdByUserId(session.user.id);
 
-            if (!membership) {
+            if (!tenantIdResult) {
                 return NextResponse.json({ error: "No tenant found" }, { status: 404 });
             }
-            tenantId = membership.tenantId;
+            tenantId = tenantIdResult;
         }
 
         const filters = orderQuerySchema.parse({

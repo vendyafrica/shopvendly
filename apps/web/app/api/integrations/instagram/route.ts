@@ -1,10 +1,8 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { db } from "@shopvendly/db/db";
-import { account, instagramAccounts, instagramSyncJobs, products, mediaObjects } from "@shopvendly/db/schema";
-import { and, eq } from "@shopvendly/db";
-import { tenantMemberships } from "@shopvendly/db/schema";
+import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
+import { instagramRepo } from "@/repo/instagram-repo";
 
 export async function DELETE() {
   try {
@@ -14,38 +12,14 @@ export async function DELETE() {
     }
 
     // Ensure user is linked to a tenant
-    const membership = await db.query.tenantMemberships.findFirst({
-      where: eq(tenantMemberships.userId, session.user.id),
-    });
+    const membership = await tenantMembershipRepo.findByUserId(session.user.id);
 
     if (!membership) {
       return NextResponse.json({ error: "No tenant found" }, { status: 404 });
     }
 
     // Delete Instagram-imported products for this tenant (product_media cascades via FK)
-    await db
-      .delete(products)
-      .where(and(eq(products.tenantId, membership.tenantId), eq(products.source, "instagram")));
-
-    // Delete Instagram media objects for this tenant
-    await db
-      .delete(mediaObjects)
-      .where(and(eq(mediaObjects.tenantId, membership.tenantId), eq(mediaObjects.source, "instagram")));
-
-    // Remove Instagram sync jobs for this tenant
-    await db
-      .delete(instagramSyncJobs)
-      .where(eq(instagramSyncJobs.tenantId, membership.tenantId));
-
-    // Remove OAuth account tokens for Instagram
-    await db
-      .delete(account)
-      .where(and(eq(account.userId, session.user.id), eq(account.providerId, "instagram")));
-
-    // Remove Instagram account records for this tenant/user
-    await db
-      .delete(instagramAccounts)
-      .where(and(eq(instagramAccounts.tenantId, membership.tenantId), eq(instagramAccounts.userId, session.user.id)));
+    await instagramRepo.clearInstagramDataForTenant(session.user.id, membership.tenantId);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

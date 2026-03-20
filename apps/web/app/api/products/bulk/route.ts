@@ -2,9 +2,7 @@ import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
-import { db } from "@shopvendly/db/db";
-import { products } from "@shopvendly/db/schema";
-import { eq, inArray, and } from "@shopvendly/db";
+import { productsAdminRepo } from "@/repo/products-admin-repo";
 import { z } from "zod";
 
 const bulkUpdateSchema = z.object({
@@ -49,13 +47,7 @@ export async function POST(request: NextRequest) {
         }
 
         if (action === "publish") {
-            await db.update(products)
-                .set({ status: "active", updatedAt: new Date() })
-                .where(and(
-                    inArray(products.id, validIds),
-                    eq(products.tenantId, access.store.tenantId),
-                    eq(products.storeId, storeId)
-                ));
+            await productsAdminRepo.bulkUpdateStatus(storeId, access.store.tenantId, validIds, "active");
         } else if (action === "archive") {
             // Assuming we have an archive status? Or draft? Schema says: "draft", "ready", "active", "sold-out"
             // Let's use "draft" for now as archive equivalent or "sold-out" if specifically requested.
@@ -64,13 +56,7 @@ export async function POST(request: NextRequest) {
             // For now only publish is requested.
             return NextResponse.json({ error: "Action not implemented" }, { status: 400 });
         } else if (action === "delete") {
-            await db.update(products)
-                .set({ deletedAt: new Date(), updatedAt: new Date() })
-                .where(and(
-                    inArray(products.id, validIds),
-                    eq(products.tenantId, access.store.tenantId),
-                    eq(products.storeId, storeId)
-                ));
+            await productsAdminRepo.bulkUpdateStatus(storeId, access.store.tenantId, validIds, "deleted");
         }
 
         return NextResponse.json({ success: true, count: validIds.length, skipped: ids.length - validIds.length });

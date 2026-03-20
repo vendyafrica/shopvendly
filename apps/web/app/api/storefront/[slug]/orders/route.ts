@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createOrderSchema } from "@/features/orders/lib/order-models";
-
-type RouteParams = {
-    params: Promise<{ slug: string }>;
-};
+import type { StorefrontOrderRouteParams } from "@/models/storefront";
 
 /**
  * POST /api/storefront/[slug]/orders
  * Create a new order from storefront checkout (public endpoint)
  */
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export async function POST(request: NextRequest, { params }: StorefrontOrderRouteParams) {
     try {
         const { slug } = await params;
         const body = await request.json();

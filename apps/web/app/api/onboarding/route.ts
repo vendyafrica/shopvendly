@@ -4,10 +4,8 @@ import { NextResponse } from "next/server";
 import { onboardingService } from "@/app/account/lib/onboarding-service";
 import { onboardingRepository } from "@/app/account/lib/onboarding-repository";
 import type { OnboardingData } from "@/app/account/lib/models";
-import { db } from "@shopvendly/db/db";
-import { verification } from "@shopvendly/db/schema";
+import { onboardingRepo } from "@/repo/onboarding-repo";
 import { sendWelcomeEmail } from "@shopvendly/transactional";
-import crypto from "crypto";
 
 export async function POST(req: Request) {
     try {
@@ -69,15 +67,7 @@ export async function POST(req: Request) {
         });
 
         // Generate a single-use verification token for the welcome email (24h expiry)
-        const token = crypto.randomBytes(32).toString("hex");
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-        await db.insert(verification).values({
-            id: crypto.randomBytes(16).toString("hex"),
-            identifier: session.user.email,
-            value: token,
-            expiresAt,
-        });
+        const { token } = await onboardingRepo.createVerificationToken(session.user.email);
 
         // Build URLs with embedded verification token
         const storeSlug = result.storeSlug;

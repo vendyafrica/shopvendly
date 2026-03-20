@@ -2,11 +2,16 @@ import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@shopvendly/db/db";
-import { tenantMemberships, instagramAccounts, instagramSyncJobs, account, stores } from "@shopvendly/db/schema";
-import { eq, and } from "@shopvendly/db";
+import {
+  instagramAccounts,
+  instagramSyncJobs,
+  stores,
+} from "@shopvendly/db/schema";
+import { and, eq } from "@shopvendly/db";
 import { z } from "zod";
 import { parseInstagramCaption } from "@/lib/instagram/parse-caption";
 import { mediaService } from "@/features/media/lib/media-service";
+import { instagramRepo } from "@/repo/instagram-repo";
 
 const MAX_INSTAGRAM_IMPORT_ITEMS = 30;
 
@@ -33,11 +38,15 @@ const importSchema = z.object({
 
 // Helper to create slug
 function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "")
-    .slice(0, 50) + "-" + Math.random().toString(36).substring(2, 6);
+  return (
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "")
+      .slice(0, 50) +
+    "-" +
+    Math.random().toString(36).substring(2, 6)
+  );
 }
 
 async function copyToBlob(params: {
@@ -55,7 +64,8 @@ async function copyToBlob(params: {
     const arrayBuf = await res.arrayBuffer();
     const buffer = Buffer.from(arrayBuf);
 
-    const contentType = res.headers.get("content-type") || params.fallbackContentType;
+    const contentType =
+      res.headers.get("content-type") || params.fallbackContentType;
     const ext = contentType.includes("png")
       ? "png"
       : contentType.includes("webp")
@@ -73,16 +83,27 @@ async function copyToBlob(params: {
         mimetype: contentType,
       },
       params.tenantId,
-      "instagram"
+      "instagram",
     );
 
-    return { url: uploadResult.url, pathname: uploadResult.pathname, contentType };
+    return {
+      url: uploadResult.url,
+      pathname: uploadResult.pathname,
+      contentType,
+    };
   } catch (err) {
-    console.warn("[InstagramImport] Blob copy failed; falling back to source URL", {
+    console.warn(
+      "[InstagramImport] Blob copy failed; falling back to source URL",
+      {
+        url: params.sourceUrl,
+        err,
+      },
+    );
+    return {
       url: params.sourceUrl,
-      err,
-    });
-    return { url: params.sourceUrl, pathname: params.preferredBasename, contentType: params.fallbackContentType };
+      pathname: params.preferredBasename,
+      contentType: params.fallbackContentType,
+    };
   }
 }
 
@@ -93,47 +114,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const membership = await db.query.tenantMemberships.findFirst({
-      where: eq(tenantMemberships.userId, session.user.id),
-    });
+    const body = await request.json();
+    const { storeId } = importSchema.parse(body);
+
+    const { membership, store, instagramAuthAccount } =
+      await instagramRepo.getImportContext(session.user.id, storeId);
 
     if (!membership) {
       return NextResponse.json({ error: "No tenant found" }, { status: 404 });
     }
 
-    const body = await request.json();
-    const { storeId } = importSchema.parse(body);
-
-    const store = await db.query.stores.findFirst({
-      where: and(eq(stores.id, storeId), eq(stores.tenantId, membership.tenantId)),
-    });
-
     if (!store) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    const instagramAuthAccount = await db.query.account.findFirst({
-      where: and(eq(account.userId, session.user.id), eq(account.providerId, "instagram")),
-    });
-
     if (!instagramAuthAccount?.accessToken) {
-      return NextResponse.json({ error: "Instagram not connected" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Instagram not connected" },
+        { status: 400 },
+      );
     }
 
     // 1. Fetch User Info for Profile Picture
     const userRes = await fetch(
-      `https://graph.instagram.com/me?fields=id,username,profile_picture_url&access_token=${instagramAuthAccount.accessToken}`
+      `https://graph.instagram.com/me?fields=id,username,profile_picture_url&access_token=${instagramAuthAccount.accessToken}`,
     );
     const userData = await userRes.json();
 
     if (!userRes.ok || userData?.error) {
-      throw new Error(userData?.error?.message || "Failed to fetch Instagram profile");
+      throw new Error(
+        userData?.error?.message || "Failed to fetch Instagram profile",
+      );
     }
 
     // 2. Fetch Media
     // Using 'children' field for carousel items
     const mediaRes = await fetch(
-      `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,children{id,media_type,media_url,thumbnail_url}&access_token=${instagramAuthAccount.accessToken}`
+      `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,children{id,media_type,media_url,thumbnail_url}&access_token=${instagramAuthAccount.accessToken}`,
     );
     const mediaData = await mediaRes.json();
 
@@ -141,13 +158,16 @@ export async function POST(request: NextRequest) {
       throw new Error(mediaData.error.message || "Failed to fetch media");
     }
 
-    const mediaItems: InstagramMediaItem[] = Array.isArray(mediaData?.data) ? mediaData.data : [];
+    const mediaItems: InstagramMediaItem[] = Array.isArray(mediaData?.data)
+      ? mediaData.data
+      : [];
     const limitedMediaItems = mediaItems.slice(0, MAX_INSTAGRAM_IMPORT_ITEMS);
 
     // 3. Update Account with Profile Picture
-    const existing = await db.query.instagramAccounts.findFirst({
-      where: and(eq(instagramAccounts.tenantId, membership.tenantId), eq(instagramAccounts.userId, session.user.id)),
-    });
+    const existing = await instagramRepo.hasTenantAccount(
+      membership.tenantId,
+      session.user.id,
+    );
 
     const accountValues = {
       tenantId: membership.tenantId,
@@ -167,21 +187,29 @@ export async function POST(request: NextRequest) {
         .where(eq(instagramAccounts.id, existing.id))
         .returning();
     } else {
-      [igAccount] = await db.insert(instagramAccounts).values(accountValues).returning();
+      [igAccount] = await db
+        .insert(instagramAccounts)
+        .values(accountValues)
+        .returning();
     }
 
     if (!igAccount) {
       throw new Error("Failed to upsert Instagram account");
     }
 
-    if (userData.profile_picture_url && store.logoUrl !== userData.profile_picture_url) {
+    if (
+      userData.profile_picture_url &&
+      store.logoUrl !== userData.profile_picture_url
+    ) {
       await db
         .update(stores)
         .set({
           logoUrl: userData.profile_picture_url,
           updatedAt: new Date(),
         })
-        .where(and(eq(stores.id, storeId), eq(stores.tenantId, membership.tenantId)));
+        .where(
+          and(eq(stores.id, storeId), eq(stores.tenantId, membership.tenantId)),
+        );
     }
 
     const accountId = igAccount.id;
@@ -207,7 +235,8 @@ export async function POST(request: NextRequest) {
     // 5. Process Media (Inline for simplicity)
     let createdCount = 0;
 
-    const { products, mediaObjects, productMedia } = await import("@shopvendly/db/schema");
+    const { products, mediaObjects, productMedia } =
+      await import("@shopvendly/db/schema");
 
     for (const item of limitedMediaItems) {
       const sourceId = String(item.id);
@@ -255,7 +284,10 @@ export async function POST(request: NextRequest) {
 
       createdCount++;
 
-      if (item.media_type === "CAROUSEL_ALBUM" && Array.isArray(item.children?.data)) {
+      if (
+        item.media_type === "CAROUSEL_ALBUM" &&
+        Array.isArray(item.children?.data)
+      ) {
         let idx = 0;
         for (const child of item.children.data) {
           idx++;
@@ -264,7 +296,8 @@ export async function POST(request: NextRequest) {
           const childUrl = String(child.media_url || child.thumbnail_url || "");
           if (!childUrl) continue;
 
-          const contentType = childMediaType === "VIDEO" ? "video/mp4" : "image/jpeg";
+          const contentType =
+            childMediaType === "VIDEO" ? "video/mp4" : "image/jpeg";
           const copied = await copyToBlob({
             tenantId: membership.tenantId,
             sourceUrl: childUrl,
@@ -340,7 +373,7 @@ export async function POST(request: NextRequest) {
       .set({
         status: "completed",
         productsCreated: createdCount,
-        completedAt: new Date()
+        completedAt: new Date(),
       })
       .where(eq(instagramSyncJobs.id, jobId));
 

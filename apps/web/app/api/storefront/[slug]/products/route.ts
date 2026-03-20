@@ -1,41 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-
 import { storefrontService } from "@/modules/storefront/data";
-
-
-
-type RouteParams = {
-
-    params: Promise<{ slug: string }>;
-
-};
-
-
-
-type ProductMedia = {
-    media?: {
-        blobUrl?: string | null;
-        blobPathname?: string | null;
-        contentType?: string | null;
-    } | null;
-};
-
-type StorefrontProduct = {
-    id: string;
-    slug: string | null;
-    productName: string;
-    priceAmount: unknown;
-    originalPriceAmount?: unknown;
-    currency: string;
-    createdAt?: string | Date;
-    variants?: {
-        enabled?: boolean;
-        options?: Array<{ type?: string; values?: string[] }>;
-    } | null;
-    media?: ProductMedia[];
-    rating?: number;
-    ratingCount?: number;
-};
+import type { StorefrontProduct, StorefrontProductMedia, StorefrontProductVariantSummary, StorefrontProductsRouteParams } from "@/models/storefront";
 
 function toCanonicalUploadThingUrl(rawUrl: string) {
     try {
@@ -52,7 +17,7 @@ function toCanonicalUploadThingUrl(rawUrl: string) {
     }
 }
 
-function resolveMediaUrl(entry?: ProductMedia | null): string | null {
+function resolveMediaUrl(entry?: StorefrontProductMedia | null): string | null {
     if (!entry?.media) {
         return null;
     }
@@ -74,15 +39,13 @@ function resolveMediaUrl(entry?: ProductMedia | null): string | null {
     return null;
 }
 
-function resolveMediaContentType(entry?: ProductMedia | null): string | null {
+function resolveMediaContentType(entry?: StorefrontProductMedia | null): string | null {
     if (!entry?.media) {
         return null;
     }
 
     return entry.media.contentType ?? null;
 }
-
-
 
 /**
 
@@ -92,7 +55,7 @@ function resolveMediaContentType(entry?: ProductMedia | null): string | null {
 
  */
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: StorefrontProductsRouteParams) {
 
     try {
 
@@ -108,20 +71,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         const store = await storefrontService.findStoreBySlug(slug);
 
-
-
         if (!store) {
 
             return NextResponse.json({ error: "Store not found" }, { status: 404 });
 
         }
 
-
-
         const fetchedProducts = collection
-
             ? await storefrontService.getStoreProductsByCollectionSlug(store.id, collection, q)
-
             : await storefrontService.getStoreProducts(store.id, q);
 
         let productList = fetchedProducts as StorefrontProduct[];
@@ -140,10 +97,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
                 .slice(0, 12);
         }
 
-
-
         return NextResponse.json(
-
             productList.map((product) => {
                 const price = Number(product.priceAmount || 0);
                 const originalPrice = Number(product.originalPriceAmount || 0);
@@ -156,6 +110,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
                     ? product.variants.options ?? []
                     : [];
 
+                const variantSummary: StorefrontProductVariantSummary = {
+                    hasColors: variantOptions.some((option) => option.type === "color" && (option.values?.length ?? 0) > 0),
+                    hasSizes: variantOptions.some((option) => option.type === "size" && (option.values?.length ?? 0) > 0),
+                };
+
                 return {
                     id: product.id,
                     slug: product.slug || product.productName.toLowerCase().replace(/\s+/g, "-"),
@@ -167,15 +126,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
                     currency: product.currency,
                     image: resolveMediaUrl(product.media?.[0]),
                     contentType: resolveMediaContentType(product.media?.[0]),
-                    variantSummary: {
-                        hasColors: variantOptions.some((option) => option.type === "color" && (option.values?.length ?? 0) > 0),
-                        hasSizes: variantOptions.some((option) => option.type === "size" && (option.values?.length ?? 0) > 0),
-                    },
+                    variantSummary,
                     averageRating: product.rating ?? 0,
                     ratingCount: product.ratingCount ?? 0,
                 };
             })
-
         );
 
     } catch (error) {
@@ -187,4 +142,3 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
 }
-

@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storefrontService } from "@/modules/storefront/data";
-
-type RouteParams = {
-    params: Promise<{ slug: string }>;
-};
+import type { StorefrontCategory, StorefrontRouteParams } from "@/models/storefront";
 
 /**
  * GET /api/storefront/[slug]/categories
  * Returns store categories
  */
-type Category = {
-    slug: string;
-    name: string;
-    image: string | null;
-};
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: StorefrontRouteParams) {
     try {
         const { slug } = await params;
         const store = await storefrontService.findStoreBySlug(slug);
@@ -25,7 +16,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
 
         // Categories are stored as string[] in store
-        const categories: Category[] = (store.categories ?? []).map((name: string) => ({
+        const categories: StorefrontCategory[] = (store.categories ?? []).map((name: string) => ({
             slug: name.toLowerCase().replace(/\s+/g, "-"),
             name,
             image: null,

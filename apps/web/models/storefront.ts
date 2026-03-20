@@ -27,3 +27,57 @@ export type StorefrontTrackRequestBody = {
   country?: string;
   events: StorefrontTrackEventInput[];
 };
+
+export type StorefrontProductMedia = {
+  media?: {
+    blobUrl?: string | null;
+    blobPathname?: string | null;
+    contentType?: string | null;
+  } | null;
+};
+
+export type StorefrontProduct = {
+  id: string;
+  slug: string | null;
+  productName: string;
+  description: string | null;
+  priceAmount: unknown;
+  originalPriceAmount?: unknown;
+  currency: string;
+  createdAt?: string | Date;
+  quantity?: number | null;
+  variants?: {
+    enabled?: boolean;
+    options?: Array<{ type?: string; label?: string; values?: string[]; preset?: string | null }>;
+  } | null;
+  media?: StorefrontProductMedia[];
+  rating?: number;
+  ratingCount?: number;
+};
+
+export type StorefrontProductVariantSummary = {
+  hasColors: boolean;
+  hasSizes: boolean;
+};
+
+export type StorefrontStoreRouteParams = {
+  params: Promise<{ slug: string }>;
+};
+
+export type StorefrontProductsRouteParams = {
+  params: Promise<{ slug: string }>;
+};
+
+export type StorefrontOrderRouteParams = {
+  params: Promise<{ slug: string }>;
+};
+
+export type StoreCollectionRouteParams = {
+  params: Promise<{ collectionId: string }>;
+};
+
+export type StorefrontCategory = {
+  slug: string;
+  name: string;
+  image: string | null;
+};

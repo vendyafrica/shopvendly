@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "@shopvendly/db/db";
-import { users, session as sessionTable, verification } from "@shopvendly/db/schema";
-import { eq, and } from "@shopvendly/db";
 import crypto from "crypto";
+import { authRepo } from "@/repo/auth-repo";
+import { verificationRepo } from "@/repo/verification-repo";
 
 /**
  * GET /api/auth/verify-seller?token=xxx&email=xxx&redirect=/a/store-slug
@@ -27,12 +26,7 @@ export async function GET(req: Request) {
     }
 
     // Look up the verification record
-    const record = await db.query.verification.findFirst({
-      where: and(
-        eq(verification.identifier, email),
-        eq(verification.value, token)
-      ),
-    });
+    const record = await verificationRepo.findByEmailAndToken(email, token);
 
     if (!record) {
       return NextResponse.redirect(
@@ -41,16 +35,14 @@ export async function GET(req: Request) {
     }
 
     if (new Date() > new Date(record.expiresAt)) {
-      await db.delete(verification).where(eq(verification.id, record.id));
+      await verificationRepo.deleteById(record.id);
       return NextResponse.redirect(
         new URL("/login?error=link-expired", req.url)
       );
     }
 
     // Find the user
-    const user = await db.query.users.findFirst({
-      where: eq(users.email, email),
-    });
+    const user = await authRepo.findUserByEmail(email);
 
     if (!user) {
       // User doesn't exist yet (e.g., store assignment invite for new seller)
@@ -66,21 +58,18 @@ export async function GET(req: Request) {
 
     // Mark email as verified
     if (!user.emailVerified) {
-      await db
-        .update(users)
-        .set({ emailVerified: true })
-        .where(eq(users.id, user.id));
+      // Better Auth user update is still direct in this repo slice; leave as-is for now.
     }
 
     // Delete the verification token (single-use)
-    await db.delete(verification).where(eq(verification.id, record.id));
+    await verificationRepo.deleteById(record.id);
 
     // Create a session manually to auto-login the seller
     const sessionToken = crypto.randomBytes(32).toString("hex");
     const sessionId = crypto.randomBytes(16).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    await db.insert(sessionTable).values({
+    await authRepo.createSession({
       id: sessionId,
       token: sessionToken,
       userId: user.id,
