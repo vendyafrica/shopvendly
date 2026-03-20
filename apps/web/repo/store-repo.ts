@@ -28,15 +28,35 @@ export const storeRepo = {
         }
     },
 
-    async findBySlug(slug: string) {
+    async findAdminBySlug(slug: string) {
         return db.query.stores.findFirst({
-            where: eq(stores.slug, slug),
+            where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
+            columns: {
+                id: true,
+                tenantId: true,
+                name: true,
+                defaultCurrency: true,
+                logoUrl: true,
+            },
         });
     },
 
-    async findActiveBySlug(slug: string) {
+    async findAdminManyBySlug(slug: string) {
+        return db.query.stores.findMany({
+            where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
+            columns: {
+                id: true,
+                tenantId: true,
+                name: true,
+                defaultCurrency: true,
+                logoUrl: true,
+            },
+        });
+    },
+
+    async findBySlug(slug: string) {
         return db.query.stores.findFirst({
-            where: and(eq(stores.slug, slug), eq(stores.status, true)),
+            where: eq(stores.slug, slug),
         });
     },
 
@@ -88,6 +108,19 @@ export const storeRepo = {
     async create(data: typeof stores.$inferInsert) {
         const [store] = await db.insert(stores).values(data).returning();
         return store;
+    },
+
+    async findAdminByStoreId(id: string) {
+        return db.query.stores.findFirst({
+            where: and(eq(stores.id, id), isNull(stores.deletedAt)),
+            columns: {
+                id: true,
+                tenantId: true,
+                name: true,
+                defaultCurrency: true,
+                logoUrl: true,
+            },
+        });
     },
 
     async update(id: string, tenantId: string, data: Partial<typeof stores.$inferInsert>) {

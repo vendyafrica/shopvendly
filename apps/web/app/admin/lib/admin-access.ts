@@ -1,6 +1,5 @@
-import { and, eq, isNull } from "@shopvendly/db";
-import { db } from "@shopvendly/db/db";
-import { stores, superAdmins, tenantMemberships } from "@shopvendly/db/schema";
+import { adminRepo } from "@/repo/admin-repo";
+import { storeRepo } from "@/repo/store-repo";
 
 const TENANT_ADMIN_READ_ROLES = ["owner", "admin", "support", "staff"] as const;
 const TENANT_ADMIN_WRITE_ROLES = ["owner", "admin"] as const;
@@ -65,14 +64,8 @@ async function resolveAccessForStore(
   }
 
   const [superAdmin, membership] = await Promise.all([
-    db.query.superAdmins.findFirst({
-      where: eq(superAdmins.userId, userId),
-      columns: { id: true },
-    }),
-    db.query.tenantMemberships.findFirst({
-      where: and(eq(tenantMemberships.tenantId, store.tenantId), eq(tenantMemberships.userId, userId)),
-      columns: { tenantId: true, role: true },
-    }),
+    adminRepo.findSuperAdminByUserId(userId),
+    adminRepo.findMembership(userId, store.tenantId),
   ]);
 
   const normalizedMembership = membership ?? null;
@@ -98,16 +91,7 @@ export async function resolveTenantAdminAccess(
   storeSlug: string,
   mode: TenantAccessMode = "read"
 ): Promise<TenantAdminAccess> {
-  const store = await db.query.stores.findFirst({
-    where: and(eq(stores.slug, storeSlug), isNull(stores.deletedAt)),
-    columns: {
-      id: true,
-      tenantId: true,
-      name: true,
-      defaultCurrency: true,
-      logoUrl: true,
-    },
-  });
+  const store = await storeRepo.findAdminBySlug(storeSlug);
 
   const initialAccess = await resolveAccessForStore(userId, store ?? null, mode);
 
@@ -116,20 +100,8 @@ export async function resolveTenantAdminAccess(
   }
 
   const [memberships, matchingStores] = await Promise.all([
-    db.query.tenantMemberships.findMany({
-      where: eq(tenantMemberships.userId, userId),
-      columns: { tenantId: true },
-    }),
-    db.query.stores.findMany({
-      where: and(eq(stores.slug, storeSlug), isNull(stores.deletedAt)),
-      columns: {
-        id: true,
-        tenantId: true,
-        name: true,
-        defaultCurrency: true,
-        logoUrl: true,
-      },
-    }),
+    adminRepo.findMembershipsByUserId(userId),
+    storeRepo.findAdminManyBySlug(storeSlug),
   ]);
 
   const membershipTenantIds = new Set(memberships.map((membership) => membership.tenantId));
@@ -147,16 +119,7 @@ export async function resolveTenantAdminAccessByStoreId(
   storeId: string,
   mode: TenantAccessMode = "read"
 ): Promise<TenantAdminAccess> {
-  const store = await db.query.stores.findFirst({
-    where: and(eq(stores.id, storeId), isNull(stores.deletedAt)),
-    columns: {
-      id: true,
-      tenantId: true,
-      name: true,
-      defaultCurrency: true,
-      logoUrl: true,
-    },
-  });
+  const store = await storeRepo.findAdminByStoreId(storeId);
 
   return resolveAccessForStore(userId, store ?? null, mode);
 }

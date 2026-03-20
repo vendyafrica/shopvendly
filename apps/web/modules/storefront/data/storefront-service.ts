@@ -35,6 +35,59 @@ function resolveProductSlug(product: { slug: string | null; productName: string 
 
 type RatingAggregate = { average: number; count: number };
 
+function toCanonicalUploadThingUrl(rawUrl: string) {
+  try {
+    const parsed = new URL(rawUrl);
+    const fileId = parsed.pathname.split("/").filter(Boolean).pop();
+    if (!fileId) return rawUrl;
+
+    const isUploadThingHost = parsed.hostname.endsWith(".ufs.sh") || parsed.hostname === "utfs.io";
+    if (!isUploadThingHost) return rawUrl;
+
+    const typeParam =
+      parsed.searchParams.get("x-ut-file-type") ||
+      parsed.searchParams.get("file-type");
+
+    const canonicalBase = `https://utfs.io/f/${fileId}`;
+    if (typeParam) {
+      const encodedType = encodeURIComponent(typeParam);
+      return `${canonicalBase}?x-ut-file-type=${encodedType}`;
+    }
+
+    return canonicalBase;
+  } catch {
+    return rawUrl;
+  }
+}
+
+function resolveMediaUrl(entry?: any | null): string | null {
+  if (!entry?.media) return null;
+
+  const { blobUrl, blobPathname } = entry.media;
+
+  if (blobPathname) {
+    if (/^https?:\/\//i.test(blobPathname)) {
+      return toCanonicalUploadThingUrl(blobPathname);
+    }
+    return `https://utfs.io/f/${blobPathname.replace(/^\/+/, "")}`;
+  }
+
+  if (blobUrl) return toCanonicalUploadThingUrl(blobUrl);
+
+  return null;
+}
+
+function resolveMediaContentType(entry?: any | null): string | null {
+  return entry?.media?.contentType ?? null;
+}
+
+function normalizeMediaUrls(urls: unknown): string[] {
+  if (!Array.isArray(urls)) return [];
+  return urls
+    .filter((url): url is string => typeof url === "string" && url.length > 0)
+    .map((url) => toCanonicalUploadThingUrl(url));
+}
+
 async function getRatingsMap(productIds: string[]): Promise<Map<string, RatingAggregate>> {
   if (productIds.length === 0) return new Map();
 
@@ -51,9 +104,68 @@ async function getRatingsMap(productIds: string[]): Promise<Map<string, RatingAg
   return new Map(rows.map((row) => [row.productId, { average: Number(row.average) || 0, count: Number(row.count) || 0 }]));
 }
 
+function mapToStorefrontProduct(product: any, rating?: RatingAggregate) {
+  const price = Number(product.priceAmount || 0);
+  const originalPrice = Number(product.originalPriceAmount || 0);
+  const hasSale = originalPrice > price && price >= 0;
+  const discountPercent = hasSale && originalPrice > 0
+    ? Math.round(((originalPrice - price) / originalPrice) * 100)
+    : null;
+
+  const variantOptions = product.variants?.enabled
+    ? product.variants.options ?? []
+    : [];
+
+  const variantSummary = {
+    hasColors: variantOptions.some((option: any) => option.type === "color" && (option.values?.length ?? 0) > 0),
+    hasSizes: variantOptions.some((option: any) => option.type === "size" && (option.values?.length ?? 0) > 0),
+  };
+
+  return {
+    id: product.id,
+    slug: product.slug || product.productName.toLowerCase().replace(/\s+/g, "-"),
+    name: product.productName,
+    description: product.description,
+    price,
+    originalPrice: hasSale ? originalPrice : null,
+    hasSale,
+    discountPercent,
+    currency: product.currency,
+    image: resolveMediaUrl(product.media?.[0]),
+    contentType: resolveMediaContentType(product.media?.[0]),
+    images: (product.media as any[])?.map(resolveMediaUrl).filter(Boolean) as string[],
+    mediaItems: (product.media as any[])?.map(m => ({
+      url: resolveMediaUrl(m),
+      contentType: resolveMediaContentType(m)
+    })).filter((m): m is { url: string; contentType: string | null } => !!m.url),
+    variantSummary,
+    averageRating: rating?.average ?? 0,
+    ratingCount: rating?.count ?? 0,
+    createdAt: product.createdAt,
+  };
+}
+
 export const storefrontService = {
   async findStoreBySlug(slug: string) {
-    return findStoreBySlugFresh(slug);
+    const store = await findStoreBySlugFresh(slug);
+    if (!store) return undefined;
+
+    const rating = await this.getStoreRatingAggregate(store.id);
+    const normalizedLogo = typeof store.logoUrl === "string"
+      ? toCanonicalUploadThingUrl(store.logoUrl)
+      : undefined;
+
+    const logoUrl = normalizedLogo && !/cdninstagram\.com/i.test(normalizedLogo)
+      ? normalizedLogo
+      : DEFAULT_STORE_LOGO;
+
+    return {
+      ...store,
+      logoUrl,
+      heroMedia: normalizeMediaUrls(store.heroMedia),
+      rating: rating.rating,
+      ratingCount: rating.ratingCount,
+    };
   },
 
   async getStoreCollections(storeId: string, query?: string) {
@@ -118,12 +230,30 @@ export const storefrontService = {
 
     return filtered.map((product) => {
       const rating = ratingMap.get(product.id);
-      return {
-        ...product,
-        rating: rating?.average ?? 0,
-        ratingCount: rating?.count ?? 0,
-      };
+      return mapToStorefrontProduct(product, rating);
     });
+  },
+
+  async getStoreProductsWithFilters(storeId: string, options: { q?: string; collection?: string; section?: string }) {
+    const { q, collection, section } = options;
+    
+    const productList = collection
+      ? await this.getStoreProductsByCollectionSlug(storeId, collection, q)
+      : await this.getStoreProducts(storeId, q);
+
+    let filtered = productList;
+
+    if (section === "sale") {
+      filtered = filtered.filter((product) => product.hasSale);
+    }
+
+    if (section === "new-arrivals") {
+      filtered = [...filtered]
+        .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
+        .slice(0, 12);
+    }
+
+    return filtered;
   },
 
   async getStoreProductBySlug(storeId: string, productSlug: string) {
@@ -145,12 +275,7 @@ export const storefrontService = {
     if (bySlug) {
       const ratingMap = await getRatingsMap([bySlug.id]);
       const rating = ratingMap.get(bySlug.id);
-
-      return {
-        ...bySlug,
-        rating: rating?.average ?? 0,
-        ratingCount: rating?.count ?? 0,
-      };
+      return mapToStorefrontProduct(bySlug, rating);
     }
 
     const fallbackProducts = await db.query.products.findMany({
@@ -185,12 +310,7 @@ export const storefrontService = {
 
     const ratingMap = await getRatingsMap([match.id]);
     const rating = ratingMap.get(match.id);
-
-    return {
-      ...match,
-      rating: rating?.average ?? 0,
-      ratingCount: rating?.count ?? 0,
-    };
+    return mapToStorefrontProduct(match, rating);
   },
 
   async getStoreRatingAggregate(storeId: string) {
@@ -263,13 +383,9 @@ export const storefrontService = {
       ? productsForStore.filter((product) => product.productName?.toLowerCase().includes(normalizedQuery))
       : productsForStore;
 
-    return filtered.map((product) => {
-      const rating = ratingMap.get(product.id);
-      return {
-        ...product,
-        rating: rating?.average ?? 0,
-        ratingCount: rating?.count ?? 0,
-      };
-    });
-  }
+        return filtered.map((product) => {
+            const rating = ratingMap.get(product.id);
+            return mapToStorefrontProduct(product, rating);
+        });
+    }
 };

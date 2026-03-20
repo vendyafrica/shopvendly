@@ -17,6 +17,7 @@ export const analyticsRepo = {
       .select({
         revenuePaid: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)::int`,
         ordersPaid: sql<number>`COALESCE(COUNT(*), 0)::int`,
+        distinctCustomers: sql<number>`COALESCE(COUNT(DISTINCT COALESCE(${orders.customerEmail}, ${orders.customerPhone})), 0)::int`,
       })
       .from(orders)
       .where(wherePaid);
@@ -42,6 +43,7 @@ export const analyticsRepo = {
     return {
       revenuePaid: kpiPaid?.revenuePaid || 0,
       ordersPaid: kpiPaid?.ordersPaid || 0,
+      distinctCustomers: kpiPaid?.distinctCustomers || 0,
       aov,
       refunds: kpiRefunds?.refunds || 0,
     };
@@ -136,6 +138,29 @@ export const analyticsRepo = {
       )
       .groupBy(storefrontEvents.productId, products.productName)
       .orderBy(desc(sql`COUNT(*)`))
+      .limit(limit);
+  },
+  async getTopProductsBySales(
+    store: { id: string; tenantId: string },
+    { from, to, limit = 5 }: { from: Date; to: Date; limit?: number }
+  ) {
+    // Note: This assumes orderItems is imported or available via schema
+    const { orderItems } = await import("@shopvendly/db/schema");
+    return db
+      .select({
+        product: orderItems.productName,
+        sales: sql<number>`COALESCE(SUM(${orderItems.quantity}), 0)::int`,
+      })
+      .from(orderItems)
+      .where(
+        and(
+          eq(orderItems.tenantId, store.tenantId),
+          sql`${orderItems.createdAt} >= ${from}`,
+          sql`${orderItems.createdAt} <= ${to}`
+        )
+      )
+      .groupBy(orderItems.productName)
+      .orderBy(desc(sql`SUM(${orderItems.quantity})`))
       .limit(limit);
   },
 };

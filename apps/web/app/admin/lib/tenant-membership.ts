@@ -1,5 +1,4 @@
-import { and, eq } from "@shopvendly/db";
-import { db } from "@shopvendly/db/db";
+import { adminRepo } from "@/repo/admin-repo";
 import { tenantMemberships, tenants } from "@shopvendly/db/schema";
 
 type BaseMembership = typeof tenantMemberships.$inferSelect;
@@ -31,15 +30,5 @@ export async function getTenantMembership(
 ): Promise<BaseMembership | MembershipWithTenant | null> {
     const { includeTenant = false, tenantId } = options;
 
-    const conditions = [eq(tenantMemberships.userId, userId)];
-    if (tenantId) {
-        conditions.push(eq(tenantMemberships.tenantId, tenantId));
-    }
-
-    const membership = await db.query.tenantMemberships.findFirst({
-        where: and(...conditions),
-        with: includeTenant ? { tenant: true } : undefined,
-    });
-
-    return membership as BaseMembership | MembershipWithTenant | null;
+    return adminRepo.findMembership(userId, tenantId, includeTenant) as Promise<BaseMembership | MembershipWithTenant | null>;
 }
