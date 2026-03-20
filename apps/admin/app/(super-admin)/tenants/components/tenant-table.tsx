@@ -9,17 +9,8 @@ import {
     TableRow,
 } from "@shopvendly/ui/components/table";
 import { Badge } from "@shopvendly/ui/components/badge";
-import { Button } from "@shopvendly/ui/components/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuTrigger,
-} from "@shopvendly/ui/components/dropdown-menu";
 import { Input } from "@shopvendly/ui/components/input";
-import { MoreHorizontalIcon, Edit02Icon } from "@hugeicons/core-free-icons";
+import { Edit02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { format } from "date-fns";
 import * as React from "react";
@@ -146,7 +137,7 @@ export function TenantTable({ tenants, isLoading }: TenantTableProps) {
                             <TableCell>{tenant.phoneNumber || "-"}</TableCell>
                             <TableCell>
                                 <Badge
-                                    variant={tenant.status === "active" ? "primary" : "secondary"}
+                                    variant={tenant.status === "active" ? "default" : "secondary"}
                                     className="capitalize"
                                 >
                                     {tenant.status}
