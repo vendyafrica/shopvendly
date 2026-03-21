@@ -62,14 +62,15 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
   const activeCollectionSlug = Array.isArray(collection) ? collection[0] : collection;
   const activeSection = Array.isArray(section) ? section[0] : section;
 
-  const [store, products, saleProducts, collections] = await Promise.all([
-    storefrontService.findStoreBySlug(handle),
-    storefrontService.getStoreProductsWithFilters(handle, { q: query, collection: activeCollectionSlug, section: activeSection }),
-    storefrontService.getStoreProductsWithFilters(handle, { section: "sale" }),
-    storefrontService.getStoreCollections(handle),
-  ]);
+  const store = await storefrontService.findStoreBySlug(handle);
 
   if (!store) notFound();
+
+  const [products, saleProducts, collections] = await Promise.all([
+    storefrontService.getStoreProductsWithFilters(store.id, { q: query, collection: activeCollectionSlug, section: activeSection }),
+    storefrontService.getStoreProductsWithFilters(store.id, { section: "sale" }),
+    storefrontService.getStoreCollections(store.id),
+  ]);
 
   const hasSaleTab = saleProducts.length > 0;
 
