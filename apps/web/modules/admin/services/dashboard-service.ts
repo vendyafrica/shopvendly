@@ -193,6 +193,9 @@ export const adminDashboardService = {
       discounts: paidKpis.discounts,
       netSales: paidKpis.grossSales - paidKpis.discounts - paidKpis.refunds,
       totalSales: (paidKpis.grossSales - paidKpis.discounts - paidKpis.refunds) + paidKpis.shippingCharges + paidKpis.taxes,
+      revenue: paidKpis.revenuePaid,
+      balance,
+      paidOut,
     };
 
     return {
