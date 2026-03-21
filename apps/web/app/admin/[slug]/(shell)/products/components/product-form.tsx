@@ -531,28 +531,27 @@ export function ProductForm({
                                 </div>
                                 
                                 {/* Collections Dropdown */}
-                                <div className="space-y-2 pt-2 border-t">
+                                <div className="space-y-2 pt-2 border-t w-full">
                                     <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Collections</Label>
-                                    <DropdownMenu>
-                                        {(() => {
-                                            const Trigger = DropdownMenuTrigger as any;
-                                            return (
-                                                <Trigger asChild>
-                                                    <Button 
-                                                        variant="outline" 
-                                                        className="w-full justify-between h-10 font-normal px-3"
-                                                        type="button"
-                                                    >
-                                                        {selectedCollectionIds.length === 0 
-                                                            ? "Select collections" 
-                                                            : `${selectedCollectionIds.length} collection${selectedCollectionIds.length > 1 ? 's' : ''} selected`
-                                                        }
-                                                        <HugeiconsIcon icon={Add01Icon} className="size-4 opacity-50" />
-                                                    </Button>
-                                                </Trigger>
-                                            )
-                                        })()}
-                                        <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] max-h-64 overflow-y-auto" align="start">
+                                    <DropdownMenu modal={false}>
+                                        <DropdownMenuTrigger
+                                            render={
+                                                <Button 
+                                                    variant="outline" 
+                                                    className="flex w-full items-center justify-between h-10 font-normal px-3 bg-background hover:bg-accent/50 shadow-sm transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                                    type="button"
+                                                />
+                                            }
+                                        >
+                                            <span className={selectedCollectionIds.length === 0 ? "text-muted-foreground text-sm" : "text-foreground text-sm"}>
+                                                {selectedCollectionIds.length === 0 
+                                                    ? "Select collections" 
+                                                    : `${selectedCollectionIds.length} collection${selectedCollectionIds.length > 1 ? 's' : ''} selected`
+                                                }
+                                            </span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4 opacity-50 shrink-0"><path d="m6 9 6 6 6-6"/></svg>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="max-h-64 overflow-y-auto" align="start">
                                             {collections.length === 0 ? (
                                                 <div className="px-2 py-4 text-center text-xs text-muted-foreground">No collections found.</div>
                                             ) : (
@@ -560,7 +559,7 @@ export function ProductForm({
                                                     <DropdownMenuItem 
                                                         key={col.id} 
                                                         onSelect={(e) => e.preventDefault()}
-                                                        className="flex items-center gap-3 cursor-pointer p-2"
+                                                        className="flex items-center gap-3 cursor-pointer p-2 rounded-md"
                                                         onClick={() => {
                                                             setSelectedCollectionIds(prev => 
                                                                 prev.includes(col.id) ? prev.filter(id => id !== col.id) : [...prev, col.id]
