@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
 
             input = createProductSchema.parse({
                 storeId: formData.get("storeId"),
-                title: formData.get("title"),
+                productName: formData.get("productName"),
                 description: formData.get("description") || undefined,
                 priceAmount: Number(formData.get("priceAmount")) || 0,
                 currency: formData.get("currency") || undefined,

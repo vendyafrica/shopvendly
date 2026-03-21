@@ -30,7 +30,7 @@ export const productVariantsSchema = z
   })
   .superRefine((value, ctx) => {
     const optionTypes = new Set<string>();
-  
+
     for (const [index, option] of value.options.entries()) {
       if (optionTypes.has(option.type)) {
         ctx.addIssue({
@@ -41,7 +41,7 @@ export const productVariantsSchema = z
       }
       optionTypes.add(option.type);
     }
-  
+
     if (value.enabled && value.options.length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -71,7 +71,7 @@ function validateOriginalPrice(
 
 export const createProductSchema = z.object({
   storeId: z.string().uuid(),
-  title: z.string().min(1).max(255),
+  productName: z.string().min(1).max(255),
   description: z.string().optional(),
   priceAmount: z.number().int().min(0).default(0),
   originalPriceAmount: z.number().int().min(0).nullable().optional(),

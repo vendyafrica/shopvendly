@@ -81,7 +81,7 @@ export const productService = {
         data: CreateProductInput,
         files: UploadFile[] = []
     ): Promise<ProductWithMedia> {
-        const baseSlug = slugifyName(data.title);
+        const baseSlug = slugifyName(data.productName);
 
         let slug = await generateUniqueSlug({ query: db.query }, data.storeId, baseSlug);
         let product: ProductRow | undefined = undefined;
@@ -90,7 +90,7 @@ export const productService = {
             product = await productRepo.create({
                 tenantId,
                 storeId: data.storeId,
-                productName: data.title,
+                productName: data.productName,
                 slug,
                 description: data.description,
                 priceAmount: data.priceAmount,
@@ -109,7 +109,7 @@ export const productService = {
                 product = await productRepo.create({
                     tenantId,
                     storeId: data.storeId,
-                    productName: data.title,
+                    productName: data.productName,
                     slug,
                     description: data.description,
                     priceAmount: data.priceAmount,

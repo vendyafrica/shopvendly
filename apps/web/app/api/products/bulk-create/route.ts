@@ -73,14 +73,14 @@ export async function POST(request: NextRequest) {
         // Process sequentially or in parallel? Parallel is fine for DB inserts usually.
         const createdProducts = await Promise.all(items.map(async (item) => {
             // Dummy title for bulk-upload drafts
-            const title = "Draft";
+            const productName = "Draft";
 
             return productService.createProduct(
                 tenantId,
                 tenantSlug,
                 {
                     storeId,
-                    title,
+                    productName,
                     description: "", // Empty for now, user can edit later
                     priceAmount: 0,
                     quantity: 0,

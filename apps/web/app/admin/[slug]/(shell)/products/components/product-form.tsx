@@ -368,7 +368,7 @@ export function ProductForm({
                 <Label className="text-sm font-semibold">Media</Label>
                 <p className="text-xs text-muted-foreground">Upload and manage product images/videos.</p>
             </div>
-            
+
             <div className={cn(
                 "group relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/25 bg-muted/5 py-8 px-4 transition-all hover:border-primary/50 hover:bg-primary/5 cursor-pointer",
                 files.length > 0 && "mb-4",
@@ -428,7 +428,7 @@ export function ProductForm({
                                     className="object-cover"
                                 />
                             )}
-                            
+
                             {i === 0 && (
                                 <div className="absolute left-2 top-2 rounded bg-background/90 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider shadow-sm">
                                     Main
@@ -464,11 +464,11 @@ export function ProductForm({
         <form onSubmit={handleSubmit} className="mx-auto max-w-5xl md:space-y-6 space-y-4 pb-12">
             <div className="flex items-center justify-between sticky top-0 z-10 bg-background/95 backdrop-blur-md py-4 border-b -mx-4 px-4 sm:mx-0 sm:px-0">
                 <div className="flex items-center gap-3">
-                    <Button 
-                        type="button" 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-9 w-9" 
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9"
                         onClick={() => onCancel ? onCancel() : router.back()}
                     >
                         <HugeiconsIcon icon={ArrowLeft02Icon} size={20} />
@@ -529,44 +529,44 @@ export function ProductForm({
                                         className="resize-none min-h-[160px]"
                                     />
                                 </div>
-                                
+
                                 {/* Collections Dropdown */}
                                 <div className="space-y-2 pt-2 border-t w-full">
                                     <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Collections</Label>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger
                                             render={
-                                                <Button 
-                                                    variant="outline" 
+                                                <Button
+                                                    variant="outline"
                                                     className="flex w-full items-center justify-between h-10 font-normal px-3 bg-background hover:bg-accent/50 shadow-sm transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                                     type="button"
                                                 />
                                             }
                                         >
                                             <span className={selectedCollectionIds.length === 0 ? "text-muted-foreground text-sm" : "text-foreground text-sm"}>
-                                                {selectedCollectionIds.length === 0 
-                                                    ? "Select collections" 
+                                                {selectedCollectionIds.length === 0
+                                                    ? "Select collections"
                                                     : `${selectedCollectionIds.length} collection${selectedCollectionIds.length > 1 ? 's' : ''} selected`
                                                 }
                                             </span>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4 opacity-50 shrink-0"><path d="m6 9 6 6 6-6"/></svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4 opacity-50 shrink-0"><path d="m6 9 6 6 6-6" /></svg>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent className="max-h-64 overflow-y-auto" align="start">
                                             {collections.length === 0 ? (
                                                 <div className="px-2 py-4 text-center text-xs text-muted-foreground">No collections found.</div>
                                             ) : (
                                                 collections.map((col) => (
-                                                    <DropdownMenuItem 
-                                                        key={col.id} 
+                                                    <DropdownMenuItem
+                                                        key={col.id}
                                                         onSelect={(e) => e.preventDefault()}
                                                         className="flex items-center gap-3 cursor-pointer p-2 rounded-md"
                                                         onClick={() => {
-                                                            setSelectedCollectionIds(prev => 
+                                                            setSelectedCollectionIds(prev =>
                                                                 prev.includes(col.id) ? prev.filter(id => id !== col.id) : [...prev, col.id]
                                                             );
                                                         }}
                                                     >
-                                                        <Checkbox 
+                                                        <Checkbox
                                                             checked={selectedCollectionIds.includes(col.id)}
                                                             className="pointer-events-none"
                                                         />
@@ -648,7 +648,7 @@ export function ProductForm({
                             <p className="text-xs text-muted-foreground">Manage colors and sizes for this product.</p>
                         </div>
                     </div>
-                    
+
                     <div className="space-y-6 pt-2 border-t">
                         <div className="space-y-3">
                             <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Colors</Label>
@@ -666,20 +666,20 @@ export function ProductForm({
                                                 checked && "ring-2 ring-primary/20 ring-offset-1 border-primary/50"
                                             )}
                                             onClick={() => {
-                                                setSelectedColors(prev => 
+                                                setSelectedColors(prev =>
                                                     checked ? prev.filter(c => c !== color) : [...prev, color]
                                                 );
                                             }}
                                         >
-                                            <div 
-                                                className="size-3 rounded-full border border-black/10 shadow-sm" 
-                                                style={{ backgroundColor: COLOR_MAP[color] || color.toLowerCase() }} 
+                                            <div
+                                                className="size-3 rounded-full border border-black/10 shadow-sm"
+                                                style={{ backgroundColor: COLOR_MAP[color] || color.toLowerCase() }}
                                             />
                                             {color}
                                         </Button>
                                     );
                                 })}
-                                
+
                                 <div className="flex items-center gap-1.5 ml-1">
                                     <div className="relative">
                                         <Input
@@ -697,15 +697,15 @@ export function ProductForm({
                                                 }
                                             }}
                                         />
-                                        <div 
+                                        <div
                                             className="absolute right-2 top-1/2 -translate-y-1/2 size-4 rounded-full border border-black/10 shadow-inner"
                                             style={{ backgroundColor: customColor || 'transparent' }}
                                         />
                                     </div>
-                                    <Button 
-                                        type="button" 
-                                        variant="ghost" 
-                                        size="icon" 
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
                                         className="h-8 w-8 rounded-full"
                                         onClick={() => {
                                             if (customColor && !selectedColors.includes(customColor)) {
@@ -765,9 +765,9 @@ export function ProductForm({
                                                 </Button>
                                             );
                                         })}
-                                        
+
                                         {/* Show custom sizes that aren't in the preset */}
-                                        {selectedSizes.filter(s => 
+                                        {selectedSizes.filter(s =>
                                             ((sizePreset === "alpha" ? PRODUCT_ALPHA_SIZE_PRESET : PRODUCT_UK_SIZE_PRESET) as readonly string[]).indexOf(s) === -1
                                         ).map((size) => (
                                             <Button
@@ -798,10 +798,10 @@ export function ProductForm({
                                                     }
                                                 }}
                                             />
-                                            <Button 
-                                                type="button" 
-                                                variant="ghost" 
-                                                size="icon" 
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
                                                 className="h-8 w-8"
                                                 onClick={() => {
                                                     if (customSize && !selectedSizes.includes(customSize)) {
@@ -819,7 +819,7 @@ export function ProductForm({
                         </div>
                     </div>
                 </div>
-                
+
                 {/* Pro Tip at the very bottom */}
                 <div className="rounded-xl bg-primary/5 border border-primary/10 p-5 space-y-3">
                     <div className="flex items-center gap-2 text-primary">

@@ -42,7 +42,6 @@ function isActivePath(pathname: string, item: DockItem) {
 
 export function AdminMobileDock({ basePath }: { basePath: string }) {
   const [mounted, setMounted] = React.useState(false);
-  const [isCompact, setIsCompact] = React.useState(false);
   const [pendingHref, setPendingHref] = React.useState<string | null>(null);
   const pathname = usePathname();
 
@@ -50,38 +49,7 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
     setMounted(true);
   }, []);
 
-  React.useEffect(() => {
-    if (typeof window === "undefined") return;
 
-    let lastY = window.scrollY;
-    let ticking = false;
-
-    const handleScroll = () => {
-      const current = window.scrollY;
-      const delta = current - lastY;
-
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          // Expand when near top
-          if (current < 24) {
-            setIsCompact(false);
-          } else if (delta > 4) {
-            // scrolling down
-            setIsCompact(true);
-          } else if (delta < -4) {
-            // scrolling up
-            setIsCompact(false);
-          }
-          lastY = current;
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   React.useEffect(() => {
     if (!pendingHref) return;
@@ -107,7 +75,7 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
       <nav
         className={cn(
           "pointer-events-auto flex w-[95vw] max-w-xl items-center gap-2 rounded-3xl border border-white/10 bg-background/80 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] transition-all duration-300 ease-out",
-          isCompact ? "px-5 py-1" : "px-6 py-1"
+          "px-6 py-1"
         )}
       >
         {items.map((item) => {
@@ -122,9 +90,9 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
               }}
               className={cn(
                 "relative flex flex-1 min-w-0 shrink-0 flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-out",
-                isCompact ? "py-1" : "py-1",
+                "py-1",
                 item.intent === "primary" ? "bg-primary/10 text-primary" : isActive ? "text-primary" : "text-muted-foreground",
-                !isCompact && "hover:bg-muted/50"
+                "hover:bg-muted/50"
               )}
             >
               {pendingHref === item.href ? (
@@ -132,7 +100,7 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
                   icon={Loading03Icon}
                   className={cn(
                     "animate-spin transition-all duration-200",
-                    isCompact ? "size-5" : "size-6",
+                    "size-6",
                     "text-primary"
                   )}
                 />
@@ -141,7 +109,7 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
                   icon={item.icon}
                   className={cn(
                     "transition-all duration-200",
-                    isCompact ? "size-5" : "size-6",
+                    "size-6",
                     (isActive || item.intent === "primary") && "text-primary"
                   )}
                 />
@@ -149,10 +117,10 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
               <span
                 className={cn(
                   "text-[10px] font-medium leading-none transition-all duration-200",
-                  isCompact ? "opacity-0 translate-y-1 scale-95 h-0" : "opacity-100 translate-y-0 scale-100 h-3",
+                  "opacity-100 translate-y-0 scale-100 h-3",
                   isActive && "font-semibold"
-                )}
-                aria-hidden={isCompact}
+                )
+              }
               >
                 {item.label}
               </span>
