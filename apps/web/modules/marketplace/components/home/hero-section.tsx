@@ -4,7 +4,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Search01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
 import { Bricolage_Grotesque } from "next/font/google";
@@ -23,18 +23,20 @@ const Typewriter = dynamic(
 
 export function HeroSection() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [mode] = useState<HeroMode>(() => {
-    const storageKey = "vendly-hero-mode";
-    if (typeof window === "undefined") return "discovery";
+  const [mode, setMode] = useState<HeroMode>("discovery");
 
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+    const storageKey = "vendly-hero-mode";
     const stored = window.sessionStorage.getItem(storageKey);
     if (stored === "discovery" || stored === "shopping") {
-      return stored;
+      setMode(stored);
+    } else {
+      window.sessionStorage.setItem(storageKey, "discovery");
     }
-
-    window.sessionStorage.setItem(storageKey, "discovery");
-    return "discovery";
-  });
+  }, []);
 
   const copy = useMemo(() => heroCopy[mode], [mode]);
 
@@ -42,6 +44,10 @@ export function HeroSection() {
     e.preventDefault();
     console.log("Searching for:", searchQuery);
   };
+
+  if (!hasMounted) return (
+    <div className="relative bg-white pt-12 pb-10 md:pt-16 md:pb-14 px-4 h-[300px]" />
+  );
 
   return (
     <div className="relative bg-white pt-12 pb-10 md:pt-16 md:pb-14 px-4">
@@ -82,6 +88,7 @@ export function HeroSection() {
             <Button
               type="submit"
               className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full p-0 grid place-items-center"
+              suppressHydrationWarning
             >
               <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
             </Button>

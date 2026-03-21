@@ -7,9 +7,10 @@ export const sanitizeSubdomain = (input: string): string => {
 };
 
 export const formatPhoneNumber = (phone: string): string => {
-    return phone.replace(/\D/g, '');
+    phone = phone.replace(/\D/g, '');
+    return phone;
 };
 
-export const buildStoreUrl = (subdomain: string, rootDomain: string): string => {
-    return `${subdomain}.${rootDomain}`;
+export const buildStoreUrl = (subdomain: string, _rootDomain: string): string => {
+    return `/${subdomain}`;
 };

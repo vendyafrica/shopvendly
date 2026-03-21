@@ -71,10 +71,6 @@ function getEntryHostType() {
     return "root";
   }
 
-  if (hostname.endsWith(`.${rootDomain}`)) {
-    return "subdomain";
-  }
-
   return "other";
 }
 

@@ -2,13 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@shopvendly/ui/components/button";
+import { buttonVariants } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  InstagramIcon,
-  WhatsappBusinessIcon,
-} from "@hugeicons/core-free-icons";
+import { WhatsappBusinessIcon, InstagramIcon } from "@hugeicons/core-free-icons";
 import { Bricolage_Grotesque } from "next/font/google";
+import { cn } from "@/utils/misc";
 
 const geistSans = Bricolage_Grotesque({
   variable: "--font-bricolage-grotesque",
@@ -73,16 +71,18 @@ export default function Footer() {
 
             <div className="flex gap-3">
               {socialLinks.map(({ icon: Icon, href, label }) => (
-                <Button
+                <Link
                   key={label}
-                  variant="ghost"
-                  size="icon-sm"
+                  href={href}
+                  target="_blank"
                   aria-label={label}
+                  className={cn(
+                    buttonVariants({ variant: "ghost", size: "icon-sm" }),
+                    "inline-flex"
+                  )}
                 >
-                  <Link href={href} target="_blank">
-                    <HugeiconsIcon icon={Icon} className="h-5 w-5" />
-                  </Link>
-                </Button>
+                  <HugeiconsIcon icon={Icon} className="h-5 w-5" />
+                </Link>
               ))}
             </div>
           </div>
