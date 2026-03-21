@@ -1,16 +1,10 @@
 "use client";
 
-/**
- * Dynamic chart component wrappers
- * These components use next/dynamic to code-split heavy chart libraries (recharts)
- * and improve initial bundle size and page load performance.
- */
 
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader } from "@shopvendly/ui/components/card";
 import { cn } from "@shopvendly/ui/lib/utils";
 
-// Loading skeleton for charts
 function ChartSkeleton({ className }: { className?: string }) {
     return (
         <Card className={cn("w-full", className)}>
@@ -25,12 +19,11 @@ function ChartSkeleton({ className }: { className?: string }) {
     );
 }
 
-// Dynamic imports with loading states
 export const RevenueAreaChartCard = dynamic(
     () => import("./revenue-area-chart-card").then((mod) => ({ default: mod.RevenueAreaChartCard })),
     {
         loading: () => <ChartSkeleton />,
-        ssr: false, // Charts don't need SSR, save server processing time
+        ssr: false,
     }
 );
 

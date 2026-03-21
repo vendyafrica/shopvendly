@@ -49,10 +49,14 @@ export const analyticsRepo = {
     };
   },
 
-  async getRevenueTimeseries(store: { id: string; tenantId: string }, { from, to }: { from: Date; to: Date }) {
+  async getRevenueTimeseries(store: { id: string; tenantId: string }, { from, to, interval = "day" }: { from: Date; to: Date; interval?: "day" | "hour" }) {
+    const isHour = interval === "hour";
+    const dateSql = isHour ? sql<string>`to_char(date_trunc('hour', ${orders.createdAt}), 'YYYY-MM-DD HH24:00')` : sql<string>`to_char(date_trunc('day', ${orders.createdAt}), 'YYYY-MM-DD')`;
+    const groupSql = isHour ? sql`date_trunc('hour', ${orders.createdAt})` : sql`date_trunc('day', ${orders.createdAt})`;
+
     return db
       .select({
-        date: sql<string>`to_char(date_trunc('day', ${orders.createdAt}), 'YYYY-MM-DD')`,
+        date: dateSql,
         revenuePaid: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)::int`,
         ordersPaid: sql<number>`COALESCE(COUNT(*), 0)::int`,
       })
@@ -67,8 +71,8 @@ export const analyticsRepo = {
           sql`${orders.createdAt} <= ${to}`
         )
       )
-      .groupBy(sql`date_trunc('day', ${orders.createdAt})`)
-      .orderBy(sql`date_trunc('day', ${orders.createdAt})`);
+      .groupBy(groupSql)
+      .orderBy(groupSql);
   },
 
   async getTrafficTotals(store: { id: string; tenantId: string }, { from, to }: { from: Date; to: Date }) {
@@ -95,10 +99,14 @@ export const analyticsRepo = {
     };
   },
 
-  async getTrafficTimeseries(store: { id: string; tenantId: string }, { from, to }: { from: Date; to: Date }) {
+  async getTrafficTimeseries(store: { id: string; tenantId: string }, { from, to, interval = "day" }: { from: Date; to: Date; interval?: "day" | "hour" }) {
+    const isHour = interval === "hour";
+    const dateSql = isHour ? sql<string>`to_char(date_trunc('hour', ${storefrontSessions.lastSeenAt}), 'YYYY-MM-DD HH24:00')` : sql<string>`to_char(date_trunc('day', ${storefrontSessions.lastSeenAt}), 'YYYY-MM-DD')`;
+    const groupSql = isHour ? sql`date_trunc('hour', ${storefrontSessions.lastSeenAt})` : sql`date_trunc('day', ${storefrontSessions.lastSeenAt})`;
+
     return db
       .select({
-        date: sql<string>`to_char(date_trunc('day', ${storefrontSessions.lastSeenAt}), 'YYYY-MM-DD')`,
+        date: dateSql,
         visits: sql<number>`COALESCE(COUNT(*), 0)::int`,
         uniqueVisitors: sql<number>`COALESCE(COUNT(DISTINCT ${storefrontSessions.sessionId}), 0)::int`,
       })
@@ -111,8 +119,8 @@ export const analyticsRepo = {
           sql`${storefrontSessions.lastSeenAt} <= ${to}`
         )
       )
-      .groupBy(sql`date_trunc('day', ${storefrontSessions.lastSeenAt})`)
-      .orderBy(sql`date_trunc('day', ${storefrontSessions.lastSeenAt})`);
+      .groupBy(groupSql)
+      .orderBy(groupSql);
   },
 
   async getTopProducts(

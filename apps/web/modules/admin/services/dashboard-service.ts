@@ -9,11 +9,12 @@ function toChartDateLabel(date: string) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function trendLabel(curr: number, prev: number): string {
-  if (prev === 0) return curr > 0 ? `+${curr}` : "";
-  const pct = ((curr - prev) / prev) * 100;
-  return pct >= 0 ? `+${pct.toFixed(0)}%` : `${pct.toFixed(0)}%`;
-}
+const trendLabel = (current: number, previous: number) => {
+  if (previous === 0) return current > 0 ? `+${current.toFixed(1).replace(/\.0$/, "")}` : null;
+  const diff = current - previous;
+  const percent = (diff / previous) * 100;
+  return (percent >= 0 ? "+" : "") + percent.toFixed(1).replace(/\.0$/, "") + "%";
+};
 
 function trendTone(curr: number, prev: number): "positive" | "negative" | "neutral" {
   if (prev === 0 && curr === 0) return "neutral";
@@ -28,22 +29,40 @@ function formatCurrency(amount: number, currency: string) {
   }).format(amount);
 }
 
+export type DashboardRange = "daily" | "weekly" | "monthly";
+
 export const adminDashboardService = {
-  async getDashboardData(slug: string) {
+  async getDashboardData(slug: string, range: DashboardRange = "monthly") {
     const store = await storeRepo.findAdminBySlug(slug);
     if (!store) return null;
 
     const to = new Date();
-    const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const prevTo = new Date(from.getTime());
-    const prevFrom = new Date(prevTo.getTime() - 30 * 24 * 60 * 60 * 1000);
+    let from: Date;
+    let days: number;
+    let interval: "day" | "hour" = "day";
 
-    const [paidKpis, trafficTotals, prevKpis, productCount, revenueRaw, topProductsRaw, recentOrders] = await Promise.all([
+    if (range === "daily") {
+      from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
+      days = 1;
+      interval = "hour";
+    } else if (range === "weekly") {
+      from = new Date(to.getTime() - 7 * 24 * 60 * 60 * 1000);
+      days = 7;
+    } else {
+      from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
+      days = 30;
+    }
+
+    const prevTo = new Date(from.getTime());
+    const prevFrom = new Date(prevTo.getTime() - (to.getTime() - from.getTime()));
+
+    const [paidKpis, trafficTotals, prevKpis, prevTrafficTotals, productCount, revenueRaw, topProductsRaw, recentOrders] = await Promise.all([
       analyticsRepo.getKpiTotals(store, { from, to }),
       analyticsRepo.getTrafficTotals(store, { from, to }),
       analyticsRepo.getKpiTotals(store, { from: prevFrom, to: prevTo }),
+      analyticsRepo.getTrafficTotals(store, { from: prevFrom, to: prevTo }),
       db.select({ value: count() }).from(products).where(and(eq(products.tenantId, store.tenantId), isNull(products.deletedAt))).then((r: { value: number }[]) => r[0]?.value ?? 0),
-      analyticsRepo.getRevenueTimeseries(store, { from, to }),
+      analyticsRepo.getRevenueTimeseries(store, { from, to, interval }),
       analyticsRepo.getTopProductsBySales(store, { from, to }),
       ordersRepo.findRecentOrders(store),
     ]);
@@ -51,27 +70,83 @@ export const adminDashboardService = {
     const revenueTotalsByDate = new Map(revenueRaw.map((row: any) => [row.date, row.revenuePaid]));
     const ordersTotalsByDate = new Map(revenueRaw.map((row: any) => [row.date, row.ordersPaid]));
 
-    const revenueSeries = Array.from({ length: 31 }).map((_, index) => {
+    const pointsCount = range === "daily" ? 24 : days + 1;
+    const revenueSeries = Array.from({ length: pointsCount }).map((_, index) => {
       const day = new Date(from.getTime());
-      day.setDate(from.getDate() + index);
-      const isoDate = day.toISOString().slice(0, 10);
+      if (range === "daily") {
+        day.setHours(from.getHours() + index, 0, 0, 0);
+      } else {
+        day.setDate(from.getDate() + index);
+      }
+      const isoDate = day.toISOString().slice(0, range === "daily" ? 13 : 10).replace("T", " ");
+      const formattedDate = range === "daily" ? `${day.getHours()}:00` : toChartDateLabel(isoDate.slice(0, 10));
+      
+      // Use to_char format from repo: interval hour = YYYY-MM-DD HH24:00
+      const repoKey = range === "daily" ? `${day.toISOString().slice(0, 10)} ${day.getHours().toString().padStart(2, "0")}:00` : day.toISOString().slice(0, 10);
+
       return {
-        date: toChartDateLabel(isoDate),
-        total: revenueTotalsByDate.get(isoDate) ?? 0,
+        date: formattedDate,
+        total: revenueTotalsByDate.get(repoKey) ?? 0,
       };
     });
 
-    const ordersSeries = Array.from({ length: 31 }).map((_, index) => {
+    const ordersSeries = Array.from({ length: pointsCount }).map((_, index) => {
       const day = new Date(from.getTime());
-      day.setDate(from.getDate() + index);
-      const isoDate = day.toISOString().slice(0, 10);
+      if (range === "daily") {
+        day.setHours(from.getHours() + index, 0, 0, 0);
+      } else {
+        day.setDate(from.getDate() + index);
+      }
+      const formattedDate = range === "daily" ? `${day.getHours()}:00` : toChartDateLabel(day.toISOString().slice(0, 10));
+      const repoKey = range === "daily" ? `${day.toISOString().slice(0, 10)} ${day.getHours().toString().padStart(2, "0")}:00` : day.toISOString().slice(0, 10);
+
       return {
-        date: toChartDateLabel(isoDate),
-        total: ordersTotalsByDate.get(isoDate) ?? 0,
+        date: formattedDate,
+        total: ordersTotalsByDate.get(repoKey) ?? 0,
       };
     });
 
     const currency = store.defaultCurrency || "UGX";
+
+    const conversionRate = trafficTotals.visits > 0 ? (paidKpis.ordersPaid / trafficTotals.visits) * 100 : 0;
+    const prevConversionRate = prevTrafficTotals.visits > 0 ? (prevKpis.ordersPaid / prevTrafficTotals.visits) * 100 : 0;
+
+    const stats = [
+      {
+        label: "Total Revenue",
+        value: paidKpis.revenuePaid,
+        changeLabel: trendLabel(paidKpis.revenuePaid, prevKpis.revenuePaid),
+        changeTone: trendTone(paidKpis.revenuePaid, prevKpis.revenuePaid),
+      },
+      {
+        label: "Paid Orders",
+        value: paidKpis.ordersPaid,
+        isNumeric: true,
+        changeLabel: trendLabel(paidKpis.ordersPaid, prevKpis.ordersPaid),
+        changeTone: trendTone(paidKpis.ordersPaid, prevKpis.ordersPaid),
+      },
+      {
+        label: "Customers",
+        value: paidKpis.distinctCustomers || 0,
+        isNumeric: true,
+        changeLabel: trendLabel(paidKpis.distinctCustomers || 0, prevKpis.distinctCustomers || 0),
+        changeTone: trendTone(paidKpis.distinctCustomers || 0, prevKpis.distinctCustomers || 0),
+      },
+      {
+        label: "Conversion Rate",
+        value: conversionRate.toFixed(1) + "%",
+        isNumeric: true,
+        changeLabel: trendLabel(conversionRate, prevConversionRate),
+        changeTone: trendTone(conversionRate, prevConversionRate),
+      },
+      {
+        label: "Store Visits",
+        value: trafficTotals.visits,
+        isNumeric: true,
+        changeLabel: trendLabel(trafficTotals.visits, prevTrafficTotals.visits),
+        changeTone: trendTone(trafficTotals.visits, prevTrafficTotals.visits),
+      }
+    ];
 
     const transactionRows = recentOrders.map((o: any) => {
       const itemLabel =
@@ -104,33 +179,6 @@ export const adminDashboardService = {
         }),
       };
     });
-
-    const stats = [
-      {
-        label: "Total Revenue",
-        value: paidKpis.revenuePaid,
-        changeLabel: trendLabel(paidKpis.revenuePaid, prevKpis.revenuePaid),
-        changeTone: trendTone(paidKpis.revenuePaid, prevKpis.revenuePaid),
-      },
-      {
-        label: "Paid Orders",
-        value: paidKpis.ordersPaid,
-        changeLabel: trendLabel(paidKpis.ordersPaid, prevKpis.ordersPaid),
-        changeTone: trendTone(paidKpis.ordersPaid, prevKpis.ordersPaid),
-      },
-      {
-        label: "Total Customers",
-        value: paidKpis.distinctCustomers || 0,
-        changeLabel: trendLabel(paidKpis.distinctCustomers || 0, prevKpis.distinctCustomers || 0),
-        changeTone: trendTone(paidKpis.distinctCustomers || 0, prevKpis.distinctCustomers || 0),
-      },
-      {
-        label: "Store Visits",
-        value: trafficTotals.visits,
-        changeLabel: "",
-        changeTone: "neutral" as const,
-      }
-    ];
 
     return {
       store,
