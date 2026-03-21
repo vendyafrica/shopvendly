@@ -11,7 +11,7 @@ import {
 
 import { tenants } from "./tenant-schema";
 import { stores } from "./storefront-schema";
-import { products } from "./product-schema";
+import { productCollections } from "./product-schema";
 
 export const storeCollections = pgTable(
   "store_collections",
@@ -41,25 +41,6 @@ export const storeCollections = pgTable(
   ]
 );
 
-export const productCollections = pgTable(
-  "product_collections",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    collectionId: uuid("collection_id")
-      .notNull()
-      .references(() => storeCollections.id, { onDelete: "cascade" }),
-    productId: uuid("product_id")
-      .notNull()
-      .references(() => products.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => [
-    unique("product_collections_unique").on(table.collectionId, table.productId),
-    index("product_collections_collection_idx").on(table.collectionId),
-    index("product_collections_product_idx").on(table.productId),
-  ]
-);
-
 export const storeCollectionsRelations = relations(storeCollections, ({ one, many }) => ({
   tenant: one(tenants, {
     fields: [storeCollections.tenantId],
@@ -72,18 +53,5 @@ export const storeCollectionsRelations = relations(storeCollections, ({ one, man
   productLinks: many(productCollections),
 }));
 
-export const productCollectionsRelations = relations(productCollections, ({ one }) => ({
-  collection: one(storeCollections, {
-    fields: [productCollections.collectionId],
-    references: [storeCollections.id],
-  }),
-  product: one(products, {
-    fields: [productCollections.productId],
-    references: [products.id],
-  }),
-}));
-
 export type StoreCollection = typeof storeCollections.$inferSelect;
 export type NewStoreCollection = typeof storeCollections.$inferInsert;
-export type ProductCollection = typeof productCollections.$inferSelect;
-export type NewProductCollection = typeof productCollections.$inferInsert;

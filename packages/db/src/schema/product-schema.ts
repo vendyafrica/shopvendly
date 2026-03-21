@@ -17,6 +17,7 @@ import { stores } from "./storefront-schema";
 import { mediaObjects } from "./media-schema";
 import { categories } from "./category-schema";
 import { users } from "./auth-schema";
+import { storeCollections } from "./collection-schema";
 
 export const PRODUCT_COLOR_PRESETS = [
   "Black",
@@ -175,6 +176,25 @@ export const productCategories = pgTable(
   ],
 );
 
+export const productCollections = pgTable(
+  "product_collections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    collectionId: uuid("collection_id")
+      .notNull()
+      .references(() => storeCollections.id, { onDelete: "cascade" }),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    unique("product_collections_unique").on(table.collectionId, table.productId),
+    index("product_collections_collection_idx").on(table.collectionId),
+    index("product_collections_product_idx").on(table.productId),
+  ],
+);
+
 export const productCategoriesRelations = relations(
   productCategories,
   ({ one }) => ({
@@ -211,6 +231,8 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   }),
   media: many(productMedia),
   ratings: many(productRatings),
+  productCollections: many(productCollections),
+  productCategories: many(productCategories),
 }));
 
 export const productRatingsRelations = relations(productRatings, ({ one }) => ({
@@ -239,6 +261,17 @@ export const productMediaRelations = relations(productMedia, ({ one }) => ({
   }),
 }));
 
+export const productCollectionsRelations = relations(productCollections, ({ one }) => ({
+  collection: one(storeCollections, {
+    fields: [productCollections.collectionId],
+    references: [storeCollections.id],
+  }),
+  product: one(products, {
+    fields: [productCollections.productId],
+    references: [products.id],
+  }),
+}));
+
 export type MediaObject = typeof mediaObjects.$inferSelect;
 export type NewMediaObject = typeof mediaObjects.$inferInsert;
 
@@ -249,3 +282,6 @@ export type ProductMedia = typeof productMedia.$inferSelect;
 export type NewProductMedia = typeof productMedia.$inferInsert;
 export type ProductRating = typeof productRatings.$inferSelect;
 export type NewProductRating = typeof productRatings.$inferInsert;
+
+export type ProductCollection = typeof productCollections.$inferSelect;
+export type NewProductCollection = typeof productCollections.$inferInsert;

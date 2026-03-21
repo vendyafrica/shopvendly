@@ -41,6 +41,7 @@ export type ProductTableRow = {
     thumbnailUrl?: string;
     thumbnailType?: string;
     salesAmount?: number;
+    category?: string;
 };
 
 // API functions
@@ -71,6 +72,7 @@ async function fetchProducts(storeId: string): Promise<ProductTableRow[]> {
         thumbnailUrl: p.media?.[0]?.blobUrl,
         thumbnailType: p.media?.[0]?.contentType || undefined,
         salesAmount: p.salesAmount ?? 0,
+        category: (p as any).productCollections?.[0]?.collection?.name || "Uncategorized",
     }));
 }
 

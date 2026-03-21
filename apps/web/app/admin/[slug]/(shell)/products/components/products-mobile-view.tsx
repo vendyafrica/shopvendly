@@ -128,9 +128,9 @@ interface ProductsMobileViewProps {
     bootstrap: TenantBootstrap | null;
     rows: ProductTableRow[];
     isLoading?: boolean;
-    onEdit: (id: string) => void;
+    onEdit?: (id: string) => void;
     onDelete: (id: string) => void;
-    onAddSelect: (mode: "single" | "multiple") => void;
+    onAddSelect?: (mode: "single" | "multiple") => void;
     onStatusChange?: (productId: string, newStatus: ProductTableRow["status"]) => void;
     statusUpdatingProductId?: string | null;
     isPublishing?: boolean;
@@ -166,6 +166,14 @@ export function ProductsMobileView({
 
     const storeName = bootstrap?.storeName || "My Store";
     const AdminHref = bootstrap?.storeSlug ? `/admin/${bootstrap.storeSlug}` : "/admin";
+
+    const handleAddProduct = () => {
+        router.push(`${AdminHref}/products/new`);
+    };
+
+    const handleEditProduct = (id: string) => {
+        router.push(`${AdminHref}/products/${id}`);
+    };
 
     return (
         <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden">
@@ -207,7 +215,7 @@ export function ProductsMobileView({
                         className="flex-1 rounded-md font-semibold text-xs"
                         variant="default"
                         size="sm"
-                        onClick={() => onAddSelect("single")}
+                        onClick={handleAddProduct}
                     >
                         Add Product
                     </Button>
@@ -292,21 +300,21 @@ export function ProductsMobileView({
                                     <div className="flex items-center gap-2">
                                         <label className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background px-2 py-1 text-[11px] font-medium text-foreground">
                                             <Checkbox
-                                                checked={selectedProduct.status === "active"}
-                                                disabled={selectedProduct.status === "active" || statusUpdatingProductId === selectedProduct.id}
+                                                checked={selectedProduct.status === "ready"}
+                                                disabled={selectedProduct.status === "ready" || statusUpdatingProductId === selectedProduct.id}
                                                 onCheckedChange={(checked) => {
                                                     if (!checked) return;
-                                                    if (selectedProduct.status === "active") return;
-                                                    onStatusChange?.(selectedProduct.id, "active");
+                                                    if (selectedProduct.status === "ready") return;
+                                                    onStatusChange?.(selectedProduct.id, "ready");
                                                     setSelectedProduct((prev) =>
-                                                        prev ? { ...prev, status: "active" } : null
+                                                        prev ? { ...prev, status: "ready" } : null
                                                     );
                                                 }}
                                             />
                                             <span>
                                                 {statusUpdatingProductId === selectedProduct.id
                                                     ? "Publishing..."
-                                                    : selectedProduct.status === "active"
+                                                    : selectedProduct.status === "ready"
                                                         ? "Published"
                                                         : "Publish"}
                                             </span>
@@ -322,7 +330,7 @@ export function ProductsMobileView({
                                     className="justify-start gap-3 h-[52px] text-sm font-semibold rounded-xl bg-muted/60 hover:bg-muted/80"
                                     onClick={() => {
                                         setSheetOpen(false);
-                                        setTimeout(() => onEdit(selectedProduct.id), 250);
+                                        setTimeout(() => handleEditProduct(selectedProduct.id), 250);
                                     }}
                                 >
                                     <HugeiconsIcon icon={Edit02Icon} className="size-[20px] text-foreground" />
@@ -346,4 +354,5 @@ export function ProductsMobileView({
             </Sheet>
         </div>
     );
+
 }

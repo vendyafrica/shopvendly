@@ -2,32 +2,41 @@
 
 import * as React from "react";
 import { DataTable } from "@/modules/admin/components/data-table";
-
 import type { ColumnDef } from "@tanstack/react-table";
-import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-keys";
-import { AddProductButton } from "./components/add-product-button";
 import { useTenant } from "@/modules/admin/context/tenant-context";
-import { useSearchParams } from "next/navigation";
-
+import Link from "next/link";
 import Image from "next/image";
+import { useParams } from "next/navigation";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { SparklesIcon, Loading03Icon, Edit02Icon, Delete02Icon, MoreHorizontalIcon, Package01Icon, ShoppingBag01Icon, AlertCircleIcon, FileEditIcon } from "@hugeicons/core-free-icons";
+import { 
+  SparklesIcon, 
+  Edit02Icon, 
+  Delete02Icon, 
+  MoreHorizontalIcon, 
+  Package01Icon, 
+  ShoppingBag01Icon, 
+  AlertCircleIcon, 
+  FileEditIcon, 
+  Tag01Icon, 
+  Download01Icon, 
+  Upload01Icon, 
+  Search01Icon, 
+  FilterIcon, 
+  Sorting05Icon,
+  Add01Icon,
+} from "@hugeicons/core-free-icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@shopvendly/ui/components/dropdown-menu";
-import { Card, CardContent } from "@shopvendly/ui/components/card";
-
-import { UploadModal } from "./components/upload-modal";
-import { EditProductModal } from "./components/edit-product-modal";
 import { ProductsMobileView } from "./components/products-mobile-view";
 import { Checkbox } from "@shopvendly/ui/components/checkbox";
-import { type EditableField, type DraftMap, type ProductEditingState } from "@/modules/admin/models";
+import { type EditableField, type DraftMap } from "@/modules/admin/models";
 
 import {
   useProducts,
@@ -37,13 +46,9 @@ import {
   type ProductTableRow,
   type ProductApiRow,
 } from "@/modules/products/hooks/use-products";
-import type { ProductVariantsInput } from "@/modules/products/lib/product-models";
 import { ProductsPageSkeleton } from "@/components/ui/page-skeletons";
 import { isLikelyVideoMedia } from "@/utils/misc";
 import { cn } from "@shopvendly/ui/lib/utils";
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 
 function formatMoney(amount: number, currency: string) {
   return new Intl.NumberFormat("en-KE", {
@@ -99,528 +104,114 @@ function ProductThumbnail({
 }
 
 export default function ProductsPage() {
-  const { bootstrap, error: bootstrapError } = useTenant();
-  const searchParams = useSearchParams();
-
-  const queryClient = useQueryClient();
-
-  // Use React Query for products with optimistic updates
-  const {
-    data: rows = [],
-    isLoading,
-    error: queryError,
-    refetch,
-  } = useProducts(bootstrap?.storeId);
-
-  const deleteProduct = useDeleteProduct(bootstrap?.storeId ?? "");
+  const { bootstrap } = useTenant();
+  const params = useParams();
+  const slug = params.slug as string;
   const { invalidate } = useInvalidateProducts();
 
   const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({});
-  const [isPublishing, setIsPublishing] = React.useState(false);
-
-  const [uploadModalOpen, setUploadModalOpen] = React.useState(false);
-  const [editModalOpen, setEditModalOpen] = React.useState(false);
-  // Type compatible with EditProductModal's Product interface
-  const [editingProduct, setEditingProduct] = React.useState<ProductEditingState | null>(null);
-  const [drafts, setDrafts] = React.useState<DraftMap>({});
   const [activeCell, setActiveCell] = React.useState<{ id: string; field: EditableField } | null>(null);
-  const [uploadMode, setUploadMode] = React.useState<"single" | "multiple">("single");
-  const [handledQuickAdd, setHandledQuickAdd] = React.useState(false);
-  const [isEditingId, setIsEditingId] = React.useState<string | null>(null);
+  const [drafts, setDrafts] = React.useState<DraftMap>({});
   const [mobileStatusUpdatingId, setMobileStatusUpdatingId] = React.useState<string | null>(null);
 
+  const { data: rows = [], isLoading, error: queryError, refetch } = useProducts(bootstrap?.storeId);
+  const deleteProductMutation = useDeleteProduct(bootstrap?.storeId ?? "");
   const updateProductMutation = useUpdateProduct(bootstrap?.storeId ?? "");
 
-  React.useEffect(() => {
-    const quickAdd = searchParams.get("quickAdd");
-    if (quickAdd && !handledQuickAdd) {
-      setUploadMode("single");
-      setUploadModalOpen(true);
-      setHandledQuickAdd(true);
-      // Stay on current page; no redirect to products list
-    }
-  }, [handledQuickAdd, searchParams]);
-
-  // Optimistic delete - removes instantly from UI
   const handleDelete = async (id: string) => {
-    // This will optimistically remove the product from the list
-    deleteProduct.mutate(id, {
+    deleteProductMutation.mutate(id, {
       onError: (error) => {
         alert(error instanceof Error ? error.message : "Failed to delete product");
       },
     });
   };
 
-  const handleEdit = async (id: string) => {
+  const handleDraftChange = (product: ProductTableRow, field: EditableField, value: string) => {
+    setDrafts((prev) => ({
+      ...prev,
+      [product.id]: {
+        ...prev[product.id],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleInlineSave = async (id: string) => {
+    const draft = drafts[id];
+    if (!draft) {
+      setActiveCell(null);
+      return;
+    }
+
+    const payload: Partial<ProductApiRow> = {};
+    if (draft.name !== undefined) payload.productName = draft.name;
+    if (draft.priceAmount !== undefined) payload.priceAmount = Number(draft.priceAmount);
+    if (draft.quantity !== undefined) payload.quantity = Number(draft.quantity);
+
     try {
-      setIsEditingId(id);
-      const res = await fetch(`/api/products/${id}`);
-      if (!res.ok) throw new Error("Failed to load product");
-      const product = (await res.json()) as ProductApiRow;
-      // Convert null to undefined for fields to match modal's expected type
-      setEditingProduct({
-        id: product.id,
-        productName: product.productName,
-        description: product.description ?? undefined,
-        priceAmount: product.priceAmount,
-        originalPriceAmount: product.originalPriceAmount ?? null,
-        currency: product.currency,
-        quantity: product.quantity,
-        status: product.status,
-        collectionIds: product.collectionIds,
-        variants: product.variants ?? null,
-        media: product.media?.map((m) => ({
-          blobUrl: m.blobUrl,
-          contentType: m.contentType ?? undefined,
-          blobPathname: m.blobPathname ?? undefined,
-        })),
-      });
-      setEditModalOpen(true);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to load product");
-    } finally {
-      setIsEditingId(null);
-    }
-  };
-
-  const updateProductCache = React.useCallback(
-    (storeId: string, product: ProductApiRow) => {
-      const newRow: ProductTableRow = {
-        id: product.id,
-        name: product.productName,
-        slug: product.slug,
-        description: product.description,
-        priceAmount: product.priceAmount,
-        originalPriceAmount: product.originalPriceAmount ?? null,
-        currency: product.currency,
-        quantity: product.quantity,
-        status: product.status,
-        thumbnailUrl: product.media?.[0]?.blobUrl,
-        thumbnailType: product.media?.[0]?.contentType || undefined,
-        salesAmount: product.salesAmount ?? 0,
-      };
-
-      // Updates cache if it exists, otherwise we'll rely on invalidate
-      queryClient.setQueryData<ProductTableRow[]>(
-        queryKeys.products.list(storeId),
-        (old) => {
-          if (!old) return [newRow];
-          const exists = old.find((p) => p.id === newRow.id);
-          if (exists) {
-            return old.map((p) => (p.id === newRow.id ? newRow : p));
-          }
-          return [newRow, ...old];
-        }
-      );
-    },
-    [queryClient]
-  );
-
-  const handleCreateProduct = async (
-    data: {
-      productName: string;
-      description: string;
-      priceAmount: number;
-      originalPriceAmount?: number | null;
-      currency: string;
-      quantity: number;
-      collectionIds?: string[];
-      variants?: ProductVariantsInput | null;
-    },
-    media: { url: string; pathname: string; contentType: string }[]
-  ) => {
-    if (!bootstrap?.storeId) return;
-
-    // 1. Optimistic Update
-    const tempId = `temp-${Date.now()}`;
-    const optimisticProduct: ProductApiRow = {
-      id: tempId,
-      storeId: bootstrap.storeId,
-      productName: data.productName,
-      slug: data.productName.toLowerCase().replace(/\s+/g, "-"),
-      description: data.description,
-      priceAmount: data.priceAmount,
-      originalPriceAmount: data.originalPriceAmount ?? null,
-      currency: data.currency,
-      quantity: data.quantity,
-      status: "ready",
-      media: media.map((m) => ({ ...m, blobUrl: m.url, blobPathname: m.pathname })),
-      variants: data.variants ?? null,
-      salesAmount: 0,
-    };
-
-    updateProductCache(bootstrap.storeId, optimisticProduct);
-
-    // 2. API Call in Background
-    try {
-      const response = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          storeId: bootstrap.storeId,
-          title: data.productName,
-          description: data.description,
-          priceAmount: data.priceAmount,
-          originalPriceAmount: data.originalPriceAmount,
-          currency: data.currency,
-          quantity: data.quantity,
-          source: "manual",
-          status: "ready",
-          media,
-          collectionIds: data.collectionIds,
-          variants: data.variants,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create product");
-      }
-
-      const newProduct = (await response.json()) as ProductApiRow;
-
-      // 3. Replace Optimistic with Real
-      queryClient.setQueryData<ProductTableRow[]>(
-        queryKeys.products.list(bootstrap.storeId),
-        (old) =>
-          old?.map((p) =>
-            p.id === tempId
-              ? {
-                  id: newProduct.id,
-                  name: newProduct.productName,
-                  slug: newProduct.slug,
-                  description: newProduct.description,
-                  priceAmount: newProduct.priceAmount,
-                  originalPriceAmount: newProduct.originalPriceAmount ?? null,
-                  currency: newProduct.currency,
-                  quantity: newProduct.quantity,
-                  status: newProduct.status,
-                  thumbnailUrl: newProduct.media?.[0]?.blobUrl,
-                  thumbnailType: newProduct.media?.[0]?.contentType || undefined,
-                  salesAmount: newProduct.salesAmount ?? 0,
-                }
-              : p
-          ) ?? []
-      );
-
-      // Force sync to be safe
-      invalidate(bootstrap.storeId);
-    } catch (error) {
-      console.error(error);
-      alert("Failed to create product in background. Please refresh.");
-      // Rollback
-      queryClient.setQueryData<ProductTableRow[]>(
-        queryKeys.products.list(bootstrap.storeId),
-        (old) => old?.filter((p) => p.id !== tempId) ?? []
-      );
-    }
-  };
-
-  const handleProductUpdated = async (product?: ProductApiRow) => {
-    if (bootstrap?.storeId) {
-      if (product) {
-        updateProductCache(bootstrap.storeId, product);
-      }
-      await refetch();
-      invalidate(bootstrap.storeId);
-    }
-  };
-
-  const handleDraftChange = React.useCallback(
-    (product: ProductTableRow, field: EditableField, value: string) => {
-      setDrafts((prev) => {
-        const next = { ...prev } as DraftMap;
-        const baseline =
-          field === "name"
-            ? product.name
-            : field === "priceAmount"
-              ? product.priceAmount.toString()
-              : product.quantity.toString();
-
-        if (value === baseline) {
-          const productDraft = next[product.id];
-          if (productDraft) {
-            delete productDraft[field];
-            if (Object.keys(productDraft).length === 0) {
-              delete next[product.id];
-            }
-          }
-          return next;
-        }
-
-        next[product.id] = {
-          ...next[product.id],
-          [field]: value,
-        };
-        return next;
-      });
-    },
-    []
-  );
-
-  const hasInvalidDraft = React.useCallback((draft?: Partial<Record<EditableField, string>>) => {
-    if (!draft) return false;
-    if (draft.name !== undefined && draft.name.trim() === "") return true;
-    if (draft.priceAmount !== undefined) {
-      const trimmed = draft.priceAmount.trim();
-      if (trimmed === "" || Number.isNaN(Number(trimmed))) return true;
-    }
-    if (draft.quantity !== undefined) {
-      const trimmed = draft.quantity.trim();
-      if (trimmed === "" || Number.isNaN(Number(trimmed))) return true;
-    }
-    return false;
-  }, []);
-
-  const handleInlineSave = React.useCallback(
-    (productId: string) => {
-      if (!UUID_REGEX.test(productId)) {
-        alert("This product is still syncing. Please try again in a moment.");
-        if (bootstrap?.storeId) {
-          invalidate(bootstrap.storeId);
-        }
-        return;
-      }
-
-      const draft = drafts[productId];
-      if (!draft) {
-        setActiveCell(null);
-        return;
-      }
-
-      if (hasInvalidDraft(draft)) {
-        alert("Please enter valid values before saving.");
-        return;
-      }
-
-      const payload: Partial<ProductApiRow> = {};
-      if (draft.name !== undefined) {
-        const trimmed = draft.name.trim();
-        if (trimmed) {
-          payload.productName = trimmed;
-        }
-      }
-      if (draft.priceAmount !== undefined) {
-        payload.priceAmount = Number(draft.priceAmount);
-      }
-      if (draft.quantity !== undefined) {
-        payload.quantity = Number(draft.quantity);
-      }
-
-      if (Object.keys(payload).length === 0) {
-        return;
-      }
-
-      const draftSnapshot = draft;
-
-      // Optimistic local UX: exit edit mode immediately while the mutation runs.
+      await updateProductMutation.mutateAsync({ id, data: payload });
       setDrafts((prev) => {
         const next = { ...prev };
-        delete next[productId];
+        delete next[id];
         return next;
       });
-      setActiveCell(null);
-
-      updateProductMutation.mutate(
-        { id: productId, data: payload },
-        {
-          onSuccess: (updatedProduct) => {
-            if (bootstrap?.storeId && updatedProduct) {
-              updateProductCache(bootstrap.storeId, updatedProduct);
-            }
-          },
-          onError: (error) => {
-            setDrafts((prev) => ({
-              ...prev,
-              [productId]: {
-                ...prev[productId],
-                ...draftSnapshot,
-              },
-            }));
-            alert(error instanceof Error ? error.message : "Failed to save product");
-          },
-        }
-      );
-    },
-    [bootstrap?.storeId, drafts, hasInvalidDraft, invalidate, updateProductMutation, updateProductCache]
-  );
-
-  const handleAddProductSelect = React.useCallback((mode: "single" | "multiple") => {
-    // ...
-    setUploadMode(mode);
-    setUploadModalOpen(true);
-  }, []);
-
-  const handleMobileStatusChange = React.useCallback(
-    (productId: string, newStatus: ProductTableRow["status"]) => {
-      if (!UUID_REGEX.test(productId)) {
-        alert("This product is still syncing. Please try again in a moment.");
-        if (bootstrap?.storeId) {
-          invalidate(bootstrap.storeId);
-        }
-        return;
-      }
-
-      setMobileStatusUpdatingId(productId);
-
-      updateProductMutation.mutate(
-        { id: productId, data: { status: newStatus } },
-        {
-          onSuccess: (updatedProduct) => {
-            if (bootstrap?.storeId && updatedProduct) {
-              updateProductCache(bootstrap.storeId, updatedProduct);
-            }
-          },
-          onError: (error) => {
-            alert(error instanceof Error ? error.message : "Failed to update product status");
-          },
-          onSettled: () => {
-            setMobileStatusUpdatingId((current) =>
-              current === productId ? null : current
-            );
-            if (bootstrap?.storeId) {
-              invalidate(bootstrap.storeId);
-            }
-          },
-        }
-      );
-    },
-    [bootstrap?.storeId, invalidate, updateProductMutation, updateProductCache]
-  );
-
-  const selectedIds = React.useMemo(() => Object.keys(rowSelection), [rowSelection]);
-
-  const handlePublishSelected = React.useCallback(async () => {
-    if (selectedIds.length === 0) return;
-
-    // Optimistic Update
-    const previousProducts = queryClient.getQueryData<ProductTableRow[]>(
-      queryKeys.products.list(bootstrap?.storeId || "")
-    );
-
-    queryClient.setQueryData<ProductTableRow[]>(
-      queryKeys.products.list(bootstrap?.storeId || ""),
-      (old) =>
-        old?.map((p) =>
-          selectedIds.includes(p.id) ? { ...p, status: "active" } : p
-        ) ?? []
-    );
-
-    setIsPublishing(true);
-
-    try {
-      if (!bootstrap?.storeId) {
-        throw new Error("Store context missing");
-      }
-
-      const res = await fetch("/api/products/bulk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storeId: bootstrap.storeId, ids: selectedIds, action: "publish" }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.error || "Publish failed");
-      }
-      if (bootstrap?.storeId) {
-        invalidate(bootstrap.storeId);
-      }
-      setRowSelection({});
-    } catch (err) {
-      // Revert optimistic update
-      if (bootstrap?.storeId) {
-        queryClient.setQueryData(
-          queryKeys.products.list(bootstrap.storeId),
-          previousProducts
-        );
-      }
-      alert(err instanceof Error ? err.message : "Publish failed");
+    } catch (e) {
+      console.error("Failed to update product", e);
     } finally {
-      setIsPublishing(false);
-    }
-  }, [bootstrap?.storeId, invalidate, selectedIds, queryClient]);
-
-  React.useEffect(() => {
-    // Clear selections for rows that no longer exist
-    const existingIds = new Set(rows.map((r) => r.id));
-    setRowSelection((prev) => {
-      let changed = false;
-      const next: Record<string, boolean> = {};
-      Object.entries(prev).forEach(([id, value]) => {
-        if (value && existingIds.has(id)) {
-          next[id] = true;
-        } else {
-          changed = true;
-        }
-      });
-      // If nothing changed, return prev to avoid unnecessary rerenders
-      if (!changed && Object.keys(prev).length === Object.keys(next).length) {
-        return prev;
-      }
-      return next;
-    });
-  }, [rows]);
-
-  const toggleAll = (checked: boolean) => {
-    if (checked) {
-      const next: Record<string, boolean> = {};
-      rows.forEach((r) => {
-        next[r.id] = true;
-      });
-      setRowSelection(next);
-    } else {
-      setRowSelection({});
+      setActiveCell(null);
     }
   };
 
-  const toggleOne = (id: string, checked: boolean) => {
-    setRowSelection((prev) => {
-      const next = { ...prev };
-      if (checked) next[id] = true;
-      else delete next[id];
-      return next;
-    });
+  const handleMobileStatusChange = async (id: string, status: "ready" | "draft" | "active" | "sold-out") => {
+    setMobileStatusUpdatingId(id);
+    try {
+      if (!bootstrap?.storeId) return;
+      await updateProductMutation.mutateAsync({ id, data: { status } });
+      invalidate(bootstrap.storeId);
+    } catch (e) {
+      console.error("Failed to update status", e);
+    } finally {
+      setMobileStatusUpdatingId(null);
+    }
   };
 
   const columns: ColumnDef<ProductTableRow>[] = [
     {
       id: "select",
-      header: () => (
+      header: ({ table }) => (
         <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
-          checked={selectedIds.length > 0 && selectedIds.length === rows.length}
-          indeterminate={selectedIds.length > 0 && selectedIds.length < rows.length}
-          onCheckedChange={(checked) => toggleAll(Boolean(checked))}
+          className="translate-y-[2px]"
         />
       ),
       cell: ({ row }) => (
         <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"
-          checked={rowSelection[row.original.id]}
-          onCheckedChange={(checked) => toggleOne(row.original.id, Boolean(checked))}
+          className="translate-y-[2px]"
         />
       ),
       size: 40,
       enableSorting: false,
+      enableHiding: false,
     },
     {
       accessorKey: "name",
       header: "Product",
-      size: 240,
+      size: 300,
       cell: ({ row }) => {
         const product = row.original;
         const field: EditableField = "name";
-        const isEditing = activeCell?.id === product.id && activeCell.field === field;
-        const value = drafts[product.id]?.[field] ?? product.name;
+        const isEditing = activeCell?.id === product.id && activeCell?.field === field;
+        const value = drafts[product.id]?.[field] ?? (product.name as string);
 
         return (
-          <div className="flex max-w-[240px] items-center gap-3 min-w-0">
-            <div className="relative size-10 overflow-hidden rounded-md bg-muted shrink-0">
-              <ProductThumbnail
-                url={product.thumbnailUrl}
-                name={product.name}
-                contentType={product.thumbnailType}
-              />
+          <div className="flex items-center gap-3">
+            <div className="relative aspect-square size-10 shrink-0 overflow-hidden rounded-md border bg-muted/40 group-hover:bg-muted/60 transition-colors">
+              <ProductThumbnail url={product.thumbnailUrl} name={product.name} contentType={product.thumbnailType} />
             </div>
             <div className="min-w-0 flex-1">
               {isEditing ? (
@@ -638,7 +229,6 @@ export default function ProductsPage() {
                       setDrafts((prev) => {
                         const next = { ...prev };
                         delete next[product.id];
-
                         return next;
                       });
                       setActiveCell(null);
@@ -647,14 +237,21 @@ export default function ProductsPage() {
                   className="h-9 border-0 bg-transparent px-0 font-semibold shadow-none focus-visible:ring-0"
                 />
               ) : (
-                <button
-                  type="button"
-                  onClick={() => setActiveCell({ id: product.id, field })}
-                  className="group flex items-center gap-1.5 text-left hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors w-full"
-                >
-                  <span className="truncate">{value}</span>
-                  <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity shrink-0" />
-                </button>
+                <div className="group flex items-center gap-1.5 text-left p-1 -ml-1 rounded-md transition-colors w-full">
+                  <Link 
+                    href={`/admin/${slug}/products/${product.id}`}
+                    className="truncate hover:underline font-semibold text-foreground decoration-primary/30"
+                  >
+                    {value}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setActiveCell({ id: product.id, field })}
+                    className="inline-flex items-center"
+                  >
+                    <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity shrink-0" />
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -662,318 +259,284 @@ export default function ProductsPage() {
       },
     },
     {
-      id: "price",
+      id: "category",
+      header: "Category",
+      size: 130,
+      cell: ({ row }) => (
+        <span className="text-xs text-muted-foreground bg-muted/20 px-2 py-1 rounded-full border border-border/40">
+          {row.original.category || "Uncategorized"}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "price",
       header: "Price",
       size: 120,
       cell: ({ row }) => {
         const product = row.original;
         const field: EditableField = "priceAmount";
-        const isEditing = activeCell?.id === product.id && activeCell.field === field;
-        const value = drafts[product.id]?.[field] ?? product.priceAmount.toString();
+        const isEditing = activeCell?.id === product.id && activeCell?.field === field;
+        const value = drafts[product.id]?.[field] ?? (product.priceAmount as number);
 
-        return isEditing ? (
-          <Input
-            autoFocus
-            type="text"
-            inputMode="decimal"
-            value={value}
-            onChange={(event) => handleDraftChange(product, field, event.target.value)}
-            onBlur={() => handleInlineSave(product.id)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                handleInlineSave(product.id);
-              }
-              if (event.key === "Escape") {
-                setDrafts((prev) => {
-                  const next = { ...prev };
-                  delete next[product.id];
-
-                  return next;
-                });
-                setActiveCell(null);
-              }
-            }}
-            className="h-9 w-24 border-0 bg-transparent px-0 text-sm font-medium shadow-none focus-visible:ring-0"
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={() => setActiveCell({ id: product.id, field })}
-            className="group flex items-center gap-1.5 text-sm font-medium whitespace-nowrap hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors"
-          >
-            <span>{value}</span>
-            <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity" />
-          </button>
+        return (
+          <div className="group flex items-center gap-1.5 text-left transition-colors h-9">
+            {isEditing ? (
+              <Input
+                autoFocus
+                type="number"
+                value={value}
+                onChange={(event) => handleDraftChange(product, field, event.target.value)}
+                onBlur={() => handleInlineSave(product.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") handleInlineSave(product.id);
+                  if (event.key === "Escape") setActiveCell(null);
+                }}
+                className="h-8 w-24 px-1.5 py-0 border bg-background text-xs"
+              />
+            ) : (
+              <>
+                <span className="font-medium text-sm tabular-nums">
+                  {formatMoney(Number(value), product.currency)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveCell({ id: product.id, field })}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <HugeiconsIcon icon={Edit02Icon} className="size-3 text-muted-foreground" />
+                </button>
+              </>
+            )}
+          </div>
         );
       },
     },
     {
-      id: "inventory",
+      accessorKey: "quantity",
       header: "Inventory",
-      size: 90,
+      size: 120,
       cell: ({ row }) => {
         const product = row.original;
         const field: EditableField = "quantity";
-        const isEditing = activeCell?.id === product.id && activeCell.field === field;
-        const value = drafts[product.id]?.[field] ?? product.quantity.toString();
+        const isEditing = activeCell?.id === product.id && activeCell?.field === field;
+        const value = drafts[product.id]?.[field] ?? (product.quantity as number);
 
-        return isEditing ? (
-          <Input
-            autoFocus
-            type="text"
-            inputMode="numeric"
-            value={value}
-            onChange={(event) => handleDraftChange(product, field, event.target.value)}
-            onBlur={() => handleInlineSave(product.id)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                handleInlineSave(product.id);
-              }
-              if (event.key === "Escape") {
-                setDrafts((prev) => {
-                  const next = { ...prev };
-                  delete next[product.id];
-                  return next;
-                });
-                setActiveCell(null);
-              }
-            }}
-            className="h-9 w-16 border-0 bg-transparent px-0 text-sm font-medium shadow-none focus-visible:ring-0"
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={() => setActiveCell({ id: product.id, field })}
-            className="group flex items-center gap-1.5 text-sm font-medium whitespace-nowrap hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors"
-          >
-            <span>{value}</span>
-            <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity" />
-          </button>
+        return (
+          <div className="group flex items-center gap-1.5 text-left transition-colors h-9">
+            {isEditing ? (
+              <Input
+                autoFocus
+                type="number"
+                value={value}
+                onChange={(event) => handleDraftChange(product, field, event.target.value)}
+                onBlur={() => handleInlineSave(product.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") handleInlineSave(product.id);
+                  if (event.key === "Escape") setActiveCell(null);
+                }}
+                className="h-8 w-16 px-1.5 py-0 border bg-background text-xs"
+              />
+            ) : (
+              <>
+                <span className={cn(
+                  "text-sm font-medium tabular-nums",
+                  Number(value) <= 5 ? "text-amber-600" : "text-muted-foreground"
+                )}>
+                  {value} in stock
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveCell({ id: product.id, field })}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <HugeiconsIcon icon={Edit02Icon} className="size-3 text-muted-foreground" />
+                </button>
+              </>
+            )}
+          </div>
         );
       },
     },
     {
-      id: "sales",
-      header: "Sales",
-      size: 90,
+      accessorKey: "status",
+      header: "Status",
+      size: 100,
       cell: ({ row }) => (
-        <span className="text-sm font-semibold whitespace-nowrap">
-          {formatMoney(row.original.salesAmount ?? 0, row.original.currency)}
+        <span className={cn(
+          "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+          row.original.status === "ready" ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20" :
+            row.original.status === "draft" ? "border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20" :
+              "border-slate-200 bg-slate-50 text-slate-700 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20"
+        )}>
+          {row.original.status}
         </span>
       ),
     },
-    {
-      id: "actions",
-      header: "Actions",
-      size: 72,
-      cell: ({ row }) => {
-        const product = row.original;
-
-        return (
-          <div className="flex items-center justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
-                disabled={deleteProduct.isPending}
-                aria-label="Product actions"
-              >
-                <HugeiconsIcon icon={MoreHorizontalIcon} className="size-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-36">
-                <DropdownMenuItem onClick={() => handleEdit(product.id)}>
-                  <HugeiconsIcon icon={Edit02Icon} className="size-4" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => handleDelete(product.id)}
-                >
-                  <HugeiconsIcon icon={Delete02Icon} className="size-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        );
-      },
-    },
   ];
 
-  const error = queryError?.message ?? null;
-  const totalProducts = rows.length;
-  const activeCount = rows.filter((p) => p.status === "active" || p.status === "ready").length;
-  const draftCount = rows.filter((p) => p.status === "draft").length;
-  const lowStockCount = rows.filter((p) => p.quantity > 0 && p.quantity < 5).length;
-
-  const statSegments = [
-    {
-      label: "Total Products",
-      value: totalProducts.toLocaleString(),
-      changeLabel: "",
-      changeTone: "neutral" as const,
-    },
-    {
-      label: "Active",
-      value: activeCount.toLocaleString(),
-      changeLabel: "",
-      changeTone: "neutral" as const,
-    },
-    {
-      label: "Low Stock",
-      value: lowStockCount.toLocaleString(),
-      changeLabel: "",
-      changeTone: "neutral" as const,
-    },
-    {
-      label: "Drafts",
-      value: draftCount.toLocaleString(),
-      changeLabel: "",
-      changeTone: "neutral" as const,
-    },
-  ];
-
-  if (isLoading) {
+  if (isLoading && rows.length === 0) {
     return <ProductsPageSkeleton />;
   }
 
+  const error = queryError?.message ?? null;
+
   return (
-    <div className="md:p-6 p-0">
-      {/* Mobile View */}
-      <div className="block md:hidden">
-        {isEditingId && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">
-            <div className="flex flex-col items-center gap-2">
-              <HugeiconsIcon icon={Loading03Icon} className="size-8 animate-spin text-primary" />
-              <span className="text-sm font-medium text-foreground">Loading product...</span>
+    <div className="flex-1 space-y-4 px-4 py-4 md:px-8 md:py-6">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="rounded-lg bg-primary/10 p-2 text-primary">
+              <HugeiconsIcon icon={Tag01Icon} className="size-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">Products</h1>
+              <p className="hidden text-xs text-muted-foreground sm:block">
+                Manage your store inventory and availability.
+              </p>
             </div>
           </div>
-        )}
-        <ProductsMobileView
-          bootstrap={bootstrap}
-          rows={rows}
-          isLoading={isLoading}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onAddSelect={handleAddProductSelect}
-          onStatusChange={handleMobileStatusChange}
-          statusUpdatingProductId={mobileStatusUpdatingId}
-          isPublishing={isPublishing}
-        />
-      </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-muted/40 rounded-lg p-0.5 border border-border/40">
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs font-semibold hover:bg-background/80 transition-all">
+                <HugeiconsIcon icon={Download01Icon} className="size-3.5" />
+                Export
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs font-semibold hover:bg-background/80 transition-all">
+                <HugeiconsIcon icon={Upload01Icon} className="size-3.5" />
+                Import
+              </Button>
+            </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs font-semibold px-3 group">
+                   More actions
+                   <HugeiconsIcon icon={MoreHorizontalIcon} className="size-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem>
+                  <HugeiconsIcon icon={SparklesIcon} className="mr-2 size-4 text-primary" />
+                  AI Auto-Categorize
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="text-destructive"
+                  onClick={() => {
+                    const selected = Object.keys(rowSelection);
+                    if (selected.length === 0) return;
+                    if (confirm(`Are you sure you want to delete ${selected.length} products?`)) {
+                       selected.forEach(id => handleDelete(id));
+                       setRowSelection({});
+                    }
+                  }}
+                >
+                  <HugeiconsIcon icon={Delete02Icon} className="mr-2 size-4" />
+                  Delete Selected
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-      {/* Desktop View */}
-      <div className="hidden md:block space-y-8 overflow-hidden min-w-0">
-        {bootstrapError && (
-          <div className="bg-destructive/10 text-destructive p-4 rounded-md">{bootstrapError}</div>
-        )}
-        {error && (
-          <div className="bg-destructive/10 text-destructive p-4 rounded-md">{error}</div>
-        )}
-
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between border-b border-border/40 pb-6">
-          <div className="space-y-1">
-            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">Products</h1>
-            <p className="text-base text-muted-foreground/80 font-medium">Manage your inventory and optimize your sales performance.</p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-            <Button
-              variant="outline"
-              disabled={selectedIds.length === 0 || isPublishing}
-              onClick={handlePublishSelected}
-              className="h-11 px-6 border-border/60 hover:bg-muted/50 transition-all font-medium"
-            >
-              {isPublishing ? "Publishing..." : (
-                <span className="inline-flex items-center gap-2">
-                  <HugeiconsIcon icon={SparklesIcon} size={18} className="text-amber-500" />
-                  Publish
-                </span>
-              )}
-            </Button>
-            <AddProductButton
-              onSelect={handleAddProductSelect}
-            />
+            <Link href={`/admin/${slug}/products/new`}>
+              <Button size="sm" className="h-8 gap-1.5 bg-foreground text-xs font-bold text-background hover:bg-foreground/90 shadow-sm">
+                <HugeiconsIcon icon={Add01Icon} className="size-4" />
+                Add product
+              </Button>
+            </Link>
           </div>
         </div>
 
-        {/* Improved Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Compact Stats Cards */}
+        <div className="flex gap-4 overflow-x-auto no-scrollbar py-1">
           {[
-            { label: "Total Products", value: totalProducts, icon: Package01Icon, color: "text-blue-500", bg: "bg-blue-500/10" },
-            { label: "Active Items", value: activeCount, icon: ShoppingBag01Icon, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-            { label: "Low Stock", value: lowStockCount, icon: AlertCircleIcon, color: lowStockCount > 0 ? "text-rose-500" : "text-slate-400", bg: lowStockCount > 0 ? "bg-rose-500/10" : "bg-slate-400/10" },
-            { label: "Drafts", value: draftCount, icon: FileEditIcon, color: "text-amber-500", bg: "bg-amber-500/10" },
+            { label: "Total", value: rows.length, icon: Package01Icon, color: "text-primary", bg: "bg-primary/10" },
+            { label: "Active", value: rows.filter(r => r.status === "ready").length, icon: ShoppingBag01Icon, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+            { label: "Drafts", value: rows.filter(r => r.status === "draft").length, icon: FileEditIcon, color: "text-slate-600", bg: "bg-slate-500/10" },
+            { label: "Low Stock", value: rows.filter(r => r.quantity <= 5).length, icon: AlertCircleIcon, color: "text-amber-600", bg: "bg-amber-500/10" }
           ].map((stat, i) => (
-            <Card key={i} className="group overflow-hidden border-border/50 hover:border-primary/20 hover:shadow-md transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className={cn("inline-flex p-2.5 rounded-xl transition-transform group-hover:scale-110 duration-300", stat.bg)}>
-                    <HugeiconsIcon icon={stat.icon} size={22} className={stat.color} />
-                  </div>
-                  <div className="text-2xl font-bold tracking-tight">{stat.value.toLocaleString()}</div>
+             <div key={i} className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-border/40 bg-card/50 min-w-fit shadow-sm">
+                <div className={cn("p-1.5 rounded-md", stat.bg, stat.color)}>
+                   <HugeiconsIcon icon={stat.icon} className="size-3.5" />
                 </div>
-                <div className="mt-4">
-                  <p className="text-sm font-semibold text-muted-foreground/70 uppercase tracking-wider">{stat.label}</p>
+                <div className="flex flex-col">
+                   <span className="text-[10px] font-medium text-muted-foreground uppercase leading-tight tracking-wider">{stat.label}</span>
+                   <span className="text-sm font-bold leading-none">{stat.value}</span>
                 </div>
-              </CardContent>
-            </Card>
+             </div>
           ))}
         </div>
-
-        <div className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden min-w-0 transition-all hover:bg-card">
-          <div className="p-1">
-            {isLoading ? (
-              <div className="space-y-3 p-4">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="flex items-center gap-4 rounded-xl border border-dashed border-border/40 p-4 bg-muted/20">
-                    <div className="size-12 bg-muted rounded-lg animate-pulse shrink-0" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-muted rounded w-1/4 animate-pulse" />
-                      <div className="h-3 bg-muted rounded w-32 animate-pulse" />
-                    </div>
-                    <div className="h-4 bg-muted rounded w-16 animate-pulse shrink-0" />
-                    <div className="h-5 bg-muted rounded w-20 animate-pulse shrink-0" />
-                    <div className="size-9 bg-muted rounded-lg animate-pulse shrink-0" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-2">
-                <DataTable
-                  className="table-fixed"
-                  columns={columns}
-                  data={rows}
-                  rowSelection={rowSelection}
-                  onRowSelectionChange={(updater) => {
-                    setRowSelection((prev) =>
-                      typeof updater === "function" ? updater(prev) : updater
-                    );
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
-      <UploadModal
-        open={uploadModalOpen}
-        onOpenChange={setUploadModalOpen}
-        tenantId={bootstrap?.tenantId || ""}
-        storeId={bootstrap?.storeId || ""}
-        onCreate={handleCreateProduct}
-        mode={uploadMode}
-      />
+      <div className="mt-2 flex flex-col gap-4">
+        {error && (
+          <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive border border-destructive/25 flex items-center gap-3">
+            <HugeiconsIcon icon={AlertCircleIcon} className="size-5 shrink-0" />
+            <div>
+              <p className="font-semibold">Error loading products</p>
+              <p className="text-xs opacity-80">{error}</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="ml-auto">
+              Retry
+            </Button>
+          </div>
+        )}
 
-      <EditProductModal
-        product={editingProduct}
-        open={editModalOpen}
-        onOpenChange={setEditModalOpen}
-        tenantId={bootstrap?.tenantId || ""}
-        storeId={bootstrap?.storeId || ""}
-        onProductUpdated={handleProductUpdated}
-      />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-muted/30 p-1 rounded-lg border border-border/40">
+           <div className="flex items-center gap-1 w-full sm:w-auto overflow-x-auto no-scrollbar">
+              <Button variant="ghost" size="sm" className="h-8 text-xs font-semibold bg-background shadow-sm border border-border/60">
+                All
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 text-xs font-semibold hover:bg-background/50">
+                Active
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 text-xs font-semibold hover:bg-background/50">
+                Ready
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 text-xs font-semibold hover:bg-background/50">
+                Sold Out
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 px-2">
+                <HugeiconsIcon icon={Add01Icon} className="size-3.5" />
+              </Button>
+           </div>
+           
+           <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-64">
+                <HugeiconsIcon icon={Search01Icon} className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                <Input 
+                  placeholder="Search products..." 
+                  className="h-8 pl-8 text-xs border-0 bg-transparent focus-visible:ring-0 shadow-none w-full" 
+                />
+              </div>
+              <div className="h-4 w-px bg-border/60 mx-1 hidden sm:block" />
+              <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground">
+                <HugeiconsIcon icon={Sorting05Icon} className="size-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground">
+                <HugeiconsIcon icon={FilterIcon} className="size-4" />
+              </Button>
+           </div>
+        </div>
+
+        <DataTable
+          columns={columns}
+          data={rows}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
+          className="border-none shadow-none"
+        />
+
+        <div className="md:hidden">
+          <ProductsMobileView
+            bootstrap={bootstrap}
+            rows={rows}
+            onDelete={handleDelete}
+            onStatusChange={handleMobileStatusChange}
+            statusUpdatingProductId={mobileStatusUpdatingId}
+            isPublishing={false}
+          />
+        </div>
+      </div>
     </div>
   );
 }

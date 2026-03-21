@@ -165,6 +165,11 @@ export const productRepo = {
           orderBy: (m, { asc }) => [asc(m.sortOrder)],
           limit: 1,
         },
+        productCollections: {
+          with: {
+            collection: true,
+          },
+        },
       },
       orderBy: [desc(products.createdAt)],
       limit,

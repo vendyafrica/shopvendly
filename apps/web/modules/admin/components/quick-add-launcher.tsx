@@ -9,9 +9,8 @@ import {
   Loading03Icon,
   Share01Icon,
 } from "@hugeicons/core-free-icons";
-import { UploadModal } from "@/app/admin/[slug]/(shell)/products/components/upload-modal";
 import { useTenant } from "@/modules/admin/context/tenant-context";
-import { useInvalidateProducts } from "@/modules/products/hooks/use-products";
+import { useRouter } from "next/navigation";
 import { Button } from "@shopvendly/ui/components/button";
 import {
   Dialog,
@@ -352,58 +351,13 @@ export function QuickAddLauncher({
   shareAction,
 }: QuickAddLauncherProps) {
   const { bootstrap } = useTenant();
-  const tenantId = tenantIdProp || bootstrap?.tenantId || "";
-  const storeId = bootstrap?.storeId;
+  const router = useRouter();
   const storeSlug = bootstrap?.storeSlug;
-  const { invalidate } = useInvalidateProducts();
 
-  const [open, setOpen] = React.useState(false);
-  const handleOpenModal = React.useCallback(() => setOpen(true), []);
-
-  const handleCreate = React.useCallback(
-    (
-      data: {
-        productName: string;
-        description: string;
-        priceAmount: number;
-        currency: string;
-        quantity: number;
-      },
-      media: { url: string; pathname: string; contentType: string }[],
-    ) => {
-      if (!tenantId || !storeId) {
-        alert("Store not ready. Please refresh.");
-        return;
-      }
-      void (async () => {
-        try {
-          const res = await fetch("/api/products", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              storeId,
-              title: data.productName,
-              description: data.description,
-              priceAmount: data.priceAmount,
-              currency: data.currency,
-              quantity: data.quantity,
-              source: "manual",
-              status: "ready",
-              media,
-            }),
-          });
-          if (!res.ok) throw new Error("Failed to create product");
-          await invalidate(storeId);
-        } catch (e) {
-          console.error(e);
-          alert("Could not create product. Please try again.");
-        } finally {
-          setOpen(false);
-        }
-      })();
-    },
-    [invalidate, storeId, tenantId],
-  );
+  const handleAdd = React.useCallback(() => {
+    if (!storeSlug) return;
+    router.push(`/admin/${storeSlug}/products/new`);
+  }, [router, storeSlug]);
 
   const hasExtras =
     actions.length > 0 ||
@@ -418,30 +372,17 @@ export function QuickAddLauncher({
   };
 
   return (
-    <>
-      <QuickAddContent
-        layout={resolvedLayout}
-        className={className}
-        label={label}
-        actions={actions}
-        shareAction={shareAction}
-        socialConfig={resolvedSocialConfig}
-        storeId={storeId}
-        storeSlug={storeSlug}
-        onAdd={handleOpenModal}
-      />
-
-      {tenantId && storeId ? (
-        <UploadModal
-          open={open}
-          onOpenChange={setOpen}
-          tenantId={tenantId}
-          storeId={storeId}
-          onCreate={handleCreate}
-          mode="single"
-        />
-      ) : null}
-    </>
+    <QuickAddContent
+      layout={resolvedLayout}
+      className={className}
+      label={label}
+      actions={actions}
+      shareAction={shareAction}
+      socialConfig={resolvedSocialConfig}
+      storeId={bootstrap?.storeId}
+      storeSlug={storeSlug}
+      onAdd={handleAdd}
+    />
   );
 }
 
