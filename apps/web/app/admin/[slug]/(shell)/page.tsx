@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { type ReactNode } from "react";
-import { RevenueAreaChartCard, TopProductsBarChartCard } from "@/modules/admin/components/dynamic-charts";
+import { RevenueAreaChartCard, TotalSalesBreakdownCard } from "@/modules/admin/components/dynamic-charts";
 import { RecentTransactionsTable } from "@/modules/admin/components/recent-transactions-table";
 import { QuickActionMobile } from "@/modules/admin/components/quick-action-mobile";
 import { ShareLinkSection } from "@/modules/admin/components/share-link-section";
@@ -64,7 +64,7 @@ export default async function AdminPage({
     );
   }
 
-  const { store, stats, revenueSeries, topProducts, transactionRows, currency } = data;
+  const { store, stats, revenueSeries, breakdown, transactionRows, currency } = data;
   const basePath = `/admin/${slug}`;
   const storefrontUrl = getStorefrontUrl(slug);
 
@@ -249,18 +249,15 @@ export default async function AdminPage({
         <div className="grid grid-cols-12 gap-8">
           <div className="col-span-8 flex flex-col gap-8">
             <RevenueAreaChartCard
-              title="Revenue Performance"
+              title="Total sales over time"
               totalLabel={formatCurrency((stats[0]?.value ?? 0) as number, currency)}
               data={revenueSeries}
             />
           </div>
 
           <div className="col-span-4 flex flex-col gap-8">
-            <TopProductsBarChartCard
-              title="Top Products"
-              description="Best sellers in this period"
-              totalLabel={topProducts.reduce((acc: number, p: any) => acc + p.sales, 0).toLocaleString()}
-              data={topProducts}
+            <TotalSalesBreakdownCard
+              breakdown={breakdown}
             />
           </div>
         </div>

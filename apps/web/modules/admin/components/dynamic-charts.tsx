@@ -43,6 +43,14 @@ export const VisitsAreaChartCard = dynamic(
     }
 );
 
+export const TotalSalesBreakdownCard = dynamic(
+    () => import("./total-sales-breakdown-card").then((mod) => ({ default: mod.TotalSalesBreakdownCard })),
+    {
+        loading: () => <ChartSkeleton />,
+        ssr: false,
+    }
+);
+
 // Re-export types for convenience
 export type { RevenuePoint } from "./revenue-area-chart-card";
 export type { TopProductPoint } from "./top-products-bar-chart-card";

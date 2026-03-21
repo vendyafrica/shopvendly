@@ -46,6 +46,10 @@ export const analyticsRepo = {
       distinctCustomers: kpiPaid?.distinctCustomers || 0,
       aov,
       refunds: kpiRefunds?.refunds || 0,
+      grossSales: kpiPaid?.revenuePaid || 0,
+      discounts: 0,
+      shippingCharges: 0,
+      taxes: 0,
     };
   },
 

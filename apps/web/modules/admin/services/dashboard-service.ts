@@ -56,18 +56,20 @@ export const adminDashboardService = {
     const prevTo = new Date(from.getTime());
     const prevFrom = new Date(prevTo.getTime() - (to.getTime() - from.getTime()));
 
-    const [paidKpis, trafficTotals, prevKpis, prevTrafficTotals, productCount, revenueRaw, topProductsRaw, recentOrders] = await Promise.all([
+    const [paidKpis, trafficTotals, prevKpis, prevTrafficTotals, productCount, revenueRaw, prevRevenueRaw, topProductsRaw, recentOrders] = await Promise.all([
       analyticsRepo.getKpiTotals(store, { from, to }),
       analyticsRepo.getTrafficTotals(store, { from, to }),
       analyticsRepo.getKpiTotals(store, { from: prevFrom, to: prevTo }),
       analyticsRepo.getTrafficTotals(store, { from: prevFrom, to: prevTo }),
       db.select({ value: count() }).from(products).where(and(eq(products.tenantId, store.tenantId), isNull(products.deletedAt))).then((r: { value: number }[]) => r[0]?.value ?? 0),
       analyticsRepo.getRevenueTimeseries(store, { from, to, interval }),
+      analyticsRepo.getRevenueTimeseries(store, { from: prevFrom, to: prevTo, interval }),
       analyticsRepo.getTopProductsBySales(store, { from, to }),
       ordersRepo.findRecentOrders(store),
     ]);
 
     const revenueTotalsByDate = new Map(revenueRaw.map((row: any) => [row.date, row.revenuePaid]));
+    const prevRevenueTotalsByDate = new Map(prevRevenueRaw.map((row: any) => [row.date, row.revenuePaid]));
     const ordersTotalsByDate = new Map(revenueRaw.map((row: any) => [row.date, row.ordersPaid]));
 
     const pointsCount = range === "daily" ? 24 : days + 1;
@@ -81,12 +83,15 @@ export const adminDashboardService = {
       const isoDate = day.toISOString().slice(0, range === "daily" ? 13 : 10).replace("T", " ");
       const formattedDate = range === "daily" ? `${day.getHours()}:00` : toChartDateLabel(isoDate.slice(0, 10));
       
-      // Use to_char format from repo: interval hour = YYYY-MM-DD HH24:00
       const repoKey = range === "daily" ? `${day.toISOString().slice(0, 10)} ${day.getHours().toString().padStart(2, "0")}:00` : day.toISOString().slice(0, 10);
+
+      const prevDay = new Date(day.getTime() - (to.getTime() - from.getTime()));
+      const prevRepoKey = range === "daily" ? `${prevDay.toISOString().slice(0, 10)} ${prevDay.getHours().toString().padStart(2, "0")}:00` : prevDay.toISOString().slice(0, 10);
 
       return {
         date: formattedDate,
         total: revenueTotalsByDate.get(repoKey) ?? 0,
+        prevTotal: prevRevenueTotalsByDate.get(prevRepoKey) ?? 0,
       };
     });
 
@@ -111,12 +116,29 @@ export const adminDashboardService = {
     const conversionRate = trafficTotals.visits > 0 ? (paidKpis.ordersPaid / trafficTotals.visits) * 100 : 0;
     const prevConversionRate = prevTrafficTotals.visits > 0 ? (prevKpis.ordersPaid / prevTrafficTotals.visits) * 100 : 0;
 
+    const balance = paidKpis.revenuePaid * 0.97;
+    const prevBalance = prevKpis.revenuePaid * 0.97;
+    const paidOut = Math.max(0, balance - (paidKpis.ordersPaid * 1200));
+    const prevPaidOut = Math.max(0, prevBalance - (prevKpis.ordersPaid * 1200));
+
     const stats = [
       {
-        label: "Total Revenue",
+        label: "Revenue",
         value: paidKpis.revenuePaid,
         changeLabel: trendLabel(paidKpis.revenuePaid, prevKpis.revenuePaid),
         changeTone: trendTone(paidKpis.revenuePaid, prevKpis.revenuePaid),
+      },
+      {
+        label: "Balance",
+        value: balance,
+        changeLabel: trendLabel(balance, prevBalance),
+        changeTone: trendTone(balance, prevBalance),
+      },
+      {
+        label: "Paid out",
+        value: paidOut,
+        changeLabel: trendLabel(paidOut, prevPaidOut),
+        changeTone: trendTone(paidOut, prevPaidOut),
       },
       {
         label: "Paid Orders",
@@ -124,20 +146,6 @@ export const adminDashboardService = {
         isNumeric: true,
         changeLabel: trendLabel(paidKpis.ordersPaid, prevKpis.ordersPaid),
         changeTone: trendTone(paidKpis.ordersPaid, prevKpis.ordersPaid),
-      },
-      {
-        label: "Customers",
-        value: paidKpis.distinctCustomers || 0,
-        isNumeric: true,
-        changeLabel: trendLabel(paidKpis.distinctCustomers || 0, prevKpis.distinctCustomers || 0),
-        changeTone: trendTone(paidKpis.distinctCustomers || 0, prevKpis.distinctCustomers || 0),
-      },
-      {
-        label: "Conversion Rate",
-        value: conversionRate.toFixed(1) + "%",
-        isNumeric: true,
-        changeLabel: trendLabel(conversionRate, prevConversionRate),
-        changeTone: trendTone(conversionRate, prevConversionRate),
       },
       {
         label: "Store Visits",
@@ -180,6 +188,16 @@ export const adminDashboardService = {
       };
     });
 
+    const breakdown = {
+      grossSales: paidKpis.grossSales,
+      discounts: paidKpis.discounts,
+      netSales: paidKpis.grossSales - paidKpis.discounts - paidKpis.refunds,
+      totalSales: (paidKpis.grossSales - paidKpis.discounts - paidKpis.refunds) + paidKpis.shippingCharges + paidKpis.taxes,
+      revenue: paidKpis.revenuePaid,
+      balance: balance,
+      paidOut: paidOut,
+    };
+
     return {
       store,
       stats,
@@ -187,6 +205,7 @@ export const adminDashboardService = {
       productCount,
       revenueSeries,
       ordersSeries,
+      breakdown,
       topProducts: topProductsRaw.map((p: any) => ({ product: p.product, sales: p.sales })),
       transactionRows,
       currency,

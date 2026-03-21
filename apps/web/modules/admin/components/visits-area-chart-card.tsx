@@ -53,49 +53,59 @@ export function VisitsAreaChartCard({
           </SelectContent>
         </Select>
       </CardHeader>
-      <CardContent className="p-0">
-        <ChartContainer config={chartConfig} className="block! aspect-auto! h-[220px] w-full md:h-[320px]">
+      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+        <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
           <AreaChart
-            accessibilityLayer
             data={filteredData}
             margin={{
-              left: 4,
-              right: 8,
+              left: 12,
+              right: 12,
               top: 12,
-              bottom: 0,
+              bottom: 12,
             }}
           >
-            <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />
-            <XAxis 
-              dataKey="date" 
-              tickLine={false} 
-              axisLine={false} 
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="date"
+              tickLine={false}
+              axisLine={false}
               tickMargin={8}
               minTickGap={32}
-              tick={{ fontSize: 11 }}
+              tickFormatter={(value) => value.slice(0, 6)}
             />
-            <YAxis 
-              tickLine={false} 
-              axisLine={false} 
-              width={28} 
-              tickMargin={2} 
-              padding={{ top: 8, bottom: 8 }} 
-              tick={{ fontSize: 10 }}
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickCount={3}
+              domain={[0, "auto"]}
+              tickFormatter={(value) => {
+                if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                return value;
+              }}
             />
-            <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
             <defs>
               <linearGradient id="fillVisits" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                <stop
+                  offset="5%"
+                  stopColor="var(--color-visits)"
+                  stopOpacity={0.8}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="var(--color-visits)"
+                  stopOpacity={0.1}
+                />
               </linearGradient>
             </defs>
             <Area
-              type="natural"
               dataKey="visits"
-              stroke="var(--foreground)"
-              strokeWidth={2}
+              type="monotone"
               fill="url(#fillVisits)"
-              dot={false}
+              stroke="var(--color-visits)"
+              strokeWidth={2}
+              stackId="a"
             />
           </AreaChart>
         </ChartContainer>

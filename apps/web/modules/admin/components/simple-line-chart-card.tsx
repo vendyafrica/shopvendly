@@ -2,7 +2,8 @@
 
 import { Card, CardContent } from "@shopvendly/ui/components/card";
 import { cn } from "@shopvendly/ui/lib/utils";
-import { Area, AreaChart, ResponsiveContainer } from "recharts";
+import { Area, AreaChart } from "recharts";
+import { ChartContainer } from "@shopvendly/ui/components/chart";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { AnalyticsDownIcon, AnalyticsUpIcon } from "@hugeicons/core-free-icons";
 
@@ -45,24 +46,40 @@ export function SimpleLineChartCard({
         </div>
 
         <div className="mt-4 h-16 w-full opacity-60">
-          <ResponsiveContainer width="100%" height="100%">
+          <ChartContainer 
+            config={{
+              total: {
+                label: title,
+                color: "hsl(var(--primary))",
+              },
+            }}
+            className="h-full w-full"
+          >
             <AreaChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
               <defs>
                 <linearGradient id={`fill-${title}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
+                  <stop
+                    offset="5%"
+                    stopColor="var(--color-total)"
+                    stopOpacity={0.4}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="var(--color-total)"
+                    stopOpacity={0}
+                  />
                 </linearGradient>
               </defs>
               <Area
-                type="natural"
+                type="monotone"
                 dataKey="total"
-                stroke="hsl(var(--primary))"
+                stroke="var(--color-total)"
                 strokeWidth={2}
                 fill={`url(#fill-${title})`}
                 dot={false}
               />
             </AreaChart>
-          </ResponsiveContainer>
+          </ChartContainer>
         </div>
       </CardContent>
     </Card>
