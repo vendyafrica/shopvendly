@@ -11,20 +11,12 @@ import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  SparklesIcon,
-  Edit02Icon,
   Delete02Icon,
   MoreHorizontalIcon,
-  Package01Icon,
-  ShoppingBag01Icon,
   AlertCircleIcon,
-  FileEditIcon,
-  Tag01Icon,
   Download01Icon,
   Upload01Icon,
   Search01Icon,
-  FilterIcon,
-  Sorting05Icon,
   Add01Icon,
   Tick01Icon,
 } from "@hugeicons/core-free-icons";
@@ -37,7 +29,7 @@ import {
 } from "@shopvendly/ui/components/dropdown-menu";
 import { ProductsMobileView } from "./components/products-mobile-view";
 import { Checkbox } from "@shopvendly/ui/components/checkbox";
-import { type EditableField, type DraftMap } from "@/modules/admin/models";
+// import { type EditableField, type DraftMap } from "@/modules/admin/models";
 
 import {
   useProducts,
@@ -45,19 +37,19 @@ import {
   useInvalidateProducts,
   useUpdateProduct,
   type ProductTableRow,
-  type ProductApiRow,
+  // type ProductApiRow,
 } from "@/modules/products/hooks/use-products";
 import { ProductsPageSkeleton } from "@/components/ui/page-skeletons";
 import { isLikelyVideoMedia } from "@/utils/misc";
 import { cn } from "@shopvendly/ui/lib/utils";
 
-function formatMoney(amount: number, currency: string) {
-  return new Intl.NumberFormat("en-KE", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-  }).format(amount);
-}
+// function formatMoney(amount: number, currency: string) {
+//   return new Intl.NumberFormat("en-KE", {
+//     style: "currency",
+//     currency,
+//     minimumFractionDigits: 0,
+//   }).format(amount);
+// }
 
 function ProductThumbnail({
   url,
@@ -111,8 +103,8 @@ export default function ProductsPage() {
   const { invalidate } = useInvalidateProducts();
 
   const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({});
-  const [activeCell, setActiveCell] = React.useState<{ id: string; field: EditableField } | null>(null);
-  const [drafts, setDrafts] = React.useState<DraftMap>({});
+  // const [ setActiveCell] = React.useState<{ id: string; field: EditableField } | null>(null);
+  // const [drafts, setDrafts] = React.useState<DraftMap>({});
   const [mobileStatusUpdatingId, setMobileStatusUpdatingId] = React.useState<string | null>(null);
   const [statusFilter, setStatusFilter] = React.useState<"all" | "active" | "draft" | "archived">("all");
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -152,41 +144,41 @@ export default function ProductsPage() {
     });
   };
 
-  const handleDraftChange = (product: ProductTableRow, field: EditableField, value: string) => {
-    setDrafts((prev) => ({
-      ...prev,
-      [product.id]: {
-        ...prev[product.id],
-        [field]: value,
-      },
-    }));
-  };
+  // const handleDraftChange = (product: ProductTableRow, field: EditableField, value: string) => {
+  //   setDrafts((prev) => ({
+  //     ...prev,
+  //     [product.id]: {
+  //       ...prev[product.id],
+  //       [field]: value,
+  //     },
+  //   }));
+  // };
 
-  const handleInlineSave = async (id: string) => {
-    const draft = drafts[id];
-    if (!draft) {
-      setActiveCell(null);
-      return;
-    }
+  // const handleInlineSave = async (id: string) => {
+  //   const draft = drafts[id];
+  //   if (!draft) {
+  //     setActiveCell(null);
+  //     return;
+  //   }
 
-    const payload: Partial<ProductApiRow> = {};
-    if (draft.name !== undefined) payload.productName = draft.name;
-    if (draft.priceAmount !== undefined) payload.priceAmount = Number(draft.priceAmount);
-    if (draft.quantity !== undefined) payload.quantity = Number(draft.quantity);
+  //   const payload: Partial<ProductApiRow> = {};
+  //   if (draft.name !== undefined) payload.productName = draft.name;
+  //   if (draft.priceAmount !== undefined) payload.priceAmount = Number(draft.priceAmount);
+  //   if (draft.quantity !== undefined) payload.quantity = Number(draft.quantity);
 
-    try {
-      await updateProductMutation.mutateAsync({ id, data: payload });
-      setDrafts((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-    } catch (e) {
-      console.error("Failed to update product", e);
-    } finally {
-      setActiveCell(null);
-    }
-  };
+  //   try {
+  //     await updateProductMutation.mutateAsync({ id, data: payload });
+  //     setDrafts((prev) => {
+  //       const next = { ...prev };
+  //       delete next[id];
+  //       return next;
+  //     });
+  //   } catch (e) {
+  //     console.error("Failed to update product", e);
+  //   } finally {
+  //     setActiveCell(null);
+  //   }
+  // };
 
   const handleMobileStatusChange = async (id: string, status: "ready" | "draft" | "active" | "sold-out") => {
     setMobileStatusUpdatingId(id);
@@ -309,7 +301,7 @@ export default function ProductsPage() {
         return (
           <span className={cn(
             "text-sm font-medium tracking-tight whitespace-nowrap",
-            quantity === 0 ? "text-rose-600 font-medium" : quantity <= 5 ? "text-amber-600" : "text-muted-foreground"
+            quantity === 0 ? "text-rose-600 font-medium" : "text-muted-foreground"
           )}>
             {quantity} in stock
           </span>
@@ -404,7 +396,7 @@ export default function ProductsPage() {
             { label: "Total", value: rows.length },
             { label: "Active", value: rows.filter(r => r.status === "ready").length },
             { label: "Drafts", value: rows.filter(r => r.status === "draft").length },
-            { label: "Low Stock", value: rows.filter(r => r.quantity <= 5).length }
+            { label: "Out of Stock", value: rows.filter(r => r.quantity === 0).length }
           ].map((stat, i) => (
             <div key={i} className="flex flex-col gap-1 rounded-2xl border border-border/60 bg-white px-6 py-4 shadow-sm">
               <span className="text-[11px] font-bold text-muted-foreground uppercase leading-tight tracking-wider">{stat.label}</span>

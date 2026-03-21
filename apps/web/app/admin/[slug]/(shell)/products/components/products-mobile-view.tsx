@@ -8,7 +8,6 @@ import { ShoppingBag01Icon } from "@hugeicons/core-free-icons";
 import type { ProductTableRow } from "@/modules/products/hooks/use-products";
 import { type TenantBootstrap } from "@/modules/admin/context";
 import { isLikelyVideoMedia } from "@/utils/misc";
-import { cn } from "@shopvendly/ui/lib/utils";
 import { useRouter } from "next/navigation";
 import { StoreAvatar } from "@/components/store-avatar";
 
@@ -123,11 +122,6 @@ export function ProductsMobileView({
         return <ProductsMobileSkeleton />;
     }
 
-    const totalProducts = rows.length;
-    const activeCount = rows.filter((p) => p.status === "active" || p.status === "ready").length;
-    const draftCount = rows.filter((p) => p.status === "draft").length;
-
-
     const storeName = bootstrap?.storeName || "My Store";
     const AdminHref = bootstrap?.storeSlug ? `/admin/${bootstrap.storeSlug}` : "/admin";
 
@@ -196,10 +190,10 @@ export function ProductsMobileView({
                                     </div>
                                 )}
 
-                                {product.quantity <= 5 && (
+                                {product.quantity === 0 && (
                                     <div className="absolute bottom-2 left-2">
                                         <div className="px-1.5 py-0.5 rounded bg-rose-500/95 text-white text-[10px] font-medium shadow-sm backdrop-blur-md">
-                                            {product.quantity === 0 ? "Out of stock" : `Low stock`}
+                                            Out of stock
                                         </div>
                                     </div>
                                 )}

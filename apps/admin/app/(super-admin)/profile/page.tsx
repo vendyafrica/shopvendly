@@ -6,10 +6,6 @@ import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { User02Icon, Mail01Icon, Shield01Icon} from "@hugeicons/core-free-icons" ;
 
-// In super-admin we don't have useAppSession, we might have another way or just pass it but for now 
-// we'll assume it's a client component that might need to fetch user or be passed it.
-// Given the layout passes user to AppSidebar, we might need a context here too.
-// For now, let's create a placeholder that looks premium.
 
 export default function SuperAdminProfilePage() {
   // Normally we'd get this from a session context
