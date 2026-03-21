@@ -3,8 +3,9 @@ import { db } from "@shopvendly/db/db";
 import { orders, stores } from "@shopvendly/db/schema";
 
 import { and, desc, eq, isNull, sql } from "@shopvendly/db";
-import { CustomersTable, type CustomerRow } from "./CustomersTable";
+import { CustomersTable } from "./CustomersTable";
 import { CustomersMobileView } from "./components/customers-mobile-view";
+import { type CustomerRow } from "@/modules/admin/models";
 
 export default async function CustomersPage({
   params,

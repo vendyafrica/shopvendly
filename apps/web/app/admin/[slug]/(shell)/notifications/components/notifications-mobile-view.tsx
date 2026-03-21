@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import { Avatar, AvatarFallback } from "@shopvendly/ui/components/avatar";
-import type { TenantBootstrap } from "@/modules/admin/context/tenant-context";
+import { type TenantBootstrap } from "@/modules/admin/context";
 import { SegmentedStatsCard } from "@/modules/admin/components/segmented-stats-card";
-import type { NotificationRow } from "../NotificationsTable";
+import { type NotificationRow } from "@/modules/admin/models";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
     Notification02Icon,

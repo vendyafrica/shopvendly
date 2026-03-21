@@ -4,8 +4,9 @@ import type { TenantBootstrap } from "@/modules/admin/context/tenant-context";
 import { db } from "@shopvendly/db/db";
 import { and, desc, eq, isNull } from "@shopvendly/db";
 import { orders, stores } from "@shopvendly/db/schema";
-import { NotificationsTable, type NotificationRow } from "./NotificationsTable";
+import { NotificationsTable } from "./NotificationsTable";
 import { NotificationsMobileView } from "./components/notifications-mobile-view";
+import { type NotificationRow } from "@/modules/admin/models";
 
 function timeAgo(from: Date, to: Date) {
   const diffMs = Math.max(0, to.getTime() - from.getTime());

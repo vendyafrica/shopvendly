@@ -4,28 +4,10 @@ import * as React from "react";
 import { useTenant } from "@/modules/admin/context/tenant-context";
 import { SegmentedStatsCard } from "@/modules/admin/components/segmented-stats-card";
 import { RevenueAreaChartCard, VisitsAreaChartCard, type RevenuePoint, type VisitsPoint } from "@/modules/admin/components/dynamic-charts";
+import { type OverviewResponse } from "@/modules/admin/models";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
 
-type OverviewResponse = {
-  range: { from: string; to: string };
-  currency: string;
-  kpis: {
-    revenuePaid: number;
-    ordersPaid: number;
-    aov: number;
-    refunds: number;
-  };
-  timeseries: Array<{ date: string; revenuePaid: number; ordersPaid: number }>;
-  traffic: {
-    visits: number;
-    uniqueVisitors: number;
-    returningVisitors: number;
-    timeseries: Array<{ date: string; visits: number; uniqueVisitors: number }>;
-  };
-  topViewed: Array<{ productId: string | null; productName: string | null; count: number }>;
-  topAddToCart: Array<{ productId: string | null; productName: string | null; count: number }>;
-};
 
 function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat("en-US", {

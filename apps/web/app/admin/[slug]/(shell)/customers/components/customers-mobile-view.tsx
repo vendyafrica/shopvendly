@@ -8,9 +8,9 @@ import {
     SheetContent
 } from "@shopvendly/ui/components/sheet";
 import { Badge } from "@shopvendly/ui/components/badge";
-import type { TenantBootstrap } from "@/modules/admin/context/tenant-context";
+import { type TenantBootstrap } from "@/modules/admin/context";
 import { SegmentedStatsCard } from "@/modules/admin/components/segmented-stats-card";
-import type { CustomerRow } from "../CustomersTable";
+import { type CustomerRow } from "@/modules/admin/models";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { UserMultiple02Icon, Mail02Icon, ShoppingCart01Icon, AnalyticsUpIcon, CheckmarkBadge01Icon } from "@hugeicons/core-free-icons";
 

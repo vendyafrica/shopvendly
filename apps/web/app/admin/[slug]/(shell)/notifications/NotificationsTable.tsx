@@ -3,15 +3,8 @@
 import { DataTable } from "@/modules/admin/components/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@shopvendly/ui/components/badge";
+import { type NotificationRow } from "@/modules/admin/models";
 
-export type NotificationRow = {
-  id: string;
-  type: "Order" | "System" | "Alert" | "Payment";
-  summary: string;
-  channel: "In-App";
-  status: "New";
-  time: string;
-};
 
 const columns: ColumnDef<NotificationRow>[] = [
   {

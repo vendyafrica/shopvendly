@@ -3,16 +3,15 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@shopvendly/auth";
 import { Suspense } from "react";
-import { resolveTenantAdminAccess } from "../../lib/admin-access";
-
+import { resolveTenantAdminAccess } from "@/modules/admin/services/access-service";
 import { SidebarInset, SidebarProvider } from "@shopvendly/ui/components/sidebar";
 import { Providers } from "../../../providers";
-import { AdminHeader } from "../../components/dashboard-header";
-import { HeaderActionsProvider } from "../../context/header-actions-context";
-import { TenantProvider } from "../../context/tenant-context";
+import { AdminHeader } from "@/modules/admin/components/dashboard-header";
+import { HeaderActionsProvider } from "@/modules/admin/context/header-actions-context";
+import { TenantProvider } from "@/modules/admin/context/tenant-context";
 import { AppSessionProvider } from "@/contexts/app-session-context";
-import { AppSidebar } from "../../components/app-sidebar";
-import { AdminMobileDock } from "../../components/admin-mobile-dock";
+import { AppSidebar } from "@/modules/admin/components/app-sidebar";
+import { AdminMobileDock } from "@/modules/admin/components/admin-mobile-dock";
 
 export default async function TenantAdminLayout({
   children,

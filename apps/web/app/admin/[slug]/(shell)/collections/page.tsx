@@ -11,23 +11,14 @@ import { Checkbox } from "@shopvendly/ui/components/checkbox";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete02Icon, Link01Icon } from "@hugeicons/core-free-icons";
 import { AddCollectionButton } from "./components/add-collection-button";
-import { UploadCollectionModal, type MediaItem } from "./components/upload-collection-modal";
+import { UploadCollectionModal } from "./components/upload-collection-modal";
 import { AssignProductsModal } from "./components/assign-products-modal";
+import { 
+  type CollectionRow, 
+  type CollectionProductRow as ProductRow, 
+  type MediaItem 
+} from "@/modules/admin/models";
 
-type CollectionRow = {
-  id: string;
-  name: string;
-  slug: string;
-  image?: string | null;
-  productCount: number;
-};
-
-type ProductRow = {
-  id: string;
-  productName: string;
-  thumbnailUrl?: string | null;
-  thumbnailType?: string | null;
-};
 
 function CollectionThumbnail({
   url,

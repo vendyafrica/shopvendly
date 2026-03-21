@@ -1,7 +1,7 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { resolveTenantAdminAccess } from "../../../admin/lib/admin-access";
+import { resolveTenantAdminAccess } from "@/modules/admin/services/access-service";
 
 export async function GET(request: NextRequest) {
     const session = await auth.api.getSession({

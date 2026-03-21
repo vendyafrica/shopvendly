@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useTenant } from "@/modules/admin/context/tenant-context";
-import { type OrderTableRow, type OrderStatus, type PaymentStatus } from "./components/order-table";
+import { type OrderTableRow, type OrderStatus, type PaymentStatus, type OrderAPIResponse, type OrdersListResponse, type OrderStatsResponse } from "@/modules/admin/models";
 import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Download04Icon, FilterIcon } from "@hugeicons/core-free-icons";
@@ -13,34 +13,6 @@ import { TransactionsMobileView } from "./components/transactions-mobile-view";
 
 const API_BASE = "";
 
-interface OrderAPIResponse {
-    id: string;
-    orderNumber: string;
-    customerName: string;
-    customerEmail: string;
-    status: string;
-    paymentStatus: string;
-    paymentMethod: string;
-    totalAmount: number;
-    currency: string;
-    createdAt: string;
-    items?: Array<{ productName?: string | null } | null>;
-}
-
-interface OrdersListResponse {
-    orders: OrderAPIResponse[];
-    total: number;
-    page: number;
-    limit: number;
-}
-
-interface OrderStatsResponse {
-    totalRevenue: number;
-    orderCount: number;
-    pendingCount: number;
-    refundedAmount: number;
-    currency: string;
-}
 
 export default function TransactionsPage() {
     const { bootstrap, error: bootstrapError } = useTenant();

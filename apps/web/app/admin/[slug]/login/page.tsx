@@ -3,7 +3,7 @@ import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getRootUrl } from "@/utils/misc";
-import { resolveTenantAdminAccess } from "../../lib/admin-access";
+import { resolveTenantAdminAccess } from "@/modules/admin/services/access-service";
 
 export default async function TenantAdminLoginPage({
   params,

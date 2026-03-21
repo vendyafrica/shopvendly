@@ -4,16 +4,8 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@shopvendly/ui/components/badge";
 import { cn } from "@shopvendly/ui/lib/utils";
 import { DataTable } from "./data-table";
+import { type TransactionRow } from "@/modules/admin/models";
 
-export type TransactionRow = {
-  id: string;
-  customer: string;
-  product: string;
-  amount: string;
-  status: "Completed" | "Failed" | "Pending";
-  payment: string;
-  date: string;
-};
 
 const columns: ColumnDef<TransactionRow>[] = [
   {

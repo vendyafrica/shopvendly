@@ -27,6 +27,7 @@ import { UploadModal } from "./components/upload-modal";
 import { EditProductModal } from "./components/edit-product-modal";
 import { ProductsMobileView } from "./components/products-mobile-view";
 import { Checkbox } from "@shopvendly/ui/components/checkbox";
+import { type EditableField, type DraftMap, type ProductEditingState } from "@/modules/admin/models";
 
 import {
   useProducts,
@@ -42,8 +43,6 @@ import { isLikelyVideoMedia } from "@/utils/misc";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-type EditableField = "name" | "priceAmount" | "quantity";
-type DraftMap = Record<string, Partial<Record<EditableField, string>>>;
 
 function formatMoney(amount: number, currency: string) {
   return new Intl.NumberFormat("en-KE", {
@@ -121,20 +120,7 @@ export default function ProductsPage() {
   const [uploadModalOpen, setUploadModalOpen] = React.useState(false);
   const [editModalOpen, setEditModalOpen] = React.useState(false);
   // Type compatible with EditProductModal's Product interface
-  const [editingProduct, setEditingProduct] = React.useState<{
-    id: string;
-    productName: string;
-    description?: string;
-    priceAmount: number;
-    originalPriceAmount?: number | null;
-    currency: string;
-    quantity: number;
-    status: string;
-    thumbnailUrl?: string;
-    media?: { id?: string; blobUrl: string; contentType?: string; blobPathname?: string }[];
-    collectionIds?: string[];
-    variants?: ProductVariantsInput | null;
-  } | null>(null);
+  const [editingProduct, setEditingProduct] = React.useState<ProductEditingState | null>(null);
   const [drafts, setDrafts] = React.useState<DraftMap>({});
   const [activeCell, setActiveCell] = React.useState<{ id: string; field: EditableField } | null>(null);
   const [uploadMode, setUploadMode] = React.useState<"single" | "multiple">("single");

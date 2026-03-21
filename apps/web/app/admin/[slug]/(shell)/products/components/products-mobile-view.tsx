@@ -10,7 +10,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Edit02Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import type { ProductTableRow } from "@/modules/products/hooks/use-products";
-import type { TenantBootstrap } from "@/modules/admin/context/tenant-context";
+import { type TenantBootstrap } from "@/modules/admin/context";
 import { Checkbox } from "@shopvendly/ui/components/checkbox";
 import { isLikelyVideoMedia } from "@/utils/misc";
 import { useRouter } from "next/navigation";

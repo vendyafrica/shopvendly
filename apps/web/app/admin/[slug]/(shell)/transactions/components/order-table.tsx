@@ -25,34 +25,8 @@ import {
     DropdownMenuTrigger,
 } from "@shopvendly/ui/components/dropdown-menu";
 import { cn } from "@shopvendly/ui/lib/utils";
+import { type OrderStatus, type PaymentStatus, type OrderTableRow } from "@/modules/admin/models";
 
-export type OrderStatus =
-    | "pending"
-    | "pending_seller_acceptance"
-    | "awaiting_payment"
-    | "processing"
-    | "paid_processing"
-    | "ready"
-    | "out_for_delivery"
-    | "completed"
-    | "cancelled"
-    | "delivery_exception"
-    | "refunded";
-export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
-
-export interface OrderTableRow {
-    id: string;
-    orderNumber: string;
-    customerName: string;
-    customerEmail: string;
-    status: OrderStatus;
-    paymentStatus: PaymentStatus;
-    paymentMethod: string;
-    totalAmount: number;
-    currency: string;
-    createdAt: string;
-    items?: Array<{ productName?: string | null } | null>;
-}
 
 interface OrderTableProps {
     orders: OrderTableRow[];

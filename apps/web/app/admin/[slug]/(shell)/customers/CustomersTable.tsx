@@ -2,16 +2,8 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/modules/admin/components/data-table";
+import { type CustomerRow } from "@/modules/admin/models";
 
-export type CustomerRow = {
-  name: string;
-  email: string;
-  orders: number;
-  totalSpend: number;
-  currency: string;
-  lastOrder: string;
-  status: "Active" | "Churn Risk" | "New";
-};
 
 function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat("en-US", {
