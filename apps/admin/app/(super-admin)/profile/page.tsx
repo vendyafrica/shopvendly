@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@shopvendly/ui/components/a
 import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
 import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { User02Icon, Mail01Icon, Shield01Icon, Calendar03Icon, UserShield02Icon } from "@hugeicons/core-free-icons";
+import { User02Icon, Mail01Icon, Shield01Icon} from "@hugeicons/core-free-icons" ;
 
 // In super-admin we don't have useAppSession, we might have another way or just pass it but for now 
 // we'll assume it's a client component that might need to fetch user or be passed it.
@@ -20,7 +20,7 @@ export default function SuperAdminProfilePage() {
     avatar: ""
   };
 
-  const firstName = user.name.split(" ")[0];
+  const firstName = user.name.split(" ")[0] || "Admin";
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto py-6">
@@ -51,7 +51,7 @@ export default function SuperAdminProfilePage() {
         <Card className="md:col-span-2 border-border/50 shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <UserShield02Icon size={20} className="text-indigo-600" />
+              <HugeiconsIcon icon={Shield01Icon} size={20} className="text-indigo-600" />
               Administrative Identity
             </CardTitle>
           </CardHeader>
