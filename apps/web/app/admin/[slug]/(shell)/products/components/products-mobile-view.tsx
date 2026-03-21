@@ -3,16 +3,12 @@
 import * as React from "react";
 import Image from "next/image";
 import { Button } from "@shopvendly/ui/components/button";
-import {
-    Sheet,
-    SheetContent
-} from "@shopvendly/ui/components/sheet";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Edit02Icon, Delete02Icon } from "@hugeicons/core-free-icons";
+import { ShoppingBag01Icon } from "@hugeicons/core-free-icons";
 import type { ProductTableRow } from "@/modules/products/hooks/use-products";
 import { type TenantBootstrap } from "@/modules/admin/context";
-import { Checkbox } from "@shopvendly/ui/components/checkbox";
 import { isLikelyVideoMedia } from "@/utils/misc";
+import { cn } from "@shopvendly/ui/lib/utils";
 import { useRouter } from "next/navigation";
 import { StoreAvatar } from "@/components/store-avatar";
 
@@ -77,47 +73,29 @@ function ProductThumbnail({
 // ─── Mobile skeleton ────────────────────────────────────────────────────────
 function ProductsMobileSkeleton() {
     return (
-        <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden">
-            {/* Profile header skeleton */}
-            <div className="px-5 py-6">
-                <div className="flex items-center gap-6 mb-5">
-                    {/* Avatar */}
-                    <div className="size-[84px] shrink-0 rounded-[32px] bg-neutral-200 animate-pulse" />
-                    {/* Stats */}
-                    <div className="flex-1 flex justify-between items-center text-center">
-                        {[0, 1, 2].map((i) => (
-                            <div key={i} className="flex flex-col items-center flex-1 gap-2">
-                                <div className="h-6 w-8 bg-neutral-200 rounded animate-pulse" />
-                                <div className="h-3 w-12 bg-neutral-200 rounded animate-pulse" />
+        <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden bg-slate-50/50 min-h-screen font-sans">
+            {/* Minimal Header Skeleton */}
+            <div className="sticky top-0 z-50 flex items-center justify-between px-4 py-2.5 bg-white border-b border-border/40">
+                <div className="flex items-center gap-2.5">
+                    <div className="size-7 rounded-lg bg-neutral-200 animate-pulse" />
+                    <div className="h-3 w-20 bg-neutral-200 rounded animate-pulse" />
+                </div>
+                <div className="h-8 w-16 bg-neutral-200 rounded-lg animate-pulse" />
+            </div>
+
+            {/* Product Grid Skeleton (2 columns) */}
+            <div className="grid grid-cols-2 gap-2.5 px-3 py-4">
+                {[...Array(6)].map((_, i) => (
+                    <div key={i} className="flex flex-col overflow-hidden rounded-[1.75rem] border border-border/40 bg-white shadow-sm">
+                        <div className="aspect-[1/1.1] w-full bg-neutral-200 animate-pulse" />
+                        <div className="p-3.5 space-y-2">
+                            <div className="h-3 w-3/4 bg-neutral-100 rounded animate-pulse" />
+                            <div className="flex justify-between items-center">
+                                <div className="h-2 w-1/3 bg-neutral-50 rounded animate-pulse" />
+                                <div className="h-4 w-8 bg-neutral-100 rounded-full animate-pulse" />
                             </div>
-                        ))}
+                        </div>
                     </div>
-                </div>
-                {/* Store name + bio */}
-                <div className="mb-5 space-y-2">
-                    <div className="h-4 w-24 bg-neutral-200 rounded animate-pulse" />
-                    <div className="h-3 w-40 bg-neutral-200 rounded animate-pulse" />
-                </div>
-                {/* Buttons */}
-                <div className="flex gap-2 w-full">
-                    <div className="flex-1 h-8 bg-neutral-200 rounded-md animate-pulse" />
-                    <div className="flex-1 h-8 bg-neutral-200 rounded-md animate-pulse" />
-                </div>
-            </div>
-
-            {/* Grid tab bar */}
-            <div className="flex w-full items-center justify-center border-b pt-3 pb-3">
-                <div className="h-5 w-5 bg-neutral-200 rounded animate-pulse" />
-            </div>
-
-            {/* Product grid */}
-            <div className="grid grid-cols-3 gap-px">
-                {Array.from({ length: 12 }).map((_, i) => (
-                    <div
-                        key={i}
-                        className="relative aspect-square bg-neutral-200 animate-pulse"
-                        style={{ animationDelay: `${(i % 6) * 60}ms` }}
-                    />
                 ))}
             </div>
         </div>
@@ -140,14 +118,11 @@ export function ProductsMobileView({
     bootstrap,
     rows,
     isLoading = false,
-    onEdit,
-    onDelete,
-    onAddSelect,
     onStatusChange,
     statusUpdatingProductId,
+    isPublishing = false,
+    onDelete,
 }: ProductsMobileViewProps) {
-    const [selectedProduct, setSelectedProduct] = React.useState<ProductTableRow | null>(null);
-    const [sheetOpen, setSheetOpen] = React.useState(false);
 
     const router = useRouter();
 
@@ -159,10 +134,6 @@ export function ProductsMobileView({
     const activeCount = rows.filter((p) => p.status === "active" || p.status === "ready").length;
     const draftCount = rows.filter((p) => p.status === "draft").length;
 
-    const handleProductClick = (product: ProductTableRow) => {
-        setSelectedProduct(product);
-        setSheetOpen(true);
-    };
 
     const storeName = bootstrap?.storeName || "My Store";
     const AdminHref = bootstrap?.storeSlug ? `/admin/${bootstrap.storeSlug}` : "/admin";
@@ -176,183 +147,91 @@ export function ProductsMobileView({
     };
 
     return (
-        <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden">
-            {/* Header Profile Section */}
-            <div className="px-5 py-6">
-                <div className="flex items-center gap-6 mb-5">
+        <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden bg-slate-50/50 min-h-screen font-sans">
+            {/* Ultra-Minimal Header */}
+            <div className="sticky top-0 z-50 flex items-center justify-between px-4 py-2.5 bg-white/80 backdrop-blur-xl border-b border-border/40">
+                <div className="flex items-center gap-2.5">
                     <StoreAvatar
                         storeName={storeName}
                         logoUrl={bootstrap?.storeLogoUrl}
-                        size="lg"
-                        className="size-[84px] shrink-0 border border-border rounded-[32px]"
+                        size="sm"
+                        className="size-7 border border-border/60 rounded-lg bg-muted/20"
                     />
-
-                    <div className="flex-1 flex justify-between items-center text-center">
-                        <div className="flex flex-col items-center flex-1">
-                            <span className="font-semibold text-xl tracking-tight">{totalProducts}</span>
-                            <span className="text-[11px] font-medium text-foreground tracking-wide uppercase mt-0.5">Products</span>
-                        </div>
-                        <div className="flex flex-col items-center flex-1">
-                            <span className="font-semibold text-xl tracking-tight">{activeCount}</span>
-                            <span className="text-[11px] font-medium text-foreground tracking-wide uppercase mt-0.5">Active</span>
-                        </div>
-                        <div className="flex flex-col items-center flex-1">
-                            <span className="font-semibold text-xl tracking-tight">{draftCount}</span>
-                            <span className="text-[11px] font-medium text-foreground tracking-wide uppercase mt-0.5">Drafts</span>
-                        </div>
-                    </div>
+                    <h1 className="font-black text-xs tracking-[0.1em] uppercase truncate max-w-[120px]">{storeName}</h1>
                 </div>
 
-                <div className="mb-5 px-0.5">
-                    <h2 className="font-bold text-sm tracking-tight">{storeName}</h2>
-                    <p className="text-[13px] text-foreground/80 mt-1 leading-snug whitespace-pre-line text-balance">
-                        Manage your catalog from anywhere.
-                    </p>
-                </div>
-
-                <div className="flex gap-2 w-full">
-                    <Button
-                        className="flex-1 rounded-md font-semibold text-xs"
-                        variant="default"
-                        size="sm"
-                        onClick={handleAddProduct}
-                    >
-                        Add Product
-                    </Button>
-                    <Button
-                        className="flex-1 rounded-md font-semibold text-xs"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push(AdminHref)}
-                    >
-                        Admin
-                    </Button>
-                </div>
+                <Button
+                    size="sm"
+                    className="h-8 gap-1 bg-foreground text-background font-black text-[10px] rounded-lg px-3 uppercase tracking-wider active:scale-95 transition-all"
+                    onClick={handleAddProduct}
+                >
+                    <HugeiconsIcon icon={ShoppingBag01Icon} className="size-3" />
+                    Add
+                </Button>
             </div>
 
-            {/* Grid tabs */}
-            <div className="flex w-full items-center justify-center border-b pt-3">
-                <div className="flex items-center gap-2 border-b-2 border-primary pb-3 px-8 text-sm font-semibold">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-5"><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /></svg>
-                    <span className="sr-only">Grid</span>
-                </div>
-            </div>
-
-            {/* Grid */}
-            <div className="grid grid-cols-3 gap-px">
+            {/* Product Grid (2 columns) - Starting immediately */}
+            <div className="grid grid-cols-2 gap-2.5 px-3 py-4 pb-12">
                 {rows.length === 0 ? (
-                    <div className="col-span-3 py-16 flex flex-col items-center justify-center text-center text-muted-foreground px-4">
-                        <div className="size-12 rounded-full border-2 border-dashed border-border flex items-center justify-center mb-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-5 opacity-50"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>
+                    <div className="col-span-2 py-20 flex flex-col items-center justify-center text-center text-muted-foreground bg-white rounded-[2rem] border border-dashed border-border/60 shadow-inner">
+                        <div className="size-20 rounded-full bg-muted/30 flex items-center justify-center mb-5 animate-pulse">
+                            <HugeiconsIcon icon={ShoppingBag01Icon} className="size-10 opacity-20" />
                         </div>
-                        <p className="text-sm font-medium text-foreground">No Products Yet</p>
-                        <p className="text-sm mt-1">Tap Add Product to create one.</p>
+                        <p className="text-sm font-black text-foreground uppercase tracking-widest">No products found</p>
+                        <p className="text-[11px] mt-2 font-medium opacity-60 px-8 text-balance">Your catalog is empty. Start adding products to see them here.</p>
                     </div>
                 ) : (
                     rows.map((product) => (
-                        <button
+                        <div
                             key={product.id}
-                            className="relative aspect-square focus:outline-none overflow-hidden group bg-neutral-100"
-                            onClick={() => handleProductClick(product)}
+                            className="group flex flex-col overflow-hidden rounded-[1.75rem] border border-border/50 bg-white shadow-sm transition-all active:scale-[0.97] hover:shadow-md cursor-pointer"
+                            onClick={() => handleEditProduct(product.id)}
                         >
-                            <ProductThumbnail
-                                url={product.thumbnailUrl}
-                                name={product.name}
-                                contentType={product.thumbnailType}
-                            />
-                            {/* Overlay for status */}
-                            {product.status !== 'active' && (
-                                <div className="absolute top-1 right-1">
-                                    <div className={`size-2.5 rounded-full border border-background shadow-sm ${product.status === 'draft' ? 'bg-muted-foreground' :
-                                        product.status === 'ready' ? 'bg-amber-400' :
-                                            product.status === 'sold-out' ? 'bg-rose-500' : 'bg-transparent'
-                                        }`} />
-                                </div>
-                            )}
-                            {/* Overlay for low stock */}
-                            {product.quantity === 0 && (
-                                <div className="absolute inset-x-0 bottom-0 bg-background/50 flex flex-col items-center justify-center backdrop-blur-[1px] py-1">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-foreground">Out of stock</span>
-                                </div>
-                            )}
-                        </button>
-                    ))
-                )}
-            </div>
+                            <div className="relative aspect-[1/1.1] w-full overflow-hidden bg-muted/10">
+                                <ProductThumbnail
+                                    url={product.thumbnailUrl}
+                                    name={product.name}
+                                    contentType={product.thumbnailType}
+                                />
 
-            {/* Bottom Sheet for Product Actions */}
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-                <SheetContent side="bottom" className="rounded-t-[20px] px-0 pb-8 pt-3 max-h-[90vh] flex flex-col">
-                    <div className="w-10 h-1 bg-muted-foreground/20 rounded-full mx-auto mb-6 shrink-0" />
-                    {selectedProduct && (
-                        <div className="flex flex-col overflow-y-auto px-1">
-                            <div className="px-5 flex items-start gap-4 mb-8">
-                                <div className="relative size-[72px] rounded-lg overflow-hidden bg-muted shrink-0 border border-border shadow-sm">
-                                    <ProductThumbnail
-                                        url={selectedProduct.thumbnailUrl}
-                                        name={selectedProduct.name}
-                                        contentType={selectedProduct.thumbnailType}
-                                    />
+                                {/* Absolute Overlays */}
+                                <div className="absolute top-2.5 right-2.5 flex flex-col items-end gap-1.5">
+                                    <div className={cn(
+                                        "px-2 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-tighter border shadow-lg backdrop-blur-md",
+                                        product.status === "ready"
+                                            ? "bg-emerald-500 text-white border-emerald-400"
+                                            : "bg-white text-slate-700 border-white/50"
+                                    )}>
+                                        {product.status === "ready" ? "Live" : "Draft"}
+                                    </div>
+                                    <div className="px-2.5 py-1 rounded-lg bg-black/85 text-white text-[10px] font-semibold shadow-lg backdrop-blur-md border border-white/10">
+                                        {formatMoney(product.priceAmount, product.currency)}
+                                    </div>
                                 </div>
-                                <div className="flex-1 min-w-0 flex flex-col justify-center py-1">
-                                    <h3 className="font-semibold text-base leading-snug truncate">{selectedProduct.name}</h3>
-                                    <p className="text-sm font-medium mt-1 mb-2 text-foreground">{formatMoney(selectedProduct.priceAmount, selectedProduct.currency)}</p>
-                                    <div className="flex items-center gap-2">
-                                        <label className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background px-2 py-1 text-[11px] font-medium text-foreground">
-                                            <Checkbox
-                                                checked={selectedProduct.status === "ready"}
-                                                disabled={selectedProduct.status === "ready" || statusUpdatingProductId === selectedProduct.id}
-                                                onCheckedChange={(checked) => {
-                                                    if (!checked) return;
-                                                    if (selectedProduct.status === "ready") return;
-                                                    onStatusChange?.(selectedProduct.id, "ready");
-                                                    setSelectedProduct((prev) =>
-                                                        prev ? { ...prev, status: "ready" } : null
-                                                    );
-                                                }}
-                                            />
-                                            <span>
-                                                {statusUpdatingProductId === selectedProduct.id
-                                                    ? "Publishing..."
-                                                    : selectedProduct.status === "ready"
-                                                        ? "Published"
-                                                        : "Publish"}
-                                            </span>
-                                        </label>
-                                        <span className="text-[11px] text-muted-foreground font-medium">{selectedProduct.quantity} in stock</span>
+
+                                {product.quantity <= 5 && (
+                                    <div className="absolute bottom-2.5 left-2.5">
+                                        <div className="px-2.5 py-1 rounded-lg bg-rose-500 text-white text-[9px] font-semibold uppercase tracking-widest shadow-xl border border-rose-400/50">
+                                            {product.quantity === 0 ? "OUT" : `LOW: ${product.quantity}`}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-4 pt-3.5 bg-gradient-to-b from-white to-slate-50/30">
+                                <h3 className="font-semibold text-[13px] leading-tight tracking-tight truncate mb-1.5 text-slate-800">{product.name}</h3>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{product.category || "General"}</span>
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200/50">
+                                        <span className="text-[10px] font-semibold text-slate-900">{product.salesAmount || 0}</span>
+                                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">SOLD</span>
                                     </div>
                                 </div>
                             </div>
-
-                            <div className="flex flex-col px-4 gap-2">
-                                <Button
-                                    variant="secondary"
-                                    className="justify-start gap-3 h-[52px] text-sm font-semibold rounded-xl bg-muted/60 hover:bg-muted/80"
-                                    onClick={() => {
-                                        setSheetOpen(false);
-                                        setTimeout(() => handleEditProduct(selectedProduct.id), 250);
-                                    }}
-                                >
-                                    <HugeiconsIcon icon={Edit02Icon} className="size-[20px] text-foreground" />
-                                    Edit Product
-                                </Button>
-                                <Button
-                                    variant="secondary"
-                                    className="justify-start gap-3 h-[52px] text-sm font-semibold rounded-xl text-destructive bg-destructive/5 hover:bg-destructive/10"
-                                    onClick={() => {
-                                        setSheetOpen(false);
-                                        setTimeout(() => onDelete(selectedProduct.id), 250);
-                                    }}
-                                >
-                                    <HugeiconsIcon icon={Delete02Icon} className="size-[20px]" />
-                                    Delete Product
-                                </Button>
-                            </div>
                         </div>
-                    )}
-                </SheetContent>
-            </Sheet>
+                    ))
+                )}
+            </div>
         </div>
     );
-
 }

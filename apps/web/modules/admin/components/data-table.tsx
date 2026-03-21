@@ -28,6 +28,7 @@ export function DataTable<TData, TValue>({
   pageSize = 20,
   rowSelection,
   onRowSelectionChange,
+  getRowId,
 }: {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -35,6 +36,7 @@ export function DataTable<TData, TValue>({
   pageSize?: number;
   rowSelection?: RowSelectionState;
   onRowSelectionChange?: (updater: RowSelectionState | ((old: RowSelectionState) => RowSelectionState)) => void;
+  getRowId?: (row: TData) => string;
 }) {
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
@@ -48,6 +50,7 @@ export function DataTable<TData, TValue>({
   const table = useReactTable({
     data,
     columns,
+    getRowId,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     enableRowSelection: true,

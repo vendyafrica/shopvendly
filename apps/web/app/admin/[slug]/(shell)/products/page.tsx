@@ -10,22 +10,23 @@ import { useParams } from "next/navigation";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { 
-  SparklesIcon, 
-  Edit02Icon, 
-  Delete02Icon, 
-  MoreHorizontalIcon, 
-  Package01Icon, 
-  ShoppingBag01Icon, 
-  AlertCircleIcon, 
-  FileEditIcon, 
-  Tag01Icon, 
-  Download01Icon, 
-  Upload01Icon, 
-  Search01Icon, 
-  FilterIcon, 
+import {
+  SparklesIcon,
+  Edit02Icon,
+  Delete02Icon,
+  MoreHorizontalIcon,
+  Package01Icon,
+  ShoppingBag01Icon,
+  AlertCircleIcon,
+  FileEditIcon,
+  Tag01Icon,
+  Download01Icon,
+  Upload01Icon,
+  Search01Icon,
+  FilterIcon,
   Sorting05Icon,
   Add01Icon,
+  Tick01Icon,
 } from "@hugeicons/core-free-icons";
 import {
   DropdownMenu,
@@ -175,6 +176,39 @@ export default function ProductsPage() {
     }
   };
 
+  const handleBulkPublish = async () => {
+    const selected = Object.keys(rowSelection);
+    if (selected.length === 0) return;
+    try {
+      await Promise.all(
+        selected.map((id) =>
+          updateProductMutation.mutateAsync({
+            id,
+            data: { status: "ready" },
+          })
+        )
+      );
+      setRowSelection({});
+    } catch (e) {
+      console.error("Failed to publish products", e);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const selected = Object.keys(rowSelection);
+    if (selected.length === 0) return;
+    if (confirm(`Are you sure you want to delete ${selected.length} products?`)) {
+      try {
+        await Promise.all(
+          selected.map((id) => deleteProductMutation.mutateAsync(id))
+        );
+        setRowSelection({});
+      } catch (e) {
+        console.error("Failed to delete products", e);
+      }
+    }
+  };
+
   const columns: ColumnDef<ProductTableRow>[] = [
     {
       id: "select",
@@ -201,158 +235,20 @@ export default function ProductsPage() {
     {
       accessorKey: "name",
       header: "Product",
-      size: 300,
+      size: 200,
       cell: ({ row }) => {
         const product = row.original;
-        const field: EditableField = "name";
-        const isEditing = activeCell?.id === product.id && activeCell?.field === field;
-        const value = drafts[product.id]?.[field] ?? (product.name as string);
-
         return (
-          <div className="flex items-center gap-3">
-            <div className="relative aspect-square size-10 shrink-0 overflow-hidden rounded-md border bg-muted/40 group-hover:bg-muted/60 transition-colors">
+          <div className="flex items-center gap-4 py-1">
+            <div className="relative aspect-square size-12 shrink-0 overflow-hidden rounded-xl border bg-muted/20 shadow-sm">
               <ProductThumbnail url={product.thumbnailUrl} name={product.name} contentType={product.thumbnailType} />
             </div>
-            <div className="min-w-0 flex-1">
-              {isEditing ? (
-                <Input
-                  autoFocus
-                  value={value}
-                  onChange={(event) => handleDraftChange(product, field, event.target.value)}
-                  onBlur={() => handleInlineSave(product.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      handleInlineSave(product.id);
-                    }
-                    if (event.key === "Escape") {
-                      setDrafts((prev) => {
-                        const next = { ...prev };
-                        delete next[product.id];
-                        return next;
-                      });
-                      setActiveCell(null);
-                    }
-                  }}
-                  className="h-9 border-0 bg-transparent px-0 font-semibold shadow-none focus-visible:ring-0"
-                />
-              ) : (
-                <div className="group flex items-center gap-1.5 text-left p-1 -ml-1 rounded-md transition-colors w-full">
-                  <Link 
-                    href={`/admin/${slug}/products/${product.id}`}
-                    className="truncate hover:underline font-semibold text-foreground decoration-primary/30"
-                  >
-                    {value}
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setActiveCell({ id: product.id, field })}
-                    className="inline-flex items-center"
-                  >
-                    <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity shrink-0" />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      id: "category",
-      header: "Category",
-      size: 130,
-      cell: ({ row }) => (
-        <span className="text-xs text-muted-foreground bg-muted/20 px-2 py-1 rounded-full border border-border/40">
-          {row.original.category || "Uncategorized"}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "price",
-      header: "Price",
-      size: 120,
-      cell: ({ row }) => {
-        const product = row.original;
-        const field: EditableField = "priceAmount";
-        const isEditing = activeCell?.id === product.id && activeCell?.field === field;
-        const value = drafts[product.id]?.[field] ?? (product.priceAmount as number);
-
-        return (
-          <div className="group flex items-center gap-1.5 text-left transition-colors h-9">
-            {isEditing ? (
-              <Input
-                autoFocus
-                type="number"
-                value={value}
-                onChange={(event) => handleDraftChange(product, field, event.target.value)}
-                onBlur={() => handleInlineSave(product.id)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") handleInlineSave(product.id);
-                  if (event.key === "Escape") setActiveCell(null);
-                }}
-                className="h-8 w-24 px-1.5 py-0 border bg-background text-xs"
-              />
-            ) : (
-              <>
-                <span className="font-medium text-sm tabular-nums">
-                  {formatMoney(Number(value), product.currency)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setActiveCell({ id: product.id, field })}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <HugeiconsIcon icon={Edit02Icon} className="size-3 text-muted-foreground" />
-                </button>
-              </>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "quantity",
-      header: "Inventory",
-      size: 120,
-      cell: ({ row }) => {
-        const product = row.original;
-        const field: EditableField = "quantity";
-        const isEditing = activeCell?.id === product.id && activeCell?.field === field;
-        const value = drafts[product.id]?.[field] ?? (product.quantity as number);
-
-        return (
-          <div className="group flex items-center gap-1.5 text-left transition-colors h-9">
-            {isEditing ? (
-              <Input
-                autoFocus
-                type="number"
-                value={value}
-                onChange={(event) => handleDraftChange(product, field, event.target.value)}
-                onBlur={() => handleInlineSave(product.id)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") handleInlineSave(product.id);
-                  if (event.key === "Escape") setActiveCell(null);
-                }}
-                className="h-8 w-16 px-1.5 py-0 border bg-background text-xs"
-              />
-            ) : (
-              <>
-                <span className={cn(
-                  "text-sm font-medium tabular-nums",
-                  Number(value) <= 5 ? "text-amber-600" : "text-muted-foreground"
-                )}>
-                  {value} in stock
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setActiveCell({ id: product.id, field })}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <HugeiconsIcon icon={Edit02Icon} className="size-3 text-muted-foreground" />
-                </button>
-              </>
-            )}
+            <Link
+              href={`/admin/${slug}/products/${product.id}`}
+              className="font-medium text-sm tracking-tight capitalize hover:underline decoration-primary/30 truncate"
+            >
+              {product.name}
+            </Link>
           </div>
         );
       },
@@ -360,15 +256,58 @@ export default function ProductsPage() {
     {
       accessorKey: "status",
       header: "Status",
+      size: 120,
+      cell: ({ row }) => {
+        const status = row.original.status;
+        const colorMap = {
+          active: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30",
+          ready: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30",
+          draft: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-500/20 dark:text-slate-400 dark:border-slate-500/30",
+          "sold-out": "bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/30",
+        };
+        return (
+          <span className={cn(
+            "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium tracking-tight",
+            colorMap[status as keyof typeof colorMap] || "bg-muted text-muted-foreground border-border"
+          )}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "quantity",
+      header: "Inventory",
+      size: 140,
+      cell: ({ row }) => {
+        const quantity = Number(row.original.quantity);
+        return (
+          <span className={cn(
+            "text-sm font-medium tracking-tight whitespace-nowrap",
+            quantity === 0 ? "text-rose-600 font-medium" : quantity <= 5 ? "text-amber-600" : "text-muted-foreground"
+          )}>
+            {quantity} in stock
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "category",
+      header: "Category",
+      size: 140,
+      cell: ({ row }) => (
+        <span className="text-sm font-medium text-muted-foreground truncate max-w-[120px] block">
+          {row.original.category || "—"}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "salesAmount",
+      header: "Sales",
       size: 100,
       cell: ({ row }) => (
-        <span className={cn(
-          "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-          row.original.status === "ready" ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20" :
-            row.original.status === "draft" ? "border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20" :
-              "border-slate-200 bg-slate-50 text-slate-700 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20"
-        )}>
-          {row.original.status}
+        <span className="text-sm font-medium text-foreground/80">
+          {row.original.salesAmount || 0}
         </span>
       ),
     },
@@ -383,13 +322,11 @@ export default function ProductsPage() {
   return (
     <div className="flex-1 space-y-4 px-4 py-4 md:px-8 md:py-6">
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-4">
+        {/* Desktop-only Header */}
+        <div className="hidden md:flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="rounded-lg bg-primary/10 p-2 text-primary">
-              <HugeiconsIcon icon={Tag01Icon} className="size-5" />
-            </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">Products</h1>
+              <h1 className="text-xl font-semibold tracking-tight">Products</h1>
               <p className="hidden text-xs text-muted-foreground sm:block">
                 Manage your store inventory and availability.
               </p>
@@ -406,31 +343,21 @@ export default function ProductsPage() {
                 Import
               </Button>
             </div>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger>
                 <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs font-semibold px-3 group">
-                   More actions
-                   <HugeiconsIcon icon={MoreHorizontalIcon} className="size-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+                  More actions
+                  <HugeiconsIcon icon={MoreHorizontalIcon} className="size-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem>
-                  <HugeiconsIcon icon={SparklesIcon} className="mr-2 size-4 text-primary" />
-                  AI Auto-Categorize
+                <DropdownMenuItem onClick={handleBulkPublish}>
+                  <HugeiconsIcon icon={Tick01Icon} className="mr-2 size-4 text-primary" />
+                  Publish Selected
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  className="text-destructive"
-                  onClick={() => {
-                    const selected = Object.keys(rowSelection);
-                    if (selected.length === 0) return;
-                    if (confirm(`Are you sure you want to delete ${selected.length} products?`)) {
-                       selected.forEach(id => handleDelete(id));
-                       setRowSelection({});
-                    }
-                  }}
-                >
+                <DropdownMenuItem className="text-destructive" onClick={handleBulkDelete}>
                   <HugeiconsIcon icon={Delete02Icon} className="mr-2 size-4" />
                   Delete Selected
                 </DropdownMenuItem>
@@ -438,7 +365,7 @@ export default function ProductsPage() {
             </DropdownMenu>
 
             <Link href={`/admin/${slug}/products/new`}>
-              <Button size="sm" className="h-8 gap-1.5 bg-foreground text-xs font-bold text-background hover:bg-foreground/90 shadow-sm">
+              <Button size="sm" className="h-8 gap-1.5 text-xs font-medium text-background hover:bg-primary/90 shadow-sm">
                 <HugeiconsIcon icon={Add01Icon} className="size-4" />
                 Add product
               </Button>
@@ -446,23 +373,18 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        {/* Compact Stats Cards */}
-        <div className="flex gap-4 overflow-x-auto no-scrollbar py-1">
+        {/* Stats Cards Grid - Hidden on mobile, shown on medium screens and up */}
+        <div className="hidden md:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { label: "Total", value: rows.length, icon: Package01Icon, color: "text-primary", bg: "bg-primary/10" },
-            { label: "Active", value: rows.filter(r => r.status === "ready").length, icon: ShoppingBag01Icon, color: "text-emerald-600", bg: "bg-emerald-500/10" },
-            { label: "Drafts", value: rows.filter(r => r.status === "draft").length, icon: FileEditIcon, color: "text-slate-600", bg: "bg-slate-500/10" },
-            { label: "Low Stock", value: rows.filter(r => r.quantity <= 5).length, icon: AlertCircleIcon, color: "text-amber-600", bg: "bg-amber-500/10" }
+            { label: "Total", value: rows.length },
+            { label: "Active", value: rows.filter(r => r.status === "ready").length },
+            { label: "Drafts", value: rows.filter(r => r.status === "draft").length },
+            { label: "Low Stock", value: rows.filter(r => r.quantity <= 5).length }
           ].map((stat, i) => (
-             <div key={i} className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-border/40 bg-card/50 min-w-fit shadow-sm">
-                <div className={cn("p-1.5 rounded-md", stat.bg, stat.color)}>
-                   <HugeiconsIcon icon={stat.icon} className="size-3.5" />
-                </div>
-                <div className="flex flex-col">
-                   <span className="text-[10px] font-medium text-muted-foreground uppercase leading-tight tracking-wider">{stat.label}</span>
-                   <span className="text-sm font-bold leading-none">{stat.value}</span>
-                </div>
-             </div>
+            <div key={i} className="flex flex-col gap-1 rounded-2xl border border-border/60 bg-white px-6 py-4 shadow-sm">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase leading-tight tracking-wider">{stat.label}</span>
+              <span className="text-xl font-bold leading-none">{stat.value}</span>
+            </div>
           ))}
         </div>
       </div>
@@ -481,50 +403,55 @@ export default function ProductsPage() {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-muted/30 p-1 rounded-lg border border-border/40">
-           <div className="flex items-center gap-1 w-full sm:w-auto overflow-x-auto no-scrollbar">
-              <Button variant="ghost" size="sm" className="h-8 text-xs font-semibold bg-background shadow-sm border border-border/60">
+        {/* Desktop Table Content - Hidden on mobile */}
+        <div className="hidden md:flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
+          {/* Toolbar */}
+          <div className="flex flex-col gap-3 p-2 sm:flex-row sm:items-center justify-between border-b border-border/40 bg-muted/5">
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar px-1">
+              <Button variant="ghost" size="sm" className="h-9 text-xs font-medium bg-white border border-border/40 rounded-lg px-4 shadow-sm">
                 All
               </Button>
-              <Button variant="ghost" size="sm" className="h-8 text-xs font-semibold hover:bg-background/50">
+              <Button variant="ghost" size="sm" className="h-9 text-xs font-medium hover:bg-muted/30 px-3">
                 Active
               </Button>
-              <Button variant="ghost" size="sm" className="h-8 text-xs font-semibold hover:bg-background/50">
-                Ready
+              <Button variant="ghost" size="sm" className="h-9 text-xs font-medium hover:bg-muted/30 px-3">
+                Draft
               </Button>
-              <Button variant="ghost" size="sm" className="h-8 text-xs font-semibold hover:bg-background/50">
-                Sold Out
+              <Button variant="ghost" size="sm" className="h-9 text-xs font-semibold hover:bg-muted/30 px-3">
+                Archived
               </Button>
-              <Button variant="ghost" size="sm" className="h-8 px-2">
-                <HugeiconsIcon icon={Add01Icon} className="size-3.5" />
+              <Button variant="ghost" size="sm" className="h-9 px-2">
+                <HugeiconsIcon icon={Add01Icon} className="size-4" />
               </Button>
-           </div>
-           
-           <div className="flex items-center gap-2 w-full sm:w-auto">
-              <div className="relative flex-1 sm:w-64">
-                <HugeiconsIcon icon={Search01Icon} className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-                <Input 
-                  placeholder="Search products..." 
-                  className="h-8 pl-8 text-xs border-0 bg-transparent focus-visible:ring-0 shadow-none w-full" 
+            </div>
+
+            <div className="flex items-center gap-2 px-1">
+              <div className="relative flex-1 sm:w-72">
+                <HugeiconsIcon icon={Search01Icon} className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search products..."
+                  className="h-9 pl-9 text-xs border-0 bg-transparent focus-visible:ring-0 shadow-none w-full font-medium"
                 />
               </div>
-              <div className="h-4 w-px bg-border/60 mx-1 hidden sm:block" />
-              <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground">
-                <HugeiconsIcon icon={Sorting05Icon} className="size-4" />
+              <div className="h-5 w-px bg-border/40 mx-1 hidden sm:block" />
+              <Button variant="ghost" size="icon" className="size-9 rounded-lg hover:bg-muted/30 transition-colors">
+                <HugeiconsIcon icon={Sorting05Icon} className="size-4.5 text-muted-foreground" />
               </Button>
-              <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground">
-                <HugeiconsIcon icon={FilterIcon} className="size-4" />
+              <Button variant="ghost" size="icon" className="size-9 rounded-lg hover:bg-muted/30 transition-colors">
+                <HugeiconsIcon icon={FilterIcon} className="size-4.5 text-muted-foreground" />
               </Button>
-           </div>
-        </div>
+            </div>
+          </div>
 
-        <DataTable
-          columns={columns}
-          data={rows}
-          rowSelection={rowSelection}
-          onRowSelectionChange={setRowSelection}
-          className="border-none shadow-none"
-        />
+          <DataTable
+            columns={columns}
+            data={rows}
+            getRowId={(row) => row.id}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
+            className="border-none shadow-none"
+          />
+        </div>
 
         <div className="md:hidden">
           <ProductsMobileView

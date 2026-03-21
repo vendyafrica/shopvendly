@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useParams } from "next/navigation";
-import { ProductForm } from "../../components/product-form";
+import { ProductForm } from "../components/product-form";
 import { useTenant } from "@/modules/admin/context/tenant-context";
 import { useProductDetail } from "@/modules/products/hooks/use-products";
 import { HugeiconsIcon } from "@hugeicons/react";
