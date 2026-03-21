@@ -13,5 +13,3 @@ export * from "./verification-repo";
 export * from "./auth-repo";
 export * from "./instagram-repo";
 export * from "./cart-repo";
-export * from "./order-repo";
-export * from "./collection-repo";
