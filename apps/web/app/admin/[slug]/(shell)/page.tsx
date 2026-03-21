@@ -7,7 +7,7 @@ import { RecentTransactionsTable } from "@/app/admin/components/recent-transacti
 import { QuickAddLauncher } from "@/app/admin/components/quick-add-launcher";
 import { SimpleLineChartCard } from "@/app/admin/components/simple-line-chart-card";
 import { QuickActionsGrid } from "@/app/admin/components/quick-actions-grid";
-import { adminDashboardService } from "@/app/admin/lib/admin-dashboard-service";
+import { adminDashboardService } from "@/modules/admin";
 import { getStorefrontUrl } from "@/utils/misc";
 import {
   Add01Icon,
@@ -58,7 +58,7 @@ export default async function AdminPage({
     );
   }
 
-  const { store, stats, revenueSeries, ordersSeries, topProducts, transactionRows, currency, productCount } = data;
+  const { stats, revenueSeries, ordersSeries, topProducts, transactionRows, currency } = data;
   const [sRevenue, sOrders ] = stats;
   const basePath = `/admin/${slug}`;
   const storefrontUrl = getStorefrontUrl(slug);
@@ -88,7 +88,7 @@ export default async function AdminPage({
     { label: "Share store", href: storefrontUrl, icon: Share01Icon, external: true },
   ];
 
-  const activityItems = transactionRows.slice(0, 6).map((tx: any) => ({
+  const activityItems = transactionRows.slice(0, 6).map((tx: { id: string; customer: string; product: string; amount: string; status: string; date: string }) => ({
     id: tx.id,
     title: tx.customer || "New customer",
     subtitle: tx.product,

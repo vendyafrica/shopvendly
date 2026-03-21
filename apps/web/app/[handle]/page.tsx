@@ -1,15 +1,7 @@
-import { StorefrontContentSwitcher } from "./components/storefront-content-switcher.client";
-import { StorefrontFooter } from "./components/footer";
-import { Hero } from "./components/hero";
-import { StorefrontViewTracker } from "./components/StorefrontViewTracker";
-import { OneTapLogin } from "@/features/marketplace/components/one-tap-login";
-import { Suspense } from "react";
-
+import { StorefrontUI } from "./components/storefront-ui";
+import { storefrontService } from "@/modules/storefront";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
-
-import { storefrontService } from "@/modules/storefront/data";
 
 interface StorefrontPageProps {
   params: Promise<{ handle: string }>;
@@ -82,28 +74,15 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
   const hasSaleTab = saleProducts.length > 0;
 
   return (
-    <div className="min-h-screen">
-      {/* Async trackers — fire and forget, don't block render */}
-      <Suspense fallback={null}>
-        <StorefrontViewTracker storeSlug={handle} />
-      </Suspense>
-      <Suspense fallback={null}>
-        <OneTapLogin storeSlug={handle} />
-      </Suspense>
-
-      <Hero store={store} />
-
-      <StorefrontContentSwitcher
-        handle={handle}
-        collections={collections}
-        activeCollectionSlug={activeCollectionSlug}
-        activeSection={activeSection}
-        hasSaleTab={hasSaleTab}
-        initialQuery={query}
-        products={products}
-      />
-
-      <StorefrontFooter store={store} />
-    </div>
+    <StorefrontUI
+      handle={handle}
+      store={store as any}
+      products={products as any}
+      collections={collections as any}
+      activeCollectionSlug={activeCollectionSlug}
+      activeSection={activeSection}
+      hasSaleTab={hasSaleTab}
+      initialQuery={query}
+    />
   );
 }

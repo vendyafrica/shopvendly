@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { auth } from "@shopvendly/auth";
 import { NextRequest, NextResponse } from "next/server";
-import { storefrontService } from "@/modules/storefront/data";
+import { storefrontService } from "@/modules/storefront";
 import { productRatingsRepo } from "@/repo/product-ratings-repo";
 import type { StorefrontProductRouteParams, StorefrontProductMedia } from "@/models/storefront";
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { storefrontService } from "@/modules/storefront/data";
+import { storefrontService } from "@/modules/storefront";
 import type { StorefrontProduct, StorefrontProductMedia, StorefrontProductVariantSummary, StorefrontProductsRouteParams } from "@/models/storefront";
 
 function toCanonicalUploadThingUrl(rawUrl: string) {

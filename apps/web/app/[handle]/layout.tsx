@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import MarketplaceLayout from "../m/layout";
 import { StorefrontHeader } from "./components/header";
 import { HeaderSkeleton } from "./components/skeletons";
-import { storefrontService } from "@/modules/storefront/data";
+import { storefrontService } from "@/modules/storefront";
 
 const DEFAULT_STORE_LOGO = "/vendly.png";
 
