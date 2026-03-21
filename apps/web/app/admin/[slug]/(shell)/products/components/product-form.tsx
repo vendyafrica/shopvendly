@@ -533,7 +533,7 @@ export function ProductForm({
                                 {/* Collections Dropdown */}
                                 <div className="space-y-2 pt-2 border-t w-full">
                                     <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Collections</Label>
-                                    <DropdownMenu modal={false}>
+                                    <DropdownMenu>
                                         <DropdownMenuTrigger
                                             render={
                                                 <Button 
