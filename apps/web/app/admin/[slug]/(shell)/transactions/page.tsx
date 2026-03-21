@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { useTenant } from "@/app/admin/context/tenant-context";
+import { useTenant } from "@/modules/admin/context/tenant-context";
 import { type OrderTableRow, type OrderStatus, type PaymentStatus } from "./components/order-table";
 import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Download04Icon, FilterIcon } from "@hugeicons/core-free-icons";
-import { SegmentedStatsCard } from "@/app/admin/components/segmented-stats-card";
-import { RecentTransactionsTable } from "@/app/admin/components/recent-transactions-table";
+import { SegmentedStatsCard } from "@/modules/admin/components/segmented-stats-card";
+import { RecentTransactionsTable } from "@/modules/admin/components/recent-transactions-table";
 import { OrdersPageSkeleton } from "@/components/ui/page-skeletons";
 import { TransactionsMobileView } from "./components/transactions-mobile-view";
 

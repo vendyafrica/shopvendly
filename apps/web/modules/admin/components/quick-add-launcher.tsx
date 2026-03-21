@@ -10,7 +10,7 @@ import {
   Share01Icon,
 } from "@hugeicons/core-free-icons";
 import { UploadModal } from "@/app/admin/[slug]/(shell)/products/components/upload-modal";
-import { useTenant } from "@/app/admin/context/tenant-context";
+import { useTenant } from "@/modules/admin/context/tenant-context";
 import { useInvalidateProducts } from "@/modules/products/hooks/use-products";
 import { Button } from "@shopvendly/ui/components/button";
 import {

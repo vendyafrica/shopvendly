@@ -11,9 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@shopvendly/ui/components/select";
-import { useTenant } from "@/app/admin/context/tenant-context";
+import { useTenant } from "@/modules/admin/context/tenant-context";
 import { HeroEditor } from "../studio/components/hero-editor";
-import { IntegrationsPanel } from "../../../components/integrations-panel";
+import { IntegrationsPanel } from "@/modules/admin/components/integrations-panel";
 import { useUpload } from "@/modules/media/hooks/use-upload";
 
 import { Image02Icon, Loading03Icon } from "@hugeicons/core-free-icons";

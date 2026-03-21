@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/app/admin/components/data-table";
+import { DataTable } from "@/modules/admin/components/data-table";
 
 export type CustomerRow = {
   name: string;

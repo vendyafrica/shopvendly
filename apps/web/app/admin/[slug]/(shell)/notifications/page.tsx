@@ -1,5 +1,5 @@
-import { SegmentedStatsCard } from "@/app/admin/components/segmented-stats-card";
-import type { TenantBootstrap } from "@/app/admin/context/tenant-context";
+import { SegmentedStatsCard } from "@/modules/admin/components/segmented-stats-card";
+import type { TenantBootstrap } from "@/modules/admin/context/tenant-context";
 
 import { db } from "@shopvendly/db/db";
 import { and, desc, eq, isNull } from "@shopvendly/db";

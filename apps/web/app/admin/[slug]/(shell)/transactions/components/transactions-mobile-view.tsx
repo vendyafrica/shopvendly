@@ -7,8 +7,8 @@ import {
     SheetContent
 } from "@shopvendly/ui/components/sheet";
 import { Badge } from "@shopvendly/ui/components/badge";
-import type { TenantBootstrap } from "@/app/admin/context/tenant-context";
-import type { TransactionRow } from "@/app/admin/components/recent-transactions-table";
+import type { TenantBootstrap } from "@/modules/admin/context/tenant-context";
+import type { TransactionRow } from "@/modules/admin/components/recent-transactions-table";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkBadge01Icon, Invoice01Icon, PackageOpenIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";

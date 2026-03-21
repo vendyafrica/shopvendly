@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { type ReactNode } from "react";
-
-
-import { RevenueAreaChartCard, TopProductsBarChartCard } from "@/app/admin/components/dynamic-charts";
-import { RecentTransactionsTable } from "@/app/admin/components/recent-transactions-table";
-import { QuickAddLauncher } from "@/app/admin/components/quick-add-launcher";
-import { SimpleLineChartCard } from "@/app/admin/components/simple-line-chart-card";
-import { QuickActionsGrid } from "@/app/admin/components/quick-actions-grid";
+import { RevenueAreaChartCard, TopProductsBarChartCard } from "@/modules/admin/components/dynamic-charts";
+import { RecentTransactionsTable } from "@/modules/admin/components/recent-transactions-table";
+import { QuickAddLauncher } from "@/modules/admin/components/quick-add-launcher";
+import { SimpleLineChartCard } from "@/modules/admin/components/simple-line-chart-card";
+import { QuickActionsGrid } from "@/modules/admin/components/quick-actions-grid";
 import { adminDashboardService } from "@/modules/admin";
 import { getStorefrontUrl } from "@/utils/misc";
 import {

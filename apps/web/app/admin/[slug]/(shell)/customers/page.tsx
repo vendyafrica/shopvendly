@@ -1,4 +1,4 @@
-import { SegmentedStatsCard } from "@/app/admin/components/segmented-stats-card";
+import { SegmentedStatsCard } from "@/modules/admin/components/segmented-stats-card";
 import { db } from "@shopvendly/db/db";
 import { orders, stores } from "@shopvendly/db/schema";
 

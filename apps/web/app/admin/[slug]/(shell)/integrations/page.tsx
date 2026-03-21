@@ -1,6 +1,6 @@
 "use client";
 
-import { IntegrationsPanel } from "@/app/admin/components/integrations-panel";
+import { IntegrationsPanel } from "@/modules/admin/components/integrations-panel";
 
 export default function IntegrationsPage() {
   return (

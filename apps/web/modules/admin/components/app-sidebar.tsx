@@ -39,7 +39,7 @@ import { usePathname, useParams } from "next/navigation";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import { StoreAvatarSimple } from "@/components/store-avatar";
 
-import { useTenant } from "@/app/admin/context/tenant-context";
+import { useTenant } from "@/modules/admin/context/tenant-context";
 
 type SidebarNavSubItem = {
   title: string;

@@ -2,16 +2,14 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { useTenant } from "@/app/admin/context/tenant-context";
-import { SegmentedStatsCard } from "@/app/admin/components/segmented-stats-card";
-import { DataTable } from "@/app/admin/components/data-table";
+import { useTenant } from "@/modules/admin/context/tenant-context";
+import { SegmentedStatsCard } from "@/modules/admin/components/segmented-stats-card";
+import { DataTable } from "@/modules/admin/components/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
-
 import { Button } from "@shopvendly/ui/components/button";
 import { Checkbox } from "@shopvendly/ui/components/checkbox";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete02Icon, Link01Icon } from "@hugeicons/core-free-icons";
-
 import { AddCollectionButton } from "./components/add-collection-button";
 import { UploadCollectionModal, type MediaItem } from "./components/upload-collection-modal";
 import { AssignProductsModal } from "./components/assign-products-modal";

@@ -15,7 +15,7 @@ import {
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 
-import { useTenant } from "@/app/admin/context/tenant-context";
+import { useTenant } from "@/modules/admin/context/tenant-context";
 
 type IntegrationsPanelVariant = "default" | "compact";
 

@@ -5,8 +5,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAppSession } from "@/contexts/app-session-context";
 import { signOut } from "@shopvendly/auth/react";
 import { useRouter } from "next/navigation";
-import { useTenant } from "@/app/admin/context/tenant-context";
-import { useHeaderActions } from "@/app/admin/context/header-actions-context";
+import { useTenant } from "@/modules/admin/context/tenant-context";
+import { useHeaderActions } from "@/modules/admin/context/header-actions-context";
 import { getStorefrontUrl } from "@/utils/misc";
 
 export function AdminHeader({

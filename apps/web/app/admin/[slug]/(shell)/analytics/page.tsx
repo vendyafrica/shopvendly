@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useTenant } from "@/app/admin/context/tenant-context";
-import { SegmentedStatsCard } from "@/app/admin/components/segmented-stats-card";
-import { RevenueAreaChartCard, VisitsAreaChartCard, type RevenuePoint, type VisitsPoint } from "@/app/admin/components/dynamic-charts";
+import { useTenant } from "@/modules/admin/context/tenant-context";
+import { SegmentedStatsCard } from "@/modules/admin/components/segmented-stats-card";
+import { RevenueAreaChartCard, VisitsAreaChartCard, type RevenuePoint, type VisitsPoint } from "@/modules/admin/components/dynamic-charts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
 

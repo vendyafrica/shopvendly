@@ -1,14 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { SegmentedStatsCard } from "@/app/admin/components/segmented-stats-card";
-import { DataTable } from "@/app/admin/components/data-table";
+import { SegmentedStatsCard } from "@/modules/admin/components/segmented-stats-card";
+import { DataTable } from "@/modules/admin/components/data-table";
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { AddProductButton } from "./components/add-product-button";
-import { useTenant } from "@/app/admin/context/tenant-context";
+import { useTenant } from "@/modules/admin/context/tenant-context";
 import { useSearchParams } from "next/navigation";
 
 import Image from "next/image";
