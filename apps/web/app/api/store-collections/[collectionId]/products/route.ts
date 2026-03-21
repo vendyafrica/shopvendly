@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
+import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
 import { storeCollectionsRepo } from "@/repo/store-collections-repo";
 
 const updateProductsSchema = z.object({

@@ -1,9 +1,9 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { orderService } from "@/features/orders/lib/order-service";
+import { orderService } from "@/modules/orders";
 import { ordersRepo } from "@/repo/orders-repo";
-import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
+import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
 
 /**
  * GET /api/orders/stats

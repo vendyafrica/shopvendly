@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { marketplaceService } from "@/features/marketplace/lib/marketplace-service";
+import { marketplaceService } from "@/modules/marketplace";
 
 import { type MarketplaceCategoryRouteParams as RouteParams } from "@/models";
 

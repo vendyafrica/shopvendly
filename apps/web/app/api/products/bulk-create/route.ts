@@ -1,9 +1,9 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { productService } from "@/features/products/lib/product-service";
-import { getTenantMembership } from "@/app/admin/lib/tenant-membership";
-import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
+import { productService } from "@/modules/products";
+import { getTenantMembership } from "@/modules/admin";
+import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
 import { tenantRepo } from "@/repo/tenant-repo";
 import { storeRepo } from "@/repo/store-repo";
 import { revalidateTag, revalidatePath } from "next/cache";

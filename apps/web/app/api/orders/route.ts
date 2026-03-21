@@ -1,10 +1,10 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { orderService } from "@/features/orders/lib/order-service";
+import { orderService } from "@/modules/orders";
 import { orderQuerySchema } from "@/features/orders/lib/order-models";
 import { ordersRepo } from "@/repo/orders-repo";
-import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
+import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
 
 /**
  * GET /api/orders

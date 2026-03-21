@@ -1,7 +1,7 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { cartService } from "@/features/cart/lib/cart-service";
+import { cartService } from "@/modules/cart";
 import { instagramRepo } from "@/repo/instagram-repo";
 import { type CartItemWithRelations, addItemToCartSchema } from "@/models";
 

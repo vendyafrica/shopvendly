@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { marketplaceService } from "@/features/marketplace/lib/marketplace-service";
+import { marketplaceService } from "@/modules/marketplace";
 
 /**
  * GET /api/marketplace/search?q=term&storeLimit=&productLimit=&includeDescriptions=
