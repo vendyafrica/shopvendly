@@ -1,51 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storefrontService } from "@/modules/storefront";
-import type { StorefrontProduct, StorefrontProductMedia, StorefrontProductVariantSummary, StorefrontProductsRouteParams } from "@/models/storefront";
-
-function toCanonicalUploadThingUrl(rawUrl: string) {
-    try {
-        const parsed = new URL(rawUrl);
-        const fileId = parsed.pathname.split("/").filter(Boolean).pop();
-        if (!fileId) return rawUrl;
-
-        const isUploadThingHost = parsed.hostname.endsWith(".ufs.sh") || parsed.hostname === "utfs.io";
-        if (!isUploadThingHost) return rawUrl;
-
-        return `https://utfs.io/f/${fileId}`;
-    } catch {
-        return rawUrl;
-    }
-}
-
-function resolveMediaUrl(entry?: StorefrontProductMedia | null): string | null {
-    if (!entry?.media) {
-        return null;
-    }
-
-    const { blobUrl, blobPathname } = entry.media;
-
-    if (blobPathname) {
-        if (/^https?:\/\//i.test(blobPathname)) {
-            return toCanonicalUploadThingUrl(blobPathname);
-        }
-
-        return `https://utfs.io/f/${blobPathname.replace(/^\/+/, "")}`;
-    }
-
-    if (blobUrl) {
-        return toCanonicalUploadThingUrl(blobUrl);
-    }
-
-    return null;
-}
-
-function resolveMediaContentType(entry?: StorefrontProductMedia | null): string | null {
-    if (!entry?.media) {
-        return null;
-    }
-
-    return entry.media.contentType ?? null;
-}
+import type { StorefrontProductVariantSummary, StorefrontProductsRouteParams } from "@/models/storefront";
 
 /**
 
@@ -81,12 +36,12 @@ export async function GET(request: NextRequest, { params }: StorefrontProductsRo
             ? await storefrontService.getStoreProductsByCollectionSlug(store.id, collection, q)
             : await storefrontService.getStoreProducts(store.id, q);
 
-        let productList = fetchedProducts as StorefrontProduct[];
+        let productList = fetchedProducts;
 
         if (section === "sale") {
             productList = productList.filter((product) => {
-                const livePrice = Number(product.priceAmount || 0);
-                const originalPrice = Number(product.originalPriceAmount || 0);
+                const livePrice = Number(product.price || 0);
+                const originalPrice = Number(product.originalPrice || 0);
                 return originalPrice > livePrice && livePrice >= 0;
             });
         }
@@ -99,35 +54,31 @@ export async function GET(request: NextRequest, { params }: StorefrontProductsRo
 
         return NextResponse.json(
             productList.map((product) => {
-                const price = Number(product.priceAmount || 0);
-                const originalPrice = Number(product.originalPriceAmount || 0);
+                const price = Number(product.price || 0);
+                const originalPrice = Number(product.originalPrice || 0);
                 const hasSale = originalPrice > price;
                 const discountPercent = hasSale && originalPrice > 0
                     ? Math.round(((originalPrice - price) / originalPrice) * 100)
                     : null;
 
-                const variantOptions = product.variants?.enabled
-                    ? product.variants.options ?? []
-                    : [];
-
-                const variantSummary: StorefrontProductVariantSummary = {
-                    hasColors: variantOptions.some((option) => option.type === "color" && (option.values?.length ?? 0) > 0),
-                    hasSizes: variantOptions.some((option) => option.type === "size" && (option.values?.length ?? 0) > 0),
+                const variantSummary: StorefrontProductVariantSummary = product.variantSummary ?? {
+                    hasColors: false,
+                    hasSizes: false,
                 };
 
                 return {
                     id: product.id,
-                    slug: product.slug || product.productName.toLowerCase().replace(/\s+/g, "-"),
-                    name: product.productName,
+                    slug: product.slug || product.name.toLowerCase().replace(/\s+/g, "-"),
+                    name: product.name,
                     price,
                     originalPrice: hasSale ? originalPrice : null,
                     hasSale,
                     discountPercent,
                     currency: product.currency,
-                    image: resolveMediaUrl(product.media?.[0]),
-                    contentType: resolveMediaContentType(product.media?.[0]),
+                    image: product.image ?? null,
+                    contentType: product.contentType ?? null,
                     variantSummary,
-                    averageRating: product.rating ?? 0,
+                    averageRating: product.averageRating ?? 0,
                     ratingCount: product.ratingCount ?? 0,
                 };
             })

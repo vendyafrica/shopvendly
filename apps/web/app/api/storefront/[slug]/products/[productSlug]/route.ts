@@ -3,20 +3,7 @@ import { auth } from "@shopvendly/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { storefrontService } from "@/modules/storefront";
 import { productRatingsRepo } from "@/repo/product-ratings-repo";
-import type { StorefrontProductRouteParams, StorefrontProductMedia } from "@/models/storefront";
-
-function resolveMediaUrl(entry?: StorefrontProductMedia | null): string | null {
-    if (!entry?.media) return null;
-
-    const { blobUrl, blobPathname } = entry.media;
-
-    if (blobUrl) return blobUrl;
-
-    if (!blobPathname) return null;
-    if (/^https?:\/\//i.test(blobPathname)) return blobPathname;
-
-    return `https://utfs.io/f/${blobPathname.replace(/^\/+/, "")}`;
-}
+import type { StorefrontProductRouteParams } from "@/models/storefront";
 
 
 
@@ -69,26 +56,17 @@ export async function GET(request: NextRequest, { params }: StorefrontProductRou
 
         return NextResponse.json({
             id: product.id,
-            slug: product.slug || product.productName.toLowerCase().replace(/\s+/g, "-"),
-            name: product.productName,
+            slug: product.slug || product.name.toLowerCase().replace(/\s+/g, "-"),
+            name: product.name,
             description: product.description,
-            price: Number(product.priceAmount || 0),
-            originalPrice: Number(product.originalPriceAmount || 0) > Number(product.priceAmount || 0)
-                ? Number(product.originalPriceAmount || 0)
-                : null,
+            price: Number(product.price || 0),
+            originalPrice: product.originalPrice ?? null,
             currency: product.currency,
-            availableQuantity: (product as { quantity?: number })?.quantity ?? 0,
-            variants: product.variants ?? null,
-            images: (product.media ?? [])
-                .map((m) => resolveMediaUrl(m))
-                .filter(Boolean),
-            mediaItems: (product.media ?? [])
-                .map((m) => ({
-                    url: resolveMediaUrl(m),
-                    contentType: m.media?.contentType ?? null,
-                }))
-                .filter((m) => Boolean(m.url)),
-            rating: product.rating ?? 0,
+            availableQuantity: (product as { quantity?: number })?.quantity ?? null,
+            variants: null,
+            images: Array.isArray(product.images) ? product.images : [],
+            mediaItems: Array.isArray(product.mediaItems) ? product.mediaItems : [],
+            rating: product.averageRating ?? 0,
             ratingCount: product.ratingCount ?? 0,
             userRating,
             store: {

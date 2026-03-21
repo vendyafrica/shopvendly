@@ -224,6 +224,7 @@ export function useCheckout() {
         clearCheckoutState();
         paymentFlowStartedAtRef.current = null;
         setShowPaymentCancelHint(false);
+        if (!store) return;
         await clearStoreFromCart(store.id);
         setActiveOrderId(null);
         setPaymentFlowStatus("successful");
