@@ -1,6 +1,6 @@
 "use client";
 
-import { useWishlistView } from "../hooks/use-wishlist-view";
+import { useWishlistView } from "@/modules/storefront/hooks/use-wishlist-view";
 import { WishlistUI } from "@/modules/storefront/components";
 
 export default function WishlistClient() {

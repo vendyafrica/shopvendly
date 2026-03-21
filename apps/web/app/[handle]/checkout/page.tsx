@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { useCheckout } from "../hooks/use-checkout";
+import { useCheckout } from "@/modules/storefront/hooks/use-checkout";
 import { CheckoutUI, CheckoutLoading } from "@/modules/storefront/components";
 
 function CheckoutContent() {

@@ -6,7 +6,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete02Icon, MinusSignIcon, PlusSignIcon, ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
 import { bricolage as geistSans } from "@/utils/fonts";
-import { CartItem } from "@/app/[handle]/models/cart";
+import { CartItem } from "@/modules/storefront/models/cart";
 
 interface StoreCartUIProps {
     storeSlug: string;

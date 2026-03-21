@@ -12,10 +12,10 @@ import {
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { bricolage as geistSans } from "@/utils/fonts";
-import { CheckoutPaymentMethod, PaymentFlowStatus, PhoneVerificationStatus } from "@/app/[handle]/models/checkout";
+import { CheckoutPaymentMethod, PaymentFlowStatus } from "@/modules/storefront/models/checkout";
 
 interface CheckoutUIProps {
-    state: any; // Using any for brevity in this complex component, but should ideally be typed
+    state: any;
     actions: {
         handleSubmit: (e: React.FormEvent) => void;
         resetPaymentRetryState: () => void;
@@ -69,8 +69,8 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
     } = state;
 
     const {
-        handleSubmit, resetPaymentRetryState, cancelCollectoPayment,
-        setFullName, setAddress, setPhone, setPaymentMethod, setShowStorePolicy
+        handleSubmit, cancelCollectoPayment,
+        setFullName, setAddress, setPhone, setShowStorePolicy
     } = actions;
 
     if (!isLoaded || !store) return null;

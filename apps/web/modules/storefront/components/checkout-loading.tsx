@@ -1,7 +1,3 @@
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Loading03Icon } from "@hugeicons/core-free-icons";
-import { bricolage as geistSans } from "@/utils/fonts";
-
 export function CheckoutLoading() {
     return (
         <div className="min-h-screen bg-white pt-20 pb-24">
