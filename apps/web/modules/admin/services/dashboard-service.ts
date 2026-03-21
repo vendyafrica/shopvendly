@@ -82,7 +82,7 @@ export const adminDashboardService = {
       }
       const isoDate = day.toISOString().slice(0, range === "daily" ? 13 : 10).replace("T", " ");
       const formattedDate = range === "daily" ? `${day.getHours()}:00` : toChartDateLabel(isoDate.slice(0, 10));
-      
+
       const repoKey = range === "daily" ? `${day.toISOString().slice(0, 10)} ${day.getHours().toString().padStart(2, "0")}:00` : day.toISOString().slice(0, 10);
 
       const prevDay = new Date(day.getTime() - (to.getTime() - from.getTime()));
@@ -193,9 +193,6 @@ export const adminDashboardService = {
       discounts: paidKpis.discounts,
       netSales: paidKpis.grossSales - paidKpis.discounts - paidKpis.refunds,
       totalSales: (paidKpis.grossSales - paidKpis.discounts - paidKpis.refunds) + paidKpis.shippingCharges + paidKpis.taxes,
-      revenue: paidKpis.revenuePaid,
-      balance: balance,
-      paidOut: paidOut,
     };
 
     return {

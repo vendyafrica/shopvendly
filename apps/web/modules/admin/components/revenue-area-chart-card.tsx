@@ -50,23 +50,21 @@ export function RevenueAreaChartCard({
       <CardHeader className="flex flex-row items-start justify-between space-y-0 p-6 pb-2 md:p-8 md:pb-4">
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-sm font-medium border-b border-dotted border-muted-foreground/40 cursor-help flex items-center gap-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
               {title}
             </CardTitle>
-            <Info className="h-4 w-4 text-muted-foreground/60" />
           </div>
-          <div className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+          <div className="text-2xl font-semibold text-foreground md:text-2xl">
             {totalLabel}
-            <span className="text-muted-foreground font-normal ml-2">—</span>
           </div>
         </div>
         <Select value={timeRange} onValueChange={(value: any) => setTimeRange(value)}>
-          <SelectTrigger className="w-[100px] rounded-lg border-border sm:ml-auto h-8 bg-muted/20" size="sm">
+          <SelectTrigger className="w-[110px] rounded-md border-border sm:ml-auto h-12 px-4 bg-muted/20 text-sm font-medium" size="default">
             <SelectValue placeholder="Time range" />
           </SelectTrigger>
-          <SelectContent align="end" className="rounded-xl">
-            <SelectItem value="30d">30d</SelectItem>
-            <SelectItem value="7d">7d</SelectItem>
+          <SelectContent align="end" className="rounded-md p-1">
+            <SelectItem className="py-1 px-3" value="30d">30d</SelectItem>
+            <SelectItem className="py-1 px-3" value="7d">7d</SelectItem>
           </SelectContent>
         </Select>
       </CardHeader>
@@ -94,11 +92,12 @@ export function RevenueAreaChartCard({
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickCount={3}
-              domain={[0, "auto"]}
+              tickCount={5}
+              domain={[0, (dataMax: number) => (dataMax === 0 ? 1000 : dataMax * 1.1)]}
               tickFormatter={(value) => {
                 if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
-                return `UGX ${value}`;
+                if (value === 0) return "UGX 0";
+                return value.toString();
               }}
             />
             <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
@@ -121,20 +120,11 @@ export function RevenueAreaChartCard({
                 </div>
               )}
             />
-            <defs>
-              <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-total)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="var(--color-total)" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="fillPrevRevenue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-prevTotal)" stopOpacity={0.1} />
-                <stop offset="95%" stopColor="var(--color-prevTotal)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
             <Area
               dataKey="prevTotal"
               type="monotone"
-              fill="url(#fillPrevRevenue)"
+              fill="var(--color-prevTotal)"
+              fillOpacity={0.1}
               stroke="var(--color-prevTotal)"
               strokeWidth={2}
               strokeDasharray="4 4"
@@ -142,7 +132,8 @@ export function RevenueAreaChartCard({
             <Area
               dataKey="total"
               type="monotone"
-              fill="url(#fillRevenue)"
+              fill="var(--color-total)"
+              fillOpacity={0.2}
               stroke="var(--color-total)"
               strokeWidth={2}
             />
