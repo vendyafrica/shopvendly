@@ -6,7 +6,6 @@ import { Suspense } from "react";
 import { resolveTenantAdminAccess } from "@/modules/admin/services/access-service";
 import { SidebarInset, SidebarProvider } from "@shopvendly/ui/components/sidebar";
 import { Providers } from "../../../providers";
-import { AdminHeader } from "@/modules/admin/components/dashboard-header";
 import { HeaderActionsProvider } from "@/modules/admin/context/header-actions-context";
 import { TenantProvider } from "@/modules/admin/context/tenant-context";
 import { AppSessionProvider } from "@/contexts/app-session-context";
@@ -82,7 +81,6 @@ async function TenantAdminLayoutInner({
             <AppSidebar basePath={basePath} />
             <HeaderActionsProvider>
               <SidebarInset>
-                <AdminHeader tenantName={store.name} />
                 <div className="flex flex-1 flex-col gap-4 p-4 pt-4 pb-24 md:pb-4">{children}</div>
               </SidebarInset>
             </HeaderActionsProvider>

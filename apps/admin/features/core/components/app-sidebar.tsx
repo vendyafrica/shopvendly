@@ -18,8 +18,25 @@ import {
   UserShield02Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
-  UserGroupIcon
+  UserGroupIcon,
+  Logout01Icon,
+  MoreHorizontalIcon,
+  User02Icon,
 } from "@hugeicons/core-free-icons";
+
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@shopvendly/ui/components/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@shopvendly/ui/components/dropdown-menu";
+import { signOut } from "../../../lib/auth";
+import { useRouter } from "next/navigation";
 
 import {
   Sidebar,
@@ -37,6 +54,7 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@shopvendly/ui/components/sidebar";
+import { cn } from "@shopvendly/ui/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
@@ -165,11 +183,23 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 export function AppSidebar({
   basePath: basePathProp,
   variant,
+  user,
   ...props
-}: AppSidebarProps) {
+}: AppSidebarProps & { user?: { name?: string | null; image?: string | null; email?: string | null } }) {
   const pathname = usePathname();
   const params = useParams();
   const { state, toggleSidebar } = useSidebar();
+  const router = useRouter();
+
+  const fullName = user?.name || "Admin";
+  const firstName = fullName.split(" ")[0] || "A";
+  const avatarUrl = user?.image || "";
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push("/login");
+    router.refresh();
+  };
 
   // Try to get tenant from params first, then fallback to parsing basePath
   let tenant = getTenantFromParams(params);
@@ -237,7 +267,7 @@ export function AppSidebar({
         <SidebarGroup>
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {items.map((item) => {
                 const fullUrl = basePath ? joinPaths(basePath, item.url) : normalizePath(item.url);
                 const isActive = item.url === "/"
@@ -245,14 +275,20 @@ export function AppSidebar({
                   : pathname === fullUrl || pathname.startsWith(fullUrl + "/");
 
                 return (
-                  <SidebarMenuItem key={item.title} >
+                  <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
-                      className="cursor-pointer"
-                      isActive={isActive}
+                      className={cn(
+                        "h-9 px-3 transition-all duration-200 hover:bg-sidebar-accent/50",
+                        isActive && "bg-sidebar-accent/80 font-semibold text-primary shadow-sm"
+                      )}
                       render={<Link href={fullUrl} />}
                     >
-                      <HugeiconsIcon icon={item.icon} />
-                      <span>{item.title}</span>
+                      <HugeiconsIcon 
+                        icon={item.icon} 
+                        size={20} 
+                        className={cn("transition-colors", isActive ? "text-primary" : "text-muted-foreground")} 
+                      />
+                      <span className="text-[14px] leading-none">{item.title}</span>
                     </SidebarMenuButton>
                     {item.items?.length ? (
                       <SidebarMenuSub className="ml-0 border-l-0 px-1.5 cursor-pointer">
@@ -283,8 +319,36 @@ export function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
-        <SidebarMenu>
+      <SidebarFooter className="p-2 pb-4 border-t border-sidebar-border/50 bg-sidebar/50">
+        <SidebarMenu className="gap-1">
+          {/* Profile Item */}
+          <SidebarMenuItem>
+            {(() => {
+              const profileUrl = basePath ? joinPaths(basePath, "/profile") : "/profile";
+              const isProfileActive = pathname === profileUrl;
+              return (
+                <SidebarMenuButton
+                  size="lg"
+                  isActive={isProfileActive}
+                  render={<Link href={profileUrl} />}
+                  className={cn(
+                    "h-10 w-full px-3 hover:bg-sidebar-accent/50 transition-all",
+                    isProfileActive && "bg-sidebar-accent/80 font-semibold text-primary shadow-sm"
+                  )}
+                >
+                  <Avatar className="h-6 w-6 rounded-full border border-border/50 ring-2 ring-background">
+                    <AvatarImage src={avatarUrl} alt={fullName} />
+                    <AvatarFallback className="text-[10px] font-bold">
+                      {firstName.charAt(0) || "A"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-[14px] ml-2 font-medium">Profile</span>
+                </SidebarMenuButton>
+              );
+            })()}
+          </SidebarMenuItem>
+
+          {/* Settings Item */}
           <SidebarMenuItem>
             {(() => {
               const settingsUrl = basePath ? joinPaths(basePath, "/settings") : "/settings";
@@ -294,14 +358,28 @@ export function AppSidebar({
                   size="lg"
                   isActive={isSettingsActive}
                   render={<Link href={settingsUrl} />}
+                  className={cn(
+                    "h-10 w-full px-3 hover:bg-sidebar-accent/50 transition-all",
+                    isSettingsActive && "bg-sidebar-accent/80 font-semibold text-primary shadow-sm"
+                  )}
                 >
-                  <div>
-                    <HugeiconsIcon icon={Settings01Icon} className="size-4" />
-                  </div>
-                  <span className="font-medium">Settings</span>
+                  <HugeiconsIcon icon={Settings01Icon} size={18} className={cn("transition-colors", isSettingsActive ? "text-primary" : "text-muted-foreground")} />
+                  <span className="text-[14px] ml-2 font-medium">Settings</span>
                 </SidebarMenuButton>
               );
             })()}
+          </SidebarMenuItem>
+
+          {/* Logout Item */}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              size="lg"
+              onClick={handleLogout}
+              className="h-10 w-full px-3 hover:bg-rose-50/50 text-rose-600 transition-all hover:text-rose-700 font-medium group"
+            >
+              <HugeiconsIcon icon={Logout01Icon} size={18} className="group-hover:translate-x-0.5 transition-transform" />
+              <span className="text-[14px] ml-2">Logout</span>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

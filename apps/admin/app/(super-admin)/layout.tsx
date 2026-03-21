@@ -22,9 +22,8 @@ export default async function adminLayout({
         } as React.CSSProperties
       }
     >
-      <AppSidebar />
+      <AppSidebar user={user} />
       <SidebarInset>
-        <AdminHeader user={user} />
         <div className="flex flex-1 flex-col gap-4 p-4 pt-4 pb-24 md:pb-4">
           {children}
         </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { SegmentedStatsCard } from "@/modules/admin/components/segmented-stats-card";
 import { DataTable } from "@/modules/admin/components/data-table";
 
 import type { ColumnDef } from "@tanstack/react-table";
@@ -15,13 +14,14 @@ import Image from "next/image";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { SparklesIcon, Loading03Icon, Edit02Icon, Delete02Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
+import { SparklesIcon, Loading03Icon, Edit02Icon, Delete02Icon, MoreHorizontalIcon, Package01Icon, ShoppingBag01Icon, AlertCircleIcon, FileEditIcon } from "@hugeicons/core-free-icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@shopvendly/ui/components/dropdown-menu";
+import { Card, CardContent } from "@shopvendly/ui/components/card";
 
 import { UploadModal } from "./components/upload-modal";
 import { EditProductModal } from "./components/edit-product-modal";
@@ -40,6 +40,7 @@ import {
 import type { ProductVariantsInput } from "@/modules/products/lib/product-models";
 import { ProductsPageSkeleton } from "@/components/ui/page-skeletons";
 import { isLikelyVideoMedia } from "@/utils/misc";
+import { cn } from "@shopvendly/ui/lib/utils";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -863,7 +864,7 @@ export default function ProductsPage() {
       </div>
 
       {/* Desktop View */}
-      <div className="hidden md:block space-y-6 overflow-hidden min-w-0">
+      <div className="hidden md:block space-y-8 overflow-hidden min-w-0">
         {bootstrapError && (
           <div className="bg-destructive/10 text-destructive p-4 rounded-md">{bootstrapError}</div>
         )}
@@ -871,21 +872,21 @@ export default function ProductsPage() {
           <div className="bg-destructive/10 text-destructive p-4 rounded-md">{error}</div>
         )}
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Products</h1>
-            <p className="text-sm text-muted-foreground">Keep your catalog tidy and stay on top of stock.</p>
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between border-b border-border/40 pb-6">
+          <div className="space-y-1">
+            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">Products</h1>
+            <p className="text-base text-muted-foreground/80 font-medium">Manage your inventory and optimize your sales performance.</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
             <Button
               variant="outline"
               disabled={selectedIds.length === 0 || isPublishing}
               onClick={handlePublishSelected}
-              className="sm:order-1"
+              className="h-11 px-6 border-border/60 hover:bg-muted/50 transition-all font-medium"
             >
               {isPublishing ? "Publishing..." : (
                 <span className="inline-flex items-center gap-2">
-                  <HugeiconsIcon icon={SparklesIcon} className="size-4" />
+                  <HugeiconsIcon icon={SparklesIcon} size={18} className="text-amber-500" />
                   Publish
                 </span>
               )}
@@ -896,38 +897,63 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        <SegmentedStatsCard segments={statSegments} />
-
-        <div className="rounded-md border bg-card p-3 overflow-hidden min-w-0">
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex items-center gap-4 rounded-lg border border-dashed border-border/60 p-3 bg-muted/30">
-                  <div className="size-10 bg-muted rounded-md animate-pulse shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-muted rounded w-1/3 animate-pulse" />
-                    <div className="h-4 bg-muted rounded w-24 animate-pulse" />
+        {/* Improved Stats Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: "Total Products", value: totalProducts, icon: Package01Icon, color: "text-blue-500", bg: "bg-blue-500/10" },
+            { label: "Active Items", value: activeCount, icon: ShoppingBag01Icon, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+            { label: "Low Stock", value: lowStockCount, icon: AlertCircleIcon, color: lowStockCount > 0 ? "text-rose-500" : "text-slate-400", bg: lowStockCount > 0 ? "bg-rose-500/10" : "bg-slate-400/10" },
+            { label: "Drafts", value: draftCount, icon: FileEditIcon, color: "text-amber-500", bg: "bg-amber-500/10" },
+          ].map((stat, i) => (
+            <Card key={i} className="group overflow-hidden border-border/50 hover:border-primary/20 hover:shadow-md transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className={cn("inline-flex p-2.5 rounded-xl transition-transform group-hover:scale-110 duration-300", stat.bg)}>
+                    <HugeiconsIcon icon={stat.icon} size={22} className={stat.color} />
                   </div>
-                  <div className="h-4 bg-muted rounded w-16 animate-pulse shrink-0" />
-                  <div className="h-6 bg-muted rounded w-20 animate-pulse shrink-0" />
-                  <div className="size-8 bg-muted rounded animate-pulse shrink-0" />
+                  <div className="text-2xl font-bold tracking-tight">{stat.value.toLocaleString()}</div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <DataTable
-              className="table-fixed"
-              columns={columns}
-              data={rows}
-              rowSelection={rowSelection}
+                <div className="mt-4">
+                  <p className="text-sm font-semibold text-muted-foreground/70 uppercase tracking-wider">{stat.label}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-              onRowSelectionChange={(updater) => {
-                setRowSelection((prev) =>
-                  typeof updater === "function" ? updater(prev) : updater
-                );
-              }}
-            />
-          )}
+        <div className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden min-w-0 transition-all hover:bg-card">
+          <div className="p-1">
+            {isLoading ? (
+              <div className="space-y-3 p-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-center gap-4 rounded-xl border border-dashed border-border/40 p-4 bg-muted/20">
+                    <div className="size-12 bg-muted rounded-lg animate-pulse shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-muted rounded w-1/4 animate-pulse" />
+                      <div className="h-3 bg-muted rounded w-32 animate-pulse" />
+                    </div>
+                    <div className="h-4 bg-muted rounded w-16 animate-pulse shrink-0" />
+                    <div className="h-5 bg-muted rounded w-20 animate-pulse shrink-0" />
+                    <div className="size-9 bg-muted rounded-lg animate-pulse shrink-0" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-2">
+                <DataTable
+                  className="table-fixed"
+                  columns={columns}
+                  data={rows}
+                  rowSelection={rowSelection}
+                  onRowSelectionChange={(updater) => {
+                    setRowSelection((prev) =>
+                      typeof updater === "function" ? updater(prev) : updater
+                    );
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
