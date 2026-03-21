@@ -63,7 +63,7 @@ export default async function AdminPage({
     );
   }
 
-  const { stats, revenueSeries, ordersSeries, topProducts, transactionRows, currency } = data;
+  const { store, stats, revenueSeries, ordersSeries, topProducts, transactionRows, currency } = data;
   const [sRevenue, sOrders, sCustomers, sVisits ] = stats;
   const basePath = `/admin/${slug}`;
   const storefrontUrl = getStorefrontUrl(slug);
@@ -91,9 +91,9 @@ export default async function AdminPage({
       <div className="flex md:hidden flex-col gap-6">
         {/* Header with Store URL */}
         <div className="flex items-center justify-between px-1">
-          <Badge variant="outline" className="text-[10px] px-3 py-1 border-primary/20 text-primary font-bold uppercase tracking-widest bg-primary/5 rounded-full">Store Admin</Badge>
-          <div className="flex items-center justify-center text-primary font-bold text-xs uppercase tracking-tight">
-            {slug}
+          <Badge variant="outline" className="text-[10px] px-3 py-1 border-primary/20 text-primary font-bold uppercase tracking-widest bg-primary/5 rounded-full">{store.name}</Badge>
+          <div className="flex items-center capitalize justify-center text-muted-foreground font-medium text-[10px] max-w-[220px] break-words text-right leading-tight">
+            {store.description || slug}
           </div>
         </div>
 
@@ -244,7 +244,9 @@ export default async function AdminPage({
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">Overview</h1>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground border bg-muted/20 px-4 py-2 rounded-full shadow-sm">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/50">Store Link</span>
+              <span className="text-[11px] font-semibold text-foreground/70 select-all">{storefrontUrl.replace(/^https?:\/\//, "")}</span>
             </div>
           </div>
         </div>
