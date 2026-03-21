@@ -1,4 +1,4 @@
-import { mediaService } from "@/features/media/lib/media-service";
+import { mediaService } from "@/modules/media/lib/media-service";
 
 // Helper to create slug
 export function slugify(text: string) {
@@ -70,3 +70,4 @@ export async function copyToBlob(params: {
     };
   }
 }
+

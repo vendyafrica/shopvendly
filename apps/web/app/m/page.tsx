@@ -1,13 +1,12 @@
-import Header from "@/features/marketplace/components/header";
-import Footer from "@/features/marketplace/components/footer";
+import Header from "@/modules/marketplace/components/header";
+import Footer from "@/modules/marketplace/components/footer";
 import { Button } from "@shopvendly/ui/components/button";
 import Link from "next/link";
-import { marketplaceService } from "@/features/marketplace/lib/marketplace-service";
-import type { MarketplaceStore } from "@/types/marketplace";
-import type { StoreWithCategory } from "@/features/marketplace/lib/marketplace-service";
-import { HeroSection } from "@/features/marketplace/components/home/hero-section";
-import { CollectionsRail } from "@/features/marketplace/components/home/collections-rail";
-import { StoreShelf } from "@/features/marketplace/components/home/store-shelf";
+import { marketplaceService, type MarketplaceStore } from "@/modules/marketplace";
+import type { StoreWithCategory } from "@/modules/marketplace/lib/marketplace-service";
+import { HeroSection } from "@/modules/marketplace/components/home/hero-section";
+import { CollectionsRail } from "@/modules/marketplace/components/home/collections-rail";
+import { StoreShelf } from "@/modules/marketplace/components/home/store-shelf";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -104,3 +103,4 @@ export default async function HomePage() {
     </main>
   );
 }
+

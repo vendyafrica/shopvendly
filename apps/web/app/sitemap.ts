@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { marketplaceService } from "@/features/marketplace/lib/marketplace-service";
+import { marketplaceService } from "@/modules/marketplace";
 
 const siteUrl = "https://shopvendly.store";
 

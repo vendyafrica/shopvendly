@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
-import type { ProductVariantsInput } from "@/features/products/lib/product-models";
+import type { ProductVariantsInput } from "@/modules/products/lib/product-models";
 
 // Types
 type ProductMediaItem = {
@@ -253,3 +253,4 @@ export function useInvalidateProducts() {
             }),
     };
 }
+

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { productService } from "@/modules/products";
 import { getTenantMembership } from "@/modules/admin";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { productQuerySchema, createProductSchema } from "@/features/products/lib/product-models";
+import { productQuerySchema, createProductSchema } from "@/modules/products/lib/product-models";
 import { tenantRepo } from "@/repo/tenant-repo";
 import { storeRepo } from "@/repo/store-repo";
 import { revalidateTag, revalidatePath } from "next/cache";
@@ -178,3 +178,4 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
     }
 }
+

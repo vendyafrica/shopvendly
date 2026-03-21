@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@shopvendly/ui/components/button";
 import type { MarketplaceStore } from "@/types/marketplace";
-import { StoreCard } from "@/features/marketplace/components/store-card";
+import { StoreCard } from "@/modules/marketplace/components/store-card";
 import { Bricolage_Grotesque } from "next/font/google";
 
 const bricolageGrotesque = Bricolage_Grotesque({
@@ -63,3 +63,4 @@ export function StoreShelf({ title, stores, categorySlug }: StoreShelfProps) {
         </section>
     );
 }
+

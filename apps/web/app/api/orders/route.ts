@@ -2,7 +2,7 @@ import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { orderService } from "@/modules/orders";
-import { orderQuerySchema } from "@/features/orders/lib/order-models";
+import { orderQuerySchema } from "@/modules/orders/lib/order-models";
 import { ordersRepo } from "@/repo/orders-repo";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
 
@@ -57,3 +57,4 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Failed to list orders" }, { status: 500 });
     }
 }
+

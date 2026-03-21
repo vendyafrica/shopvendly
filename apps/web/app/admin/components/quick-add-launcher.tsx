@@ -11,7 +11,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { UploadModal } from "@/app/admin/[slug]/(shell)/products/components/upload-modal";
 import { useTenant } from "@/app/admin/context/tenant-context";
-import { useInvalidateProducts } from "@/features/products/hooks/use-products";
+import { useInvalidateProducts } from "@/modules/products/hooks/use-products";
 import { Button } from "@shopvendly/ui/components/button";
 import {
   Dialog,
@@ -444,3 +444,4 @@ export function QuickAddLauncher({
     </>
   );
 }
+

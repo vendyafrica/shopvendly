@@ -5,11 +5,11 @@ import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete02Icon, MinusSignIcon, PlusSignIcon, ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
-import { useCart } from "@/features/cart/context/cart-context";
+import { useCart } from "@/modules/cart/context/cart-context";
 import { StoreAvatar } from "@/components/store-avatar";
-import Header from "@/features/marketplace/components/header";
-import Footer from "@/features/marketplace/components/footer";
-import RecentlyViewed from "@/features/marketplace/components/recently-viewed";
+import Header from "@/modules/marketplace/components/header";
+import Footer from "@/modules/marketplace/components/footer";
+import RecentlyViewed from "@/modules/marketplace/components/recently-viewed";
 import { Bricolage_Grotesque } from "next/font/google";
 import { getStorefrontUrl } from "@/utils/misc";
 
@@ -222,3 +222,4 @@ export default function CartPage() {
         </main>
     );
 }
+

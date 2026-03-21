@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { auth } from "@shopvendly/auth";
-import { CartProvider } from "@/features/cart/context/cart-context";
+import { CartProvider } from "@/modules/cart/context/cart-context";
 import { AppSessionProvider } from "@/contexts/app-session-context";
 import { PostHogProvider, Providers } from "../providers";
 
@@ -23,3 +23,4 @@ export default async function MarketplaceLayout({
     </PostHogProvider>
   );
 }
+

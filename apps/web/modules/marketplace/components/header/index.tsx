@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import { LoginOverlay } from "@/app/(auth)/login/page";
 import Search from "../search";
 import { useAppSession } from "@/contexts/app-session-context";
-import { useCart } from "@/features/cart/context/cart-context";
+import { useCart } from "@/modules/cart/context/cart-context";
 import { Portal } from "@/components/portal";
 import { Logo, MobileLogo } from "./Logo";
 import { WishlistButton } from "./WishlistButton";
@@ -215,3 +215,4 @@ export default function Header({
         </>
     );
 }
+

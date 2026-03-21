@@ -1,1 +1,2 @@
-export { orderService } from "@/features/orders/lib/order-service";
+export { orderService } from "@/modules/orders/lib/order-service";
+

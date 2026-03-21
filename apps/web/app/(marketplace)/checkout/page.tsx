@@ -12,7 +12,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
-import { useCart } from "@/features/cart/context/cart-context";
+import { useCart } from "@/modules/cart/context/cart-context";
 import { useAppSession } from "@/contexts/app-session-context";
 import { getStorefrontUrl } from "@/utils/misc";
 
@@ -304,3 +304,4 @@ export default function CheckoutPage() {
         </Suspense>
     );
 }
+
