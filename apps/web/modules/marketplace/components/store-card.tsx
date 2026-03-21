@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import type { MarketplaceStore } from "@/types/marketplace";
+import type { MarketplaceStore } from "@/modules/marketplace";
 import { getStorefrontUrl } from "@/utils/misc";
 import {
   Carousel,

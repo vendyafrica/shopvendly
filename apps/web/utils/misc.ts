@@ -5,7 +5,6 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-// from media.ts
 type MediaHint = {
     url?: string | null;
     contentType?: string | null;

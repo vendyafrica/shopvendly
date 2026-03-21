@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@shopvendly/ui/components/button";
-import type { MarketplaceStore } from "@/types/marketplace";
+import type { MarketplaceStore } from "@/modules/marketplace";
 import { StoreCard } from "@/modules/marketplace/components/store-card";
 import { Bricolage_Grotesque } from "next/font/google";
 
