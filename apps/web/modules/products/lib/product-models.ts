@@ -30,7 +30,7 @@ export const productVariantsSchema = z
   })
   .superRefine((value, ctx) => {
     const optionTypes = new Set<string>();
-
+  
     for (const [index, option] of value.options.entries()) {
       if (optionTypes.has(option.type)) {
         ctx.addIssue({
@@ -40,31 +40,8 @@ export const productVariantsSchema = z
         });
       }
       optionTypes.add(option.type);
-
-      if (option.type === "color") {
-        const invalidColor = option.values.find((entry) => !allowedColors.has(entry));
-        if (invalidColor) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Unsupported preset color: ${invalidColor}`,
-            path: ["options", index, "values"],
-          });
-        }
-      }
-
-      if (option.type === "size") {
-        const allowedSizes = option.preset === "uk" ? allowedUkSizes : allowedAlphaSizes;
-        const invalidSize = option.values.find((entry) => !allowedSizes.has(entry));
-        if (invalidSize) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Unsupported preset size: ${invalidSize}`,
-            path: ["options", index, "values"],
-          });
-        }
-      }
     }
-
+  
     if (value.enabled && value.options.length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

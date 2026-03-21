@@ -10,6 +10,12 @@ import { Label } from "@shopvendly/ui/components/label";
 import { Textarea } from "@shopvendly/ui/components/textarea";
 import { Checkbox } from "@shopvendly/ui/components/checkbox";
 import Image from "next/image";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@shopvendly/ui/components/dropdown-menu";
 import { useRouter } from "next/navigation";
 import {
     PRODUCT_ALPHA_SIZE_PRESET,
@@ -46,6 +52,25 @@ interface UploadedFile {
 type StoreCollection = {
     id: string;
     name: string;
+};
+
+const COLOR_MAP: Record<string, string> = {
+    "Black": "#000000",
+    "White": "#FFFFFF",
+    "Grey": "#808080",
+    "Brown": "#A52A2A",
+    "Beige": "#F5F5DC",
+    "Navy": "#000080",
+    "Blue": "#0000FF",
+    "Green": "#008000",
+    "Olive": "#808000",
+    "Yellow": "#FFFF00",
+    "Orange": "#FFA500",
+    "Red": "#FF0000",
+    "Pink": "#FFC0CB",
+    "Purple": "#800080",
+    "Gold": "#FFD700",
+    "Silver": "#C0C0C0",
 };
 
 function UploadProgressSpinner({ progress }: { progress: number }) {
@@ -95,10 +120,12 @@ export function ProductForm({
     const [error, setError] = React.useState<string | null>(null);
     const [collections, setCollections] = React.useState<StoreCollection[]>([]);
     const [selectedCollectionIds, setSelectedCollectionIds] = React.useState<string[]>(initialData?.collectionIds || []);
-    const [variantsEnabled, setVariantsEnabled] = React.useState(Boolean(initialData?.variants?.enabled));
+    const [variantsEnabled, setVariantsEnabled] = React.useState(true);
     const [selectedColors, setSelectedColors] = React.useState<string[]>([]);
     const [sizePreset, setSizePreset] = React.useState<"none" | "alpha" | "uk">("none");
     const [selectedSizes, setSelectedSizes] = React.useState<string[]>([]);
+    const [customColor, setCustomColor] = React.useState("");
+    const [customSize, setCustomSize] = React.useState("");
 
     // Image management
     const [files, setFiles] = React.useState<UploadedFile[]>([]);
@@ -298,7 +325,8 @@ export function ProductForm({
             }
 
             payload.collectionIds = selectedCollectionIds;
-            payload.variants = variantsEnabled
+            const hasVariants = selectedColors.length > 0 || selectedSizes.length > 0;
+            payload.variants = hasVariants
                 ? {
                     enabled: true,
                     options: [
@@ -342,8 +370,8 @@ export function ProductForm({
             </div>
             
             <div className={cn(
-                "group relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-colors",
-                "border-border/60 hover:border-primary/50 hover:bg-muted/30 cursor-pointer overflow-hidden",
+                "group relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/25 bg-muted/5 py-8 px-4 transition-all hover:border-primary/50 hover:bg-primary/5 cursor-pointer",
+                files.length > 0 && "mb-4",
                 isSaving && "opacity-50 pointer-events-none"
             )} onClick={() => fileInputRef.current?.click()}>
                 <div className="flex flex-col items-center gap-2 text-center">
@@ -369,7 +397,7 @@ export function ProductForm({
             </div>
 
             {files.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
                     {files.map((f, i) => (
                         <div
                             key={f.id}
@@ -470,53 +498,102 @@ export function ProductForm({
                 </div>
             )}
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Basic Info */}
-                    <div className="rounded-xl border bg-card p-5 space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="productName">Product Name</Label>
-                            <Input
-                                id="productName"
-                                value={productName}
-                                onChange={(e) => setProductName(e.target.value)}
-                                placeholder="e.g. Vintage Leather Jacket"
-                                required
-                                disabled={isSaving}
-                                className="h-10 text-base"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="description">Description</Label>
-                            <Textarea
-                                id="description"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Tell us more about this product..."
-                                rows={8}
-                                disabled={isSaving}
-                                className="resize-none min-h-[200px]"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Media Manager (Mobile) */}
-                    <div className="lg:hidden rounded-xl border bg-card p-5">
-                        {mediaManager}
-                    </div>
-
-                    {/* Pricing & Inventory */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
+                {/* Top Section: Basic Info & Pricing/Inventory */}
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Basic Info & Collections */}
                         <div className="rounded-xl border bg-card p-5 space-y-4">
-                            <h2 className="text-sm font-semibold">Pricing</h2>
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="priceAmount">Price ({storeCurrency})</Label>
+                                    <Label htmlFor="productName">Product Name</Label>
+                                    <Input
+                                        id="productName"
+                                        value={productName}
+                                        onChange={(e) => setProductName(e.target.value)}
+                                        placeholder="e.g. Necklace test"
+                                        required
+                                        disabled={isSaving}
+                                        className="h-10 text-base"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="description">Description</Label>
+                                    <Textarea
+                                        id="description"
+                                        value={description}
+                                        onChange={(e) => setDescription(e.target.value)}
+                                        placeholder="Tell us more about this product..."
+                                        rows={8}
+                                        disabled={isSaving}
+                                        className="resize-none min-h-[160px]"
+                                    />
+                                </div>
+                                
+                                {/* Collections Dropdown */}
+                                <div className="space-y-2 pt-2 border-t">
+                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Collections</Label>
+                                    <DropdownMenu>
+                                        {(() => {
+                                            const Trigger = DropdownMenuTrigger as any;
+                                            return (
+                                                <Trigger asChild>
+                                                    <Button 
+                                                        variant="outline" 
+                                                        className="w-full justify-between h-10 font-normal px-3"
+                                                        type="button"
+                                                    >
+                                                        {selectedCollectionIds.length === 0 
+                                                            ? "Select collections" 
+                                                            : `${selectedCollectionIds.length} collection${selectedCollectionIds.length > 1 ? 's' : ''} selected`
+                                                        }
+                                                        <HugeiconsIcon icon={Add01Icon} className="size-4 opacity-50" />
+                                                    </Button>
+                                                </Trigger>
+                                            )
+                                        })()}
+                                        <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] max-h-64 overflow-y-auto" align="start">
+                                            {collections.length === 0 ? (
+                                                <div className="px-2 py-4 text-center text-xs text-muted-foreground">No collections found.</div>
+                                            ) : (
+                                                collections.map((col) => (
+                                                    <DropdownMenuItem 
+                                                        key={col.id} 
+                                                        onSelect={(e) => e.preventDefault()}
+                                                        className="flex items-center gap-3 cursor-pointer p-2"
+                                                        onClick={() => {
+                                                            setSelectedCollectionIds(prev => 
+                                                                prev.includes(col.id) ? prev.filter(id => id !== col.id) : [...prev, col.id]
+                                                            );
+                                                        }}
+                                                    >
+                                                        <Checkbox 
+                                                            checked={selectedCollectionIds.includes(col.id)}
+                                                            className="pointer-events-none"
+                                                        />
+                                                        <span className="text-sm">{col.name}</span>
+                                                    </DropdownMenuItem>
+                                                ))
+                                            )}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        {/* Pricing */}
+                        <div className="rounded-xl border bg-card p-5 space-y-4">
+                            <h2 className="text-sm font-semibold text-muted-foreground tracking-tight uppercase">Pricing</h2>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="priceAmount" className="text-xs">Price ({storeCurrency})</Label>
                                     <Input
                                         id="priceAmount"
                                         value={priceAmount}
                                         onChange={(e) => setPriceAmount(e.target.value)}
-                                        placeholder="0.00"
+                                        placeholder="0"
                                         type="number"
                                         min="0"
                                         required
@@ -524,7 +601,7 @@ export function ProductForm({
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="originalPriceAmount" className="text-muted-foreground">Original Price</Label>
+                                    <Label htmlFor="originalPriceAmount" className="text-xs text-muted-foreground">Original Price</Label>
                                     <Input
                                         id="originalPriceAmount"
                                         value={originalPriceAmount}
@@ -533,16 +610,17 @@ export function ProductForm({
                                         type="number"
                                         min="0"
                                         disabled={isSaving}
-                                        className="bg-muted/10"
+                                        className="bg-muted/5 h-9"
                                     />
                                 </div>
                             </div>
                         </div>
 
+                        {/* Inventory */}
                         <div className="rounded-xl border bg-card p-5 space-y-4">
-                            <h2 className="text-sm font-semibold">Inventory</h2>
+                            <h2 className="text-sm font-semibold text-muted-foreground tracking-tight uppercase">Inventory</h2>
                             <div className="space-y-2">
-                                <Label htmlFor="quantity">Quantity available</Label>
+                                <Label htmlFor="quantity" className="text-xs">Quantity available</Label>
                                 <Input
                                     id="quantity"
                                     value={quantity}
@@ -556,151 +634,202 @@ export function ProductForm({
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    {/* Variants */}
-                    <div className="rounded-xl border bg-card p-5 space-y-6">
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                                <h2 className="text-sm font-semibold">Variants</h2>
-                                <p className="text-xs text-muted-foreground">Manage colors and sizes for this product.</p>
+                {/* Media Manager cuts across */}
+                <div className="rounded-xl border bg-card p-5">
+                    {mediaManager}
+                </div>
+
+                {/* Variants below Media */}
+                <div className="rounded-xl border bg-card p-5 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                            <h2 className="text-sm font-semibold text-muted-foreground tracking-tight uppercase">Variants</h2>
+                            <p className="text-xs text-muted-foreground">Manage colors and sizes for this product.</p>
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-6 pt-2 border-t">
+                        <div className="space-y-3">
+                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Colors</Label>
+                            <div className="flex flex-wrap gap-2 items-center">
+                                {[...PRODUCT_COLOR_PRESETS, ...selectedColors.filter(c => (PRODUCT_COLOR_PRESETS as readonly string[]).indexOf(c) === -1)].map((color) => {
+                                    const checked = selectedColors.includes(color);
+                                    return (
+                                        <Button
+                                            key={color}
+                                            type="button"
+                                            variant={checked ? "default" : "outline"}
+                                            size="sm"
+                                            className={cn(
+                                                "h-8 rounded-full text-xs gap-2 px-3 transition-all",
+                                                checked && "ring-2 ring-primary/20 ring-offset-1 border-primary/50"
+                                            )}
+                                            onClick={() => {
+                                                setSelectedColors(prev => 
+                                                    checked ? prev.filter(c => c !== color) : [...prev, color]
+                                                );
+                                            }}
+                                        >
+                                            <div 
+                                                className="size-3 rounded-full border border-black/10 shadow-sm" 
+                                                style={{ backgroundColor: COLOR_MAP[color] || color.toLowerCase() }} 
+                                            />
+                                            {color}
+                                        </Button>
+                                    );
+                                })}
+                                
+                                <div className="flex items-center gap-1.5 ml-1">
+                                    <div className="relative">
+                                        <Input
+                                            placeholder="Add color..."
+                                            value={customColor}
+                                            onChange={(e) => setCustomColor(e.target.value)}
+                                            className="h-8 w-44 text-xs pr-8 rounded-full"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    if (customColor && !selectedColors.includes(customColor)) {
+                                                        setSelectedColors(prev => [...prev, customColor]);
+                                                        setCustomColor("");
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                        <div 
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 size-4 rounded-full border border-black/10 shadow-inner"
+                                            style={{ backgroundColor: customColor || 'transparent' }}
+                                        />
+                                    </div>
+                                    <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-8 w-8 rounded-full"
+                                        onClick={() => {
+                                            if (customColor && !selectedColors.includes(customColor)) {
+                                                setSelectedColors(prev => [...prev, customColor]);
+                                                setCustomColor("");
+                                            }
+                                        }}
+                                    >
+                                        <HugeiconsIcon icon={Add01Icon} className="size-3" />
+                                    </Button>
+                                </div>
                             </div>
-                            <Checkbox
-                                id="variantsEnabled"
-                                checked={variantsEnabled}
-                                onCheckedChange={(checked) => setVariantsEnabled(Boolean(checked))}
-                                className="h-5 w-5"
-                                disabled={isSaving}
-                            />
                         </div>
 
-                        {variantsEnabled && (
-                            <div className="space-y-6 pt-2 border-t">
-                                <div className="space-y-3">
-                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Colors</Label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {PRODUCT_COLOR_PRESETS.map((color) => {
-                                            const checked = selectedColors.includes(color);
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Size System</Label>
+                                <div className="flex flex-wrap gap-2">
+                                    {(["none", "alpha", "uk"] as const).map((preset) => (
+                                        <Button
+                                            key={preset}
+                                            type="button"
+                                            variant={sizePreset === preset ? "secondary" : "ghost"}
+                                            size="sm"
+                                            className="h-8"
+                                            onClick={() => {
+                                                setSizePreset(preset);
+                                                setSelectedSizes([]);
+                                            }}
+                                        >
+                                            {preset === "none" ? "None" : preset === "alpha" ? "Alpha (S/M/L)" : "UK Numeric"}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {sizePreset !== "none" && (
+                                <div className="space-y-3 pt-2">
+                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Available Sizes</Label>
+                                    <div className="flex flex-wrap gap-2 items-center">
+                                        {(sizePreset === "alpha" ? PRODUCT_ALPHA_SIZE_PRESET : PRODUCT_UK_SIZE_PRESET).map((size) => {
+                                            const checked = selectedSizes.includes(size);
                                             return (
                                                 <Button
-                                                    key={color}
+                                                    key={size}
                                                     type="button"
                                                     variant={checked ? "default" : "outline"}
                                                     size="sm"
-                                                    className="h-8 rounded-full text-xs"
+                                                    className="min-w-[40px] h-8"
                                                     onClick={() => {
-                                                        setSelectedColors(prev => 
-                                                            checked ? prev.filter(c => c !== color) : [...prev, color]
+                                                        setSelectedSizes(prev =>
+                                                            checked ? prev.filter(s => s !== size) : [...prev, size]
                                                         );
                                                     }}
                                                 >
-                                                    {color}
+                                                    {size}
                                                 </Button>
                                             );
                                         })}
-                                    </div>
-                                </div>
+                                        
+                                        {/* Show custom sizes that aren't in the preset */}
+                                        {selectedSizes.filter(s => 
+                                            ((sizePreset === "alpha" ? PRODUCT_ALPHA_SIZE_PRESET : PRODUCT_UK_SIZE_PRESET) as readonly string[]).indexOf(s) === -1
+                                        ).map((size) => (
+                                            <Button
+                                                key={size}
+                                                type="button"
+                                                variant="default"
+                                                size="sm"
+                                                className="min-w-[40px] h-8 border-primary/50"
+                                                onClick={() => setSelectedSizes(prev => prev.filter(s => s !== size))}
+                                            >
+                                                {size}
+                                            </Button>
+                                        ))}
 
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Size System</Label>
-                                        <div className="flex flex-wrap gap-2">
-                                            {(["none", "alpha", "uk"] as const).map((preset) => (
-                                                <Button
-                                                    key={preset}
-                                                    type="button"
-                                                    variant={sizePreset === preset ? "secondary" : "ghost"}
-                                                    size="sm"
-                                                    className="h-8"
-                                                    onClick={() => {
-                                                        setSizePreset(preset);
-                                                        setSelectedSizes([]);
-                                                    }}
-                                                >
-                                                    {preset === "none" ? "None" : preset === "alpha" ? "Alpha (S/M/L)" : "UK Numeric"}
-                                                </Button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {sizePreset !== "none" && (
-                                        <div className="space-y-3 pt-2">
-                                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Available Sizes</Label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {(sizePreset === "alpha" ? PRODUCT_ALPHA_SIZE_PRESET : PRODUCT_UK_SIZE_PRESET).map((size) => {
-                                                    const checked = selectedSizes.includes(size);
-                                                    return (
-                                                        <Button
-                                                            key={size}
-                                                            type="button"
-                                                            variant={checked ? "default" : "outline"}
-                                                            size="sm"
-                                                            className="min-w-[40px] h-8"
-                                                            onClick={() => {
-                                                                setSelectedSizes(prev =>
-                                                                    checked ? prev.filter(s => s !== size) : [...prev, size]
-                                                                );
-                                                            }}
-                                                        >
-                                                            {size}
-                                                        </Button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="space-y-6">
-                    {/* Media Manager (Desktop) */}
-                    <div className="hidden lg:block rounded-xl border bg-card p-5">
-                        {mediaManager}
-                    </div>
-
-                    {/* Organizaton */}
-                    <div className="rounded-xl border bg-card p-5 space-y-4">
-                        <div className="space-y-1">
-                            <h2 className="text-sm font-semibold">Collections</h2>
-                            <p className="text-xs text-muted-foreground">Add to categories or tags.</p>
-                        </div>
-                        <div className="max-h-60 space-y-2 overflow-y-auto rounded-lg border bg-muted/20 p-3">
-                            {collections.length === 0 ? (
-                                <p className="py-4 text-center text-xs text-muted-foreground">No collections found.</p>
-                            ) : (
-                                collections.map((col) => {
-                                    const checked = selectedCollectionIds.includes(col.id);
-                                    return (
-                                        <label key={col.id} className="flex items-center gap-3 rounded-md p-2 hover:bg-muted/50 cursor-pointer transition-colors">
-                                            <Checkbox
-                                                checked={checked}
-                                                onCheckedChange={(next) => {
-                                                    setSelectedCollectionIds(prev => 
-                                                        next ? [...prev, col.id] : prev.filter(id => id !== col.id)
-                                                    );
+                                        <div className="flex items-center gap-1.5 ml-1">
+                                            <Input
+                                                placeholder="Add custom..."
+                                                value={customSize}
+                                                onChange={(e) => setCustomSize(e.target.value)}
+                                                className="h-8 w-32 text-xs rounded-md"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        if (customSize && !selectedSizes.includes(customSize)) {
+                                                            setSelectedSizes(prev => [...prev, customSize]);
+                                                            setCustomSize("");
+                                                        }
+                                                    }
                                                 }}
-                                                disabled={isSaving}
                                             />
-                                            <span className="text-sm">{col.name}</span>
-                                        </label>
-                                    );
-                                })
+                                            <Button 
+                                                type="button" 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8"
+                                                onClick={() => {
+                                                    if (customSize && !selectedSizes.includes(customSize)) {
+                                                        setSelectedSizes(prev => [...prev, customSize]);
+                                                        setCustomSize("");
+                                                    }
+                                                }}
+                                            >
+                                                <HugeiconsIcon icon={Add01Icon} className="size-3" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </div>
-
-                    {/* Meta info help */}
-                    <div className="rounded-xl bg-primary/5 border border-primary/10 p-5 space-y-3">
-                        <div className="flex items-center gap-2 text-primary">
-                            <HugeiconsIcon icon={Add01Icon} size={16} />
-                            <h3 className="text-sm font-bold">Pro Tip</h3>
-                        </div>
-                        <p className="text-xs leading-relaxed text-muted-foreground">
-                            High-quality images and a detailed description can increase your sales by up to <strong>40%</strong>. Make sure to highlight what makes this product unique!
-                        </p>
+                </div>
+                
+                {/* Pro Tip at the very bottom */}
+                <div className="rounded-xl bg-primary/5 border border-primary/10 p-5 space-y-3">
+                    <div className="flex items-center gap-2 text-primary">
+                        <HugeiconsIcon icon={Add01Icon} size={16} />
+                        <h3 className="text-sm font-bold tracking-tight uppercase">Pro Tip</h3>
                     </div>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                        High-quality images and a detailed description can increase your sales by up to <strong>40%</strong>. Make sure to highlight what makes this product unique!
+                    </p>
                 </div>
             </div>
         </form>

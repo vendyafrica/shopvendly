@@ -114,8 +114,33 @@ export default function ProductsPage() {
   const [activeCell, setActiveCell] = React.useState<{ id: string; field: EditableField } | null>(null);
   const [drafts, setDrafts] = React.useState<DraftMap>({});
   const [mobileStatusUpdatingId, setMobileStatusUpdatingId] = React.useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = React.useState<"all" | "active" | "draft" | "archived">("all");
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   const { data: rows = [], isLoading, error: queryError, refetch } = useProducts(bootstrap?.storeId);
+
+  const filteredRows = React.useMemo(() => {
+    let result = rows;
+
+    if (statusFilter !== "all") {
+      result = result.filter((row) => {
+        if (statusFilter === "active") return row.status === "active" || row.status === "ready";
+        if (statusFilter === "draft") return row.status === "draft";
+        if (statusFilter === "archived") return row.status === "sold-out";
+        return true;
+      });
+    }
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((row) =>
+        row.name.toLowerCase().includes(q) ||
+        row.category?.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [rows, statusFilter, searchQuery]);
   const deleteProductMutation = useDeleteProduct(bootstrap?.storeId ?? "");
   const updateProductMutation = useUpdateProduct(bootstrap?.storeId ?? "");
 
@@ -405,47 +430,70 @@ export default function ProductsPage() {
 
         {/* Desktop Table Content - Hidden on mobile */}
         <div className="hidden md:flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
-          {/* Toolbar */}
           <div className="flex flex-col gap-3 p-2 sm:flex-row sm:items-center justify-between border-b border-border/40 bg-muted/5">
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar px-1">
-              <Button variant="ghost" size="sm" className="h-9 text-xs font-medium bg-white border border-border/40 rounded-lg px-4 shadow-sm">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setStatusFilter("all")}
+                className={cn(
+                  "h-9 text-xs font-medium px-4 transition-all rounded-lg",
+                  statusFilter === "all" ? "bg-white border border-border/40 shadow-sm" : "hover:bg-muted/30"
+                )}
+              >
                 All
               </Button>
-              <Button variant="ghost" size="sm" className="h-9 text-xs font-medium hover:bg-muted/30 px-3">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setStatusFilter("active")}
+                className={cn(
+                  "h-9 text-xs font-medium px-3 transition-all rounded-lg",
+                  statusFilter === "active" ? "bg-white border border-border/40 shadow-sm" : "hover:bg-muted/30"
+                )}
+              >
                 Active
               </Button>
-              <Button variant="ghost" size="sm" className="h-9 text-xs font-medium hover:bg-muted/30 px-3">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setStatusFilter("draft")}
+                className={cn(
+                  "h-9 text-xs font-medium px-3 transition-all rounded-lg",
+                  statusFilter === "draft" ? "bg-white border border-border/40 shadow-sm" : "hover:bg-muted/30"
+                )}
+              >
                 Draft
               </Button>
-              <Button variant="ghost" size="sm" className="h-9 text-xs font-semibold hover:bg-muted/30 px-3">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setStatusFilter("archived")}
+                className={cn(
+                  "h-9 text-xs font-medium px-3 transition-all rounded-lg",
+                  statusFilter === "archived" ? "bg-white border border-border/40 shadow-sm" : "hover:bg-muted/30"
+                )}
+              >
                 Archived
               </Button>
-              <Button variant="ghost" size="sm" className="h-9 px-2">
-                <HugeiconsIcon icon={Add01Icon} className="size-4" />
-              </Button>
             </div>
-
+            
             <div className="flex items-center gap-2 px-1">
               <div className="relative flex-1 sm:w-72">
                 <HugeiconsIcon icon={Search01Icon} className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search products..."
-                  className="h-9 pl-9 text-xs border-0 bg-transparent focus-visible:ring-0 shadow-none w-full font-medium"
+                <Input 
+                  placeholder="Search products..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-9 pl-9 text-xs border border-border/60 bg-white/80 focus-visible:ring-1 focus-visible:ring-primary/20 shadow-none w-full font-medium rounded-lg" 
                 />
               </div>
-              <div className="h-5 w-px bg-border/40 mx-1 hidden sm:block" />
-              <Button variant="ghost" size="icon" className="size-9 rounded-lg hover:bg-muted/30 transition-colors">
-                <HugeiconsIcon icon={Sorting05Icon} className="size-4.5 text-muted-foreground" />
-              </Button>
-              <Button variant="ghost" size="icon" className="size-9 rounded-lg hover:bg-muted/30 transition-colors">
-                <HugeiconsIcon icon={FilterIcon} className="size-4.5 text-muted-foreground" />
-              </Button>
             </div>
           </div>
 
           <DataTable
             columns={columns}
-            data={rows}
+            data={filteredRows}
             getRowId={(row) => row.id}
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
