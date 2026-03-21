@@ -15,7 +15,7 @@ import { Input } from "@shopvendly/ui/components/input";
 import { Label } from "@shopvendly/ui/components/label";
 import Image from "next/image";
 import { useTenant } from "@/app/admin/context/tenant-context";
-import { useUpload } from "@/features/media/hooks/use-upload";
+import { useUpload } from "@/modules/media/hooks/use-upload";
 
 interface UploadCollectionModalProps {
     open: boolean;

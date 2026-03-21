@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useCart } from "@/features/cart/context/cart-context";
+import { useCart } from "@/modules/cart/context/cart-context";
 import { useAppSession } from "@/contexts/app-session-context";
 import { getRootUrl } from "@/utils/misc";
 import { CheckoutPaymentMethod, PaymentFlowStatus, PhoneVerificationStatus } from "../models/checkout";

@@ -16,7 +16,6 @@ export function useProductDetails({ product }: UseProductDetailsProps) {
     const { addToRecentlyViewed } = useRecentlyViewed();
     const { session } = useAppSession();
 
-    // Tracking and recently viewed
     useEffect(() => {
         if (!product?.store?.slug || !product?.id) return;
         void trackStorefrontEvents(

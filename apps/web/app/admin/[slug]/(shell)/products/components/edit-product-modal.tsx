@@ -25,9 +25,9 @@ import {
     PRODUCT_UK_SIZE_PRESET,
 } from "@shopvendly/db/schema";
 import { useTenant } from "@/app/admin/context/tenant-context";
-import type { ProductApiRow } from "@/features/products/hooks/use-products";
-import type { ProductVariantsInput } from "@/features/products/lib/product-models";
-import { useUpload } from "@/features/media/hooks/use-upload";
+import type { ProductApiRow } from "@/modules/products/hooks/use-products";
+import type { ProductVariantsInput } from "@/modules/products/lib/product-models";
+import { useUpload } from "@/modules/media/hooks/use-upload";
 
 interface Product {
     id: string;

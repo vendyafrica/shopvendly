@@ -1,7 +1,7 @@
-import Header from "@/features/marketplace/components/header";
-import Footer from "@/features/marketplace/components/footer";
-import { MarketplaceGrid } from "@/features/marketplace/components/marketplace-grid";
-import { CollectionsRail } from "@/features/marketplace/components/home/collections-rail";
+import Header from "@/modules/marketplace/components/header";
+import Footer from "@/modules/marketplace/components/footer";
+import { MarketplaceGrid } from "@/modules/marketplace/components/marketplace-grid";
+import { CollectionsRail } from "@/modules/marketplace/components/home/collections-rail";
 import type { MarketplaceStore } from "@/modules/marketplace";
 import Link from "next/link";
 import type { Metadata } from "next";

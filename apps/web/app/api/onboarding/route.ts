@@ -1,9 +1,9 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { onboardingService } from "@/app/account/lib/onboarding-service";
-import { onboardingRepository } from "@/app/account/lib/onboarding-repository";
-import type { OnboardingData } from "@/app/account/lib/models";
+import { onboardingService } from "@/modules/onboarding/lib/onboarding-service";
+import { onboardingRepository } from "@/modules/onboarding/lib/onboarding-repository";
+import type { OnboardingData } from "@/modules/onboarding/lib/models";
 import { onboardingRepo } from "@/repo/onboarding-repo";
 import { sendWelcomeEmail } from "@shopvendly/transactional";
 

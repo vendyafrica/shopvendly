@@ -2,7 +2,7 @@ import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { orderService } from "@/modules/orders";
-import { updateOrderStatusSchema } from "@/features/orders/lib/order-models";
+import { updateOrderStatusSchema } from "@/modules/orders/lib/order-models";
 import { ordersRepo } from "@/repo/orders-repo";
 
 import { type OrderRouteParams as RouteParams } from "@/models";

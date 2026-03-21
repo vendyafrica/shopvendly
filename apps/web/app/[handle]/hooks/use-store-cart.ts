@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useCart } from "@/features/cart/context/cart-context";
+import { useCart } from "@/modules/cart/context/cart-context";
 import { CartItem } from "../models/cart";
 
 export function useStoreCart() {

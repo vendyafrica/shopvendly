@@ -1,7 +1,7 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { resolveTenantAdminAccessByStoreId } from "@/app/admin/lib/admin-access";
+import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
 import { instagramRepo } from "@/repo/instagram-repo";
 
 export async function GET(req: NextRequest) {

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useAppSession } from "@/contexts/app-session-context";
-import { trackStorefrontEvents } from "@/app/[handle]/lib/storefront-tracking";
+import { trackStorefrontEvents } from "@/modules/storefront/services/storefront-tracking";
 
 const API_BASE = "";
 const CART_STORAGE_KEY = "vendly_cart";

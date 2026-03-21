@@ -14,7 +14,7 @@ import {
 import { useTenant } from "@/app/admin/context/tenant-context";
 import { HeroEditor } from "../studio/components/hero-editor";
 import { IntegrationsPanel } from "../../../components/integrations-panel";
-import { useUpload } from "@/features/media/hooks/use-upload";
+import { useUpload } from "@/modules/media/hooks/use-upload";
 
 import { Image02Icon, Loading03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";

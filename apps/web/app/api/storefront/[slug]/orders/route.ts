@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createOrderSchema } from "@/features/orders/lib/order-models";
+import { createOrderSchema } from "@/modules/orders/lib/order-models";
 import type { StorefrontOrderRouteParams } from "@/models/storefront";
 
 /**

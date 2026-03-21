@@ -24,8 +24,8 @@ import {
 import { Checkbox } from "@shopvendly/ui/components/checkbox";
 import Image from "next/image";
 import { useTenant } from "@/app/admin/context/tenant-context";
-import { useUpload } from "@/features/media/hooks/use-upload";
-import type { ProductVariantsInput } from "@/features/products/lib/product-models";
+import { useUpload } from "@/modules/media/hooks/use-upload";
+import type { ProductVariantsInput } from "@/modules/products/lib/product-models";
 import {
     PRODUCT_ALPHA_SIZE_PRESET,
     PRODUCT_COLOR_PRESETS,

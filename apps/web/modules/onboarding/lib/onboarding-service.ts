@@ -12,7 +12,8 @@ class OnboardingService {
     async createFullTenant(
         userId: string,
         email: string,
-        data: OnboardingData
+        data: OnboardingData,
+        options?: { useExistingClaimedTenant?: boolean }
     ): Promise<OnboardingCompleteResponse> {
         if (!data.personal || !isValidPersonalInfo(data.personal)) {
             throw new Error("Personal info incomplete");
@@ -24,11 +25,17 @@ class OnboardingService {
             throw new Error("Business info incomplete");
         }
 
-        const result = await onboardingRepository.createTenantWithStore(
-            userId,
-            email,
-            data as Required<OnboardingData>
-        );
+        const result = options?.useExistingClaimedTenant
+            ? await onboardingRepository.completeClaimedTenant(
+                userId,
+                email,
+                data as Required<OnboardingData>
+            )
+            : await onboardingRepository.createTenantWithStore(
+                userId,
+                email,
+                data as Required<OnboardingData>
+            );
 
         return {
             success: true,

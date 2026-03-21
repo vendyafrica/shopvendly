@@ -5,7 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Image02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
 import { cn } from "@shopvendly/ui/lib/utils";
-import { useUpload } from "@/features/media/hooks/use-upload";
+import { useUpload } from "@/modules/media/hooks/use-upload";
 
 interface HeroEditorProps {
     storeSlug: string;

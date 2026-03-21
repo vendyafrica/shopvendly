@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { productService } from "@/modules/products";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { updateProductSchema } from "@/features/products/lib/product-models";
+import { updateProductSchema } from "@/modules/products/lib/product-models";
 import { productRepo } from "@/repo/product-repo";
 import { storeRepo } from "@/repo/store-repo";
 

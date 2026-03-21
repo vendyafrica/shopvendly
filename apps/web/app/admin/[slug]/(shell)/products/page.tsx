@@ -35,8 +35,8 @@ import {
   useUpdateProduct,
   type ProductTableRow,
   type ProductApiRow,
-} from "@/features/products/hooks/use-products";
-import type { ProductVariantsInput } from "@/features/products/lib/product-models";
+} from "@/modules/products/hooks/use-products";
+import type { ProductVariantsInput } from "@/modules/products/lib/product-models";
 import { ProductsPageSkeleton } from "@/components/ui/page-skeletons";
 import { isLikelyVideoMedia } from "@/utils/misc";
 

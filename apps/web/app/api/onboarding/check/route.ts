@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { onboardingRepository } from "@/app/account/lib/onboarding-repository";
+import { onboardingRepository } from "@/modules/onboarding/lib/onboarding-repository";
 
 export async function POST(req: Request) {
     try {
