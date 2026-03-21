@@ -1,6 +1,6 @@
 "use client";
 
-import { useProductDetails } from "../hooks/use-product-details";
+import { useProductDetails } from "@/app/[handle]/hooks/use-product-details";
 import { ProductDetailsUI } from "./product-details-ui";
 
 interface ProductDetailsProps {

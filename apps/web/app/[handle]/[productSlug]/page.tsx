@@ -1,4 +1,4 @@
-import { ProductPageUI } from "@/app/[handle]/components/product-page-ui";
+import { ProductPageUI } from "@/modules/storefront/components";
 import { storefrontService } from "@/modules/storefront";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";

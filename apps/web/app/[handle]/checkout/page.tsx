@@ -2,8 +2,7 @@
 
 import { Suspense } from "react";
 import { useCheckout } from "../hooks/use-checkout";
-import { CheckoutUI } from "../components/checkout-ui";
-import { CheckoutLoading } from "../components/checkout-loading";
+import { CheckoutUI, CheckoutLoading } from "@/modules/storefront/components";
 
 function CheckoutContent() {
     const {

@@ -12,7 +12,7 @@ import {
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { bricolage as geistSans } from "@/utils/fonts";
-import { CheckoutPaymentMethod, PaymentFlowStatus, PhoneVerificationStatus } from "../models/checkout";
+import { CheckoutPaymentMethod, PaymentFlowStatus, PhoneVerificationStatus } from "@/app/[handle]/models/checkout";
 
 interface CheckoutUIProps {
     state: any; // Using any for brevity in this complex component, but should ideally be typed

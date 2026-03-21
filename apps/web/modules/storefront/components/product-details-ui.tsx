@@ -4,7 +4,7 @@ import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { StarIcon } from "@hugeicons/core-free-icons";
 import { ProductActions } from "./product-actions";
-import { Product, MediaItem } from "../models/product";
+import { Product, MediaItem } from "@/app/[handle]/models/product";
 
 interface ProductDetailsUIProps {
     product: Product;

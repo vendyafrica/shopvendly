@@ -1,7 +1,7 @@
 "use client";
 
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
-import { ProductCard } from "@/app/[handle]/components/product-card";
+import { ProductCard } from "@/modules/storefront/components";
 
 export default function RecentlyViewed() {
   const { recentItems, isLoaded } = useRecentlyViewed();

@@ -4,7 +4,7 @@ import { StorefrontContentSwitcher } from "./storefront-content-switcher.client"
 import { StorefrontFooter } from "./footer";
 import { StorefrontViewTracker } from "./storefront-view-tracker";
 import { OneTapLogin } from "@/modules/marketplace/components/one-tap-login";
-import { StoreDetails, StorefrontProduct, StoreCollection } from "../models/store";
+import { StoreDetails, StorefrontProduct, StoreCollection } from "@/app/[handle]/models/store";
 
 interface StorefrontUIProps {
     handle: string;

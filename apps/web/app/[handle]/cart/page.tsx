@@ -1,7 +1,7 @@
 "use client";
 
 import { useStoreCart } from "../hooks/use-store-cart";
-import { StoreCartUI } from "../components/store-cart-ui";
+import { StoreCartUI } from "@/modules/storefront/components";
 
 export default function StoreCartPage() {
     const {
