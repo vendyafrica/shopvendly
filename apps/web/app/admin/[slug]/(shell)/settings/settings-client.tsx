@@ -17,13 +17,6 @@ import { useTenant } from "@/modules/admin/context/tenant-context";
 import { HeroEditor } from "../studio/components/hero-editor";
 import { IntegrationsPanel } from "@/modules/admin/components/integrations-panel";
 import { useUpload } from "@/modules/media/hooks/use-upload";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@shopvendly/ui/components/select";
 
 import { 
   ArrowRight01Icon, 
@@ -32,7 +25,6 @@ import {
   LegalIcon, 
   Wallet02Icon, 
   Layout01Icon, 
-  PlugIcon 
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
@@ -100,6 +92,8 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
   const [success, setSuccess] = React.useState<string | null>(null);
 
   const storeId = bootstrap?.storeId ?? store.id;
+  const persistedCollectoPayoutMode = store.collectoPayoutMode || bootstrap?.collectoPayoutMode || "automatic_per_order";
+  const isManualPayoutMode = collectoPayoutMode === "manual_batch";
   const isCurrencyBusy = isSavingCurrency;
   const isLogoBusy = isSavingLogo || isUploading;
   const isPolicyBusy = isSavingPolicy;
@@ -121,7 +115,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
     let cancelled = false;
 
     const loadCollectoBalance = async () => {
-      if (collectoPayoutMode !== "manual_batch" || !storeId) {
+      if (!isManualPayoutMode || !storeId) {
         setCollectoBalance(null);
         return;
       }
@@ -151,7 +145,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
     return () => {
       cancelled = true;
     };
-  }, [collectoPayoutMode, storeId]);
+  }, [isManualPayoutMode, storeId]);
 
   const saveStore = async (
     payload: Record<string, unknown>,
@@ -443,7 +437,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
             <HugeiconsIcon icon={LegalIcon} size={20} className="text-primary" />
             <div className="space-y-0.5">
               <h2 className="text-lg font-semibold text-neutral-900">Policies</h2>
-              <p className="text-sm text-neutral-500">Manage your store's legal and customer policies.</p>
+              <p className="text-sm text-neutral-500">Manage your store&apos;s legal and customer policies.</p>
             </div>
           </div>
           <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm space-y-4">
@@ -494,26 +488,28 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
                 <label className="text-[10px] font-bold uppercase tracking-[0.05em] text-neutral-400">Payout mode</label>
                 <p className="text-xs text-neutral-500 max-w-lg">Choose between automatic per-order or manual batch payouts.</p>
               </div>
-                <Combobox 
-                  items={PAYOUT_MODE_OPTIONS} 
-                  value={PAYOUT_MODE_OPTIONS.find(opt => opt.value === collectoPayoutMode)}
-                  onValueChange={(v) => { if (v) setCollectoPayoutMode(v.value as "automatic_per_order" | "manual_batch") }}
-                >
-                  <ComboboxInput 
-                    placeholder="Search mode..." 
-                    className="h-10 w-full sm:w-[220px] rounded-xl border-neutral-200 bg-white"
-                  />
-                  <ComboboxContent className="rounded-xl border-neutral-200 shadow-xl overflow-hidden">
-                    <ComboboxEmpty className="p-3 text-xs text-neutral-400">No mode found.</ComboboxEmpty>
-                    <ComboboxList className="p-1">
-                      {(opt: { value: string; label: string }) => (
-                        <ComboboxItem key={opt.value} value={opt} className="text-sm rounded-lg mx-1 my-0.5">
-                          {opt.label}
-                        </ComboboxItem>
-                      )}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
+              <Combobox 
+                items={PAYOUT_MODE_OPTIONS} 
+                value={PAYOUT_MODE_OPTIONS.find((opt) => opt.value === collectoPayoutMode)}
+                onValueChange={(v) => {
+                  if (v) setCollectoPayoutMode(v.value as "automatic_per_order" | "manual_batch");
+                }}
+              >
+                <ComboboxInput 
+                  placeholder="Search mode..." 
+                  className="h-10 w-full sm:w-[220px] rounded-xl border-neutral-200 bg-white"
+                />
+                <ComboboxContent className="rounded-xl border-neutral-200 shadow-xl overflow-hidden">
+                  <ComboboxEmpty className="p-3 text-xs text-neutral-400">No mode found.</ComboboxEmpty>
+                  <ComboboxList className="p-1">
+                    {(opt: { value: string; label: string }) => (
+                      <ComboboxItem key={opt.value} value={opt} className="text-sm rounded-lg mx-1 my-0.5">
+                        {opt.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
             </div>
 
             <div className="p-6 space-y-6">
@@ -536,9 +532,13 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
               </div>
               <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
                 <p className="text-xs text-neutral-400 max-w-sm italic leading-relaxed">
-                  {collectoPayoutMode === "manual_batch"
-                    ? "• Manual payout mode is active. You must trigger payouts manually."
-                    : "• Automatic payout mode is active. Funds are settled automatically."}
+                  {isManualPayoutMode
+                    ? (collectoBalance?.availableBalance ?? 0) > 0
+                      ? "• Manual payout mode is active. Trigger payout once you are ready to settle available funds."
+                      : "• Manual payout mode is active, but there are no settled funds available for payout yet."
+                    : collectoPayoutMode !== persistedCollectoPayoutMode
+                      ? "• Save your payout preference change to update how payouts are handled."
+                      : "• Automatic payout mode is active. Seller payouts are processed automatically, so no manual trigger is shown."}
                 </p>
                 <div className="flex gap-2">
                   <Button 
@@ -549,12 +549,12 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
                   >
                     {isSavingCollecto ? "Saving..." : "Save Preferences"}
                   </Button>
-                  {collectoPayoutMode === "manual_batch" && (
+                  {isManualPayoutMode && (
                     <Button 
                       type="button" 
                       variant="outline" 
                       onClick={handleManualPayout} 
-                      disabled={isCollectoLoading} 
+                      disabled={isCollectoLoading || (collectoBalance?.availableBalance ?? 0) <= 0} 
                       className="h-10 rounded-xl px-5 font-bold border-neutral-200 hover:bg-neutral-50 active:scale-95 transition-transform"
                     >
                       Trigger Payout

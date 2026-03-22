@@ -19,6 +19,8 @@ const updateStoreSchema = z.object({
     // DB schema stores status as boolean (active flag). Align validation accordingly.
     status: z.boolean().optional(),
     defaultCurrency: z.enum(["UGX", "KES", "USD"]).optional(),
+    collectoPassTransactionFeeToCustomer: z.boolean().optional(),
+    collectoPayoutMode: z.enum(["automatic_per_order", "manual_batch"]).optional(),
 });
 
 /**

@@ -80,67 +80,63 @@ export function CollectoPayoutCard({ className }: { className?: string }) {
 
   return (
     <div className={cn(
-      "relative overflow-hidden rounded-2xl border bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent p-6 shadow-sm",
+      "relative overflow-hidden rounded-2xl border border-emerald-200/60 bg-gradient-to-r from-emerald-50/80 to-transparent px-5 py-4 shadow-sm",
       className
     )}>
-      <div className="absolute -right-4 -top-4 opacity-5 pointer-events-none text-emerald-500">
-        <HugeiconsIcon icon={Invoice01Icon} size={120} />
-      </div>
-
-      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="flex items-center gap-2 shrink-0">
             <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600/80">Manual Payout Ready</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600/80">Manual Payout</span>
           </div>
-          <div className="flex flex-col">
-            <h3 className="text-3xl font-bold tracking-tight text-foreground">
+
+          <div className="hidden sm:flex items-center gap-5 text-sm">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">Available</span>
+              <span className="font-bold text-foreground">
+                {new Intl.NumberFormat("en-US", { style: "currency", currency }).format(balance?.availableBalance ?? 0)}
+              </span>
+            </div>
+            <div className="h-4 w-px bg-border/60" />
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">Orders</span>
+              <span className="font-bold text-foreground">{balance?.orderCount ?? 0}</span>
+            </div>
+            <div className="h-4 w-px bg-border/60" />
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">Fee</span>
+              <span className="font-bold text-foreground">
+                {new Intl.NumberFormat("en-US", { style: "currency", currency }).format(balance?.payoutFee ?? 0)}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex sm:hidden flex-col text-sm">
+            <span className="font-bold text-foreground">
               {new Intl.NumberFormat("en-US", { style: "currency", currency }).format(balance?.availableBalance ?? 0)}
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">
-              Manual payout mode is active. Customer collections stay ready until you trigger seller payout yourself.
-            </p>
+            </span>
+            <span className="text-[10px] text-muted-foreground">{balance?.orderCount ?? 0} orders waiting</span>
           </div>
         </div>
 
-        <div className="grid flex-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-emerald-100/70 bg-white/70 p-4 backdrop-blur-sm">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Orders Waiting</p>
-            <p className="mt-2 text-2xl font-bold text-foreground">{balance?.orderCount ?? 0}</p>
-          </div>
-          <div className="rounded-2xl border border-emerald-100/70 bg-white/70 p-4 backdrop-blur-sm">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Payout After Fee</p>
-            <p className="mt-2 text-lg font-bold text-foreground">
-              {new Intl.NumberFormat("en-US", { style: "currency", currency }).format(balance?.payoutAmount ?? 0)}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-emerald-100/70 bg-white/70 p-4 backdrop-blur-sm">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Estimated Fee</p>
-            <p className="mt-2 text-lg font-bold text-foreground">
-              {new Intl.NumberFormat("en-US", { style: "currency", currency }).format(balance?.payoutFee ?? 0)}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button
-            onClick={onPayout}
-            disabled={isLoading || !hasBalance}
-            className={cn(
-              "h-11 rounded-xl px-8 font-bold shadow-lg transition-all active:scale-[0.98]",
-              hasBalance
-                ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
-                : "bg-muted text-muted-foreground shadow-none"
-            )}
-          >
-            {isLoading ? (
-              <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <HugeiconsIcon icon={Invoice01Icon} className="mr-2 h-4 w-4" />
-            )}
-            {isLoading ? "Triggering payout..." : hasBalance ? "Trigger Manual Payout" : "No Funds Available"}
-          </Button>
-        </div>
+        <Button
+          onClick={onPayout}
+          disabled={isLoading || !hasBalance}
+          size="sm"
+          className={cn(
+            "h-9 shrink-0 rounded-xl px-5 text-xs font-bold shadow-sm transition-all active:scale-[0.98]",
+            hasBalance
+              ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
+              : "bg-muted text-muted-foreground shadow-none"
+          )}
+        >
+          {isLoading ? (
+            <HugeiconsIcon icon={Loading03Icon} className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <HugeiconsIcon icon={Invoice01Icon} className="mr-1.5 h-3.5 w-3.5" />
+          )}
+          {isLoading ? "Processing..." : hasBalance ? "Trigger Payout" : "No Funds"}
+        </Button>
       </div>
     </div>
   );

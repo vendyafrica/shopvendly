@@ -5,6 +5,7 @@ import { RecentOrdersTableSection } from "@/modules/admin/components/recent-orde
 import { QuickActionMobile } from "@/modules/admin/components/quick-action-mobile";
 import { MobileStoreHeader } from "@/modules/admin/components/mobile-store-header";
 import { DashboardFilter } from "@/modules/admin/components/dashboard-filter";
+import { CollectoPayoutButton } from "@/modules/admin/components/collecto-payout-button";
 import { CollectoPayoutCard } from "@/modules/admin/components/collecto-payout-card";
 import { adminDashboardService, type DashboardRange } from "@/modules/admin";
 import { type OrderSummaryRow } from "@/modules/admin/models";
@@ -223,7 +224,10 @@ export default async function AdminPage({
               <span className="text-[11px] font-semibold text-foreground/70 select-all">{storefrontUrl.replace(/^https?:\/\//, "")}</span>
             </div>
           </div>
-          <DashboardFilter />
+          <div className="flex items-center gap-3">
+            <CollectoPayoutButton />
+            <DashboardFilter />
+          </div>
         </div>
 
         <CollectoPayoutCard />

@@ -11,6 +11,7 @@ interface MobileStoreHeaderProps {
   storeDescription?: string | null;
   storefrontUrl: string;
   logoUrl?: string | null;
+  heroMedia?: string[];
 }
 
 export function MobileStoreHeader({
@@ -18,6 +19,7 @@ export function MobileStoreHeader({
   storeDescription,
   storefrontUrl,
   logoUrl,
+  heroMedia,
 }: MobileStoreHeaderProps) {
   const [isCopied, setIsCopied] = React.useState(false);
 
@@ -57,7 +59,7 @@ export function MobileStoreHeader({
   return (
     <div className="rounded-3xl border border-border/70 bg-card/95 p-4 shadow-sm shadow-black/5 backdrop-blur-sm">
       <div className="flex items-center gap-3">
-        <StoreAvatar storeName={storeName} logoUrl={logoUrl} size="lg" className="shrink-0 ring-1 ring-border/60" />
+        <StoreAvatar storeName={storeName} logoUrl={logoUrl || (heroMedia?.[0] ?? null)} size="lg" className="shrink-0 ring-1 ring-border/60" />
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-[1.05rem] font-semibold tracking-tight text-foreground">
