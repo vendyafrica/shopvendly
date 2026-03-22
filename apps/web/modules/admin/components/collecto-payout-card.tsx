@@ -10,6 +10,7 @@ import { cn } from "@shopvendly/ui/lib/utils";
 
 interface CollectoBalance {
   availableBalance: number;
+  totalOwedBalance: number;
   payoutAmount: number;
   payoutFee: number;
   orderCount: number;
@@ -91,31 +92,34 @@ export function CollectoPayoutCard({ className }: { className?: string }) {
           </div>
 
           <div className="hidden sm:flex items-center gap-5 text-sm">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">Available</span>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">Total Earned</span>
               <span className="font-bold text-foreground">
+                {new Intl.NumberFormat("en-US", { style: "currency", currency }).format(balance?.totalOwedBalance ?? 0)}
+              </span>
+            </div>
+            <div className="h-4 w-px bg-border/60 mt-2" />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600/80">Available</span>
+              <span className="font-bold text-emerald-600">
                 {new Intl.NumberFormat("en-US", { style: "currency", currency }).format(balance?.availableBalance ?? 0)}
               </span>
             </div>
-            <div className="h-4 w-px bg-border/60" />
-            <div className="flex items-baseline gap-1.5">
+            <div className="h-4 w-px bg-border/60 mt-2" />
+            <div className="flex flex-col">
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">Orders</span>
               <span className="font-bold text-foreground">{balance?.orderCount ?? 0}</span>
-            </div>
-            <div className="h-4 w-px bg-border/60" />
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">Fee</span>
-              <span className="font-bold text-foreground">
-                {new Intl.NumberFormat("en-US", { style: "currency", currency }).format(balance?.payoutFee ?? 0)}
-              </span>
             </div>
           </div>
 
           <div className="flex sm:hidden flex-col text-sm">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">Balance</span>
             <span className="font-bold text-foreground">
-              {new Intl.NumberFormat("en-US", { style: "currency", currency }).format(balance?.availableBalance ?? 0)}
+              {new Intl.NumberFormat("en-US", { style: "currency", currency }).format(balance?.totalOwedBalance ?? 0)}
             </span>
-            <span className="text-[10px] text-muted-foreground">{balance?.orderCount ?? 0} orders waiting</span>
+            <span className="text-[10px] text-emerald-600 font-medium">
+              {new Intl.NumberFormat("en-US", { style: "currency", currency }).format(balance?.availableBalance ?? 0)} available
+            </span>
           </div>
         </div>
 

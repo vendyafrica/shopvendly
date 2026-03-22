@@ -737,25 +737,30 @@ export async function runCollectoPayoutForOrder(orderId: string) {
   return getOrderCollectoMeta(targetOrderId);
 }
 
-export async function fetchAvailableBalance(tenantId: string): Promise<{ balance: number, orderIds: string[] }> {
+export async function fetchAvailableBalance(tenantId: string): Promise<{ availableBalance: number, totalOwedBalance: number, orderIds: string[] }> {
   const unsettledOrders = await listUnsettledSuccessfulMobileMoneyOrders(tenantId);
   const orderIds: string[] = [];
-  let totalBalance = 0;
+  let availableBalance = 0;
+  let totalOwedBalance = 0;
+
   for (const order of unsettledOrders) {
+    const amount = (order.collectoMeta?.walletTransfer?.amount ?? 0);
+    totalOwedBalance += amount;
+
     if (
       order.collectoMeta?.walletTransfer?.status === "successful" &&
       order.collectoMeta?.payoutPlan?.mode === "manual_batch" &&
       order.collectoMeta?.payoutPlan?.manualPayoutEligible === true
     ) {
-        totalBalance += (order.collectoMeta?.walletTransfer?.amount ?? 0);
+        availableBalance += amount;
         orderIds.push(order.id);
     }
   }
-  return { balance: totalBalance, orderIds };
+  return { availableBalance, totalOwedBalance, orderIds };
 }
 
 export async function runCollectoBatchPayout(tenantId: string, storeId: string, storeName: string) {
-  const { balance, orderIds } = await fetchAvailableBalance(tenantId);
+  const { availableBalance: balance, orderIds } = await fetchAvailableBalance(tenantId);
   const payoutAmount = balance - 1200;
 
   if (payoutAmount <= 0) {

@@ -24,8 +24,9 @@ import {
 } from "@shopvendly/db/schema";
 import { useTenant } from "@/modules/admin/context/tenant-context";
 import type { ProductApiRow } from "@/modules/products/hooks/use-products";
-import type { ProductVariantsInput } from "@/modules/products/lib/product-models";
 import { useUpload } from "@/modules/media/hooks/use-upload";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 
 interface ProductFormProps {
     initialData?: Partial<ProductApiRow>;
@@ -107,6 +108,7 @@ export function ProductForm({
     onCancel,
 }: ProductFormProps) {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const { bootstrap } = useTenant();
     const storeCurrency = bootstrap?.defaultCurrency || "UGX";
     const { uploadFile } = useUpload();
@@ -134,6 +136,15 @@ export function ProductForm({
 
     // Initialize collections and variants
     React.useEffect(() => {
+        // Reset basic fields when initialData changes (e.g. after a slow load or navigations)
+        if (initialData) {
+            setProductName(initialData.productName || "");
+            setDescription(initialData.description || "");
+            setPriceAmount(initialData.priceAmount !== undefined ? String(initialData.priceAmount) : "");
+            setOriginalPriceAmount(initialData.originalPriceAmount !== undefined && initialData.originalPriceAmount !== null ? String(initialData.originalPriceAmount) : "");
+            setQuantity(initialData.quantity !== undefined ? String(initialData.quantity) : "0");
+        }
+
         if (initialData?.variants?.enabled) {
             const nextVariantOptions = initialData.variants.options ?? [];
             const nextColorOption = nextVariantOptions.find((option) => option.type === "color");
@@ -141,6 +152,12 @@ export function ProductForm({
             setSelectedColors(nextColorOption?.values ?? []);
             setSizePreset(nextSizeOption?.preset === "uk" ? "uk" : nextSizeOption ? "alpha" : "none");
             setSelectedSizes(nextSizeOption?.values ?? []);
+            setVariantsEnabled(true);
+        } else {
+            setSelectedColors([]);
+            setSelectedSizes([]);
+            setSizePreset("none");
+            setVariantsEnabled(false);
         }
 
         if (initialData?.media) {
@@ -353,8 +370,17 @@ export function ProductForm({
             }
 
             const result = (await response.json()) as ProductApiRow;
+
+            // Invalidate queries to ensure UI is fresh
+            // We use removeQueries to force a mandatory refetch on the next mount, 
+            // bypassing aggressive global staleTime/refetchOnMount settings.
+            queryClient.removeQueries({ 
+                queryKey: queryKeys.products.all,
+                exact: false 
+            });
+
             onSuccess?.(result);
-            if (!onSuccess) router.back();
+            if (!onSuccess) router.push(`/admin/${bootstrap?.storeSlug}/products`);
         } catch (err) {
             setError(err instanceof Error ? err.message : "An error occurred");
         } finally {

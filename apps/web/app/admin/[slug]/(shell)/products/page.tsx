@@ -7,7 +7,7 @@ import { useTenant } from "@/modules/admin/context/tenant-context";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { Button } from "@shopvendly/ui/components/button";
+import { Button, buttonVariants } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -29,7 +29,6 @@ import {
 } from "@shopvendly/ui/components/dropdown-menu";
 import { ProductsMobileView } from "./components/products-mobile-view";
 import { Checkbox } from "@shopvendly/ui/components/checkbox";
-// import { type EditableField, type DraftMap } from "@/modules/admin/models";
 
 import {
   useProducts,
@@ -37,7 +36,6 @@ import {
   useInvalidateProducts,
   useUpdateProduct,
   type ProductTableRow,
-  // type ProductApiRow,
 } from "@/modules/products/hooks/use-products";
 import { ProductsPageSkeleton } from "@/components/ui/page-skeletons";
 import { isLikelyVideoMedia } from "@/utils/misc";
@@ -362,11 +360,9 @@ export default function ProductsPage() {
             </div>
 
             <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs font-semibold px-3 group">
-                  More actions
-                  <HugeiconsIcon icon={MoreHorizontalIcon} className="size-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
-                </Button>
+              <DropdownMenuTrigger className={buttonVariants({ variant: "outline", size: "sm", className: "h-8 gap-1.5 text-xs font-semibold px-3 group" })}>
+                More actions
+                <HugeiconsIcon icon={MoreHorizontalIcon} className="size-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={handleBulkPublish}>

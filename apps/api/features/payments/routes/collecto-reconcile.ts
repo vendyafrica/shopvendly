@@ -362,12 +362,13 @@ collectoReconcileRouter.get("/api/stores/:storeId/collecto/available-balance", a
       return res.status(404).json({ error: "Store not found" });
     }
 
-    const { balance, orderIds } = await fetchAvailableBalance(store.tenantId);
-    const payoutAmount = Math.max(balance - 1200, 0);
+    const { availableBalance, totalOwedBalance, orderIds } = await fetchAvailableBalance(store.tenantId);
+    const payoutAmount = Math.max(availableBalance - 1200, 0);
 
     return res.status(200).json({
       ok: true,
-      availableBalance: balance,
+      availableBalance,
+      totalOwedBalance,
       payoutAmount,
       payoutFee: 1200,
       orderCount: orderIds.length,

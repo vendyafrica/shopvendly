@@ -118,6 +118,7 @@ export type ProductFilters = z.infer<typeof productQuerySchema>;
 
 export const updateProductSchema = z.object({
   productName: z.string().min(1).max(255).optional(),
+  name: z.string().min(1).max(255).optional(), // Fallback for legacy frontend code
   description: z.string().optional(),
   priceAmount: z.number().int().min(0).optional(),
   originalPriceAmount: z.number().int().min(0).nullable().optional(),
@@ -127,6 +128,13 @@ export const updateProductSchema = z.object({
   media: z.array(mediaInputSchema).optional(),
   collectionIds: z.array(z.string().uuid()).optional(),
   variants: productVariantsSchema.nullable().optional(),
-}).superRefine(validateOriginalPrice);
+})
+.transform((data) => {
+  if (data.name && !data.productName) {
+    return { ...data, productName: data.name };
+  }
+  return data;
+})
+.superRefine(validateOriginalPrice);
 
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;

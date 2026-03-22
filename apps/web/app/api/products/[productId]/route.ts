@@ -95,7 +95,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         }
 
         const body = await request.json();
+        console.log(`[PATCH /api/products/${productId}] Incoming body:`, JSON.stringify(body, null, 2));
+
         const input = updateProductSchema.parse(body);
+        console.log(`[PATCH /api/products/${productId}] Parsed input:`, JSON.stringify(input, null, 2));
 
         // Check for media updates (not part of updateProductSchema currently)
         const mediaInput = body.media ? body.media : undefined;
