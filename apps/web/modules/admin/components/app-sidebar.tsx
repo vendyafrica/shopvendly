@@ -16,8 +16,8 @@ import {
   PackageOpenIcon,
   Home01Icon,
   Logout01Icon,
-  MoreHorizontalIcon,
-  User02Icon,
+  SidebarLeft01Icon,
+  SidebarRight01Icon
 } from "@hugeicons/core-free-icons";
 
 import {
@@ -25,13 +25,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@shopvendly/ui/components/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@shopvendly/ui/components/dropdown-menu";
 
 import {
   Sidebar,
@@ -52,7 +45,6 @@ import {
 import { cn } from "@shopvendly/ui/lib/utils";
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
-import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import { StoreAvatarSimple } from "@/components/store-avatar";
 
 import { useTenant } from "@/modules/admin/context/tenant-context";
@@ -239,7 +231,7 @@ export function AppSidebar({
                   className="ml-auto inline-flex size-9 items-center justify-center rounded-md hover:bg-sidebar-accent text-sidebar-foreground/80"
                   aria-label="Collapse sidebar"
                 >
-                  <ChevronsLeft className="size-4" />
+                  <HugeiconsIcon icon={SidebarLeft01Icon} className="size-5" />
                 </button>
               </div>
             ) : (
@@ -250,7 +242,7 @@ export function AppSidebar({
                   className="inline-flex size-9 items-center justify-center rounded-md hover:bg-sidebar-accent text-sidebar-foreground/80"
                   aria-label="Expand sidebar"
                 >
-                  <ChevronsRight className="size-4" />
+                  <HugeiconsIcon icon={SidebarRight01Icon} className="size-5" />
                 </button>
               </div>
             )}
@@ -259,7 +251,7 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="px-3">
-          <SidebarGroupLabel className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">
+          <SidebarGroupLabel className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.15em]">
             Menu
           </SidebarGroupLabel>
           <SidebarGroupContent>
