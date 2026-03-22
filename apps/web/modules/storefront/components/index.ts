@@ -1,6 +1,5 @@
 export * from "./checkout-loading";
 export * from "./checkout-ui";
-export * from "./checkout";
 export * from "./deferred-hero-video";
 export * from "./footer-subscribe-form.client";
 export * from "./footer";

@@ -349,7 +349,7 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
   const bulkBalanceResponse = await collectoApiFetch("currentBalance", { type: "BULK" }, { timeoutMs: 10000 });
   const bulkBalancePayload = (bulkBalanceResponse.json ?? {}) as CollectoPayload;
   const bulkBalance = bulkBalanceResponse.ok ? readBalance(bulkBalancePayload) ?? 0 : 0;
-  const walletTransferAmount = Math.max(settlementAmount - bulkBalance, 0);
+  const walletTransferAmount = settlementAmount;
   const walletTransferReference = existingMeta.walletTransfer?.reference || `COLLECTO-BULK-${targetOrderId}`;
 
   if (walletTransferAmount <= 0) {

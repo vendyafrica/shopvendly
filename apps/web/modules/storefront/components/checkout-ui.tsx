@@ -4,10 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  Loading03Icon,
-  CheckmarkCircle02Icon,
-  ArrowRight01Icon,
-  ArrowLeft01Icon,
+    Loading03Icon,
+    CheckmarkCircle02Icon,
+    ArrowRight01Icon,
+    ArrowLeft01Icon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
@@ -71,32 +71,32 @@ interface CheckoutUIProps {
 }
 
 const getCheckoutLoadingCopy = (
-  paymentMethod: CheckoutPaymentMethod,
-  paymentFlowStatus: PaymentFlowStatus,
-  paymentStatusMessage: string | null,
-  storeName: string,
+    paymentMethod: CheckoutPaymentMethod,
+    paymentFlowStatus: PaymentFlowStatus,
+    paymentStatusMessage: string | null,
+    storeName: string,
 ) => {
-  if (paymentStatusMessage) return paymentStatusMessage;
-  if (paymentMethod === "mobile_money") {
-    if (paymentFlowStatus === "initiating") return "Sending a mobile money prompt to your phone.";
-    if (paymentFlowStatus === "pending") return "Approve the payment prompt on your phone.";
-    if (paymentFlowStatus === "awaiting_confirmation") return "We’re confirming your payment now.";
-    return `We’re preparing your checkout with ${storeName}.`;
-  }
-  return `We’re placing your order with ${storeName} and preparing the next steps.`;
+    if (paymentStatusMessage) return paymentStatusMessage;
+    if (paymentMethod === "mobile_money") {
+        if (paymentFlowStatus === "initiating") return "Sending a mobile money prompt to your phone.";
+        if (paymentFlowStatus === "pending") return "Approve the payment prompt on your phone.";
+        if (paymentFlowStatus === "awaiting_confirmation") return "We’re confirming your payment now.";
+        return `We’re preparing your checkout with ${storeName}.`;
+    }
+    return `We’re placing your order with ${storeName} and preparing the next steps.`;
 };
 
 const getCheckoutLoadingLabel = (
-  paymentMethod: CheckoutPaymentMethod,
-  paymentFlowStatus: PaymentFlowStatus,
+    paymentMethod: CheckoutPaymentMethod,
+    paymentFlowStatus: PaymentFlowStatus,
 ) => {
-  if (paymentMethod === "mobile_money") {
-    if (paymentFlowStatus === "pending") return "Waiting for payment approval";
-    if (paymentFlowStatus === "awaiting_confirmation") return "Confirming your payment";
-    if (paymentFlowStatus === "initiating") return "Sending mobile money prompt";
-    return "Preparing payment";
-  }
-  return "Placing your order";
+    if (paymentMethod === "mobile_money") {
+        if (paymentFlowStatus === "pending") return "Waiting for payment approval";
+        if (paymentFlowStatus === "awaiting_confirmation") return "Confirming your payment";
+        if (paymentFlowStatus === "initiating") return "Sending mobile money prompt";
+        return "Preparing payment";
+    }
+    return "Placing your order";
 };
 
 export function CheckoutUI({ state, actions }: CheckoutUIProps) {
@@ -182,27 +182,76 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
 
     return (
         <div className="min-h-screen bg-neutral-50/30 pt-20 pb-24 lg:pt-24">
-            <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-24">
-                <div className="mb-8 flex items-center gap-4">
+            <div className="w-full mx-auto px-0 sm:px-6 lg:px-8 xl:px-12 2xl:px-24">
+                <div className="mb-8 flex items-center gap-4 px-4 sm:px-0">
                     <Link href={`/${store.slug}/cart`} className="p-2 -ml-2 rounded-full text-neutral-500 hover:text-neutral-900 hover:bg-white transition-colors">
                         <HugeiconsIcon icon={ArrowLeft01Icon} className="h-5 w-5" />
                     </Link>
                     <h1 className={`${geistSans.className} text-xl sm:text-2xl uppercase tracking-widest font-semibold`}>Checkout</h1>
                 </div>
 
-                <div className="grid lg:grid-cols-[1fr_380px] gap-8 lg:gap-12 items-start">
-                    <form id="checkout-form" onSubmit={handleSubmit} className="space-y-6">
+                <div className="flex flex-col lg:grid lg:grid-cols-[1fr_380px] gap-0 sm:gap-8 lg:gap-12 items-start">
+                    {/* Order Summary Column */}
+                    <div className="w-full space-y-0 sm:space-y-6 lg:order-2">
+                        <div className="rounded-none sm:rounded-[24px] border-x-0 sm:border border-black/5 bg-white p-6 sm:p-8 shadow-none sm:shadow-sm lg:sticky lg:top-24">
+                            <h2 className="text-[13px] uppercase tracking-[0.2em] font-bold text-neutral-900 mb-8">Order Summary</h2>
+                            <div className="space-y-6 mb-8 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                {storeItems.map((item: CheckoutStoreItem) => (
+                                    <div key={item.id} className="flex gap-4 items-center">
+                                        <div className="relative h-16 w-16 rounded-xl bg-neutral-100 overflow-hidden shrink-0 border border-black/5">
+                                            <Image
+                                                src={item.product.image || FALLBACK_PRODUCT_IMAGE}
+                                                alt={item.product.name}
+                                                fill
+                                                className="object-cover"
+                                                sizes="64px"
+                                            />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-medium text-neutral-900 truncate mb-0.5">
+                                                {item.product.name}
+                                            </p>
+                                            <p className="text-[13px] text-neutral-500">
+                                                Qty: {item.quantity} <span className="mx-0.5 text-neutral-300">×</span> {currency} {item.product.price.toLocaleString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="border-t border-neutral-100 pt-6">
+                                <div className="space-y-4 text-[13px] mb-8">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-neutral-500">Subtotal</span>
+                                        <span className="font-semibold text-neutral-900">{currency} {storeSubtotal.toLocaleString()}</span>
+                                    </div>
+                                    {customerFeeAmount > 0 ? (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-neutral-500">Mobile money fee</span>
+                                            <span className="text-neutral-900 font-medium">{currency} {customerFeeAmount.toLocaleString()}</span>
+                                        </div>
+                                    ) : null}
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[13px] uppercase tracking-[0.2em] font-bold text-neutral-900">Total</span>
+                                    <span className="text-xl font-bold text-neutral-900 tracking-tight">{currency} {storeTotal.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="checkout-form" onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 lg:order-1">
                         {/* Error Alert */}
                         {error && (
-                            <div className="p-4 rounded-xl border border-red-100 bg-red-50 text-red-600 text-sm">
+                            <div className="mx-4 sm:mx-0 p-4 rounded-xl border border-red-100 bg-red-50 text-red-600 text-sm">
                                 {error}
                             </div>
                         )}
 
                         {/* Customer Information */}
-                        <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 space-y-6 shadow-sm">
+                        <div className="rounded-none sm:rounded-2xl border-x-0 sm:border border-neutral-200 bg-white p-6 sm:p-8 space-y-6 shadow-none sm:shadow-sm">
                             <h2 className="text-sm uppercase tracking-widest font-semibold text-neutral-900">1. Customer Information</h2>
-                            <div className="grid sm:grid-cols-2 gap-4">
+                            <div className="space-y-6">
                                 <div className="space-y-2">
                                     <label className="text-[11px] uppercase tracking-widest font-medium text-neutral-500">Full Name</label>
                                     <Input
@@ -210,7 +259,7 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
                                         placeholder="Enter your name"
                                         value={fullName}
                                         onChange={(e) => setFullName(e.target.value)}
-                                        className="h-11 rounded-lg border-neutral-200"
+                                        className="h-11 rounded-lg border-neutral-200 text-base"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -218,10 +267,10 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
                                     <Input
                                         required
                                         type="tel"
-                                        placeholder="07... or 07..."
+                                        placeholder="0772123456"
                                         value={phone}
                                         onChange={(e) => setPhone(e.target.value)}
-                                        className={`h-11 rounded-lg border-neutral-200 ${phoneVerificationStatus === 'failed' ? 'border-red-300' : ''}`}
+                                        className={`h-11 rounded-lg border-neutral-200 text-base ${phoneVerificationStatus === 'failed' ? 'border-red-300' : ''}`}
                                     />
                                     {phoneVerificationMessage && (
                                         <p className="text-[10px] text-red-500 mt-1 uppercase tracking-wider">{phoneVerificationMessage}</p>
@@ -232,48 +281,31 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
                                 <label className="text-[11px] uppercase tracking-widest font-medium text-neutral-500">Delivery Address</label>
                                 <Input
                                     required
-                                    placeholder="House number, street, or common landmark"
+                                    placeholder="Location"
                                     value={address}
                                     onChange={(e) => setAddress(e.target.value)}
-                                    className="h-11 rounded-lg border-neutral-200"
+                                    className="h-11 rounded-lg border-neutral-200 text-base"
                                 />
                             </div>
                         </div>
 
                         {/* Payment Method */}
-                        <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 space-y-6 shadow-sm">
+                        <div className="rounded-none sm:rounded-2xl border-x-0 sm:border border-neutral-200 bg-white p-6 sm:p-8 space-y-6 shadow-none sm:shadow-sm">
                             <h2 className="text-sm uppercase tracking-widest font-semibold text-neutral-900">2. Payment Method</h2>
-                            <div className="p-4 rounded-xl border-2 border-primary bg-primary/5 flex items-center justify-between">
+                            <div className="p-4 rounded-xl border border-primary bg-primary/5 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center border border-primary/20">
+                                    <div className="h-10 w-10 rounded-full flex items-center justify-center">
                                         <HugeiconsIcon icon={CheckmarkCircle02Icon} className="text-primary h-5 w-5" />
                                     </div>
                                     <div>
                                         <p className="text-sm font-semibold text-neutral-900">Mobile Money</p>
-                                        <p className="text-xs text-neutral-500">
-                                            {paymentPricing?.passTransactionFeeToCustomer
-                                                ? "Pay via MTN or Airtel. A 3% collection fee is included in the total."
-                                                : "Pay via MTN or Airtel"}
-                                        </p>
                                     </div>
                                 </div>
-                                <div className="h-5 w-5 rounded-full border-4 border-primary" />
                             </div>
-                            {paymentPricing?.passTransactionFeeToCustomer ? (
-                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
-                                    This store passes the Collecto mobile money fee to the customer. Your final payable total below includes the 3% collection charge.
-                                </div>
-                            ) : null}
                         </div>
 
-                        {/* Store Policy & CTA */}
-                        <div className="space-y-4">
-                            <p className="text-[11px] text-neutral-500 text-center leading-relaxed px-4">
-                                By placing your order, you agree to our terms of service and the{" "}
-                                <button type="button" onClick={() => setShowStorePolicy(true)} className="text-neutral-900 underline underline-offset-2 font-medium">
-                                    Store Policy
-                                </button>.
-                            </p>
+                        {/* CTA */}
+                        <div className="px-4 sm:px-0 space-y-4">
                             <Button type="submit" className="w-full h-14 rounded-2xl uppercase text-[13px] tracking-[0.15em] font-bold shadow-lg shadow-primary/10 group">
                                 {isSubmitting ? "Processing..." : "Place Order"}
                                 <HugeiconsIcon icon={ArrowRight01Icon} className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -281,66 +313,7 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
                         </div>
                     </form>
 
-                    {/* Order Summary Column */}
-                    <div className="space-y-6">
-                        <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm sticky top-24">
-                            <h2 className="text-sm uppercase tracking-widest font-semibold text-neutral-900 mb-6">Order Summary</h2>
-                            <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                {storeItems.map((item: CheckoutStoreItem) => (
-                                    <div key={item.id} className="flex gap-4">
-                                        <div className="relative h-16 w-12 rounded-lg bg-neutral-100 overflow-hidden shrink-0">
-                                            <Image
-                                                src={item.product.image || FALLBACK_PRODUCT_IMAGE}
-                                                alt={item.product.name}
-                                                fill
-                                                className="object-cover"
-                                                sizes="48px"
-                                            />
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-sm font-medium text-neutral-900 truncate">
-                                                {item.product.name}
-                                            </p>
-                                            <p className="text-xs text-neutral-500">
-                                                Qty: {item.quantity} × {currency} {item.product.price.toLocaleString()}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
 
-                            <div className="space-y-3 border-t border-neutral-100 pt-6 mb-6">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-neutral-500">Subtotal</span>
-                                    <span className="font-semibold text-neutral-900">{currency} {storeSubtotal.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-neutral-500">Delivery</span>
-                                    <span className="text-neutral-900 font-medium">Free</span>
-                                </div>
-                                {customerFeeAmount > 0 ? (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-neutral-500">Mobile money fee</span>
-                                        <span className="text-neutral-900 font-medium">{currency} {customerFeeAmount.toLocaleString()}</span>
-                                    </div>
-                                ) : null}
-                                <div className="flex justify-between items-center pt-3 border-t border-neutral-100">
-                                    <span className="text-sm uppercase tracking-widest font-bold text-neutral-900">Total</span>
-                                    <span className="text-xl font-bold text-neutral-900">{currency} {storeTotal.toLocaleString()}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Small Trust Badges */}
-                        <div className="flex items-center justify-center gap-6 px-4">
-                           <div className="flex flex-col items-center gap-1">
-                               <div className="h-8 w-8 rounded-full bg-neutral-100 flex items-center justify-center">
-                                   <HugeiconsIcon icon={CheckmarkCircle02Icon} className="text-neutral-400 h-4 w-4" />
-                               </div>
-                               <span className="text-[10px] uppercase tracking-widest font-semibold text-neutral-400">Secure</span>
-                           </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -352,7 +325,7 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
                             onClick={() => setShowStorePolicy(false)}
                             className="absolute top-6 right-6 p-2 rounded-full hover:bg-neutral-100 transition-colors"
                         >
-                             <HugeiconsIcon icon={CheckmarkCircle02Icon} className="rotate-45 h-5 w-5" />
+                            <HugeiconsIcon icon={CheckmarkCircle02Icon} className="rotate-45 h-5 w-5" />
                         </button>
                         <h3 className={`${geistSans.className} text-xl uppercase tracking-widest font-bold mb-6`}>Store Policy</h3>
                         <div className="prose prose-sm max-w-none text-neutral-600 leading-relaxed font-sans whitespace-pre-wrap">

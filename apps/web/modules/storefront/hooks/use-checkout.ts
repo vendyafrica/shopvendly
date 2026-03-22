@@ -27,6 +27,10 @@ export function useCheckout() {
     const paymentPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const storeId = searchParams.get("storeId");
+    const buyNowProductId = searchParams.get("buyNowProductId");
+    const buyNowQty = parseInt(searchParams.get("buyNowQty") || "1", 10);
+    const buyNowOptionsRaw = searchParams.get("buyNowOptions");
+    
     const { itemsByStore, clearStoreFromCart, isLoaded } = useCart();
     const { session } = useAppSession();
 
@@ -104,15 +108,57 @@ export function useCheckout() {
         }
     }, [session]);
 
-    const storeItems = useMemo(() => (storeId ? itemsByStore[storeId] ?? [] : []), [itemsByStore, storeId]);
+    const [buyNowItem, setBuyNowItem] = useState<any>(null);
+
+    useEffect(() => {
+        if (!buyNowProductId || !storeSlug) return;
+        let cancelled = false;
+        fetch(`/api/storefront/${storeSlug}/products/${buyNowProductId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!cancelled && data.id) {
+                    let selectedOptions = [];
+                    try {
+                        if (buyNowOptionsRaw) selectedOptions = JSON.parse(buyNowOptionsRaw);
+                    } catch (e) {}
+                    
+                    setBuyNowItem({
+                        id: `buynow-${data.id}`,
+                        quantity: buyNowQty,
+                        product: {
+                            id: data.id,
+                            name: data.name || data.productName,
+                            price: data.price || data.priceAmount,
+                            currency: data.currency || "UGX",
+                            image: data.media?.[0]?.media?.blobUrl || data.image,
+                            slug: data.slug,
+                            selectedOptions,
+                        },
+                        store: {
+                            id: data.storeId || storeId,
+                            name: storeSlug,
+                            slug: storeSlug,
+                        }
+                    });
+                }
+            })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, [buyNowProductId, storeSlug, buyNowQty, buyNowOptionsRaw, storeId]);
+
+    const storeItems = useMemo(() => {
+        if (buyNowItem) return [buyNowItem];
+        return storeId ? itemsByStore[storeId] ?? [] : [];
+    }, [itemsByStore, storeId, buyNowItem]);
+    
     const store = storeItems?.[0]?.store;
 
     useEffect(() => {
         if (!isLoaded) return;
-        if (!storeId || !store) {
+        if (!storeId || (!store && !buyNowProductId)) {
             router.push(`/${storeSlug || ""}/cart`);
         }
-    }, [isLoaded, storeId, store, storeSlug, router]);
+    }, [isLoaded, storeId, store, storeSlug, router, buyNowProductId]);
 
     useEffect(() => {
         const resolvedSlug = storeSlug || store?.slug;
