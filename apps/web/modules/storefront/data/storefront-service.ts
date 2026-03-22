@@ -11,6 +11,7 @@ import {
   inArray,
   sql,
   asc,
+  gt,
 } from "@shopvendly/db";
 
 const DEFAULT_STORE_LOGO = "/vendly.png";
@@ -199,7 +200,8 @@ export const storefrontService = {
       where: and(
         eq(products.storeId, storeId),
         eq(products.status, "active"),
-        isNull(products.deletedAt)
+        isNull(products.deletedAt),
+        gt(products.quantity, 0)
       ),
       columns: {
         id: true,
@@ -262,7 +264,8 @@ export const storefrontService = {
         eq(products.storeId, storeId),
         eq(products.status, "active"),
         isNull(products.deletedAt),
-        eq(products.slug, productSlug)
+        eq(products.slug, productSlug),
+        gt(products.quantity, 0)
       ),
       with: {
         media: {
@@ -347,7 +350,8 @@ export const storefrontService = {
           eq(products.storeId, storeId),
           eq(products.status, "active"),
           isNull(products.deletedAt),
-          eq(storeCollections.slug, collectionSlug)
+          eq(storeCollections.slug, collectionSlug),
+          gt(products.quantity, 0)
         )
       );
 
@@ -355,7 +359,12 @@ export const storefrontService = {
     if (ids.length === 0) return [];
 
     const productsForStore = await db.query.products.findMany({
-      where: and(inArray(products.id, ids), eq(products.status, "active"), isNull(products.deletedAt)),
+      where: and(
+        inArray(products.id, ids),
+        eq(products.status, "active"),
+        isNull(products.deletedAt),
+        gt(products.quantity, 0)
+      ),
       columns: {
         id: true,
         slug: true,

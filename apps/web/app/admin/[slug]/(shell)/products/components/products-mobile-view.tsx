@@ -4,7 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ShoppingBag01Icon } from "@hugeicons/core-free-icons";
+import { ShoppingBag01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import type { ProductTableRow } from "@/modules/products/hooks/use-products";
 import { type TenantBootstrap } from "@/modules/admin/context";
 import { isLikelyVideoMedia } from "@/utils/misc";
@@ -113,6 +113,7 @@ interface ProductsMobileViewProps {
 export function ProductsMobileView({
     bootstrap,
     rows,
+    onDelete,
     isLoading = false,
 }: ProductsMobileViewProps) {
 
@@ -201,8 +202,23 @@ export function ProductsMobileView({
 
                             <div className="p-3 bg-white flex flex-col gap-1">
                                 <h3 className="font-medium text-[13px] leading-tight capitalize truncate text-slate-800">{product.name}</h3>
-                                <div className="text-[13px] font-semibold text-slate-900">
-                                    {formatMoney(product.priceAmount, product.currency)}
+                                <div className="flex items-center justify-between">
+                                    <div className="text-[13px] font-semibold text-slate-900">
+                                        {formatMoney(product.priceAmount, product.currency)}
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon-xs"
+                                        className="size-7 rounded-full text-rose-500 hover:bg-rose-50 active:bg-rose-100 transition-colors"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
+                                                onDelete(product.id);
+                                            }
+                                        }}
+                                    >
+                                        <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
+                                    </Button>
                                 </div>
                             </div>
                         </div>
