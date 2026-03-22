@@ -83,14 +83,9 @@ const tenantAdminItems: SidebarNavItem[] = [
     icon: GroupLayersIcon,
   },
   {
-    title: "Transactions",
-    url: "/transactions",
+    title: "Orders",
+    url: "/orders",
     icon: PackageOpenIcon,
-  },
-  {
-    title: "Reports & Analytics",
-    url: "/analytics",
-    icon: Analytics02Icon,
   },
   {
     title: "Activity",
@@ -102,6 +97,11 @@ const tenantAdminItems: SidebarNavItem[] = [
     url: "/customers",
     icon: CustomerServiceIcon,
   },
+  {
+    title: "Reports & Analytics",
+    url: "/analytics",
+    icon: Analytics02Icon,
+  }, 
 ];
 
 const superAdminItems: SidebarNavItem[] = [
@@ -240,10 +240,10 @@ export function AppSidebar({
                   tabIndex={0}
                   onClick={toggleSidebar}
                   onKeyDown={handleToggleKeyDown}
-                  className="ml-auto inline-flex size-9 items-center justify-center rounded-md text-sidebar-foreground/80 hover:bg-sidebar-accent"
+                  className="ml-auto inline-flex size-9 items-center justify-center rounded-md text-sidebar-foreground/80"
                   aria-label="Collapse sidebar"
                 >
-                  <HugeiconsIcon icon={SidebarLeft01Icon} className="size-5" />
+                  <HugeiconsIcon icon={SidebarLeft01Icon} className="size-5 text-red-700 hover:text-red-500" />
                 </span>
               </div>
             ) : (
@@ -253,10 +253,10 @@ export function AppSidebar({
                   tabIndex={0}
                   onClick={toggleSidebar}
                   onKeyDown={handleToggleKeyDown}
-                  className="inline-flex size-9 items-center justify-center rounded-md text-sidebar-foreground/80 hover:bg-sidebar-accent"
+                  className="inline-flex size-9 items-center justify-center rounded-md text-sidebar-foreground/80"
                   aria-label="Expand sidebar"
                 >
-                  <HugeiconsIcon icon={SidebarRight01Icon} className="size-5" />
+                  <HugeiconsIcon icon={SidebarRight01Icon} className="size-5 text-green-500 hover:text-green-700" />
                 </span>
               </div>
             )}
@@ -285,10 +285,10 @@ export function AppSidebar({
                       )}
                       render={<Link href={fullUrl} />}
                     >
-                      <HugeiconsIcon 
-                        icon={item.icon} 
-                        size={20} 
-                        className={cn("transition-colors", isActive ? "text-primary" : "text-muted-foreground")} 
+                      <HugeiconsIcon
+                        icon={item.icon}
+                        size={20}
+                        className={cn("transition-colors", isActive ? "text-primary" : "text-muted-foreground")}
                       />
                       <span className="text-[14px] leading-none">{item.title}</span>
                     </SidebarMenuButton>

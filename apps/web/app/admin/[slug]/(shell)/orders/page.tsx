@@ -12,15 +12,17 @@ import {
   AlertCircleIcon,
   FilterIcon
 } from "@hugeicons/core-free-icons";
-import { RecentTransactionsTable } from "@/modules/admin/components/recent-transactions-table";
+import { OrdersTable } from "@/modules/admin/components/orders-table";
 import { OrdersPageSkeleton } from "@/components/ui/page-skeletons";
-import { TransactionsMobileView } from "./components/transactions-mobile-view";
+import { OrdersMobileView } from "./components/orders-mobile-view";
 import { cn } from "@shopvendly/ui/lib/utils";
+import { useRouter } from "next/navigation";
 
 const API_BASE = "";
 
-export default function TransactionsPage() {
+export default function OrdersPage() {
     const { bootstrap, error: bootstrapError } = useTenant();
+    const router = useRouter();
     const [orders, setOrders] = React.useState<OrderTableRow[]>([]);
     const [stats, setStats] = React.useState<OrderStatsResponse | null>(null);
     const [error, setError] = React.useState<string | null>(null);
@@ -86,13 +88,14 @@ export default function TransactionsPage() {
 
     const currency = stats?.currency || bootstrap?.defaultCurrency || "UGX";
 
-    const filteredTransactions = React.useMemo<TransactionRow[]>(() => {
+    const filteredOrders = React.useMemo<TransactionRow[]>(() => {
         let rows = orders.map((o, index) => {
             const productName = o.items?.find((item) => item?.productName)?.productName || "Order";
 
             return {
                 id: (index + 1).toString().padStart(3, '0'),
                 orderId: o.orderNumber,
+                actualId: o.id, // For detail navigation
                 customer: o.customerName,
                 amount: new Intl.NumberFormat("en-US", { style: "currency", currency }).format(o.totalAmount),
                 product: productName,
@@ -122,6 +125,13 @@ export default function TransactionsPage() {
         return rows;
     }, [orders, statusFilter, searchQuery, currency]);
 
+    const handleRowClick = (row: TransactionRow) => {
+        const id = (row as any).actualId;
+        if (id && bootstrap?.storeSlug) {
+            router.push(`/admin/${bootstrap.storeSlug}/orders/${id}`);
+        }
+    };
+
     if (isLoading) {
         return <OrdersPageSkeleton />;
     }
@@ -132,9 +142,9 @@ export default function TransactionsPage() {
                 {/* Desktop Header */}
                 <div className="hidden md:flex items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-xl font-semibold tracking-tight">Transactions</h1>
+                        <h1 className="text-xl font-semibold tracking-tight">Orders</h1>
                         <p className="hidden text-xs text-muted-foreground sm:block">
-                            Monitor and manage your transactions in one place.
+                            Monitor and manage your store orders in one place.
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -159,7 +169,7 @@ export default function TransactionsPage() {
                             value: stats ? new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(stats.totalRevenue) : "—" 
                         },
                         { 
-                            label: "Transactions", 
+                            label: "Total Orders", 
                             value: stats ? stats.orderCount.toLocaleString() : "—" 
                         },
                         { 
@@ -184,7 +194,7 @@ export default function TransactionsPage() {
                     <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive border border-destructive/25 flex items-center gap-3">
                         <HugeiconsIcon icon={AlertCircleIcon} className="size-5 shrink-0" />
                         <div>
-                            <p className="font-semibold">Error loading transactions</p>
+                            <p className="font-semibold">Error loading orders</p>
                             <p className="text-xs opacity-80">{error || bootstrapError}</p>
                         </div>
                         <Button variant="outline" size="sm" onClick={() => fetchOrders()} className="ml-auto">
@@ -217,7 +227,7 @@ export default function TransactionsPage() {
                             <div className="relative flex-1 sm:w-72">
                                 <HugeiconsIcon icon={Search01Icon} className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                                 <Input 
-                                    placeholder="Search transactions..." 
+                                    placeholder="Search orders..." 
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="h-9 pl-9 text-xs border border-border/60 bg-white/80 focus-visible:ring-1 focus-visible:ring-primary/20 shadow-none w-full font-medium rounded-lg" 
@@ -227,15 +237,15 @@ export default function TransactionsPage() {
                     </div>
 
                     <div className="border-none shadow-none">
-                        <RecentTransactionsTable rows={filteredTransactions} />
+                        <OrdersTable rows={filteredOrders} onRowClick={handleRowClick} />
                     </div>
                 </div>
 
                 {/* Mobile View */}
                 <div className="md:hidden">
-                    <TransactionsMobileView
+                    <OrdersMobileView
                         bootstrap={bootstrap}
-                        transactions={filteredTransactions}
+                        transactions={filteredOrders}
                     />
                 </div>
             </div>

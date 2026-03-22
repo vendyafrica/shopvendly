@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { type ReactNode } from "react";
 import { RevenueAreaChartCard, TotalSalesBreakdownCard } from "@/modules/admin/components/dynamic-charts";
-import { RecentTransactionsTable } from "@/modules/admin/components/recent-transactions-table";
+import { OrdersTable } from "@/modules/admin/components/orders-table";
 import { QuickActionMobile } from "@/modules/admin/components/quick-action-mobile";
 import { MobileStoreHeader } from "@/modules/admin/components/mobile-store-header";
 import { DashboardFilter } from "@/modules/admin/components/dashboard-filter";
@@ -68,7 +68,7 @@ export default async function AdminPage({
 
   const quickActions = [
     { label: "New Product", href: `${basePath}/products/new`, icon: Add01Icon, color: "text-blue-500" },
-    { label: "Orders", href: `${basePath}/transactions`, icon: Invoice01Icon, color: "text-emerald-500" },
+    { label: "Orders", href: `${basePath}/orders`, icon: Invoice01Icon, color: "text-emerald-500" },
     { label: "Products", href: `${basePath}/products`, icon: ShoppingBag01Icon, color: "text-amber-500" },
     { label: "Settings", href: `${basePath}/settings`, icon: Settings02Icon, color: "text-purple-500" },
     { label: "Storefront", href: storefrontUrl, icon: Share01Icon, external: true, color: "text-indigo-500" },
@@ -198,8 +198,8 @@ export default async function AdminPage({
               </div>
             ))}
           </div>
-          <Link href={`${basePath}/transactions`} className="flex w-full items-center justify-center py-3 text-xs font-bold text-muted-foreground hover:text-primary transition-colors border rounded-2xl border-dashed hover:border-primary/30">
-            See all transactions
+          <Link href={`${basePath}/orders`} className="flex w-full items-center justify-center py-3 text-xs font-bold text-muted-foreground hover:text-primary transition-colors border rounded-2xl border-dashed hover:border-primary/30">
+            See all orders
           </Link>
         </div>
       </div>
@@ -260,11 +260,11 @@ export default async function AdminPage({
 
         <div className="space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-xl font-semibold tracking-tight">Recent Transactions</h2>
-            <Link href={`${basePath}/transactions`} className="text-xs font-bold text-primary hover:underline">View all</Link>
+            <h2 className="text-xl font-semibold tracking-tight">Recent Orders</h2>
+            <Link href={`${basePath}/orders`} className="text-xs font-bold text-primary hover:underline">View all</Link>
           </div>
           <div className="w-full">
-            <RecentTransactionsTable rows={transactionRows} />
+            <OrdersTable rows={transactionRows} />
           </div>
         </div>
       </div>

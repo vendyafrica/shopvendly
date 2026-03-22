@@ -2,29 +2,18 @@
 
 import * as React from "react";
 import { StoreAvatar } from "@/components/store-avatar";
-import {
-    Sheet,
-    SheetContent
-} from "@shopvendly/ui/components/sheet";
-import { Badge } from "@shopvendly/ui/components/badge";
 import { type TenantBootstrap } from "@/modules/admin/context";
 import { type TransactionRow } from "@/modules/admin/models";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { CheckmarkBadge01Icon, Invoice01Icon, PackageOpenIcon } from "@hugeicons/core-free-icons";
+import { PackageOpenIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
 import { useRouter } from "next/navigation";
 import { cn } from "@shopvendly/ui/lib/utils";
 
-interface TransactionsMobileViewProps {
+interface OrdersMobileViewProps {
     bootstrap: TenantBootstrap | null;
     transactions: TransactionRow[];
 }
-
-const STATUS_ICONS = {
-    Completed: CheckmarkBadge01Icon,
-    Pending: Invoice01Icon,
-    Failed: Invoice01Icon,
-};
 
 const STATUS_COLORS = {
     Completed: "text-emerald-500 bg-emerald-50 border-emerald-200",
@@ -32,12 +21,10 @@ const STATUS_COLORS = {
     Failed: "text-rose-500 bg-rose-50 border-rose-200",
 };
 
-export function TransactionsMobileView({
+export function OrdersMobileView({
     bootstrap,
     transactions,
-}: TransactionsMobileViewProps) {
-    const [selectedTx, setSelectedTx] = React.useState<TransactionRow | null>(null);
-    const [sheetOpen, setSheetOpen] = React.useState(false);
+}: OrdersMobileViewProps) {
     const router = useRouter();
 
     const storeName = bootstrap?.storeName || "My Store";
@@ -45,6 +32,13 @@ export function TransactionsMobileView({
     const completedCount = transactions.filter((tx) => tx.status === "Completed").length;
     const pendingCount = transactions.filter((tx) => tx.status === "Pending").length;
     const transactionCount = transactions.length;
+
+    const handleOrderClick = (tx: TransactionRow) => {
+        const id = (tx as any).actualId;
+        if (id && bootstrap?.storeSlug) {
+            router.push(`/admin/${bootstrap.storeSlug}/orders/${id}`);
+        }
+    };
 
     return (
         <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden">
@@ -101,10 +95,10 @@ export function TransactionsMobileView({
                 </div>
             </div>
 
-            {/* Transactions table */}
+            {/* Orders list */}
             <div className="px-4 pt-2">
                 <div className="mb-2 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold">Recent transactions</h3>
+                    <h3 className="text-sm font-semibold">Recent orders</h3>
                     <span className="text-xs text-muted-foreground">Tap row for details</span>
                 </div>
                 {transactions.length === 0 ? (
@@ -113,7 +107,7 @@ export function TransactionsMobileView({
                             <HugeiconsIcon icon={PackageOpenIcon} className="size-8 text-muted-foreground" />
                         </div>
                         <p className="font-semibold text-foreground">No Orders Yet</p>
-                        <p className="text-sm mt-1 text-muted-foreground">New transactions will appear here.</p>
+                        <p className="text-sm mt-1 text-muted-foreground">New orders will appear here.</p>
                     </div>
                 ) : (
                     <div className="overflow-hidden rounded-xl border border-border/50 bg-card/60">
@@ -128,10 +122,7 @@ export function TransactionsMobileView({
                                 return (
                                     <button
                                         key={tx.id}
-                                        onClick={() => {
-                                            setSelectedTx(tx);
-                                            setSheetOpen(true);
-                                        }}
+                                        onClick={() => handleOrderClick(tx)}
                                         className="grid w-full grid-cols-[1.4fr_0.9fr_0.9fr] items-center gap-2 px-3 py-3 text-left transition-colors hover:bg-muted/40 active:bg-muted/50"
                                     >
                                         <div className="min-w-0">
@@ -151,58 +142,6 @@ export function TransactionsMobileView({
                     </div>
                 )}
             </div>
-
-            {/* Transaction Detail Bottom Sheet */}
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-                <SheetContent side="bottom" className="rounded-t-[24px] px-6 pb-8 pt-4 max-h-[85vh] flex flex-col">
-                    <div className="w-12 h-1.5 bg-muted-foreground/20 rounded-full mx-auto mb-6 shrink-0" />
-
-                    {selectedTx && (
-                        <div className="flex flex-col gap-6 overflow-y-auto">
-                            {/* Header */}
-                            <div className="flex flex-col items-center justify-center text-center gap-2">
-                                <div className={`size-16 rounded-full flex items-center justify-center border-2 ${STATUS_COLORS[selectedTx.status]}`}>
-                                    <HugeiconsIcon icon={STATUS_ICONS[selectedTx.status]} className="size-8" />
-                                </div>
-                                <div className="space-y-1">
-                                    <h2 className="text-2xl font-bold">{selectedTx.amount}</h2>
-                                    <Badge variant="outline" className={`px-2 py-0 border uppercase text-[10px] ${STATUS_COLORS[selectedTx.status]}`}>
-                                        {selectedTx.status}
-                                    </Badge>
-                                </div>
-                            </div>
-
-                            <div className="h-px w-full bg-border" />
-
-                            {/* Details Details */}
-                            <div className="flex flex-col gap-4">
-                                <div className="flex justify-between items-start">
-                                    <span className="text-sm text-muted-foreground font-medium">Customer</span>
-                                    <span className="text-sm font-semibold text-right">{selectedTx.customer || "Guest"}</span>
-                                </div>
-                                <div className="flex justify-between items-start">
-                                    <span className="text-sm text-muted-foreground font-medium">Order ID</span>
-                                    <span className="text-sm font-semibold text-right font-mono">{selectedTx.id}</span>
-                                </div>
-                                <div className="flex justify-between items-start">
-                                    <span className="text-sm text-muted-foreground font-medium">Items</span>
-                                    <span className="text-sm font-semibold text-right">{selectedTx.product}</span>
-                                </div>
-                                <div className="flex justify-between items-start">
-                                    <span className="text-sm text-muted-foreground font-medium">Payment Method</span>
-                                    <span className="text-sm font-semibold text-right uppercase">
-                                        {selectedTx.paymentMethod?.replace(/_/g, " ") || "Unknown"}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-start">
-                                    <span className="text-sm text-muted-foreground font-medium">Date</span>
-                                    <span className="text-sm font-semibold text-right">{selectedTx.date}</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </SheetContent>
-            </Sheet>
         </div>
     );
 }

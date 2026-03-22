@@ -30,7 +30,7 @@ export function QuickActionsGrid({ basePath, storefrontUrl }: { basePath: string
     },
     { 
       label: "View Orders", 
-      href: `${basePath}/transactions`, 
+      href: `${basePath}/orders`, 
       icon: Invoice01Icon,
       color: "text-emerald-500"
     },

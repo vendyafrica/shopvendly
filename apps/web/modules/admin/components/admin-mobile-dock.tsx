@@ -67,7 +67,7 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
     { label: "Home", href: joinPaths(basePath, "/"), icon: Home01Icon, exact: true },
     { label: "Products", href: joinPaths(basePath, "/products"), icon: ShoppingBag01Icon },
     { label: "Activity", href: joinPaths(basePath, "/activity"), icon: Notification01Icon },
-    { label: "Orders", href: joinPaths(basePath, "/transactions"), icon: PackageOpenIcon },
+    { label: "Orders", href: joinPaths(basePath, "/orders"), icon: PackageOpenIcon },
     { label: "Settings", href: joinPaths(basePath, "/settings"), icon: Settings01Icon },
   ];
 

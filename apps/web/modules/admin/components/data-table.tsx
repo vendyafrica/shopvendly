@@ -29,6 +29,7 @@ export function DataTable<TData, TValue>({
   rowSelection,
   onRowSelectionChange,
   getRowId,
+  onRowClick,
 }: {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -37,6 +38,7 @@ export function DataTable<TData, TValue>({
   rowSelection?: RowSelectionState;
   onRowSelectionChange?: (updater: RowSelectionState | ((old: RowSelectionState) => RowSelectionState)) => void;
   getRowId?: (row: TData) => string;
+  onRowClick?: (row: TData) => void;
 }) {
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
@@ -81,7 +83,12 @@ export function DataTable<TData, TValue>({
         <TableBody>
           {table.getRowModel().rows.length ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+              <TableRow 
+                key={row.id} 
+                data-state={row.getIsSelected() && "selected"}
+                onClick={() => onRowClick?.(row.original)}
+                className={cn(onRowClick && "cursor-pointer hover:bg-muted/50 transition-colors")}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

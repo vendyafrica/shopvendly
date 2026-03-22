@@ -6,7 +6,6 @@ import { cn } from "@shopvendly/ui/lib/utils";
 import { DataTable } from "./data-table";
 import { type TransactionRow } from "@/modules/admin/models";
 
-
 const columns: ColumnDef<TransactionRow>[] = [
   {
     accessorKey: "id",
@@ -48,10 +47,20 @@ const columns: ColumnDef<TransactionRow>[] = [
   },
 ];
 
-export function RecentTransactionsTable({ rows }: { rows: TransactionRow[] }) {
+export function OrdersTable({ 
+  rows, 
+  onRowClick 
+}: { 
+  rows: TransactionRow[];
+  onRowClick?: (row: TransactionRow) => void;
+}) {
   return (
     <div className="w-full">
-      <DataTable columns={columns} data={rows} />
+      <DataTable 
+        columns={columns} 
+        data={rows} 
+        onRowClick={onRowClick}
+      />
     </div>
   );
 }
