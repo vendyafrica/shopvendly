@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useTenant } from "@/modules/admin/context/tenant-context";
-import { type OrderTableRow, type OrderStatus, type PaymentStatus, type OrderAPIResponse, type OrdersListResponse, type OrderStatsResponse } from "@/modules/admin/models";
+import { type OrderTableRow, type OrderStatus, type PaymentStatus, type OrderAPIResponse, type OrdersListResponse, type OrderStatsResponse, type TransactionRow } from "@/modules/admin/models";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -86,13 +86,17 @@ export default function TransactionsPage() {
 
     const currency = stats?.currency || bootstrap?.defaultCurrency || "UGX";
 
-    const filteredTransactions = React.useMemo(() => {
+    const filteredTransactions = React.useMemo<TransactionRow[]>(() => {
         let rows = orders.map((o, index) => {
+            const productName = o.items?.find((item) => item?.productName)?.productName || "Order";
+
             return {
                 id: (index + 1).toString().padStart(3, '0'),
                 orderId: o.orderNumber,
                 customer: o.customerName,
                 amount: new Intl.NumberFormat("en-US", { style: "currency", currency }).format(o.totalAmount),
+                product: productName,
+                paymentMethod: o.paymentMethod,
                 status: (o.paymentStatus === "paid"
                     ? "Completed"
                     : o.paymentStatus === "failed"
@@ -111,7 +115,7 @@ export default function TransactionsPage() {
             rows = rows.filter((r) =>
                 r.customer.toLowerCase().includes(q) ||
                 r.id.toLowerCase().includes(q) ||
-                (r as any).orderId.toLowerCase().includes(q)
+                (r.orderId || "").toLowerCase().includes(q)
             );
         }
 
@@ -223,7 +227,7 @@ export default function TransactionsPage() {
                     </div>
 
                     <div className="border-none shadow-none">
-                        <RecentTransactionsTable rows={filteredTransactions as any} />
+                        <RecentTransactionsTable rows={filteredTransactions} />
                     </div>
                 </div>
 
@@ -231,7 +235,7 @@ export default function TransactionsPage() {
                 <div className="md:hidden">
                     <TransactionsMobileView
                         bootstrap={bootstrap}
-                        transactions={filteredTransactions as any}
+                        transactions={filteredTransactions}
                     />
                 </div>
             </div>

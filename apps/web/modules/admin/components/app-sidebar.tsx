@@ -14,6 +14,7 @@ import {
   GroupLayersIcon,
   Payment02Icon,
   PackageOpenIcon,
+  Notification01Icon,
   Home01Icon,
   Logout01Icon,
   SidebarLeft01Icon,
@@ -92,9 +93,9 @@ const tenantAdminItems: SidebarNavItem[] = [
     icon: Analytics02Icon,
   },
   {
-    title: "Notifications",
-    url: "/notifications",
-    icon: Message01Icon,
+    title: "Activity",
+    url: "/activity",
+    icon: Notification01Icon,
   },
   {
     title: "Customers",

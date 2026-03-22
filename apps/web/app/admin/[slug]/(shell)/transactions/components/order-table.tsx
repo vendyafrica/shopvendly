@@ -252,7 +252,7 @@ export function OrderTable({
                                 <span className="text-xs text-muted-foreground">{order.customerEmail}</span>
                             </div>
                         </TableCell>
-                        <TableCell className="capitalize">{order.paymentMethod.replace(/_/g, " ")}</TableCell>
+                        <TableCell className="capitalize">{order.paymentMethod?.replace(/_/g, " ") || "Unknown"}</TableCell>
                         <TableCell>{formatDate(order.createdAt)}</TableCell>
                         <TableCell className="text-right">{formatPrice(order.totalAmount, order.currency)}</TableCell>
                         <TableCell>

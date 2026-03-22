@@ -190,7 +190,9 @@ export function TransactionsMobileView({
                                 </div>
                                 <div className="flex justify-between items-start">
                                     <span className="text-sm text-muted-foreground font-medium">Payment Method</span>
-                                    <span className="text-sm font-semibold text-right uppercase">{selectedTx.payment.replace(/_/g, " ")}</span>
+                                    <span className="text-sm font-semibold text-right uppercase">
+                                        {selectedTx.paymentMethod?.replace(/_/g, " ") || "Unknown"}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between items-start">
                                     <span className="text-sm text-muted-foreground font-medium">Date</span>
