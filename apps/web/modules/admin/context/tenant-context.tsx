@@ -12,6 +12,8 @@ export type TenantBootstrap = {
   storeName?: string;
   storeLogoUrl?: string;
   defaultCurrency?: string;
+  collectoPassTransactionFeeToCustomer?: boolean;
+  collectoPayoutMode?: "automatic_per_order" | "manual_batch";
 };
 
 type TenantContextValue = {

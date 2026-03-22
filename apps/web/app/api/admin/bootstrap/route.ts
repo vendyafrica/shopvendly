@@ -41,5 +41,7 @@ export async function GET(request: NextRequest) {
         storeName: store.name,
         storeLogoUrl: store.logoUrl,
         defaultCurrency: store.defaultCurrency,
+        collectoPassTransactionFeeToCustomer: store.collectoPassTransactionFeeToCustomer ?? false,
+        collectoPayoutMode: store.collectoPayoutMode ?? "automatic_per_order",
     });
 }

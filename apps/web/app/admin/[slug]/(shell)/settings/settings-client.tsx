@@ -4,6 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import { Button } from "@shopvendly/ui/components/button";
 import { Textarea } from "@shopvendly/ui/components/textarea";
+import { Switch } from "@shopvendly/ui/components/switch";
 import {
   Select,
   SelectContent,
@@ -16,7 +17,7 @@ import { HeroEditor } from "../studio/components/hero-editor";
 import { IntegrationsPanel } from "@/modules/admin/components/integrations-panel";
 import { useUpload } from "@/modules/media/hooks/use-upload";
 
-import { Image02Icon, Loading03Icon } from "@hugeicons/core-free-icons";
+import { ArrowRight01Icon, Image02Icon, Loading03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 type AllowedCurrency = "UGX" | "KES" | "USD";
@@ -37,6 +38,16 @@ type SettingsStore = {
   heroMedia: string[];
   storePolicy: string;
   logoUrl: string | null;
+  collectoPassTransactionFeeToCustomer: boolean;
+  collectoPayoutMode: "automatic_per_order" | "manual_batch";
+};
+
+type CollectoBalanceSummary = {
+  availableBalance: number;
+  payoutAmount: number;
+  payoutFee: number;
+  orderCount: number;
+  orderIds: string[];
 };
 
 export function SettingsClient({ store }: { store: SettingsStore }) {
@@ -52,6 +63,13 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
   );
   const [storePolicy, setStorePolicy] = React.useState(store.storePolicy ?? "");
   const [logoUrl, setLogoUrl] = React.useState<string | null>(store.logoUrl ?? bootstrap?.storeLogoUrl ?? null);
+  const [passTransactionFeeToCustomer, setPassTransactionFeeToCustomer] = React.useState(Boolean(store.collectoPassTransactionFeeToCustomer));
+  const [collectoPayoutMode, setCollectoPayoutMode] = React.useState<"automatic_per_order" | "manual_batch">(
+    store.collectoPayoutMode || bootstrap?.collectoPayoutMode || "automatic_per_order"
+  );
+  const [collectoBalance, setCollectoBalance] = React.useState<CollectoBalanceSummary | null>(null);
+  const [isCollectoLoading, setIsCollectoLoading] = React.useState(false);
+  const [isSavingCollecto, setIsSavingCollecto] = React.useState(false);
   const [isSavingCurrency, setIsSavingCurrency] = React.useState(false);
   const [isSavingLogo, setIsSavingLogo] = React.useState(false);
   const [isSavingPolicy, setIsSavingPolicy] = React.useState(false);
@@ -71,15 +89,58 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
     setStorePolicy(store.storePolicy ?? "");
   }, [store.storePolicy]);
 
+  React.useEffect(() => {
+    setPassTransactionFeeToCustomer(Boolean(store.collectoPassTransactionFeeToCustomer));
+    setCollectoPayoutMode(store.collectoPayoutMode || bootstrap?.collectoPayoutMode || "automatic_per_order");
+  }, [bootstrap?.collectoPayoutMode, store.collectoPassTransactionFeeToCustomer, store.collectoPayoutMode]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const loadCollectoBalance = async () => {
+      if (collectoPayoutMode !== "manual_batch" || !storeId) {
+        setCollectoBalance(null);
+        return;
+      }
+
+      setIsCollectoLoading(true);
+      try {
+        const res = await fetch(`/api/stores/${encodeURIComponent(storeId)}/collecto/available-balance`, { cache: "no-store" });
+        const json = (await res.json().catch(() => null)) as CollectoBalanceSummary & { error?: string } | null;
+
+        if (!cancelled && res.ok && json) {
+          setCollectoBalance({
+            availableBalance: json.availableBalance ?? 0,
+            payoutAmount: json.payoutAmount ?? 0,
+            payoutFee: json.payoutFee ?? 1200,
+            orderCount: json.orderCount ?? 0,
+            orderIds: Array.isArray(json.orderIds) ? json.orderIds : [],
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setIsCollectoLoading(false);
+        }
+      }
+    };
+
+    void loadCollectoBalance();
+    return () => {
+      cancelled = true;
+    };
+  }, [collectoPayoutMode, storeId]);
+
   const saveStore = async (
     payload: Record<string, unknown>,
     successMessage: string,
-    mode: "currency" | "logo" | "policy"
+    mode: "currency" | "logo" | "policy" | "collecto"
   ) => {
     if (mode === "currency") {
       setIsSavingCurrency(true);
     } else if (mode === "policy") {
       setIsSavingPolicy(true);
+    } else if (mode === "collecto") {
+      setIsSavingCollecto(true);
     } else {
       setIsSavingLogo(true);
     }
@@ -108,6 +169,8 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
         setIsSavingCurrency(false);
       } else if (mode === "policy") {
         setIsSavingPolicy(false);
+      } else if (mode === "collecto") {
+        setIsSavingCollecto(false);
       } else {
         setIsSavingLogo(false);
       }
@@ -127,6 +190,43 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
       await saveStore({ storePolicy }, "Policy saved", "policy");
     } catch {
       return;
+    }
+  };
+
+  const onSaveCollecto = async () => {
+    try {
+      await saveStore(
+        {
+          collectoPassTransactionFeeToCustomer: passTransactionFeeToCustomer,
+          collectoPayoutMode,
+        },
+        "Collecto preferences saved",
+        "collecto"
+      );
+      await refetch();
+    } catch {
+      return;
+    }
+  };
+
+  const handleManualPayout = async () => {
+    try {
+      setError(null);
+      setSuccess(null);
+      const res = await fetch(`/api/stores/${encodeURIComponent(storeId)}/collecto/initiate-payout`, { method: "POST" });
+      const data = await res.json().catch(() => null) as { error?: string } | null;
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to trigger payout");
+      }
+      setSuccess("Manual payout initiated.");
+      await refetch();
+      const balanceRes = await fetch(`/api/stores/${encodeURIComponent(storeId)}/collecto/available-balance`, { cache: "no-store" });
+      const balanceData = (await balanceRes.json().catch(() => null)) as CollectoBalanceSummary | null;
+      if (balanceRes.ok && balanceData) {
+        setCollectoBalance(balanceData);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to trigger payout");
     }
   };
 
@@ -168,9 +268,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
     <div className="mx-auto max-w-5xl space-y-10 p-6 pb-24">
       <div className="space-y-1.5">
         <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Settings</h1>
-        <p className="text-sm text-neutral-500">
-          Manage core store details and storefront appearance.
-        </p>
+        <p className="text-sm text-neutral-500">Manage core store details, storefront appearance, and Collecto payout controls.</p>
       </div>
 
       {error ? (
@@ -270,7 +368,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
         <div className="space-y-6">
           <div>
             <h2 className="text-lg font-semibold text-neutral-900">Store Settings</h2>
-            <p className="text-sm text-neutral-500">Currencies and policies for your checkout.</p>
+            <p className="text-sm text-neutral-500">Currencies, policies, and payout preferences for your checkout.</p>
           </div>
           
           <div className="rounded-2xl border border-neutral-200 bg-white p-1 shadow-sm">
@@ -330,6 +428,83 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
                     </>
                   ) : "Save Policy"}
                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold text-neutral-900">Collecto Payout Controls</h2>
+            <p className="text-sm text-neutral-500">Choose who pays the fee and whether payouts happen automatically or manually.</p>
+          </div>
+
+          <div className="rounded-2xl border border-neutral-200 bg-white p-1 shadow-sm">
+            <div className="flex flex-col gap-5 p-5 border-b border-neutral-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500 mb-1">Pass Collecto fee to customer</div>
+                <p className="text-sm text-neutral-500 max-w-lg">When enabled, the customer will see the 3% Collecto fee in checkout and your store receives the gross payment minus Collecto&apos;s collection fee.</p>
+              </div>
+              <Switch checked={passTransactionFeeToCustomer} onCheckedChange={(checked) => setPassTransactionFeeToCustomer(Boolean(checked))} />
+            </div>
+
+            <div className="flex flex-col gap-4 p-5 border-b border-neutral-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500 mb-1">Payout mode</div>
+                <p className="text-sm text-neutral-500 max-w-lg">Automatic payout moves money all the way to you after each order. Manual payout holds seller payouts until you trigger them.</p>
+              </div>
+              <Select value={collectoPayoutMode} onValueChange={(value) => setCollectoPayoutMode(value as "automatic_per_order" | "manual_batch") }>
+                <SelectTrigger className="h-10 w-full sm:w-[220px] rounded-xl border-neutral-200 focus:ring-primary/20 bg-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-neutral-200 shadow-xl">
+                  <SelectItem value="automatic_per_order" className="rounded-lg cursor-pointer">Automatic per order</SelectItem>
+                  <SelectItem value="manual_batch" className="rounded-lg cursor-pointer">Manual batch payout</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-2">
+                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500 mb-1">Current payout summary</div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                    <div className="text-[11px] uppercase tracking-widest text-neutral-500">Available balance</div>
+                    <div className="mt-1 text-lg font-semibold text-neutral-900">UGX {(collectoBalance?.availableBalance ?? 0).toLocaleString()}</div>
+                  </div>
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                    <div className="text-[11px] uppercase tracking-widest text-neutral-500">Payout after fee</div>
+                    <div className="mt-1 text-lg font-semibold text-neutral-900">UGX {(collectoBalance?.payoutAmount ?? 0).toLocaleString()}</div>
+                  </div>
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                    <div className="text-[11px] uppercase tracking-widest text-neutral-500">Orders waiting</div>
+                    <div className="mt-1 text-lg font-semibold text-neutral-900">{isCollectoLoading ? "..." : (collectoBalance?.orderCount ?? 0)}</div>
+                  </div>
+                </div>
+                <p className="text-xs text-neutral-500">
+                  {collectoPayoutMode === "manual_batch"
+                    ? `Manual payout mode is active. Collecto holds seller payouts until you trigger them. ${collectoBalance?.orderCount ? `${collectoBalance.orderCount} order(s) are ready.` : "No payout is currently waiting."}`
+                    : "Automatic payout mode is active. Orders settle without manual intervention."}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" onClick={onSaveCollecto} disabled={isSavingCollecto} className="h-10 rounded-xl px-5 font-semibold">
+                  {isSavingCollecto ? (
+                    <>
+                      <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" strokeWidth={1.5} />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save payout settings"
+                  )}
+                </Button>
+                {collectoPayoutMode === "manual_batch" ? (
+                  <Button type="button" variant="outline" onClick={handleManualPayout} disabled={isCollectoLoading} className="h-10 rounded-xl px-5 font-semibold">
+                    Trigger payout
+                    <HugeiconsIcon icon={ArrowRight01Icon} className="ml-2 h-4 w-4" />
+                  </Button>
+                ) : null}
               </div>
             </div>
           </div>

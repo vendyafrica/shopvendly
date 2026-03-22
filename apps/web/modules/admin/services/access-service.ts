@@ -46,6 +46,8 @@ export type TenantAdminAccess = {
     name: string;
     defaultCurrency: string | undefined;
     logoUrl: string | null;
+    collectoPassTransactionFeeToCustomer?: boolean;
+    collectoPayoutMode?: "automatic_per_order" | "manual_batch";
   } | null;
   membership: {
     tenantId: string;
@@ -60,8 +62,10 @@ type StoreAccessContext = {
   id: string;
   tenantId: string;
   name: string;
-  defaultCurrency: string | null;
+  defaultCurrency: string | undefined;
   logoUrl: string | null;
+  collectoPassTransactionFeeToCustomer?: boolean;
+  collectoPayoutMode?: "automatic_per_order" | "manual_batch";
 };
 
 function toUnauthorizedAccess(): TenantAdminAccess {
@@ -76,6 +80,10 @@ function toUnauthorizedAccess(): TenantAdminAccess {
 
 function normalizeRole(role: string | null | undefined): string {
   return (role ?? "").trim().toLowerCase();
+}
+
+function normalizeCollectoPayoutMode(value: string | null | undefined): "automatic_per_order" | "manual_batch" {
+  return value === "manual_batch" ? "manual_batch" : "automatic_per_order";
 }
 
 function canAccessTenantRole(role: string, mode: TenantAccessMode): boolean {
@@ -109,7 +117,9 @@ async function resolveAccessForStore(
   return {
     store: {
       ...store,
-      defaultCurrency: store.defaultCurrency ?? undefined,
+      defaultCurrency: store.defaultCurrency,
+      collectoPassTransactionFeeToCustomer: store.collectoPassTransactionFeeToCustomer ?? false,
+      collectoPayoutMode: normalizeCollectoPayoutMode(store.collectoPayoutMode),
     },
     membership: normalizedMembership,
     isTenantAdmin,
@@ -124,8 +134,16 @@ export async function resolveTenantAdminAccess(
   mode: TenantAccessMode = "read"
 ): Promise<TenantAdminAccess> {
   const store = await storeRepo.findAdminBySlug(storeSlug);
+  const normalizedStore: StoreAccessContext | null = store
+    ? {
+        ...store,
+        defaultCurrency: store.defaultCurrency,
+        collectoPassTransactionFeeToCustomer: store.collectoPassTransactionFeeToCustomer ?? false,
+        collectoPayoutMode: normalizeCollectoPayoutMode(store.collectoPayoutMode),
+      } as StoreAccessContext
+    : null;
 
-  const initialAccess = await resolveAccessForStore(userId, store ?? null, mode);
+  const initialAccess = await resolveAccessForStore(userId, normalizedStore, mode);
 
   if (initialAccess.isAuthorized || !store) {
     return initialAccess;
@@ -143,7 +161,15 @@ export async function resolveTenantAdminAccess(
     return initialAccess;
   }
 
-  return resolveAccessForStore(userId, storeForUserTenant, mode);
+  const normalizedMatchingStore = storeForUserTenant as StoreAccessContext;
+  const normalizedStoreForTenant: StoreAccessContext = {
+    ...normalizedMatchingStore,
+    defaultCurrency: normalizedMatchingStore.defaultCurrency,
+    collectoPassTransactionFeeToCustomer: normalizedMatchingStore.collectoPassTransactionFeeToCustomer ?? false,
+    collectoPayoutMode: normalizeCollectoPayoutMode(normalizedMatchingStore.collectoPayoutMode),
+  };
+
+  return resolveAccessForStore(userId, normalizedStoreForTenant, mode);
 }
 
 export async function resolveTenantAdminAccessByStoreId(
@@ -153,5 +179,10 @@ export async function resolveTenantAdminAccessByStoreId(
 ): Promise<TenantAdminAccess> {
   const store = await storeRepo.findAdminByStoreId(storeId);
 
-  return resolveAccessForStore(userId, store ?? null, mode);
+  return resolveAccessForStore(userId, store ? {
+    ...store,
+    defaultCurrency: store.defaultCurrency,
+    collectoPassTransactionFeeToCustomer: store.collectoPassTransactionFeeToCustomer ?? false,
+    collectoPayoutMode: normalizeCollectoPayoutMode(store.collectoPayoutMode),
+  } as StoreAccessContext : null, mode);
 }

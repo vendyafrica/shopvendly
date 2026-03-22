@@ -1,142 +1,173 @@
-import { SegmentedStatsCard } from "@/modules/admin/components/segmented-stats-card";
-import { db } from "@shopvendly/db/db";
-import { orders, stores } from "@shopvendly/db/schema";
+"use client";
 
-import { and, desc, eq, isNull, sql } from "@shopvendly/db";
+import * as React from "react";
+import { useTenant } from "@/modules/admin/context/tenant-context";
+import { useParams } from "next/navigation";
+import { Button } from "@shopvendly/ui/components/button";
+import { Input } from "@shopvendly/ui/components/input";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Download01Icon,
+  Upload01Icon,
+  Search01Icon,
+  Add01Icon,
+  AlertCircleIcon,
+} from "@hugeicons/core-free-icons";
 import { CustomersTable } from "./CustomersTable";
 import { CustomersMobileView } from "./components/customers-mobile-view";
-import { type CustomerRow } from "@/modules/admin/models";
+import { useCustomers } from "@/modules/admin/hooks/use-customers";
+import { CustomersPageSkeleton } from "@/components/ui/page-skeletons";
+import { cn } from "@shopvendly/ui/lib/utils";
 
-export default async function CustomersPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
+export default function CustomersPage() {
+  const { bootstrap } = useTenant();
+  const params = useParams();
+  const slug = params.slug as string;
 
-  const store = await db.query.stores.findFirst({
-    where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
-    columns: { id: true, tenantId: true, defaultCurrency: true, name: true, slug: true, logoUrl: true },
-  });
+  const [statusFilter, setStatusFilter] = React.useState<"all" | "New" | "Active" | "Churn Risk">("all");
+  const [searchQuery, setSearchQuery] = React.useState("");
 
-  if (!store) {
-    return (
-      <div className="space-y-6 p-6">
-        <div className="rounded-md border bg-card p-6 text-sm text-muted-foreground">Store not found.</div>
-      </div>
-    );
+  const { data: customers = [], isLoading, error: queryError, refetch } = useCustomers(bootstrap?.storeId);
+
+  const filteredCustomers = React.useMemo(() => {
+    let result = customers;
+
+    if (statusFilter !== "all") {
+      result = result.filter((c) => c.status === statusFilter);
+    }
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.email.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [customers, statusFilter, searchQuery]);
+
+  if (isLoading && customers.length === 0) {
+    return <CustomersPageSkeleton />;
   }
 
-  const bootstrap = {
-    tenantId: store.tenantId,
-    storeId: store.id,
-    storeSlug: store.slug,
-    storeName: store.name,
-    storeLogoUrl: store.logoUrl ?? undefined,
-    defaultCurrency: store.defaultCurrency ?? undefined,
-  };
-
-  const currency = bootstrap.defaultCurrency || "USD";
-  const now = new Date();
-  const newThreshold = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const churnThreshold = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-
-  const rowsAgg = await db
-    .select({
-      email: orders.customerEmail,
-      name: sql<string>`MAX(${orders.customerName})`,
-      orders: sql<number>`COALESCE(COUNT(*), 0)::int`,
-      totalSpend: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)::int`,
-      lastOrderAt: sql<Date>`MAX(${orders.createdAt})`,
-      firstOrderAt: sql<Date>`MIN(${orders.createdAt})`,
-    })
-    .from(orders)
-    .where(
-      and(
-        eq(orders.tenantId, store.tenantId),
-        eq(orders.storeId, store.id),
-        isNull(orders.deletedAt)
-      )
-    )
-    .groupBy(orders.customerEmail)
-    .orderBy(desc(sql`MAX(${orders.createdAt})`));
-
-  const customers: CustomerRow[] = rowsAgg.map((r) => {
-    const last = r.lastOrderAt ? new Date(r.lastOrderAt) : null;
-    const first = r.firstOrderAt ? new Date(r.firstOrderAt) : null;
-
-    const status: CustomerRow["status"] =
-      first && first >= newThreshold
-        ? "New"
-        : last && last < churnThreshold
-          ? "Churn Risk"
-          : "Active";
-
-    return {
-      name: r.name || "—",
-      email: r.email || "—",
-      orders: r.orders,
-      totalSpend: Number(r.totalSpend || 0),
-      currency,
-      lastOrder: (last ?? new Date(0)).toISOString(),
-      status,
-    };
-  });
+  const error = queryError?.message ?? null;
 
   const totalCustomers = customers.length;
   const newCount = customers.filter((c) => c.status === "New").length;
   const activeCount = customers.filter((c) => c.status === "Active").length;
   const churnCount = customers.filter((c) => c.status === "Churn Risk").length;
 
-  const statSegments = [
-    {
-      label: "Total Customers",
-      value: totalCustomers.toLocaleString(),
-      changeLabel: "",
-      changeTone: "neutral" as const,
-    },
-    {
-      label: "New (30 days)",
-      value: newCount.toLocaleString(),
-      changeLabel: "",
-      changeTone: "neutral" as const,
-    },
-    {
-      label: "Active",
-      value: activeCount.toLocaleString(),
-      changeLabel: "",
-      changeTone: "neutral" as const,
-    },
-    {
-      label: "Churn Risk",
-      value: churnCount.toLocaleString(),
-      changeLabel: "",
-      changeTone: "neutral" as const,
-    },
-  ];
-
   return (
-    <div className="md:p-6 p-0">
-      {/* Mobile View */}
-      <div className="block md:hidden">
-        <CustomersMobileView
-          bootstrap={bootstrap}
-          customers={customers}
-          statSegments={statSegments}
-        />
-      </div>
+    <div className="flex-1 space-y-4 px-4 py-4 md:px-8 md:py-6">
+      <div className="flex flex-col gap-4">
+        {/* Desktop Header */}
+        <div className="hidden md:flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">Customers</h1>
+            <p className="hidden text-xs text-muted-foreground sm:block">
+              Key insights and details about your customers.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-muted/40 rounded-lg p-0.5 border border-border/40">
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs font-semibold hover:bg-background/80 transition-all">
+                <HugeiconsIcon icon={Download01Icon} className="size-3.5" />
+                Export
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs font-semibold hover:bg-background/80 transition-all">
+                <HugeiconsIcon icon={Upload01Icon} className="size-3.5" />
+                Import
+              </Button>
+            </div>
 
-      {/* Desktop View */}
-      <div className="hidden md:block space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
-          <p className="text-sm text-muted-foreground">Key insights and details about your customers.</p>
+            <Button size="sm" className="h-8 gap-1.5 text-xs font-medium text-background hover:bg-primary/90 shadow-sm">
+              <HugeiconsIcon icon={Add01Icon} className="size-4" />
+              Add customer
+            </Button>
+          </div>
         </div>
 
-        <SegmentedStatsCard segments={statSegments} />
+        {/* Stats Cards Grid */}
+        <div className="hidden md:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: "Total Customers", value: totalCustomers.toLocaleString() },
+            { label: "New (30 days)", value: newCount.toLocaleString() },
+            { label: "Active", value: activeCount.toLocaleString() },
+            { label: "Churn Risk", value: churnCount.toLocaleString() }
+          ].map((stat, i) => (
+            <div key={i} className="flex flex-col gap-1 rounded-2xl border border-border/60 bg-white px-6 py-4 shadow-sm">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase leading-tight tracking-wider">{stat.label}</span>
+              <span className="text-xl font-bold leading-none">{stat.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
-        <div className="w-full">
-          <CustomersTable rows={customers} />
+      <div className="mt-2 flex flex-col gap-4">
+        {error && (
+          <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive border border-destructive/25 flex items-center gap-3">
+            <HugeiconsIcon icon={AlertCircleIcon} className="size-5 shrink-0" />
+            <div>
+              <p className="font-semibold">Error loading customers</p>
+              <p className="text-xs opacity-80">{error}</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="ml-auto">
+              Retry
+            </Button>
+          </div>
+        )}
+
+        {/* Desktop Table Content */}
+        <div className="hidden md:flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
+          <div className="flex flex-col gap-3 p-2 sm:flex-row sm:items-center justify-between border-b border-border/40 bg-muted/5">
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar px-1">
+              {(["all", "New", "Active", "Churn Risk"] as const).map((tab) => (
+                <Button 
+                  key={tab}
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setStatusFilter(tab)}
+                  className={cn(
+                    "h-9 text-xs font-medium px-4 transition-all rounded-lg capitalize",
+                    statusFilter === tab ? "bg-white border border-border/40 shadow-sm" : "hover:bg-muted/30"
+                  )}
+                >
+                  {tab === "all" ? "All" : tab}
+                </Button>
+              ))}
+            </div>
+            
+            <div className="flex items-center gap-2 px-1">
+              <div className="relative flex-1 sm:w-72">
+                <HugeiconsIcon icon={Search01Icon} className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search customers..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-9 pl-9 text-xs border border-border/60 bg-white/80 focus-visible:ring-1 focus-visible:ring-primary/20 shadow-none w-full font-medium rounded-lg" 
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-none shadow-none">
+            <CustomersTable rows={filteredCustomers} />
+          </div>
+        </div>
+
+        {/* Mobile View */}
+        <div className="md:hidden">
+          <CustomersMobileView
+            bootstrap={bootstrap}
+            customers={customers}
+            statSegments={[
+                { label: "Total Customers", value: totalCustomers.toLocaleString(), changeLabel: "", changeTone: "neutral" },
+                { label: "New (30 days)", value: newCount.toLocaleString(), changeLabel: "", changeTone: "neutral" },
+                { label: "Active", value: activeCount.toLocaleString(), changeLabel: "", changeTone: "neutral" },
+                { label: "Churn Risk", value: churnCount.toLocaleString(), changeLabel: "", changeTone: "neutral" }
+            ]}
+          />
         </div>
       </div>
     </div>

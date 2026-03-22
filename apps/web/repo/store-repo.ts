@@ -1,4 +1,4 @@
-import { db, stores, eq, and, isNull, desc, drizzleSql as sql } from "@shopvendly/db";
+import { db, stores, eq, and, isNull, drizzleSql as sql } from "@shopvendly/db";
 
 function isUndefinedColumnError(error: unknown): boolean {
     const err = error as { code?: string; cause?: { code?: string }; message?: string };
@@ -29,31 +29,85 @@ export const storeRepo = {
     },
 
     async findAdminBySlug(slug: string) {
-        return db.query.stores.findFirst({
-            where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
-            columns: {
-                id: true,
-                tenantId: true,
-                name: true,
-                description: true,
-                defaultCurrency: true,
-                logoUrl: true,
-            },
-        });
+        try {
+            return await db.query.stores.findFirst({
+                where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
+                columns: {
+                    id: true,
+                    tenantId: true,
+                    name: true,
+                    description: true,
+                    defaultCurrency: true,
+                    logoUrl: true,
+                    collectoPassTransactionFeeToCustomer: true,
+                    collectoPayoutMode: true,
+                },
+            });
+        } catch (error) {
+            if (!isUndefinedColumnError(error)) {
+                throw error;
+            }
+
+            const fallback = await db.query.stores.findFirst({
+                where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
+                columns: {
+                    id: true,
+                    tenantId: true,
+                    name: true,
+                    description: true,
+                    defaultCurrency: true,
+                    logoUrl: true,
+                },
+            });
+
+            return fallback
+                ? {
+                    ...fallback,
+                    collectoPassTransactionFeeToCustomer: false,
+                    collectoPayoutMode: "automatic_per_order" as const,
+                }
+                : null;
+        }
     },
 
     async findAdminManyBySlug(slug: string) {
-        return db.query.stores.findMany({
-            where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
-            columns: {
-                id: true,
-                tenantId: true,
-                name: true,
-                description: true,
-                defaultCurrency: true,
-                logoUrl: true,
-            },
-        });
+        try {
+            return await db.query.stores.findMany({
+                where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
+                columns: {
+                    id: true,
+                    tenantId: true,
+                    name: true,
+                    description: true,
+                    defaultCurrency: true,
+                    logoUrl: true,
+                    collectoPassTransactionFeeToCustomer: true,
+                    collectoPayoutMode: true,
+                },
+            });
+        } catch (error) {
+            if (!isUndefinedColumnError(error)) {
+                throw error;
+            }
+
+            const fallback = await db.query.stores.findMany({
+                where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
+                columns: {
+                    id: true,
+                    tenantId: true,
+                    name: true,
+                    description: true,
+                    defaultCurrency: true,
+                    logoUrl: true,
+                },
+            });
+
+            return fallback.map((store) => ({
+                ...store,
+                collectoPassTransactionFeeToCustomer: false,
+                collectoPayoutMode: "automatic_per_order" as const,
+            }));
+        }
     },
 
     async findBySlug(slug: string) {
@@ -113,17 +167,93 @@ export const storeRepo = {
     },
 
     async findAdminByStoreId(id: string) {
-        return db.query.stores.findFirst({
-            where: and(eq(stores.id, id), isNull(stores.deletedAt)),
-            columns: {
-                id: true,
-                tenantId: true,
-                name: true,
-                description: true,
-                defaultCurrency: true,
-                logoUrl: true,
-            },
-        });
+        try {
+            return await db.query.stores.findFirst({
+                where: and(eq(stores.id, id), isNull(stores.deletedAt)),
+                columns: {
+                    id: true,
+                    tenantId: true,
+                    name: true,
+                    description: true,
+                    defaultCurrency: true,
+                    logoUrl: true,
+                    collectoPassTransactionFeeToCustomer: true,
+                    collectoPayoutMode: true,
+                },
+            });
+        } catch (error) {
+            if (!isUndefinedColumnError(error)) {
+                throw error;
+            }
+
+            const fallback = await db.query.stores.findFirst({
+                where: and(eq(stores.id, id), isNull(stores.deletedAt)),
+                columns: {
+                    id: true,
+                    tenantId: true,
+                    name: true,
+                    description: true,
+                    defaultCurrency: true,
+                    logoUrl: true,
+                },
+            });
+
+            return fallback
+                ? {
+                    ...fallback,
+                    collectoPassTransactionFeeToCustomer: false,
+                    collectoPayoutMode: "automatic_per_order" as const,
+                }
+                : null;
+        }
+    },
+
+    async findAdminSettingsBySlug(slug: string) {
+        try {
+            return await db.query.stores.findFirst({
+                where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
+                columns: {
+                    id: true,
+                    name: true,
+                    storeContactPhone: true,
+                    defaultCurrency: true,
+                    slug: true,
+                    tenantId: true,
+                    heroMedia: true,
+                    logoUrl: true,
+                    storePolicy: true,
+                    collectoPassTransactionFeeToCustomer: true,
+                    collectoPayoutMode: true,
+                },
+            });
+        } catch (error) {
+            if (!isUndefinedColumnError(error)) {
+                throw error;
+            }
+
+            const fallback = await db.query.stores.findFirst({
+                where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
+                columns: {
+                    id: true,
+                    name: true,
+                    storeContactPhone: true,
+                    defaultCurrency: true,
+                    slug: true,
+                    tenantId: true,
+                    heroMedia: true,
+                    logoUrl: true,
+                    storePolicy: true,
+                },
+            });
+
+            return fallback
+                ? {
+                    ...fallback,
+                    collectoPassTransactionFeeToCustomer: false,
+                    collectoPayoutMode: "automatic_per_order" as const,
+                }
+                : null;
+        }
     },
 
     async update(id: string, tenantId: string, data: Partial<typeof stores.$inferInsert>) {

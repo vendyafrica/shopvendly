@@ -3,13 +3,18 @@
 import * as React from "react";
 import Image from "next/image";
 import { useTenant } from "@/modules/admin/context/tenant-context";
-import { SegmentedStatsCard } from "@/modules/admin/components/segmented-stats-card";
 import { DataTable } from "@/modules/admin/components/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@shopvendly/ui/components/button";
+import { Input } from "@shopvendly/ui/components/input";
 import { Checkbox } from "@shopvendly/ui/components/checkbox";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Delete02Icon, Link01Icon } from "@hugeicons/core-free-icons";
+import { 
+  Delete02Icon, 
+  Link01Icon,
+  Search01Icon,
+  Add01Icon,
+} from "@hugeicons/core-free-icons";
 import { AddCollectionButton } from "./components/add-collection-button";
 import { UploadCollectionModal } from "./components/upload-collection-modal";
 import { AssignProductsModal } from "./components/assign-products-modal";
@@ -18,7 +23,7 @@ import {
   type CollectionProductRow as ProductRow, 
   type MediaItem 
 } from "@/modules/admin/models";
-
+import { cn } from "@shopvendly/ui/lib/utils";
 
 function CollectionThumbnail({
   url,
@@ -80,6 +85,7 @@ export default function CollectionsPage() {
   const [selectedProductIds, setSelectedProductIds] = React.useState<Set<string>>(new Set());
 
   const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({});
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   const storeId = bootstrap?.storeId;
 
@@ -166,7 +172,6 @@ export default function CollectionsPage() {
   const handleDelete = async (collectionId: string) => {
     if (!confirm("Delete this collection?")) return;
 
-    // Optimistic UI updates could be added here, but simple for now
     await fetch(`/api/store-collections/${collectionId}`, { method: "DELETE" });
     if (selectedCollectionId === collectionId) {
       setSelectedCollectionId(null);
@@ -180,7 +185,6 @@ export default function CollectionsPage() {
     setSelectedCollectionId(collectionId);
     setSelectedCollectionName(name);
 
-    // Open modal immediately for better UX
     setAssignModalOpen(true);
 
     if (products.length === 0 || productsError) {
@@ -197,7 +201,6 @@ export default function CollectionsPage() {
   };
 
   const handleSaveAssignments = async (collectionId: string, productIds: string[]) => {
-
     await fetch(`/api/store-collections/${collectionId}/products`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -206,45 +209,32 @@ export default function CollectionsPage() {
     await loadCollections();
   };
 
-  const toggleAll = (checked: boolean) => {
-    if (checked) {
-      const next: Record<string, boolean> = {};
-      collections.forEach((r) => {
-        next[r.id] = true;
-      });
-      setRowSelection(next);
-    } else {
-      setRowSelection({});
-    }
-  };
-
-  const toggleOne = (id: string, checked: boolean) => {
-    setRowSelection((prev) => {
-      const next = { ...prev };
-      if (checked) next[id] = true;
-      else delete next[id];
-      return next;
-    });
-  };
-
-  const selectedIds = React.useMemo(() => Object.keys(rowSelection), [rowSelection]);
+  const filteredCollections = React.useMemo(() => {
+    if (!searchQuery) return collections;
+    const q = searchQuery.toLowerCase();
+    return collections.filter(c => 
+      c.name.toLowerCase().includes(q) || 
+      c.slug.toLowerCase().includes(q)
+    );
+  }, [collections, searchQuery]);
 
   const columns: ColumnDef<CollectionRow>[] = [
     {
       id: "select",
-      header: () => (
+      header: ({ table }) => (
         <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
-          checked={selectedIds.length > 0 && selectedIds.length === collections.length}
-          indeterminate={selectedIds.length > 0 && selectedIds.length < collections.length}
-          onCheckedChange={(checked) => toggleAll(Boolean(checked))}
+          className="translate-y-[2px]"
         />
       ),
       cell: ({ row }) => (
         <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"
-          checked={rowSelection[row.original.id]}
-          onCheckedChange={(checked) => toggleOne(row.original.id, Boolean(checked))}
+          className="translate-y-[2px]"
         />
       ),
       size: 40,
@@ -258,15 +248,15 @@ export default function CollectionsPage() {
         const collection = row.original;
         return (
           <div className="flex items-center gap-3 min-w-0">
-            <div className="relative size-10 overflow-hidden rounded-md bg-muted shrink-0">
+            <div className="relative size-12 overflow-hidden rounded-xl border bg-muted shrink-0 shadow-sm">
               <CollectionThumbnail
                 url={collection.image}
                 name={collection.name}
               />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="font-semibold">{collection.name}</span>
-              <p className="text-xs text-muted-foreground truncate hidden sm:block">/{collection.slug}</p>
+              <span className="font-semibold block truncate capitalize">{collection.name}</span>
+              <p className="text-[11px] text-muted-foreground truncate hidden sm:block">/{collection.slug}</p>
             </div>
           </div>
         );
@@ -275,9 +265,9 @@ export default function CollectionsPage() {
     {
       accessorKey: "productCount",
       header: "Products",
-      size: 90,
+      size: 120,
       cell: ({ row }) => {
-        return <span className="text-sm font-medium">{row.original.productCount}</span>;
+        return <span className="text-sm font-medium text-muted-foreground">{row.original.productCount} product{row.original.productCount === 1 ? "" : "s"}</span>;
       },
     },
     {
@@ -292,18 +282,18 @@ export default function CollectionsPage() {
             <Button
               size="sm"
               variant="ghost"
-              className="px-2"
+              className="px-2 h-8 text-xs font-semibold"
               onClick={() => handleOpenAssign(collection.id, collection.name)}
               aria-label="Assign products"
               title="Assign products"
             >
-              <HugeiconsIcon icon={Link01Icon} className="size-4" />
-              <span className="hidden lg:inline ml-1">Assign</span>
+              <HugeiconsIcon icon={Link01Icon} className="size-4 mr-1.5 opacity-60" />
+              Assign
             </Button>
             <Button
               size="sm"
               variant="ghost"
-              className="text-destructive hover:text-destructive px-2"
+              className="text-destructive hover:text-destructive px-2 h-8"
               onClick={() => handleDelete(collection.id)}
               aria-label="Delete collection"
               title="Delete collection"
@@ -319,121 +309,131 @@ export default function CollectionsPage() {
   const totalCollections = collections.length;
   const totalAssignedProducts = collections.reduce((acc, curr) => acc + curr.productCount, 0);
 
-  const statSegments = [
-    {
-      label: "Total Collections",
-      value: totalCollections.toLocaleString(),
-      changeLabel: "",
-      changeTone: "neutral" as const,
-    },
-    {
-      label: "Assigned Products",
-      value: totalAssignedProducts.toLocaleString(),
-      changeLabel: "",
-      changeTone: "neutral" as const,
-    },
-  ];
-
-  const mobileCollectionCards = (
-    <div className="grid grid-cols-2 gap-3">
-      {collections.length === 0 ? (
-        <div className="col-span-2 rounded-2xl border border-dashed border-border/60 bg-muted/20 px-4 py-12 text-center text-sm text-muted-foreground">
-          No collections yet. Tap Add Collection to create one.
-        </div>
-      ) : (
-        collections.map((collection) => (
-          <button
-            key={collection.id}
-            type="button"
-            className="group relative aspect-[0.9] overflow-hidden rounded-2xl bg-muted text-left"
-            onClick={() => handleOpenAssign(collection.id, collection.name)}
-          >
-            <CollectionThumbnail url={collection.image} name={collection.name} />
-            <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/20 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-3">
-              <p className="truncate text-sm font-semibold text-white">{collection.name}</p>
-              <p className="mt-1 text-[11px] font-medium text-white/85">{collection.productCount} product{collection.productCount === 1 ? "" : "s"}</p>
-            </div>
-          </button>
-        ))
-      )}
-    </div>
-  );
-
   return (
-    <div className="md:p-6 p-0">
-      <div className="block md:hidden px-4 py-4 space-y-5 pb-24">
-        {bootstrapError ? (
-          <div className="bg-destructive/10 text-destructive p-4 rounded-md text-sm">{bootstrapError}</div>
-        ) : null}
-
-        <div className="space-y-3 px-1">
+    <div className="flex-1 space-y-4 px-4 py-4 md:px-8 md:py-6">
+      <div className="flex flex-col gap-4">
+        {/* Desktop Header */}
+        <div className="hidden md:flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Collections</h1>
-            <p className="text-sm text-muted-foreground">Create collections and assign products shown on storefront rails.</p>
+            <h1 className="text-xl font-semibold tracking-tight">Collections</h1>
+            <p className="hidden text-xs text-muted-foreground sm:block">
+              Create collections and assign products shown on storefront rails.
+            </p>
           </div>
-          <AddCollectionButton onSelect={() => setUploadModalOpen(true)} />
+          <div className="flex items-center gap-2">
+            <Button 
+                onClick={() => setUploadModalOpen(true)}
+                size="sm" 
+                className="h-8 gap-1.5 text-xs font-medium text-background hover:bg-primary/90 shadow-sm"
+            >
+              <HugeiconsIcon icon={Add01Icon} className="size-4" />
+              Add collection
+            </Button>
+          </div>
         </div>
 
-        <SegmentedStatsCard segments={statSegments} />
-
-        {loading && collections.length === 0 ? (
-          <div className="grid grid-cols-2 gap-3">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="aspect-[0.9] rounded-2xl bg-muted animate-pulse" />
-            ))}
-          </div>
-        ) : (
-          mobileCollectionCards
-        )}
+        {/* Stats Cards Grid */}
+        <div className="hidden md:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: "Total Collections", value: totalCollections.toLocaleString() },
+            { label: "Assigned Products", value: totalAssignedProducts.toLocaleString() },
+          ].map((stat, i) => (
+            <div key={i} className="flex flex-col gap-1 rounded-2xl border border-border/60 bg-white px-6 py-4 shadow-sm">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase leading-tight tracking-wider">{stat.label}</span>
+              <span className="text-xl font-bold leading-none">{stat.value}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="hidden md:block space-y-6 p-4 md:p-0">
-        {bootstrapError ? (
-          <div className="bg-destructive/10 text-destructive p-4 rounded-md">{bootstrapError}</div>
-        ) : null}
-
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Collections</h1>
-            <p className="text-sm text-muted-foreground">Create collections and assign products shown on storefront rails.</p>
+      <div className="mt-2 flex flex-col gap-4">
+        {bootstrapError && (
+          <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive border border-destructive/25 flex items-center gap-3">
+            <HugeiconsIcon icon={Delete02Icon} className="size-5 shrink-0" />
+            <div>
+              <p className="font-semibold">Error loading store data</p>
+              <p className="text-xs opacity-80">{bootstrapError}</p>
+            </div>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-            <AddCollectionButton
-              onSelect={() => setUploadModalOpen(true)}
+        )}
+
+        {/* Desktop Table Content */}
+        <div className="hidden md:flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
+          <div className="flex flex-col gap-3 p-2 sm:flex-row sm:items-center justify-between border-b border-border/40 bg-muted/5">
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar px-1">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={cn(
+                  "h-9 text-xs font-medium px-4 transition-all rounded-lg bg-white border border-border/40 shadow-sm"
+                )}
+              >
+                All
+              </Button>
+            </div>
+            
+            <div className="flex items-center gap-2 px-1">
+              <div className="relative flex-1 sm:w-72">
+                <HugeiconsIcon icon={Search01Icon} className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search collections..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-9 pl-9 text-xs border border-border/60 bg-white/80 focus-visible:ring-1 focus-visible:ring-primary/20 shadow-none w-full font-medium rounded-lg" 
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-none shadow-none">
+            <DataTable
+              columns={columns}
+              data={filteredCollections}
+              getRowId={(row) => row.id}
+              rowSelection={rowSelection}
+              onRowSelectionChange={setRowSelection}
+              className="border-none shadow-none"
             />
           </div>
         </div>
 
-        <SegmentedStatsCard segments={statSegments} />
-
-        <div className="rounded-md border bg-card p-3 overflow-hidden min-w-0">
-          {loading && collections.length === 0 ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-4 rounded-lg border border-dashed border-border/60 p-3 bg-muted/30">
-                  <div className="size-10 bg-muted rounded-md animate-pulse shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-muted rounded w-1/3 animate-pulse" />
-                    <div className="h-4 bg-muted rounded w-24 animate-pulse" />
-                  </div>
-                  <div className="h-8 bg-muted rounded w-16 animate-pulse shrink-0" />
+        {/* Mobile View */}
+        <div className="md:hidden space-y-5 px-1 pb-24">
+            <div className="space-y-4">
+                <div>
+                   <h1 className="text-3xl font-semibold tracking-tight">Collections</h1>
+                   <p className="text-sm text-muted-foreground">Create collections and assign products shown on storefront rails.</p>
                 </div>
-              ))}
+                <AddCollectionButton onSelect={() => setUploadModalOpen(true)} />
             </div>
-          ) : (
-            <DataTable
-              className="table-fixed"
-              columns={columns}
-              data={collections}
-              rowSelection={rowSelection}
-              onRowSelectionChange={(updater) => {
-                setRowSelection((prev) =>
-                  typeof updater === "function" ? updater(prev) : updater
-                );
-              }}
-            />
-          )}
+
+            <div className="grid grid-cols-2 gap-3">
+                {loading && collections.length === 0 ? (
+                    [1, 2, 3, 4].map((i) => (
+                        <div key={i} className="aspect-[0.9] rounded-2xl bg-muted animate-pulse" />
+                    ))
+                ) : collections.length === 0 ? (
+                    <div className="col-span-2 rounded-2xl border border-dashed border-border/60 bg-muted/20 px-4 py-12 text-center text-sm text-muted-foreground">
+                        No collections yet. Tap Add Collection to create one.
+                    </div>
+                ) : (
+                    filteredCollections.map((collection) => (
+                        <button
+                            key={collection.id}
+                            type="button"
+                            className="group relative aspect-[0.9] overflow-hidden rounded-2xl bg-muted text-left"
+                            onClick={() => handleOpenAssign(collection.id, collection.name)}
+                        >
+                            <CollectionThumbnail url={collection.image} name={collection.name} />
+                            <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/20 to-transparent" />
+                            <div className="absolute inset-x-0 bottom-0 p-3">
+                                <p className="truncate text-sm font-semibold text-white">{collection.name}</p>
+                                <p className="mt-1 text-[11px] font-medium text-white/85">{collection.productCount} product{collection.productCount === 1 ? "" : "s"}</p>
+                            </div>
+                        </button>
+                    ))
+                )}
+            </div>
         </div>
       </div>
 

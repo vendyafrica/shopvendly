@@ -4,15 +4,20 @@ import * as React from "react";
 import { useTenant } from "@/modules/admin/context/tenant-context";
 import { type OrderTableRow, type OrderStatus, type PaymentStatus, type OrderAPIResponse, type OrdersListResponse, type OrderStatsResponse } from "@/modules/admin/models";
 import { Button } from "@shopvendly/ui/components/button";
+import { Input } from "@shopvendly/ui/components/input";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Download04Icon, FilterIcon } from "@hugeicons/core-free-icons";
-import { SegmentedStatsCard } from "@/modules/admin/components/segmented-stats-card";
+import { 
+  Download01Icon, 
+  Search01Icon,
+  AlertCircleIcon,
+  FilterIcon
+} from "@hugeicons/core-free-icons";
 import { RecentTransactionsTable } from "@/modules/admin/components/recent-transactions-table";
 import { OrdersPageSkeleton } from "@/components/ui/page-skeletons";
 import { TransactionsMobileView } from "./components/transactions-mobile-view";
+import { cn } from "@shopvendly/ui/lib/utils";
 
 const API_BASE = "";
-
 
 export default function TransactionsPage() {
     const { bootstrap, error: bootstrapError } = useTenant();
@@ -20,6 +25,8 @@ export default function TransactionsPage() {
     const [stats, setStats] = React.useState<OrderStatsResponse | null>(null);
     const [error, setError] = React.useState<string | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
+    const [statusFilter, setStatusFilter] = React.useState<"all" | "Completed" | "Pending" | "Failed">("all");
+    const [searchQuery, setSearchQuery] = React.useState("");
 
     // Fetch orders
     const fetchOrders = React.useCallback(async () => {
@@ -79,111 +86,162 @@ export default function TransactionsPage() {
 
     const currency = stats?.currency || bootstrap?.defaultCurrency || "UGX";
 
-    const statSegments = [
-        {
-            label: "Total Volume",
-            value: stats ? new Intl.NumberFormat("en-US", { style: "currency", currency }).format(stats.totalRevenue) : "—",
-            changeLabel: "",
-            changeTone: "neutral" as const,
-        },
-        {
-            label: "Transactions",
-            value: stats ? stats.orderCount.toLocaleString() : "—",
-            changeLabel: "",
-            changeTone: "neutral" as const,
-        },
-        {
-            label: "Pending",
-            value: stats ? stats.pendingCount.toLocaleString() : "—",
-            changeLabel: "",
-            changeTone: "neutral" as const,
-        },
-        {
-            label: "Refunded",
-            value: stats ? new Intl.NumberFormat("en-US", { style: "currency", currency }).format(stats.refundedAmount) : "—",
-            changeLabel: "",
-            changeTone: "neutral" as const,
-        },
-    ];
+    const filteredTransactions = React.useMemo(() => {
+        let rows = orders.map((o) => {
+            const itemLabel =
+                o.items?.length === 1
+                    ? o.items[0]?.productName
+                    : o.items?.length
+                        ? `${o.items.length} items`
+                        : "—";
 
-    const transactionRows = orders.map((o) => {
-        const itemLabel =
-            o.items?.length === 1
-                ? o.items[0]?.productName
-                : o.items?.length
-                    ? `${o.items.length} items`
-                    : "—";
+            return {
+                id: o.orderNumber,
+                customer: o.customerName,
+                product: itemLabel || "—",
+                amount: new Intl.NumberFormat("en-US", { style: "currency", currency }).format(o.totalAmount),
+                status: (o.paymentStatus === "paid"
+                    ? "Completed"
+                    : o.paymentStatus === "failed"
+                        ? "Failed"
+                        : "Pending") as "Completed" | "Failed" | "Pending",
+                payment: o.paymentMethod,
+                date: new Date(o.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }),
+            };
+        });
 
-        return {
-        id: o.orderNumber,
-        customer: o.customerName,
-        product: itemLabel || "—",
-        amount: new Intl.NumberFormat("en-US", { style: "currency", currency }).format(o.totalAmount),
-        status: (o.paymentStatus === "paid"
-            ? "Completed"
-            : o.paymentStatus === "failed"
-                ? "Failed"
-                : "Pending") as "Completed" | "Failed" | "Pending",
-        payment: o.paymentMethod,
-        date: new Date(o.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }),
-        };
-    }) as Parameters<typeof RecentTransactionsTable>[0]["rows"];
+        if (statusFilter !== "all") {
+            rows = rows.filter((r) => r.status === statusFilter);
+        }
+
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            rows = rows.filter((r) =>
+                r.customer.toLowerCase().includes(q) ||
+                r.id.toLowerCase().includes(q) ||
+                r.product.toLowerCase().includes(q)
+            );
+        }
+
+        return rows;
+    }, [orders, statusFilter, searchQuery, currency]);
 
     if (isLoading) {
         return <OrdersPageSkeleton />;
     }
 
     return (
-        <div className="md:p-6 p-0">
-            {/* Mobile View */}
-            <div className="block md:hidden">
-                <TransactionsMobileView
-                    bootstrap={bootstrap}
-                    transactions={transactionRows}
-                />
-            </div>
-
-            {/* Desktop View */}
-            <div className="hidden md:block space-y-6">
-                {bootstrapError && (
-                    <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-                        {bootstrapError}
-                    </div>
-                )}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex-1 space-y-4 px-4 py-4 md:px-8 md:py-6">
+            <div className="flex flex-col gap-4">
+                {/* Desktop Header */}
+                <div className="hidden md:flex items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Transactions</h1>
-                        <p className="text-sm text-muted-foreground">
+                        <h1 className="text-xl font-semibold tracking-tight">Transactions</h1>
+                        <p className="hidden text-xs text-muted-foreground sm:block">
                             Monitor and manage your transactions in one place.
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" className="gap-2">
-                            <HugeiconsIcon icon={Download04Icon} className="h-4 w-4" /> Export
-                        </Button>
-                        <Button variant="outline" className="gap-2">
-                            <HugeiconsIcon icon={FilterIcon} className="h-4 w-4" /> Filter
-                        </Button>
+                        <div className="flex items-center bg-muted/40 rounded-lg p-0.5 border border-border/40">
+                            <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs font-semibold hover:bg-background/80 transition-all">
+                                <HugeiconsIcon icon={Download01Icon} className="size-3.5" />
+                                Export
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs font-semibold hover:bg-background/80 transition-all">
+                                <HugeiconsIcon icon={FilterIcon} className="size-3.5" />
+                                Filter
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
-                {error && (
-                    <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-                        {error}
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="ml-4"
-                            onClick={fetchOrders}
-                        >
+                {/* Stats Cards Grid */}
+                <div className="hidden md:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {[
+                        { 
+                            label: "Total Volume", 
+                            value: stats ? new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(stats.totalRevenue) : "—" 
+                        },
+                        { 
+                            label: "Transactions", 
+                            value: stats ? stats.orderCount.toLocaleString() : "—" 
+                        },
+                        { 
+                            label: "Pending", 
+                            value: stats ? stats.pendingCount.toLocaleString() : "—" 
+                        },
+                        { 
+                            label: "Refunded", 
+                            value: stats ? new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(stats.refundedAmount) : "—" 
+                        }
+                    ].map((stat, i) => (
+                        <div key={i} className="flex flex-col gap-1 rounded-2xl border border-border/60 bg-white px-6 py-4 shadow-sm">
+                            <span className="text-[11px] font-bold text-muted-foreground uppercase leading-tight tracking-wider">{stat.label}</span>
+                            <span className="text-xl font-bold leading-none">{stat.value}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="mt-2 flex flex-col gap-4">
+                {(error || bootstrapError) && (
+                    <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive border border-destructive/25 flex items-center gap-3">
+                        <HugeiconsIcon icon={AlertCircleIcon} className="size-5 shrink-0" />
+                        <div>
+                            <p className="font-semibold">Error loading transactions</p>
+                            <p className="text-xs opacity-80">{error || bootstrapError}</p>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => fetchOrders()} className="ml-auto">
                             Retry
                         </Button>
                     </div>
                 )}
 
-                <SegmentedStatsCard segments={statSegments} />
+                {/* Desktop Table Content */}
+                <div className="hidden md:flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
+                    <div className="flex flex-col gap-3 p-2 sm:flex-row sm:items-center justify-between border-b border-border/40 bg-muted/5">
+                        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar px-1">
+                            {(["all", "Completed", "Pending", "Failed"] as const).map((tab) => (
+                                <Button 
+                                    key={tab}
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => setStatusFilter(tab)}
+                                    className={cn(
+                                        "h-9 text-xs font-medium px-4 transition-all rounded-lg capitalize",
+                                        statusFilter === tab ? "bg-white border border-border/40 shadow-sm" : "hover:bg-muted/30"
+                                    )}
+                                >
+                                    {tab}
+                                </Button>
+                            ))}
+                        </div>
+                        
+                        <div className="flex items-center gap-2 px-1">
+                            <div className="relative flex-1 sm:w-72">
+                                <HugeiconsIcon icon={Search01Icon} className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                                <Input 
+                                    placeholder="Search transactions..." 
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="h-9 pl-9 text-xs border border-border/60 bg-white/80 focus-visible:ring-1 focus-visible:ring-primary/20 shadow-none w-full font-medium rounded-lg" 
+                                />
+                            </div>
+                        </div>
+                    </div>
 
-                <RecentTransactionsTable rows={transactionRows} />
+                    <div className="border-none shadow-none">
+                        <RecentTransactionsTable rows={filteredTransactions as any} />
+                    </div>
+                </div>
+
+                {/* Mobile View */}
+                <div className="md:hidden">
+                    <TransactionsMobileView
+                        bootstrap={bootstrap}
+                        transactions={filteredTransactions as any}
+                    />
+                </div>
             </div>
         </div>
     );

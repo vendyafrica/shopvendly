@@ -11,6 +11,7 @@ import { TenantProvider } from "@/modules/admin/context/tenant-context";
 import { AppSessionProvider } from "@/contexts/app-session-context";
 import { AppSidebar } from "@/modules/admin/components/app-sidebar";
 import { AdminMobileDock } from "@/modules/admin/components/admin-mobile-dock";
+import { CollectoPayoutModal } from "@/modules/admin/components/collecto-payout-modal";
 
 export default async function TenantAdminLayout({
   children,
@@ -69,6 +70,8 @@ async function TenantAdminLayoutInner({
             storeSlug: slug,
             storeName: store.name,
             defaultCurrency: store.defaultCurrency,
+            collectoPassTransactionFeeToCustomer: store.collectoPassTransactionFeeToCustomer ?? false,
+            collectoPayoutMode: store.collectoPayoutMode ?? "automatic_per_order",
           }}
         >
           <SidebarProvider
@@ -85,6 +88,7 @@ async function TenantAdminLayoutInner({
               </SidebarInset>
             </HeaderActionsProvider>
 
+            <CollectoPayoutModal />
             <AdminMobileDock basePath={basePath} />
           </SidebarProvider>
         </TenantProvider>

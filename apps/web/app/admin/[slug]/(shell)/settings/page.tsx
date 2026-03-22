@@ -1,6 +1,4 @@
-import { db } from "@shopvendly/db/db";
-import { stores } from "@shopvendly/db/schema";
-import { and, eq, isNull } from "@shopvendly/db";
+import { storeRepo } from "@/repo/store-repo";
 import { SettingsClient } from "./settings-client";
 
 export default async function SettingsPage({
@@ -10,20 +8,7 @@ export default async function SettingsPage({
 }) {
   const { slug } = await params;
 
-  const store = await db.query.stores.findFirst({
-    where: and(eq(stores.slug, slug), isNull(stores.deletedAt)),
-    columns: {
-      id: true,
-      name: true,
-      storeContactPhone: true,
-      defaultCurrency: true,
-      slug: true,
-      tenantId: true,
-      heroMedia: true,
-      logoUrl: true,
-      storePolicy: true,
-    },
-  });
+  const store = await storeRepo.findAdminSettingsBySlug(slug);
 
   if (!store) {
     return (
@@ -45,6 +30,8 @@ export default async function SettingsPage({
         heroMedia: Array.isArray(store.heroMedia) ? store.heroMedia : [],
         storePolicy: store.storePolicy ?? "",
         logoUrl: store.logoUrl ?? null,
+        collectoPassTransactionFeeToCustomer: store.collectoPassTransactionFeeToCustomer ?? false,
+        collectoPayoutMode: store.collectoPayoutMode === "manual_batch" ? "manual_batch" : "automatic_per_order",
       }}
     />
   );
