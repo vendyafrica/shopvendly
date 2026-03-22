@@ -3,7 +3,7 @@ import { type ReactNode } from "react";
 import { RevenueAreaChartCard, TotalSalesBreakdownCard } from "@/modules/admin/components/dynamic-charts";
 import { RecentTransactionsTable } from "@/modules/admin/components/recent-transactions-table";
 import { QuickActionMobile } from "@/modules/admin/components/quick-action-mobile";
-import { ShareLinkSection } from "@/modules/admin/components/share-link-section";
+import { MobileStoreHeader } from "@/modules/admin/components/mobile-store-header";
 import { DashboardFilter } from "@/modules/admin/components/dashboard-filter";
 import { adminDashboardService, type DashboardRange } from "@/modules/admin";
 import { getStorefrontUrl } from "@/utils/misc";
@@ -12,8 +12,6 @@ import {
   ShoppingBag01Icon,
   Invoice01Icon,
   Share01Icon,
-  UserGroupIcon,
-  ViewIcon,
   ArrowUp01Icon,
   ArrowDown01Icon,
   Settings02Icon,
@@ -87,14 +85,12 @@ export default async function AdminPage({
     <div className="space-y-6">
       {/* Mobile View */}
       <div className="flex md:hidden flex-col gap-6">
-        <div className="flex items-center justify-between px-1">
-          <Badge variant="outline" className="text-[10px] px-3 py-1 border-primary/20 text-primary font-bold uppercase tracking-widest bg-primary/5 rounded-full">{store.name}</Badge>
-          <div className="flex items-center capitalize justify-center text-muted-foreground font-medium text-[10px] max-w-[220px] break-words text-right leading-tight">
-            {store.description || slug}
-          </div>
-        </div>
-
-        <ShareLinkSection url={storefrontUrl} />
+        <MobileStoreHeader
+          storeName={store.name}
+          storeDescription={store.description}
+          storefrontUrl={storefrontUrl}
+          logoUrl={store.logoUrl}
+        />
 
         <div className="px-1 space-y-4">
           <div className="flex items-center justify-between">
