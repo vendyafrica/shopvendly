@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@shopvendly/ui/components/a
 import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
 import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { User02Icon, Mail01Icon, Shield01Icon, Calendar03Icon } from "@hugeicons/core-free-icons";
+import { User02Icon, Mail01Icon, Calendar03Icon } from "@hugeicons/core-free-icons";
 
 export default function ProfilePage() {
   const { session } = useAppSession();
@@ -17,10 +17,14 @@ export default function ProfilePage() {
   const firstName = fullName.split(" ")[0] || "A";
   const avatarUrl = user.image || "";
 
+  const memberSince = user.createdAt
+    ? new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(new Date(user.createdAt))
+    : "—";
+
   return (
     <div className="space-y-8 max-w-4xl mx-auto py-6">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Your Profile</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Your Profile</h1>
         <p className="text-muted-foreground">Manage your personal information and account security.</p>
       </div>
 
@@ -56,7 +60,7 @@ export default function ProfilePage() {
         <Card className="md:col-span-2 border-border/50 shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <User02Icon size={20} className="text-primary" />
+              <HugeiconsIcon icon={User02Icon} size={20} className="text-primary" />
               Account Details
             </CardTitle>
           </CardHeader>
@@ -76,18 +80,12 @@ export default function ProfilePage() {
                   <span className="font-medium">{user.email}</span>
                 </div>
               </div>
-              <div className="space-y-2">
-                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">User ID</p>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/30">
-                  <HugeiconsIcon icon={Shield01Icon} size={18} className="text-muted-foreground" />
-                  <span className="font-mono text-[11px] text-muted-foreground truncate">{user.id}</span>
-                </div>
-              </div>
+
               <div className="space-y-2">
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">Member Since</p>
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/30">
                   <HugeiconsIcon icon={Calendar03Icon} size={18} className="text-muted-foreground" />
-                  <span className="font-medium">March 2024</span>
+                  <span className="font-medium">{memberSince}</span>
                 </div>
               </div>
             </div>

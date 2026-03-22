@@ -8,6 +8,7 @@ export type AppSession = {
         name?: string | null;
         email?: string | null;
         image?: string | null;
+        createdAt?: string | Date | null;
     } | null;
 };
 
