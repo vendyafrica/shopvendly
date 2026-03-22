@@ -61,7 +61,7 @@ export type OrderSummaryRow = {
   orderId?: string;
   actualId: string;
   customer: string;
-  amount: string | React.ReactNode;
+  amount: string;
   status: "Completed" | "Failed" | "Pending";
   date: string;
   product?: string;

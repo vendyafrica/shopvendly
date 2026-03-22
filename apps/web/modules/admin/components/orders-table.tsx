@@ -19,6 +19,7 @@ const columns: ColumnDef<OrderSummaryRow>[] = [
   {
     accessorKey: "amount",
     header: "Amount",
+    cell: ({ row }) => <span className="font-semibold text-foreground">{row.original.amount}</span>,
   },
   {
     accessorKey: "status",

@@ -7,5 +7,6 @@ export * from "./integrations-panel";
 export * from "./quick-actions-grid";
 export * from "./quick-add-launcher";
 export * from "./orders-table";
+export * from "./recent-orders-table-section";
 export * from "./segmented-stats-card";
 export * from "./simple-line-chart-card";

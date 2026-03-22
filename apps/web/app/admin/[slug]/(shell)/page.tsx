@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { type ReactNode } from "react";
 import { RevenueAreaChartCard, TotalSalesBreakdownCard } from "@/modules/admin/components/dynamic-charts";
-import { OrdersTable } from "@/modules/admin/components/orders-table";
+import { RecentOrdersTableSection } from "@/modules/admin/components/recent-orders-table-section";
 import { QuickActionMobile } from "@/modules/admin/components/quick-action-mobile";
 import { MobileStoreHeader } from "@/modules/admin/components/mobile-store-header";
 import { DashboardFilter } from "@/modules/admin/components/dashboard-filter";
+import { CollectoPayoutCard } from "@/modules/admin/components/collecto-payout-card";
 import { adminDashboardService, type DashboardRange } from "@/modules/admin";
+import { type OrderSummaryRow } from "@/modules/admin/models";
 import { getStorefrontUrl } from "@/utils/misc";
 import {
   Add01Icon,
@@ -27,6 +29,12 @@ function formatCurrency(amount: number, currency: string) {
     minimumFractionDigits: 0,
   }).format(amount);
 }
+
+type ActivityItem = OrderSummaryRow & {
+  title: string;
+  subtitle?: string;
+  time: string;
+};
 
 function formatStatCurrency(amount: number, currency: string): ReactNode {
   const formatted = formatCurrency(amount, currency);
@@ -74,7 +82,7 @@ export default async function AdminPage({
     { label: "Storefront", href: storefrontUrl, icon: Share01Icon, external: true, color: "text-indigo-500" },
   ];
 
-  const activityItems = transactionRows.slice(0, 6).map((tx: any) => ({
+  const activityItems: ActivityItem[] = transactionRows.slice(0, 6).map((tx: OrderSummaryRow) => ({
     ...tx,
     title: tx.customer || "New customer",
     subtitle: tx.product,
@@ -97,6 +105,7 @@ export default async function AdminPage({
             <h2 className="text-sm font-bold tracking-tight">Store Overview</h2>
             <DashboardFilter />
           </div>
+          <CollectoPayoutCard />
 
           <div className="rounded-2xl border bg-card shadow-sm overflow-hidden flex flex-col divide-y">
             <div className="p-5 flex flex-col gap-1 relative overflow-hidden group">
@@ -169,7 +178,7 @@ export default async function AdminPage({
             <Badge variant="outline" className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest animate-pulse border-emerald-500/30 text-emerald-600 bg-emerald-500/5">Live</Badge>
           </div>
           <div className="space-y-3">
-            {activityItems.map((item: any) => (
+            {activityItems.map((item) => (
               <div key={item.id} className="rounded-2xl border bg-card p-4 shadow-sm flex items-center gap-4 group active:bg-muted/30 transition-colors">
                 <div className={cn(
                   "flex items-center justify-center",
@@ -217,6 +226,8 @@ export default async function AdminPage({
           <DashboardFilter />
         </div>
 
+        <CollectoPayoutCard />
+
         <div className="rounded-2xl border bg-card shadow-sm overflow-hidden flex divide-x">
           {stats.map((s) => (
             <div key={s.label} className="flex-1 p-8 flex flex-col justify-between group transition-colors hover:bg-muted/30">
@@ -258,15 +269,7 @@ export default async function AdminPage({
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-xl font-semibold tracking-tight">Recent Orders</h2>
-            <Link href={`${basePath}/orders`} className="text-xs font-bold text-primary hover:underline">View all</Link>
-          </div>
-          <div className="w-full">
-            <OrdersTable rows={transactionRows} />
-          </div>
-        </div>
+        <RecentOrdersTableSection rows={transactionRows} viewAllHref={`${basePath}/orders`} />
       </div>
     </div>
   );

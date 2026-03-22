@@ -88,18 +88,12 @@ export default function OrdersPage() {
 
     const currency = stats?.currency || bootstrap?.defaultCurrency || "UGX";
 
-    const renderPrice = (amount: number, currencyCode: string) => {
-        const formatted = new Intl.NumberFormat("en-US", { style: "currency", currency: currencyCode, minimumFractionDigits: 0 }).format(amount);
-        const match = formatted.match(/^([A-Z]{3})[\s\u00a0]*(.*)$/);
-        if (!match) return formatted;
-        const [, code, numeric] = match;
-        return (
-          <span className="inline-flex items-baseline gap-1">
-            <span className="text-[10px] font-bold text-muted-foreground/60 align-sub tracking-tight uppercase leading-none">{code}</span>
-            <span className="leading-none">{numeric}</span>
-          </span>
-        );
-    };
+    const renderPrice = (amount: number, currencyCode: string) =>
+        new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: currencyCode,
+            minimumFractionDigits: 0,
+        }).format(amount);
 
     const filteredOrders = React.useMemo<OrderSummaryRow[]>(() => {
         let rows = orders.map((o, index) => {

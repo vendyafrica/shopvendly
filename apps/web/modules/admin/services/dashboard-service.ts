@@ -173,11 +173,12 @@ export const adminDashboardService = {
 
       return {
         id: o.orderNumber,
+        actualId: o.id,
         customer: o.customerName,
         product: itemLabel || "—",
         amount: formatCurrency(o.totalAmount, o.currency || currency),
         status: status as "Completed" | "Failed" | "Pending",
-        payment: o.paymentMethod,
+        paymentMethod: o.paymentMethod,
         date: new Date(o.createdAt).toLocaleString("en-US", {
           month: "short",
           day: "numeric",
