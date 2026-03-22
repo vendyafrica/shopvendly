@@ -15,6 +15,7 @@ function CheckoutContent() {
         paymentStatusMessage, phoneVerificationStatus,
         phoneVerificationMessage, showPaymentCancelHint,
         showStorePolicy, setShowStorePolicy,
+        paymentPricing,
         storeItems, store, isLoaded,
         handleSubmit, resetPaymentRetryState, cancelCollectoPayment,
         paymentTransactionId, activeOrderId
@@ -28,7 +29,7 @@ function CheckoutContent() {
                 storePolicy, paymentFlowStatus,
                 paymentStatusMessage, phoneVerificationStatus,
                 phoneVerificationMessage, showPaymentCancelHint,
-                showStorePolicy, storeItems, store, isLoaded,
+                showStorePolicy, paymentPricing, storeItems, store, isLoaded,
                 paymentTransactionId, activeOrderId
             }}
             actions={{

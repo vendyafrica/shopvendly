@@ -1,0 +1,2 @@
+ALTER TABLE "stores" ADD COLUMN "collecto_pass_transaction_fee_to_customer" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "stores" ADD COLUMN "collecto_payout_mode" text DEFAULT 'automatic_per_order' NOT NULL;

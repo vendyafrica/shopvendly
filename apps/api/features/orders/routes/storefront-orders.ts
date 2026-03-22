@@ -8,6 +8,7 @@ import {
   notifySellerNewOrder,
 } from "../../messaging/services/notifications.js";
 import { dispatchDeliveryProviderForOrder } from "../../payments/services/delivery-dispatch.js";
+import { buildCollectoPricingBreakdown } from "../../payments/services/collecto-pricing.js";
 
 export const storefrontOrdersRouter: ExpressRouter = Router();
 
@@ -64,12 +65,26 @@ storefrontOrdersRouter.post("/storefront/:slug/checkout", async (req, res, next)
     }
 
     const order = await orderService.createOrder(slug, input);
+    const storePaymentSettings = await orderService.getStorePaymentSettingsBySlug(slug);
+    const paymentPricing = input.paymentMethod === "mobile_money"
+      ? buildCollectoPricingBreakdown({
+          subtotalAmount: order.subtotal,
+          settings: storePaymentSettings,
+        })
+      : {
+          subtotalAmount: order.subtotal,
+          customerFeeAmount: 0,
+          customerPaidAmount: order.totalAmount,
+          merchantReceivableAmount: order.totalAmount,
+          passTransactionFeeToCustomer: false,
+          payoutMode: storePaymentSettings.collectoPayoutMode,
+        };
 
     captureOrderCreated(order, slug);
 
     if (input.paymentMethod !== "mobile_money") {
       await notifyOrderCreated(order);
-      return res.status(201).json({ ok: true, order });
+      return res.status(201).json({ ok: true, order, paymentPricing });
     }
 
     await orderService.updateOrderStatusByOrderId(order.id, {
@@ -90,6 +105,7 @@ storefrontOrdersRouter.post("/storefront/:slug/checkout", async (req, res, next)
         mode: "live",
         status: "ready_to_initiate",
       },
+      paymentPricing,
     });
   } catch (err) {
     next(err);

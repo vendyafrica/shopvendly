@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/modules/cart/context/cart-context";
 import { useAppSession } from "@/contexts/app-session-context";
@@ -11,8 +11,13 @@ const COLLECTO_POLL_INTERVAL_MS = 5000;
 const COLLECTO_ACTIVE_POLL_WINDOW_MS = 120000;
 const COLLECTO_STALE_HINT_MS = 45000;
 const COLLECTO_INITIATION_TIMEOUT_MS = 14000;
+const COLLECTO_FEE_RATE = 0.03;
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") || getRootUrl("");
+
+function calculateCollectoFee(amount: number) {
+    return Math.round(Math.max(amount, 0) * COLLECTO_FEE_RATE);
+}
 
 export function useCheckout() {
     const router = useRouter();
@@ -36,7 +41,6 @@ export function useCheckout() {
     const [storePolicy, setStorePolicy] = useState<string | null>(null);
     const [paymentFlowStatus, setPaymentFlowStatus] = useState<PaymentFlowStatus>("idle");
     const [paymentTransactionId, setPaymentTransactionId] = useState<string | null>(null);
-    const [paymentReference, setPaymentReference] = useState<string | null>(null);
     const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
     const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null);
     const [phoneVerificationStatus, setPhoneVerificationStatus] = useState<PhoneVerificationStatus>("idle");
@@ -44,6 +48,14 @@ export function useCheckout() {
     const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
     const [showPaymentCancelHint, setShowPaymentCancelHint] = useState(false);
     const [showStorePolicy, setShowStorePolicy] = useState(false);
+    const [paymentPricing, setPaymentPricing] = useState<{
+        subtotalAmount: number;
+        customerFeeAmount: number;
+        customerPaidAmount: number;
+        merchantReceivableAmount: number;
+        passTransactionFeeToCustomer: boolean;
+        payoutMode: "automatic_per_order" | "manual_batch";
+    } | null>(null);
     const paymentFlowStartedAtRef = useRef<number | null>(null);
 
     const getStorageKey = () => `vendly_checkout_${storeId}`;
@@ -68,7 +80,6 @@ export function useCheckout() {
         setShowPaymentCancelHint(false);
         setPaymentFlowStatus("failed");
         setPaymentTransactionId(null);
-        setPaymentReference(null);
         setPaymentStatusMessage(
             message?.trim() || "Mobile money payment was declined. Please try again."
         );
@@ -83,7 +94,6 @@ export function useCheckout() {
         setShowPaymentCancelHint(false);
         setPaymentFlowStatus("idle");
         setPaymentTransactionId(null);
-        setPaymentReference(null);
         setPaymentStatusMessage(null);
         setError(null);
     };
@@ -94,7 +104,7 @@ export function useCheckout() {
         }
     }, [session]);
 
-    const storeItems = storeId ? itemsByStore[storeId] : [];
+    const storeItems = useMemo(() => (storeId ? itemsByStore[storeId] ?? [] : []), [itemsByStore, storeId]);
     const store = storeItems?.[0]?.store;
 
     useEffect(() => {
@@ -113,17 +123,38 @@ export function useCheckout() {
             try {
                 const res = await fetch(`/api/storefront/${resolvedSlug}`);
                 if (!res.ok) return;
-                const data = (await res.json()) as { storePolicy?: string | null };
+                const data = (await res.json()) as {
+                    storePolicy?: string | null;
+                    collectoPassTransactionFeeToCustomer?: boolean;
+                    collectoPayoutMode?: "automatic_per_order" | "manual_batch";
+                };
                 if (!cancelled) {
                     setStorePolicy(data.storePolicy ?? null);
+                    const subtotalAmount = storeItems.reduce((acc: number, item) => acc + item.product.price * item.quantity, 0);
+                    const passFee = Boolean(data.collectoPassTransactionFeeToCustomer);
+                    const customerFeeAmount = passFee ? calculateCollectoFee(subtotalAmount) : 0;
+                    const customerPaidAmount = subtotalAmount + customerFeeAmount;
+                    setPaymentPricing({
+                        subtotalAmount,
+                        customerFeeAmount,
+                        customerPaidAmount,
+                        merchantReceivableAmount: Math.max(customerPaidAmount - calculateCollectoFee(customerPaidAmount), 0),
+                        passTransactionFeeToCustomer: passFee,
+                        payoutMode: data.collectoPayoutMode === "manual_batch"
+                            ? "manual_batch"
+                            : "automatic_per_order",
+                    });
                 }
             } catch {
-                if (!cancelled) setStorePolicy(null);
+                if (!cancelled) {
+                    setStorePolicy(null);
+                    setPaymentPricing(null);
+                }
             }
         };
         void loadStorePolicy();
         return () => { cancelled = true; };
-    }, [store?.slug, storeSlug]);
+    }, [store?.slug, storeSlug, storeItems]);
 
     const clearPaymentPoll = () => {
         if (paymentPollRef.current) {
@@ -159,7 +190,7 @@ export function useCheckout() {
             setPhoneVerificationMessage(null);
             setVerifiedPhone(trimmed);
             return true;
-        } catch (err) {
+        } catch {
             setPhoneVerificationStatus("failed");
             setPhoneVerificationMessage("We couldn't verify this mobile money number.");
             setVerifiedPhone(null);
@@ -274,13 +305,12 @@ export function useCheckout() {
             const transactionId = initiateData?.transactionId;
             const reference = initiateData?.reference;
             setPaymentTransactionId(transactionId);
-            setPaymentReference(reference);
             setPaymentStatusMessage("Payment request sent. Check your phone.");
             if (store) {
                 saveCheckoutState(orderId, transactionId, reference, store.slug);
             }
             await pollCollectoStatus(transactionId, orderId);
-        } catch (err) {
+        } catch {
             handlePaymentFailure("Unable to start mobile money payment.");
         }
     };
@@ -308,7 +338,6 @@ export function useCheckout() {
         setError(null);
         setPaymentStatusMessage(null);
         setPaymentTransactionId(null);
-        setPaymentReference(null);
         setPaymentFlowStatus("idle");
         clearPaymentPoll();
 
@@ -327,12 +356,12 @@ export function useCheckout() {
                 customerPhone: phone,
                 paymentMethod,
                 shippingAddress: { street: address, country: "Uganda" },
-                items: (storeItems || []).map((item: any) => ({
+                items: storeItems.map((item) => ({
                     productId: item.product.id,
                     quantity: item.quantity,
                     selectedOptions: item.product.selectedOptions,
                 })),
-                amount: (storeItems || []).reduce((acc: number, item: any) => acc + item.product.price * item.quantity, 0),
+                amount: storeItems.reduce((acc: number, item) => acc + item.product.price * item.quantity, 0),
             };
             const res = await fetch(`${API_BASE}/api/storefront/${store?.slug}/checkout`, {
                 method: "POST",
@@ -342,6 +371,9 @@ export function useCheckout() {
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data?.error?.message || data?.message || "Checkout failed");
             const orderId = data.order?.id || data.id;
+            if (data?.paymentPricing) {
+                setPaymentPricing(data.paymentPricing);
+            }
             setActiveOrderId(orderId);
             if (!(await verifyPromise)) {
                 setIsSubmitting(false);
@@ -349,8 +381,8 @@ export function useCheckout() {
                 return;
             }
             await initiateCollectoPayment(orderId);
-        } catch (err: any) {
-            handlePaymentFailure(err.message);
+        } catch (err: unknown) {
+            handlePaymentFailure(err instanceof Error ? err.message : "Checkout failed");
         }
     };
 
@@ -364,6 +396,7 @@ export function useCheckout() {
         paymentStatusMessage, phoneVerificationStatus,
         phoneVerificationMessage, showPaymentCancelHint,
         showStorePolicy, setShowStorePolicy,
+        paymentPricing,
         storeItems, store, isLoaded,
         handleSubmit, resetPaymentRetryState, cancelCollectoPayment,
         paymentTransactionId, activeOrderId

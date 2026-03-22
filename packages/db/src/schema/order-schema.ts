@@ -21,10 +21,27 @@ export type CollectoMeta = {
     settledAt?: string | null;
     lastError?: string | null;
     settlementBatchOrderIds?: string[];
+    pricing?: {
+        subtotalAmount?: number | null;
+        customerFeeAmount?: number | null;
+        customerPaidAmount?: number | null;
+        merchantReceivableAmount?: number | null;
+        passTransactionFeeToCustomer?: boolean;
+        updatedAt?: string | null;
+    };
+    payoutPlan?: {
+        mode?: "automatic_per_order" | "manual_batch";
+        bulkReady?: boolean;
+        manualPayoutEligible?: boolean;
+        manualPayoutTriggeredAt?: string | null;
+        manualPayoutCompletedAt?: string | null;
+        updatedAt?: string | null;
+    };
     collection?: {
         reference?: string | null;
         transactionId?: string | null;
         status?: CollectoStepStatus;
+        amount?: number | null;
         message?: string | null;
         updatedAt?: string | null;
     };

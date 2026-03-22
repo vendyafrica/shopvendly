@@ -11,6 +11,9 @@ import {
 import { tenants } from "./tenant-schema";
 
 
+export type CollectoPayoutMode = "automatic_per_order" | "manual_batch";
+
+
 export const stores = pgTable(
     "stores",
     {
@@ -32,6 +35,8 @@ export const stores = pgTable(
         storeContactEmail: text("store_contact_email"),
         storeAddress: text("store_address"),
         deliveryProviderPhone: text("delivery_provider_phone"),
+        collectoPassTransactionFeeToCustomer: boolean("collecto_pass_transaction_fee_to_customer").notNull().default(false),
+        collectoPayoutMode: text("collecto_payout_mode").notNull().default("automatic_per_order"),
 
         heroMedia: text("hero_media").array().default([]),
 

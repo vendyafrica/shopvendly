@@ -15,6 +15,7 @@ import {
 import { orders, orderItems, products, stores, tenants } from "@shopvendly/db";
 import { normalizePhoneToE164 } from "../../../shared/utils/phone.js";
 import { z } from "zod";
+import { buildCollectoPricingBreakdown, normalizeCollectoPayoutMode, type CollectoStorePaymentSettings } from "../../payments/services/collecto-pricing.js";
 
 type ProductWithMedia = (typeof products.$inferSelect) & {
   media?: Array<{ media?: { blobUrl?: string | null } | null; sortOrder?: number | null } | null>;
@@ -160,7 +161,14 @@ export const orderService = {
 
     const orderNumber = `ORD-${((countResult?.count || 0) + 1).toString().padStart(4, "0")}`;
 
-    const totalAmount = subtotal;
+    const pricing = buildCollectoPricingBreakdown({
+      subtotalAmount: subtotal,
+      settings: {
+        collectoPassTransactionFeeToCustomer: Boolean(store.collectoPassTransactionFeeToCustomer),
+        collectoPayoutMode: normalizeCollectoPayoutMode(store.collectoPayoutMode),
+      },
+    });
+    const totalAmount = input.paymentMethod === "mobile_money" ? pricing.customerPaidAmount : subtotal;
 
     const [order] = await db
       .insert(orders)
@@ -179,6 +187,24 @@ export const orderService = {
         subtotal,
         totalAmount,
         currency,
+        collectoMeta: input.paymentMethod === "mobile_money"
+          ? {
+              pricing: {
+                subtotalAmount: pricing.subtotalAmount,
+                customerFeeAmount: pricing.customerFeeAmount,
+                customerPaidAmount: pricing.customerPaidAmount,
+                merchantReceivableAmount: pricing.merchantReceivableAmount,
+                passTransactionFeeToCustomer: pricing.passTransactionFeeToCustomer,
+                updatedAt: new Date().toISOString(),
+              },
+              payoutPlan: {
+                mode: pricing.payoutMode,
+                bulkReady: false,
+                manualPayoutEligible: false,
+                updatedAt: new Date().toISOString(),
+              },
+            }
+          : {},
       })
       .returning();
 
@@ -299,6 +325,52 @@ export const orderService = {
     });
 
     return tenant?.phoneNumber || null;
+  },
+
+  async getStorePaymentSettingsBySlug(storeSlug: string): Promise<{ id: string; slug: string } & CollectoStorePaymentSettings> {
+    const store = await db.query.stores.findFirst({
+      where: and(eq(stores.slug, storeSlug), isNull(stores.deletedAt)),
+      columns: {
+        id: true,
+        slug: true,
+        collectoPassTransactionFeeToCustomer: true,
+        collectoPayoutMode: true,
+      },
+    });
+
+    if (!store) {
+      throw new Error("Store not found");
+    }
+
+    return {
+      id: store.id,
+      slug: store.slug,
+      collectoPassTransactionFeeToCustomer: Boolean(store.collectoPassTransactionFeeToCustomer),
+      collectoPayoutMode: normalizeCollectoPayoutMode(store.collectoPayoutMode),
+    };
+  },
+
+  async getStorePaymentSettingsById(storeId: string): Promise<{ id: string; slug: string } & CollectoStorePaymentSettings> {
+    const store = await db.query.stores.findFirst({
+      where: and(eq(stores.id, storeId), isNull(stores.deletedAt)),
+      columns: {
+        id: true,
+        slug: true,
+        collectoPassTransactionFeeToCustomer: true,
+        collectoPayoutMode: true,
+      },
+    });
+
+    if (!store) {
+      throw new Error("Store not found");
+    }
+
+    return {
+      id: store.id,
+      slug: store.slug,
+      collectoPassTransactionFeeToCustomer: Boolean(store.collectoPassTransactionFeeToCustomer),
+      collectoPayoutMode: normalizeCollectoPayoutMode(store.collectoPayoutMode),
+    };
   },
 
   async getTenantPhoneByTenantId(tenantId: string) {

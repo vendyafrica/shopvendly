@@ -16,6 +16,21 @@ export type VisitsPoint = {
   visits: number;
 };
 
+type VisitsTimeRange = "7d" | "30d";
+
+function formatChartDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
 export function VisitsAreaChartCard({
   title,
   totalLabel,
@@ -25,14 +40,16 @@ export function VisitsAreaChartCard({
   totalLabel: string;
   data: VisitsPoint[];
 }) {
-  const [timeRange, setTimeRange] = useState<"7d" | "30d">("30d");
+  const [timeRange, setTimeRange] = useState<VisitsTimeRange>("30d");
 
   const filteredData = timeRange === "7d" ? data.slice(-7) : data;
+  const maxValue = Math.max(0, ...filteredData.map((point) => point.visits));
+  const yAxisMax = maxValue === 0 ? 5 : Math.max(5, Math.ceil(maxValue * 1.25));
 
   const chartConfig = {
     visits: {
       label: "Visits",
-      color: "hsl(var(--primary))",
+      color: "hsl(262 83% 58%)",
     },
   } satisfies ChartConfig;
 
@@ -43,13 +60,18 @@ export function VisitsAreaChartCard({
           <CardTitle className="text-base">{title}</CardTitle>
           <div className="text-3xl font-bold text-foreground">{totalLabel}</div>
         </div>
-        <Select value={timeRange} onValueChange={(value: any) => setTimeRange(value)}>
-          <SelectTrigger className="w-[120px] rounded-lg border-border sm:ml-auto h-8 bg-muted/20" size="sm">
+        <Select
+          value={timeRange}
+          onValueChange={(value: VisitsTimeRange | null) => {
+            if (value) setTimeRange(value);
+          }}
+        >
+          <SelectTrigger className="w-[110px] rounded-md border-border sm:ml-auto h-12 px-4 bg-muted/20 text-sm font-medium" size="default">
             <SelectValue placeholder="Time range" />
           </SelectTrigger>
-          <SelectContent align="end" className="rounded-xl">
-            <SelectItem value="30d">Last 30 days</SelectItem>
-            <SelectItem value="7d">Last 7 days</SelectItem>
+          <SelectContent align="end" className="rounded-md p-1">
+            <SelectItem className="py-1 px-3" value="30d">30d</SelectItem>
+            <SelectItem className="py-1 px-3" value="7d">7d</SelectItem>
           </SelectContent>
         </Select>
       </CardHeader>
@@ -58,54 +80,43 @@ export function VisitsAreaChartCard({
           <AreaChart
             data={filteredData}
             margin={{
-              left: 12,
+              left: 8,
               right: 12,
               top: 12,
               bottom: 12,
             }}
           >
-            <CartesianGrid vertical={false} />
+            <defs>
+              <linearGradient id="fillVisits" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--color-visits)" stopOpacity={0.35} />
+                <stop offset="95%" stopColor="var(--color-visits)" stopOpacity={0.04} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} strokeOpacity={0.08} />
             <XAxis
               dataKey="date"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
               minTickGap={32}
-              tickFormatter={(value) => value.slice(0, 6)}
+              tickFormatter={formatChartDate}
             />
             <YAxis
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickCount={3}
-              domain={[0, "auto"]}
-              tickFormatter={(value) => {
-                if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
-                return value;
-              }}
+              tickCount={4}
+              width={54}
+              domain={[0, yAxisMax]}
+              tickFormatter={(value) => `${value}`}
             />
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            <defs>
-              <linearGradient id="fillVisits" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-visits)"
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-visits)"
-                  stopOpacity={0.1}
-                />
-              </linearGradient>
-            </defs>
+            <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
             <Area
               dataKey="visits"
               type="monotone"
               fill="url(#fillVisits)"
               stroke="var(--color-visits)"
               strokeWidth={2}
-              stackId="a"
             />
           </AreaChart>
         </ChartContainer>

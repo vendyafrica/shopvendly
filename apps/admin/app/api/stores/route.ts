@@ -7,6 +7,8 @@ import { z } from "zod";
 
 const updateGlobalDeliveryProviderSchema = z.object({
     deliveryProviderPhone: z.string().trim().min(1).nullable(),
+    collectoPassTransactionFeeToCustomer: z.boolean().optional(),
+    collectoPayoutMode: z.enum(["automatic_per_order", "manual_batch"]).optional(),
 });
 
 export async function GET() {
@@ -24,6 +26,8 @@ export async function GET() {
                 status: stores.status,
                 storeContactPhone: stores.storeContactPhone,
                 deliveryProviderPhone: stores.deliveryProviderPhone,
+                collectoPassTransactionFeeToCustomer: stores.collectoPassTransactionFeeToCustomer,
+                collectoPayoutMode: stores.collectoPayoutMode,
                 createdAt: stores.createdAt,
                 tenantName: tenants.fullName,
                 tenantPhone: tenants.phoneNumber,
@@ -60,12 +64,20 @@ export async function PATCH(req: Request) {
         const body = await req.json();
         const parsed = updateGlobalDeliveryProviderSchema.parse({
             deliveryProviderPhone: body?.deliveryProviderPhone ?? null,
+            collectoPassTransactionFeeToCustomer: body?.collectoPassTransactionFeeToCustomer,
+            collectoPayoutMode: body?.collectoPayoutMode,
         });
 
         await db
             .update(stores)
             .set({
                 deliveryProviderPhone: parsed.deliveryProviderPhone,
+                ...(parsed.collectoPassTransactionFeeToCustomer !== undefined
+                    ? { collectoPassTransactionFeeToCustomer: parsed.collectoPassTransactionFeeToCustomer }
+                    : {}),
+                ...(parsed.collectoPayoutMode !== undefined
+                    ? { collectoPayoutMode: parsed.collectoPayoutMode }
+                    : {}),
             });
 
         return NextResponse.json({ success: true });

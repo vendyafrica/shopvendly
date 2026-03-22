@@ -12,6 +12,7 @@ import {
   type CollectoPayload,
 } from "./collecto-payload.js";
 import { trackCollectoCollection, trackCollectoSettlement } from "./collecto-observability.js";
+import { COLLECTO_PAYOUT_FEE_UGX, normalizeCollectoPayoutMode } from "./collecto-pricing.js";
 
 type CollectoStepStatus = "pending" | "successful" | "failed";
 
@@ -31,6 +32,7 @@ type CollectoSettlementContext = {
   settlementOrderIds: string[];
   settlementAmount: number;
   settlementLabel: string;
+  payoutMode: "automatic_per_order" | "manual_batch";
 };
 
 const SETTLEMENT_STATUS_PENDING = "pending" as const;
@@ -42,7 +44,7 @@ const PAYOUT_STATUS_ATTEMPTS = 8;
 const STATUS_DELAY_MS = 2500;
 const BULK_BALANCE_PROPAGATION_DELAY_MS = 10000;
 const COLLECTO_COLLECTION_FEE_RATE = 0.03;
-const COLLECTO_PAYOUT_FEE = 1200;
+const COLLECTO_PAYOUT_FEE = COLLECTO_PAYOUT_FEE_UGX;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -117,6 +119,8 @@ function mergeCollectoMeta(existing: CollectoMeta | null | undefined, patch: Par
   return {
     ...(existing ?? {}),
     ...patch,
+    pricing: patch.pricing ? { ...(existing?.pricing ?? {}), ...patch.pricing } : existing?.pricing,
+    payoutPlan: patch.payoutPlan ? { ...(existing?.payoutPlan ?? {}), ...patch.payoutPlan } : existing?.payoutPlan,
     collection: patch.collection ? { ...(existing?.collection ?? {}), ...patch.collection } : existing?.collection,
     walletTransfer: patch.walletTransfer
       ? { ...(existing?.walletTransfer ?? {}), ...patch.walletTransfer }
@@ -196,7 +200,11 @@ async function listUnsettledSuccessfulMobileMoneyOrders(tenantId: string) {
     orderBy: (table, { asc }) => [asc(table.createdAt)],
   });
 
-  return tenantOrders.filter((candidate) => candidate.collectoMeta?.settlementStatus !== SETTLEMENT_STATUS_SUCCESSFUL);
+  return tenantOrders.filter(
+    (candidate) =>
+      candidate.collectoMeta?.settlementStatus !== SETTLEMENT_STATUS_SUCCESSFUL &&
+      candidate.collectoMeta?.payoutPlan?.manualPayoutCompletedAt == null
+  );
 }
 
 async function pollPayoutStatus(reference: string, gateway: string, attempts: number) {
@@ -287,9 +295,12 @@ async function getSettlementContext(orderId: string): Promise<CollectoSettlement
   const existingMeta = order.collectoMeta ?? {};
   const unsettledOrders = await listUnsettledSuccessfulMobileMoneyOrders(order.tenantId);
   const targetOrder = unsettledOrders.find((candidate) => candidate.id === order.id);
-  const grossAmount = targetOrder?.totalAmount ?? order.totalAmount;
-  const feeAmount = calculateCollectoFee(grossAmount);
-  const settlementAmount = calculateNetSettlementAmount(grossAmount);
+  const payoutMode = normalizeCollectoPayoutMode(order.store?.collectoPayoutMode ?? existingMeta.payoutPlan?.mode ?? null);
+  const grossAmount = existingMeta.pricing?.customerPaidAmount ?? targetOrder?.totalAmount ?? order.totalAmount;
+  const feeAmount = existingMeta.pricing?.customerPaidAmount != null
+    ? Math.max(grossAmount - (existingMeta.pricing?.merchantReceivableAmount ?? 0), 0)
+    : calculateCollectoFee(grossAmount);
+  const settlementAmount = existingMeta.pricing?.merchantReceivableAmount ?? calculateNetSettlementAmount(grossAmount);
 
   return {
     orderId: order.id,
@@ -302,6 +313,7 @@ async function getSettlementContext(orderId: string): Promise<CollectoSettlement
     settlementOrderIds: [order.id],
     settlementAmount,
     settlementLabel: order.orderNumber,
+    payoutMode,
   };
 }
 
@@ -328,6 +340,10 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
     settlementStatus: SETTLEMENT_STATUS_PROCESSING,
     lastError: null,
     settlementBatchOrderIds: settlementOrderIds,
+    payoutPlan: {
+      mode: context.payoutMode,
+      updatedAt: new Date().toISOString(),
+    },
   });
 
   const bulkBalanceResponse = await collectoApiFetch("currentBalance", { type: "BULK" }, { timeoutMs: 10000 });
@@ -343,6 +359,12 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
         amount: 0,
         status: SETTLEMENT_STATUS_SUCCESSFUL,
         message: "Bulk balance already had enough funds for payout.",
+        updatedAt: new Date().toISOString(),
+      },
+      payoutPlan: {
+        mode: context.payoutMode,
+        bulkReady: true,
+        manualPayoutEligible: context.payoutMode === "manual_batch",
         updatedAt: new Date().toISOString(),
       },
     });
@@ -401,6 +423,12 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
         amount: walletTransferAmount,
         status: walletTransferStatus,
         message: walletTransferMessage,
+        updatedAt: new Date().toISOString(),
+      },
+      payoutPlan: {
+        mode: context.payoutMode,
+        bulkReady: walletTransferStatus === SETTLEMENT_STATUS_SUCCESSFUL,
+        manualPayoutEligible: context.payoutMode === "manual_batch" && walletTransferStatus === SETTLEMENT_STATUS_SUCCESSFUL,
         updatedAt: new Date().toISOString(),
       },
     });
@@ -659,6 +687,13 @@ export async function runCollectoPayoutForOrder(orderId: string) {
     settlementBatchOrderIds: settlementOrderIds,
     settledAt: settledAtIso,
     lastError: null,
+    payoutPlan: {
+      mode: context.payoutMode,
+      bulkReady: true,
+      manualPayoutEligible: false,
+      manualPayoutCompletedAt: settledAtIso,
+      updatedAt: settledAtIso,
+    },
   });
   const finalMeta = await getOrderCollectoMeta(targetOrderId);
   await trackCollectoSettlement({
@@ -707,7 +742,11 @@ export async function fetchAvailableBalance(tenantId: string): Promise<{ balance
   const orderIds: string[] = [];
   let totalBalance = 0;
   for (const order of unsettledOrders) {
-    if (order.collectoMeta?.walletTransfer?.status === "successful") {
+    if (
+      order.collectoMeta?.walletTransfer?.status === "successful" &&
+      order.collectoMeta?.payoutPlan?.mode === "manual_batch" &&
+      order.collectoMeta?.payoutPlan?.manualPayoutEligible === true
+    ) {
         totalBalance += (order.collectoMeta?.walletTransfer?.amount ?? 0);
         orderIds.push(order.id);
     }
@@ -762,20 +801,31 @@ export async function runCollectoBatchPayout(tenantId: string, storeId: string, 
 
   // Update all the orders participating in this batch
   for (const orderId of orderIds) {
+      const orderMeta = await getOrderCollectoMeta(orderId);
+      const completedAt = new Date().toISOString();
       await patchCollectoMeta(orderId, {
           settlementStatus: SETTLEMENT_STATUS_SUCCESSFUL,
           settlementBatchOrderIds: orderIds,
-          settledAt: new Date().toISOString(),
+          settledAt: completedAt,
+          payoutPlan: {
+              mode: "manual_batch",
+              bulkReady: true,
+              manualPayoutEligible: false,
+              manualPayoutTriggeredAt: orderMeta.payoutPlan?.manualPayoutTriggeredAt ?? completedAt,
+              manualPayoutCompletedAt: completedAt,
+              updatedAt: completedAt,
+          },
           payout: {
               reference: payoutReference,
               transactionId: payoutTransactionId,
               gateway: payoutGateway,
               phone: recipient.phone,
               accountName: recipient.accountName,
-              amount: payoutAmount,
+              amount: orderMeta.walletTransfer?.amount ?? null,
+              fee: orderIds.length > 0 ? Math.round(COLLECTO_PAYOUT_FEE / orderIds.length) : COLLECTO_PAYOUT_FEE,
               status: payoutStatus,
               message: payoutMessage,
-              updatedAt: new Date().toISOString()
+              updatedAt: completedAt
           }
       });
   }
@@ -875,6 +925,37 @@ export async function runCollectoSettlementForOrder(orderId: string) {
 
     if (!walletTransferResult) {
       return null;
+    }
+
+    if (context.payoutMode === "manual_batch") {
+      const awaitingManualAt = new Date().toISOString();
+      await patchCollectoMeta(context.orderId, {
+        settlementStatus: SETTLEMENT_STATUS_PROCESSING,
+        payoutPlan: {
+          mode: context.payoutMode,
+          bulkReady: true,
+          manualPayoutEligible: true,
+          updatedAt: awaitingManualAt,
+        },
+      });
+      await trackCollectoSettlement({
+        orderId: context.orderId,
+        tenantId: context.tenantId,
+        storeId: context.storeId,
+        settlementBatchOrderIds: context.settlementOrderIds,
+        settlementAmount: context.settlementAmount,
+        settlementStatus: SETTLEMENT_STATUS_PROCESSING,
+        walletTransferReference: walletTransferResult.walletTransfer?.reference ?? null,
+        walletTransferTransactionId: walletTransferResult.walletTransfer?.transactionId ?? null,
+        walletTransferAmount: walletTransferResult.walletTransfer?.amount ?? null,
+        walletTransferStatus: walletTransferResult.walletTransfer?.status ?? null,
+        walletTransferMessage: walletTransferResult.walletTransfer?.message ?? null,
+        rawMetadata: {
+          stage: "awaiting_manual_payout",
+          payoutMode: context.payoutMode,
+        },
+      });
+      return getOrderCollectoMeta(context.orderId);
     }
 
     return runCollectoPayoutForOrder(context.orderId);

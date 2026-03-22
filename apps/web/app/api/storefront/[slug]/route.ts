@@ -69,6 +69,10 @@ export async function GET(request: NextRequest, { params }: StorefrontStoreRoute
             slug: store.slug,
             description: store.description,
             storePolicy: store.storePolicy,
+            collectoPassTransactionFeeToCustomer: Boolean((store as { collectoPassTransactionFeeToCustomer?: boolean }).collectoPassTransactionFeeToCustomer),
+            collectoPayoutMode: (store as { collectoPayoutMode?: string }).collectoPayoutMode === "manual_batch"
+                ? "manual_batch"
+                : "automatic_per_order",
             logoUrl,
             heroMedia,
             categories: (store as { categories?: string[] }).categories ?? [],

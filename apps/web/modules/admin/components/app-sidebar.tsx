@@ -191,6 +191,15 @@ export function AppSidebar({
     router.push(storefrontUrl);
   };
 
+  const handleToggleKeyDown = (
+    event: React.KeyboardEvent<HTMLSpanElement>
+  ) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggleSidebar();
+    }
+  };
+
   // Try to get slug from params first, then fallback to parsing basePath
   let slug = getSlugFromParams(params);
 
@@ -225,25 +234,29 @@ export function AppSidebar({
                   </div>
                 </SidebarMenuButton>
 
-                <button
-                  type="button"
+                <span
+                  role="button"
+                  tabIndex={0}
                   onClick={toggleSidebar}
-                  className="ml-auto inline-flex size-9 items-center justify-center rounded-md hover:bg-sidebar-accent text-sidebar-foreground/80"
+                  onKeyDown={handleToggleKeyDown}
+                  className="ml-auto inline-flex size-9 items-center justify-center rounded-md text-sidebar-foreground/80 hover:bg-sidebar-accent"
                   aria-label="Collapse sidebar"
                 >
                   <HugeiconsIcon icon={SidebarLeft01Icon} className="size-5" />
-                </button>
+                </span>
               </div>
             ) : (
               <div className="flex items-center justify-center">
-                <button
-                  type="button"
+                <span
+                  role="button"
+                  tabIndex={0}
                   onClick={toggleSidebar}
-                  className="inline-flex size-9 items-center justify-center rounded-md hover:bg-sidebar-accent text-sidebar-foreground/80"
+                  onKeyDown={handleToggleKeyDown}
+                  className="inline-flex size-9 items-center justify-center rounded-md text-sidebar-foreground/80 hover:bg-sidebar-accent"
                   aria-label="Expand sidebar"
                 >
                   <HugeiconsIcon icon={SidebarRight01Icon} className="size-5" />
-                </button>
+                </span>
               </div>
             )}
           </SidebarMenuItem>

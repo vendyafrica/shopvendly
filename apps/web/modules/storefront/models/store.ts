@@ -21,4 +21,7 @@ export interface StoreDetails {
     logoUrl?: string | null;
     bannerUrl?: string | null;
     policy?: string | null;
+    storePolicy?: string | null;
+    collectoPassTransactionFeeToCustomer?: boolean;
+    collectoPayoutMode?: "automatic_per_order" | "manual_batch";
 }

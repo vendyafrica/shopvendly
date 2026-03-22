@@ -14,8 +14,50 @@ import { Input } from "@shopvendly/ui/components/input";
 import { bricolage as geistSans } from "@/utils/fonts";
 import { CheckoutPaymentMethod, PaymentFlowStatus } from "@/modules/storefront/models/checkout";
 
+type CheckoutStoreItem = {
+    id: string;
+    quantity: number;
+    product: {
+        id: string;
+        name: string;
+        price: number;
+        currency?: string;
+        image?: string | null;
+    };
+};
+
+type CheckoutUIState = {
+    fullName: string;
+    address: string;
+    phone: string;
+    paymentMethod: CheckoutPaymentMethod;
+    isSubmitting: boolean;
+    error: string | null;
+    isSuccess: boolean;
+    storePolicy: string | null;
+    paymentFlowStatus: PaymentFlowStatus;
+    paymentStatusMessage: string | null;
+    phoneVerificationStatus: "idle" | "verifying" | "verified" | "failed";
+    phoneVerificationMessage: string | null;
+    showPaymentCancelHint: boolean;
+    showStorePolicy: boolean;
+    paymentPricing: {
+        customerFeeAmount: number;
+        customerPaidAmount: number;
+        passTransactionFeeToCustomer: boolean;
+    } | null;
+    storeItems: CheckoutStoreItem[];
+    store: {
+        name: string;
+        slug: string;
+    } | null | undefined;
+    isLoaded: boolean;
+    paymentTransactionId: string | null;
+    activeOrderId: string | null;
+};
+
 interface CheckoutUIProps {
-    state: any;
+    state: CheckoutUIState;
     actions: {
         handleSubmit: (e: React.FormEvent) => void;
         resetPaymentRetryState: () => void;
@@ -64,7 +106,7 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
         storePolicy, paymentFlowStatus,
         paymentStatusMessage, phoneVerificationStatus,
         phoneVerificationMessage, showPaymentCancelHint,
-        showStorePolicy, storeItems, store, isLoaded,
+        showStorePolicy, paymentPricing, storeItems, store, isLoaded,
         paymentTransactionId, activeOrderId
     } = state;
 
@@ -76,10 +118,11 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
     if (!isLoaded || !store) return null;
 
     const storeSubtotal = storeItems.reduce(
-        (acc: number, item: any) => acc + item.product.price * item.quantity,
+        (acc: number, item: CheckoutStoreItem) => acc + item.product.price * item.quantity,
         0,
     );
-    const storeTotal = storeSubtotal;
+    const customerFeeAmount = paymentPricing?.customerFeeAmount ?? 0;
+    const storeTotal = paymentPricing?.customerPaidAmount ?? storeSubtotal;
     const currency = storeItems[0]?.product.currency || "UGX";
     const FALLBACK_PRODUCT_IMAGE = "https://cdn.cosmos.so/25e7ef9d-3d95-486d-b7db-f0d19c1992d7?format=jpeg";
 
@@ -207,11 +250,20 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
                                     </div>
                                     <div>
                                         <p className="text-sm font-semibold text-neutral-900">Mobile Money</p>
-                                        <p className="text-xs text-neutral-500">Pay via MTN or Airtel</p>
+                                        <p className="text-xs text-neutral-500">
+                                            {paymentPricing?.passTransactionFeeToCustomer
+                                                ? "Pay via MTN or Airtel. A 3% collection fee is included in the total."
+                                                : "Pay via MTN or Airtel"}
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="h-5 w-5 rounded-full border-4 border-primary" />
                             </div>
+                            {paymentPricing?.passTransactionFeeToCustomer ? (
+                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
+                                    This store passes the Collecto mobile money fee to the customer. Your final payable total below includes the 3% collection charge.
+                                </div>
+                            ) : null}
                         </div>
 
                         {/* Store Policy & CTA */}
@@ -234,7 +286,7 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
                         <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm sticky top-24">
                             <h2 className="text-sm uppercase tracking-widest font-semibold text-neutral-900 mb-6">Order Summary</h2>
                             <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                {storeItems.map((item: any) => (
+                                {storeItems.map((item: CheckoutStoreItem) => (
                                     <div key={item.id} className="flex gap-4">
                                         <div className="relative h-16 w-12 rounded-lg bg-neutral-100 overflow-hidden shrink-0">
                                             <Image
@@ -266,6 +318,12 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
                                     <span className="text-neutral-500">Delivery</span>
                                     <span className="text-neutral-900 font-medium">Free</span>
                                 </div>
+                                {customerFeeAmount > 0 ? (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-neutral-500">Mobile money fee</span>
+                                        <span className="text-neutral-900 font-medium">{currency} {customerFeeAmount.toLocaleString()}</span>
+                                    </div>
+                                ) : null}
                                 <div className="flex justify-between items-center pt-3 border-t border-neutral-100">
                                     <span className="text-sm uppercase tracking-widest font-bold text-neutral-900">Total</span>
                                     <span className="text-xl font-bold text-neutral-900">{currency} {storeTotal.toLocaleString()}</span>

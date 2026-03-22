@@ -3,6 +3,16 @@ import { stores, tenants, products, orders, storefrontSessions } from "@shopvend
 import { eq, and, count, sum } from "@shopvendly/db";
 import { NextResponse } from "next/server";
 import { checkSuperAdminApi } from "@/lib/auth-guard";
+import { z } from "zod";
+
+const updateStoreSchema = z.object({
+    status: z.boolean().optional(),
+    deliveryProviderPhone: z.string().trim().min(1).nullable().optional(),
+    name: z.string().trim().min(1).optional(),
+    slug: z.string().trim().min(1).optional(),
+    collectoPassTransactionFeeToCustomer: z.boolean().optional(),
+    collectoPayoutMode: z.enum(["automatic_per_order", "manual_batch"]).optional(),
+});
 
 export async function GET(
     req: Request,
@@ -24,6 +34,8 @@ export async function GET(
                 status: stores.status,
                 description: stores.description,
                 deliveryProviderPhone: stores.deliveryProviderPhone,
+                collectoPassTransactionFeeToCustomer: stores.collectoPassTransactionFeeToCustomer,
+                collectoPayoutMode: stores.collectoPayoutMode,
 
                 createdAt: stores.createdAt,
                 tenantName: tenants.fullName,
@@ -82,16 +94,22 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await req.json();
-    const { status, deliveryProviderPhone, name, slug } = body;
+    const parsed = updateStoreSchema.parse(body ?? {});
 
     try {
         await db
             .update(stores)
             .set({
-                ...(status !== undefined ? { status } : {}),
-                ...(deliveryProviderPhone !== undefined ? { deliveryProviderPhone } : {}),
-                ...(name !== undefined ? { name } : {}),
-                ...(slug !== undefined ? { slug } : {}),
+                ...(parsed.status !== undefined ? { status: parsed.status } : {}),
+                ...(parsed.deliveryProviderPhone !== undefined ? { deliveryProviderPhone: parsed.deliveryProviderPhone } : {}),
+                ...(parsed.name !== undefined ? { name: parsed.name } : {}),
+                ...(parsed.slug !== undefined ? { slug: parsed.slug } : {}),
+                ...(parsed.collectoPassTransactionFeeToCustomer !== undefined
+                    ? { collectoPassTransactionFeeToCustomer: parsed.collectoPassTransactionFeeToCustomer }
+                    : {}),
+                ...(parsed.collectoPayoutMode !== undefined
+                    ? { collectoPayoutMode: parsed.collectoPayoutMode }
+                    : {}),
             })
             .where(eq(stores.id, id));
 

@@ -27,6 +27,15 @@ type UnclaimedStore = {
     slug: string;
 };
 
+type StorePaymentSettings = {
+    id: string;
+    name: string;
+    slug: string;
+    collectoPassTransactionFeeToCustomer?: boolean;
+    collectoPayoutMode?: "automatic_per_order" | "manual_batch";
+    deliveryProviderPhone?: string | null;
+};
+
 export default function SettingsPage() {
     const [email, setEmail] = React.useState("");
     const [sellerEmail, setSellerEmail] = React.useState("");
@@ -39,6 +48,8 @@ export default function SettingsPage() {
     const [isLoadingUnclaimedStores, setIsLoadingUnclaimedStores] = React.useState(false);
     const [isImporting, setIsImporting] = React.useState(false);
     const [isSavingDeliveryProvider, setIsSavingDeliveryProvider] = React.useState(false);
+    const [isSavingCollectoSettings, setIsSavingCollectoSettings] = React.useState(false);
+    const [isRunningManualPayout, setIsRunningManualPayout] = React.useState(false);
 
     const [error, setError] = React.useState<string | null>(null);
     const [success, setSuccess] = React.useState<string | null>(null);
@@ -48,7 +59,19 @@ export default function SettingsPage() {
     const [assignStoreSuccess, setAssignStoreSuccess] = React.useState<string | null>(null);
     const [deliveryProviderError, setDeliveryProviderError] = React.useState<string | null>(null);
     const [deliveryProviderSuccess, setDeliveryProviderSuccess] = React.useState<string | null>(null);
+    const [collectoSettingsError, setCollectoSettingsError] = React.useState<string | null>(null);
+    const [collectoSettingsSuccess, setCollectoSettingsSuccess] = React.useState<string | null>(null);
     const [importJob, setImportJob] = React.useState<ImportJob | null>(null);
+    const [stores, setStores] = React.useState<StorePaymentSettings[]>([]);
+    const [selectedCollectoStoreId, setSelectedCollectoStoreId] = React.useState("");
+    const [collectoPassFeeToCustomer, setCollectoPassFeeToCustomer] = React.useState(false);
+    const [collectoPayoutMode, setCollectoPayoutMode] = React.useState<"automatic_per_order" | "manual_batch">("automatic_per_order");
+    const [manualPayoutSummary, setManualPayoutSummary] = React.useState<{
+        availableBalance: number;
+        payoutAmount: number;
+        payoutFee: number;
+        orderCount: number;
+    } | null>(null);
 
     const loadUnclaimedStores = React.useCallback(async () => {
         setIsLoadingUnclaimedStores(true);
@@ -80,7 +103,14 @@ export default function SettingsPage() {
                 const res = await fetch("/api/stores", { cache: "no-store" });
                 if (!res.ok) return;
 
-                const stores = (await res.json().catch(() => [])) as Array<{ deliveryProviderPhone?: string | null }>;
+                const stores = (await res.json().catch(() => [])) as StorePaymentSettings[];
+                setStores(stores);
+                setSelectedCollectoStoreId((prev) => prev || stores[0]?.id || "");
+                const selectedStore = stores[0];
+                if (selectedStore) {
+                    setCollectoPassFeeToCustomer(Boolean(selectedStore.collectoPassTransactionFeeToCustomer));
+                    setCollectoPayoutMode(selectedStore.collectoPayoutMode === "manual_batch" ? "manual_batch" : "automatic_per_order");
+                }
                 const firstConfigured = stores.find((store) => Boolean(store.deliveryProviderPhone?.trim()))?.deliveryProviderPhone;
 
                 if (firstConfigured) {
@@ -94,6 +124,43 @@ export default function SettingsPage() {
         void loadCurrentDeliveryProvider();
         void loadUnclaimedStores();
     }, [loadUnclaimedStores]);
+
+    React.useEffect(() => {
+        const selectedStore = stores.find((store) => store.id === selectedCollectoStoreId);
+        if (!selectedStore) {
+            setManualPayoutSummary(null);
+            return;
+        }
+
+        setCollectoPassFeeToCustomer(Boolean(selectedStore.collectoPassTransactionFeeToCustomer));
+        setCollectoPayoutMode(selectedStore.collectoPayoutMode === "manual_batch" ? "manual_batch" : "automatic_per_order");
+
+        if (selectedStore.collectoPayoutMode !== "manual_batch") {
+            setManualPayoutSummary(null);
+            return;
+        }
+
+        const loadManualPayoutSummary = async () => {
+            try {
+                const res = await fetch(`/api/stores/${encodeURIComponent(selectedStore.id)}/collecto/available-balance`, { cache: "no-store" });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data?.ok === false) {
+                    setManualPayoutSummary(null);
+                    return;
+                }
+                setManualPayoutSummary({
+                    availableBalance: Number(data?.availableBalance || 0),
+                    payoutAmount: Number(data?.payoutAmount || 0),
+                    payoutFee: Number(data?.payoutFee || 0),
+                    orderCount: Number(data?.orderCount || 0),
+                });
+            } catch {
+                setManualPayoutSummary(null);
+            }
+        };
+
+        void loadManualPayoutSummary();
+    }, [selectedCollectoStoreId, stores]);
 
     const onAssignStoreSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -134,6 +201,68 @@ export default function SettingsPage() {
             setAssignStoreError(err instanceof Error ? err.message : "Failed to assign store.");
         } finally {
             setIsAssigningStore(false);
+        }
+    };
+
+    const onCollectoSettingsSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedCollectoStoreId) return;
+        setCollectoSettingsError(null);
+        setCollectoSettingsSuccess(null);
+        setIsSavingCollectoSettings(true);
+
+        try {
+            const res = await fetch(`/api/stores/${encodeURIComponent(selectedCollectoStoreId)}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    collectoPassTransactionFeeToCustomer: collectoPassFeeToCustomer,
+                    collectoPayoutMode,
+                }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setCollectoSettingsError(data?.error || "Failed to save Collecto settings.");
+                return;
+            }
+
+            setStores((prev) => prev.map((store) => store.id === selectedCollectoStoreId ? {
+                ...store,
+                collectoPassTransactionFeeToCustomer: collectoPassFeeToCustomer,
+                collectoPayoutMode,
+            } : store));
+            setCollectoSettingsSuccess("Collecto payment settings saved.");
+        } catch (err: unknown) {
+            setCollectoSettingsError(err instanceof Error ? err.message : "Failed to save Collecto settings.");
+        } finally {
+            setIsSavingCollectoSettings(false);
+        }
+    };
+
+    const onManualPayout = async () => {
+        if (!selectedCollectoStoreId) return;
+        setCollectoSettingsError(null);
+        setCollectoSettingsSuccess(null);
+        setIsRunningManualPayout(true);
+
+        try {
+            const res = await fetch(`/api/stores/${encodeURIComponent(selectedCollectoStoreId)}/collecto/initiate-payout`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || data?.ok === false) {
+                setCollectoSettingsError(data?.error || "Failed to trigger manual payout.");
+                return;
+            }
+
+            setCollectoSettingsSuccess("Manual payout triggered successfully.");
+            setManualPayoutSummary((prev) => prev ? { ...prev, availableBalance: 0, payoutAmount: 0, orderCount: 0 } : prev);
+        } catch (err: unknown) {
+            setCollectoSettingsError(err instanceof Error ? err.message : "Failed to trigger manual payout.");
+        } finally {
+            setIsRunningManualPayout(false);
         }
     };
 
@@ -421,6 +550,127 @@ export default function SettingsPage() {
                         {isSavingDeliveryProvider ? "Saving..." : "Save Number"}
                     </Button>
                 </form>
+            </section>
+
+            <section className="space-y-6 rounded-xl border border-border/40 bg-card p-6 shadow-sm">
+                <div>
+                    <h2 className="text-xl font-semibold leading-none tracking-tight mb-2">Collecto payout controls</h2>
+                    <p className="text-sm text-muted-foreground">
+                        Choose whether a store passes the 3% Collecto collection fee to the customer and whether seller payouts happen automatically per order or manually in a batch. Manual batching is usually better because the UGX 1,200 payout cut is charged once per payout, not once per order.
+                    </p>
+                </div>
+
+                {collectoSettingsSuccess && (
+                    <div className="rounded-md border border-green-500/50 bg-green-500/10 px-4 py-3 text-sm text-green-700">
+                        {collectoSettingsSuccess}
+                    </div>
+                )}
+
+                {collectoSettingsError && (
+                    <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                        {collectoSettingsError}
+                    </div>
+                )}
+
+                <form onSubmit={onCollectoSettingsSubmit} className="space-y-4 max-w-2xl">
+                    <div className="space-y-2">
+                        <Label htmlFor="collecto-store">Store</Label>
+                        <select
+                            id="collecto-store"
+                            value={selectedCollectoStoreId}
+                            onChange={(e) => setSelectedCollectoStoreId(e.target.value)}
+                            disabled={stores.length === 0 || isSavingCollectoSettings}
+                            className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {stores.length === 0 ? (
+                                <option value="">No stores available</option>
+                            ) : null}
+                            {stores.map((store) => (
+                                <option key={store.id} value={store.id}>
+                                    {store.name} ({store.slug})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <label className="flex items-start gap-3 rounded-lg border border-border/50 p-4 text-sm">
+                        <input
+                            type="checkbox"
+                            checked={collectoPassFeeToCustomer}
+                            onChange={(e) => setCollectoPassFeeToCustomer(e.target.checked)}
+                            disabled={isSavingCollectoSettings}
+                            className="mt-1"
+                        />
+                        <span>
+                            <span className="font-medium text-foreground">Pass the 3% Collecto fee to the customer</span>
+                            <span className="mt-1 block text-muted-foreground">
+                                When enabled, storefront checkout adds the Collecto collection fee on top of the merchandise subtotal for mobile money payments.
+                            </span>
+                        </span>
+                    </label>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="collecto-payout-mode">Seller payout mode</Label>
+                        <select
+                            id="collecto-payout-mode"
+                            value={collectoPayoutMode}
+                            onChange={(e) => setCollectoPayoutMode(e.target.value === "manual_batch" ? "manual_batch" : "automatic_per_order")}
+                            disabled={isSavingCollectoSettings}
+                            className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <option value="automatic_per_order">Automatic per-order payout</option>
+                            <option value="manual_batch">Manual batch payout</option>
+                        </select>
+                        <p className="text-xs text-muted-foreground">
+                            Automatic is faster for sellers, but manual batch payouts are better when many paid orders can be combined into one payout.
+                        </p>
+                    </div>
+
+                    <Button type="submit" disabled={isSavingCollectoSettings || !selectedCollectoStoreId}>
+                        {isSavingCollectoSettings ? "Saving..." : "Save Collecto Settings"}
+                    </Button>
+                </form>
+
+                {collectoPayoutMode === "manual_batch" ? (
+                    <div className="space-y-4 rounded-xl border border-border/50 bg-muted/20 p-4">
+                        <div>
+                            <h3 className="text-sm font-semibold">Manual payout summary</h3>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                Paid orders still fund Bulk automatically. Use manual payout when you want to withdraw several orders together and pay the UGX 1,200 cut once.
+                            </p>
+                        </div>
+
+                        <div className="grid sm:grid-cols-3 gap-3 text-sm">
+                            <div className="rounded-lg border border-border/50 p-3">
+                                <p className="text-muted-foreground">Available balance</p>
+                                <p className="font-semibold">UGX {Number(manualPayoutSummary?.availableBalance || 0).toLocaleString()}</p>
+                            </div>
+                            <div className="rounded-lg border border-border/50 p-3">
+                                <p className="text-muted-foreground">Orders ready</p>
+                                <p className="font-semibold">{Number(manualPayoutSummary?.orderCount || 0).toLocaleString()}</p>
+                            </div>
+                            <div className="rounded-lg border border-border/50 p-3">
+                                <p className="text-muted-foreground">Expected payout after fee</p>
+                                <p className="font-semibold">UGX {Number(manualPayoutSummary?.payoutAmount || 0).toLocaleString()}</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <Button
+                                type="button"
+                                disabled={isRunningManualPayout || Number(manualPayoutSummary?.orderCount || 0) === 0}
+                                onClick={() => {
+                                    void onManualPayout();
+                                }}
+                            >
+                                {isRunningManualPayout ? "Triggering payout..." : "Trigger Manual Payout"}
+                            </Button>
+                            <span className="text-xs text-muted-foreground">
+                                Payout fee: UGX {Number(manualPayoutSummary?.payoutFee || 1200).toLocaleString()}
+                            </span>
+                        </div>
+                    </div>
+                ) : null}
             </section>
 
             <section className="space-y-6 rounded-xl border border-border/40 bg-card p-6 shadow-sm">
