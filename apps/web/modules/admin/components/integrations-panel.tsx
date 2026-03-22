@@ -11,9 +11,9 @@ import {
   Download01Icon,
   InstagramIcon,
   Loading03Icon,
+  PlugIcon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
-import { Input } from "@shopvendly/ui/components/input";
 
 import { useTenant } from "@/modules/admin/context/tenant-context";
 
@@ -185,7 +185,10 @@ export function IntegrationsPanel({
     <div className={isCompact ? "flex h-full flex-col space-y-4" : "space-y-6"}>
       {!isCompact && (
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-neutral-900">Integrations</h2>
+          <div className="flex items-center gap-2">
+            <HugeiconsIcon icon={PlugIcon} size={20} className="text-primary" />
+            <h2 className="text-lg font-semibold text-neutral-900">Integrations</h2>
+          </div>
           <p className="text-sm text-neutral-500">
             Connect your tools to keep Vendly in sync.
           </p>

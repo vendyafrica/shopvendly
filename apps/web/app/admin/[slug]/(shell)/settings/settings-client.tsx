@@ -6,18 +6,34 @@ import { Button } from "@shopvendly/ui/components/button";
 import { Textarea } from "@shopvendly/ui/components/textarea";
 import { Switch } from "@shopvendly/ui/components/switch";
 import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@shopvendly/ui/components/combobox";
+import { useTenant } from "@/modules/admin/context/tenant-context";
+import { HeroEditor } from "../studio/components/hero-editor";
+import { IntegrationsPanel } from "@/modules/admin/components/integrations-panel";
+import { useUpload } from "@/modules/media/hooks/use-upload";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@shopvendly/ui/components/select";
-import { useTenant } from "@/modules/admin/context/tenant-context";
-import { HeroEditor } from "../studio/components/hero-editor";
-import { IntegrationsPanel } from "@/modules/admin/components/integrations-panel";
-import { useUpload } from "@/modules/media/hooks/use-upload";
 
-import { ArrowRight01Icon, Image02Icon, Loading03Icon } from "@hugeicons/core-free-icons";
+import { 
+  ArrowRight01Icon, 
+  Image02Icon, 
+  Settings02Icon, 
+  LegalIcon, 
+  Wallet02Icon, 
+  Layout01Icon, 
+  PlugIcon 
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 type AllowedCurrency = "UGX" | "KES" | "USD";
@@ -26,6 +42,11 @@ const CURRENCY_OPTIONS: Array<{ value: AllowedCurrency; label: string }> = [
   { value: "UGX", label: "UGX" },
   { value: "KES", label: "KES" },
   { value: "USD", label: "USD" },
+];
+
+const PAYOUT_MODE_OPTIONS = [
+  { value: "automatic_per_order", label: "Automatic per order" },
+  { value: "manual_batch", label: "Manual batch payout" },
 ];
 
 type SettingsStore = {
@@ -49,6 +70,8 @@ type CollectoBalanceSummary = {
   orderCount: number;
   orderIds: string[];
 };
+
+
 
 export function SettingsClient({ store }: { store: SettingsStore }) {
   const { bootstrap, refetch } = useTenant();
@@ -265,258 +288,299 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-10 p-6 pb-24">
-      <div className="space-y-1.5">
-        <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Settings</h1>
-        <p className="text-sm text-neutral-500">Manage core store details, storefront appearance, and Collecto payout controls.</p>
+    <div className="mx-auto max-w-4xl p-4 pb-24 sm:p-6 lg:p-8">
+      <div className="mb-12 flex flex-col gap-2">
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">Settings</h1>
+        <p className="text-sm text-neutral-500">Manage your store details, policies, payments, and integrations.</p>
       </div>
 
-      {error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700 shadow-sm">
-          {error}
-        </div>
-      ) : null}
-
-      {success ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-700 shadow-sm">
-          {success}
-        </div>
-      ) : null}
-
-      <div className="mx-auto max-w-3xl space-y-10">
-          
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-lg font-semibold text-neutral-900">Store Profile</h2>
-            <p className="text-sm text-neutral-500">Basic information about your store.</p>
+      <div className="space-y-16">
+        {error ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+            {error}
           </div>
-          
-          <div className="rounded-2xl border border-neutral-200 bg-white p-1 shadow-sm">
-            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-100 pb-5">
-              <div>
-                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500 mb-1">Store Name</div>
-                <div className="text-base font-medium text-neutral-900">{store.name || "—"}</div>
+        ) : null}
+
+        {success ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-700">
+            {success}
+          </div>
+        ) : null}
+
+        {/* General Section */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-2.5 px-1">
+            <HugeiconsIcon icon={Settings02Icon} size={20} className="text-primary" />
+            <div className="space-y-0.5">
+              <h2 className="text-lg font-semibold text-neutral-900">General</h2>
+              <p className="text-sm text-neutral-500">Update your store profile and default currency.</p>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden divide-y divide-neutral-100">
+            {/* Store Name & Phone */}
+            <div className="p-6">
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-[0.05em] text-neutral-400">Store Name</label>
+                  <div className="text-sm font-medium text-neutral-900">{store.name || "—"}</div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-[0.05em] text-neutral-400">Phone Number</label>
+                  <div className="text-sm font-medium text-neutral-900">{store.storeContactPhone || "—"}</div>
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-100 pb-5">
-              <div>
-                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500 mb-1">Phone Number</div>
-                <div className="text-base font-medium text-neutral-900">{store.storeContactPhone || "—"}</div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500 mb-1">Store Logo</div>
-                <p className="text-sm text-neutral-500 max-w-xs">Upload a square logo for your storefront header. SVG, PNG or JPG.</p>
-              </div>
-              
-              <input
-                ref={logoInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleLogoInputChange}
-                disabled={!store.tenantId || isLogoBusy}
-              />
-              
-              <div className="flex flex-col sm:items-end gap-4 shrink-0 mt-2 sm:mt-0">
-                <div className="relative h-20 w-20 overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 shadow-sm">
-                  {logoUrl ? (
-                    <Image
-                      src={logoUrl}
-                      alt={`${store.name} logo`}
-                      fill
-                      className="object-cover"
-                      unoptimized={logoUrl.includes(".ufs.sh")}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-neutral-400">
-                      <HugeiconsIcon icon={Image02Icon} size={28} strokeWidth={1.5} />
+            {/* Store Logo */}
+            <div className="p-6">
+              <div className="space-y-4">
+                <label className="text-[10px] font-bold uppercase tracking-[0.05em] text-neutral-400 block">Store Logo</label>
+                <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex items-center gap-6">
+                    <div className="relative h-20 w-20 overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 shadow-inner shrink-0 group">
+                      {logoUrl ? (
+                        <Image
+                          src={logoUrl}
+                          alt={`${store.name} logo`}
+                          fill
+                          className="object-cover"
+                          unoptimized={logoUrl.includes(".ufs.sh")}
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-neutral-300">
+                          <HugeiconsIcon icon={Image02Icon} size={28} strokeWidth={1.5} />
+                        </div>
+                      )}
                     </div>
-                  )}
+                    <div className="flex flex-col gap-3">
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleLogoInputChange}
+                        disabled={!store.tenantId || isLogoBusy}
+                      />
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="rounded-xl font-semibold h-9 px-4 border-neutral-200 hover:bg-neutral-50"
+                          onClick={() => logoInputRef.current?.click()}
+                          disabled={!store.tenantId || isLogoBusy}
+                        >
+                          {isLogoBusy ? "Uploading..." : logoUrl ? "Change logo" : "Upload logo"}
+                        </Button>
+                        {logoUrl && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-9 px-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl font-semibold text-xs"
+                            onClick={handleRemoveLogo}
+                            disabled={isLogoBusy}
+                          >
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-neutral-400 leading-relaxed">
+                        Recommended: Square PNG or JPG, at least 400x400px.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-9 px-4 text-xs font-semibold rounded-xl"
-                    onClick={() => logoInputRef.current?.click()}
-                    disabled={!store.tenantId || isLogoBusy}
+              </div>
+            </div>
+
+            {/* Store Currency */}
+            <div className="p-6 overflow-visible">
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+                <div className="space-y-2 flex-1">
+                  <label className="text-[10px] font-bold uppercase tracking-[0.05em] text-neutral-400">Store Currency</label>
+                  <p className="text-xs text-neutral-500 max-w-sm">The primary currency products are priced in.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Combobox 
+                    items={CURRENCY_OPTIONS} 
+                    value={CURRENCY_OPTIONS.find(opt => opt.value === currency)}
+                    onValueChange={(v) => { if (v) setCurrency(v.value as AllowedCurrency) }}
                   >
-                    {isLogoBusy ? "Uploading..." : logoUrl ? "Change logo" : "Upload logo"}
+                    <ComboboxInput 
+                      placeholder="Search currency..." 
+                      showClear
+                      className="h-10 w-[140px] rounded-xl border-neutral-200 bg-white"
+                    />
+                    <ComboboxContent className="rounded-xl border-neutral-200 shadow-xl overflow-hidden">
+                      <ComboboxEmpty className="p-3 text-xs text-neutral-400">No currency found.</ComboboxEmpty>
+                      <ComboboxList className="p-1">
+                        {(opt: { value: string; label: string }) => (
+                          <ComboboxItem key={opt.value} value={opt} className="text-sm rounded-lg mx-1 my-0.5">
+                            {opt.label}
+                          </ComboboxItem>
+                        )}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                  <Button 
+                    type="button" 
+                    onClick={onSave} 
+                    disabled={isCurrencyBusy} 
+                    className="h-10 rounded-xl px-6 font-bold shadow-sm shadow-primary/20 active:scale-95 transition-transform"
+                  >
+                    {isSavingCurrency ? "Saving..." : "Save"}
                   </Button>
-                  {logoUrl ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="h-9 px-3 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl"
-                      onClick={handleRemoveLogo}
-                      disabled={isLogoBusy}
-                    >
-                      Remove
-                    </Button>
-                  ) : null}
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-lg font-semibold text-neutral-900">Store Settings</h2>
-            <p className="text-sm text-neutral-500">Currencies, policies, and payout preferences for your checkout.</p>
-          </div>
-          
-          <div className="rounded-2xl border border-neutral-200 bg-white p-1 shadow-sm">
-            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-100 pb-5">
-              <div>
-                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500 mb-1">Store Currency</div>
-                <p className="text-sm text-neutral-500 mb-3 sm:mb-0">The primary currency products are priced in.</p>
-              </div>
-              
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center shrink-0">
-                <Select value={currency} onValueChange={(v) => setCurrency(v as AllowedCurrency)}>
-                  <SelectTrigger className="h-10 w-full sm:w-[140px] rounded-xl border-neutral-200 focus:ring-primary/20 bg-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-neutral-200 shadow-xl">
-                    {CURRENCY_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value} className="rounded-lg cursor-pointer">
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Button type="button" onClick={onSave} disabled={isCurrencyBusy} className="h-10 rounded-xl px-5 font-semibold">
-                  {isSavingCurrency ? (
-                    <>
-                      <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" strokeWidth={1.5} />
-                      Saving...
-                    </>
-                  ) : "Save"}
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-4 p-5">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500">Store Policy</div>
-              </div>
-              
-              <Textarea
-                value={storePolicy}
-                onChange={(event) => setStorePolicy(event.target.value)}
-                placeholder="Add your store policy for returns, exchanges, delivery timelines, and any special order terms."
-                className="min-h-40 resize-y rounded-xl border-neutral-200 bg-neutral-50/50 p-4 focus-visible:ring-primary/20 text-sm leading-relaxed placeholder:text-neutral-400"
-                disabled={isPolicyBusy}
-              />
-              
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
-                <div className="text-xs text-neutral-500 max-w-sm">
-                  This policy will appear below each product description
-                </div>
-                <Button type="button" onClick={onSavePolicy} disabled={isPolicyBusy} className="h-10 rounded-xl px-5 font-semibold shrink-0">
-                  {isSavingPolicy ? (
-                    <>
-                      <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" strokeWidth={1.5} />
-                      Saving...
-                    </>
-                  ) : "Save Policy"}
-                </Button>
-              </div>
+        {/* Policies Section */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-2.5 px-1">
+            <HugeiconsIcon icon={LegalIcon} size={20} className="text-primary" />
+            <div className="space-y-0.5">
+              <h2 className="text-lg font-semibold text-neutral-900">Policies</h2>
+              <p className="text-sm text-neutral-500">Manage your store's legal and customer policies.</p>
             </div>
           </div>
-        </div>
-
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-lg font-semibold text-neutral-900">Collecto Payout Controls</h2>
-            <p className="text-sm text-neutral-500">Choose who pays the fee and whether payouts happen automatically or manually.</p>
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-[0.05em] text-neutral-400">Store Policy</label>
+              <p className="text-xs text-neutral-500 max-w-2xl">This policy will automatically appear below each product description on your storefront.</p>
+            </div>
+            <Textarea
+              value={storePolicy}
+              onChange={(event) => setStorePolicy(event.target.value)}
+              placeholder="Add your store policy for returns, exchanges, delivery timelines, etc."
+              className="min-h-[240px] resize-y rounded-xl border-neutral-200 bg-neutral-50/50 p-4 focus-visible:ring-primary/20 text-sm leading-relaxed"
+              disabled={isPolicyBusy}
+            />
+            <div className="flex justify-end pt-2">
+              <Button 
+                type="button" 
+                onClick={onSavePolicy} 
+                disabled={isPolicyBusy} 
+                className="h-10 rounded-xl px-6 font-bold shadow-sm shadow-primary/20 active:scale-95 transition-transform"
+              >
+                {isSavingPolicy ? "Saving..." : "Save Policy"}
+              </Button>
+            </div>
           </div>
+        </section>
 
-          <div className="rounded-2xl border border-neutral-200 bg-white p-1 shadow-sm">
-            <div className="flex flex-col gap-5 p-5 border-b border-neutral-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500 mb-1">Pass Collecto fee to customer</div>
-                <p className="text-sm text-neutral-500 max-w-lg">When enabled, the customer will see the 3% Collecto fee in checkout and your store receives the gross payment minus Collecto&apos;s collection fee.</p>
+        {/* Payments Section */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-2.5 px-1">
+            <HugeiconsIcon icon={Wallet02Icon} size={20} className="text-primary" />
+            <div className="space-y-0.5">
+              <h2 className="text-lg font-semibold text-neutral-900">Payments</h2>
+              <p className="text-sm text-neutral-500">Configure your payout preferences and view balances.</p>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden divide-y divide-neutral-100">
+            <div className="p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-[0.05em] text-neutral-400">Pass transaction fee to customer</label>
+                <p className="text-xs text-neutral-500 max-w-lg">When enabled, the customer covers the transaction fee during checkout.</p>
               </div>
               <Switch checked={passTransactionFeeToCustomer} onCheckedChange={(checked) => setPassTransactionFeeToCustomer(Boolean(checked))} />
             </div>
 
-            <div className="flex flex-col gap-4 p-5 border-b border-neutral-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500 mb-1">Payout mode</div>
-                <p className="text-sm text-neutral-500 max-w-lg">Automatic payout moves money all the way to you after each order. Manual payout holds seller payouts until you trigger them.</p>
+            <div className="p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-[0.05em] text-neutral-400">Payout mode</label>
+                <p className="text-xs text-neutral-500 max-w-lg">Choose between automatic per-order or manual batch payouts.</p>
               </div>
-              <Select value={collectoPayoutMode} onValueChange={(value) => setCollectoPayoutMode(value as "automatic_per_order" | "manual_batch") }>
-                <SelectTrigger className="h-10 w-full sm:w-[220px] rounded-xl border-neutral-200 focus:ring-primary/20 bg-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-neutral-200 shadow-xl">
-                  <SelectItem value="automatic_per_order" className="rounded-lg cursor-pointer">Automatic per order</SelectItem>
-                  <SelectItem value="manual_batch" className="rounded-lg cursor-pointer">Manual batch payout</SelectItem>
-                </SelectContent>
-              </Select>
+                <Combobox 
+                  items={PAYOUT_MODE_OPTIONS} 
+                  value={PAYOUT_MODE_OPTIONS.find(opt => opt.value === collectoPayoutMode)}
+                  onValueChange={(v) => { if (v) setCollectoPayoutMode(v.value as "automatic_per_order" | "manual_batch") }}
+                >
+                  <ComboboxInput 
+                    placeholder="Search mode..." 
+                    className="h-10 w-full sm:w-[220px] rounded-xl border-neutral-200 bg-white"
+                  />
+                  <ComboboxContent className="rounded-xl border-neutral-200 shadow-xl overflow-hidden">
+                    <ComboboxEmpty className="p-3 text-xs text-neutral-400">No mode found.</ComboboxEmpty>
+                    <ComboboxList className="p-1">
+                      {(opt: { value: string; label: string }) => (
+                        <ComboboxItem key={opt.value} value={opt} className="text-sm rounded-lg mx-1 my-0.5">
+                          {opt.label}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
             </div>
 
-            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-2">
-                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500 mb-1">Current payout summary</div>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-                    <div className="text-[11px] uppercase tracking-widest text-neutral-500">Available balance</div>
-                    <div className="mt-1 text-lg font-semibold text-neutral-900">UGX {(collectoBalance?.availableBalance ?? 0).toLocaleString()}</div>
+            <div className="p-6 space-y-6">
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold uppercase tracking-[0.05em] text-neutral-400">Current Payout Summary</label>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-neutral-100 bg-neutral-50/50 p-4 transition-colors hover:bg-neutral-50">
+                    <p className="text-[9px] uppercase font-bold text-neutral-400 tracking-[0.1em]">Available Balance</p>
+                    <p className="mt-1 text-xl font-bold text-neutral-900 leading-none">UGX {(collectoBalance?.availableBalance ?? 0).toLocaleString()}</p>
                   </div>
-                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-                    <div className="text-[11px] uppercase tracking-widest text-neutral-500">Payout after fee</div>
-                    <div className="mt-1 text-lg font-semibold text-neutral-900">UGX {(collectoBalance?.payoutAmount ?? 0).toLocaleString()}</div>
+                  <div className="rounded-2xl border border-neutral-100 bg-neutral-50/50 p-4 transition-colors hover:bg-neutral-50">
+                    <p className="text-[9px] uppercase font-bold text-neutral-400 tracking-[0.1em]">Payout After Fee</p>
+                    <p className="mt-1 text-xl font-bold text-neutral-900 leading-none">UGX {(collectoBalance?.payoutAmount ?? 0).toLocaleString()}</p>
                   </div>
-                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-                    <div className="text-[11px] uppercase tracking-widest text-neutral-500">Orders waiting</div>
-                    <div className="mt-1 text-lg font-semibold text-neutral-900">{isCollectoLoading ? "..." : (collectoBalance?.orderCount ?? 0)}</div>
+                  <div className="rounded-2xl border border-neutral-100 bg-neutral-50/50 p-4 transition-colors hover:bg-neutral-50">
+                    <p className="text-[9px] uppercase font-bold text-neutral-400 tracking-[0.1em]">Orders Waiting</p>
+                    <p className="mt-1 text-xl font-bold text-neutral-900 leading-none">{isCollectoLoading ? "..." : (collectoBalance?.orderCount ?? 0)}</p>
                   </div>
                 </div>
-                <p className="text-xs text-neutral-500">
-                  {collectoPayoutMode === "manual_batch"
-                    ? `Manual payout mode is active. Collecto holds seller payouts until you trigger them. ${collectoBalance?.orderCount ? `${collectoBalance.orderCount} order(s) are ready.` : "No payout is currently waiting."}`
-                    : "Automatic payout mode is active. Orders settle without manual intervention."}
-                </p>
               </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" onClick={onSaveCollecto} disabled={isSavingCollecto} className="h-10 rounded-xl px-5 font-semibold">
-                  {isSavingCollecto ? (
-                    <>
-                      <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" strokeWidth={1.5} />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save payout settings"
-                  )}
-                </Button>
-                {collectoPayoutMode === "manual_batch" ? (
-                  <Button type="button" variant="outline" onClick={handleManualPayout} disabled={isCollectoLoading} className="h-10 rounded-xl px-5 font-semibold">
-                    Trigger payout
-                    <HugeiconsIcon icon={ArrowRight01Icon} className="ml-2 h-4 w-4" />
+              <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                <p className="text-xs text-neutral-400 max-w-sm italic leading-relaxed">
+                  {collectoPayoutMode === "manual_batch"
+                    ? "• Manual payout mode is active. You must trigger payouts manually."
+                    : "• Automatic payout mode is active. Funds are settled automatically."}
+                </p>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    onClick={onSaveCollecto} 
+                    disabled={isSavingCollecto} 
+                    className="h-10 rounded-xl px-5 font-bold shadow-sm shadow-primary/20 active:scale-95 transition-transform"
+                  >
+                    {isSavingCollecto ? "Saving..." : "Save Preferences"}
                   </Button>
-                ) : null}
+                  {collectoPayoutMode === "manual_batch" && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleManualPayout} 
+                      disabled={isCollectoLoading} 
+                      className="h-10 rounded-xl px-5 font-bold border-neutral-200 hover:bg-neutral-50 active:scale-95 transition-transform"
+                    >
+                      Trigger Payout
+                      <HugeiconsIcon icon={ArrowRight01Icon} className="ml-2 h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-lg font-semibold text-neutral-900">Storefront Imagery</h2>
-            <p className="text-sm text-neutral-500">Manage hero images and videos.</p>
+        {/* Storefront Section */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-2.5 px-1">
+            <HugeiconsIcon icon={Layout01Icon} size={20} className="text-primary" />
+            <div className="space-y-0.5">
+              <h2 className="text-lg font-semibold text-neutral-900">Storefront</h2>
+              <p className="text-sm text-neutral-500">Customise your storefront header and hero media.</p>
+            </div>
           </div>
-          
-          <div id="storefront-header" className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+            <div className="mb-6 space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-[0.05em] text-neutral-400">Storefront Imagery</label>
+              <p className="text-xs text-neutral-500">Upload and manage images for your storefront hero section.</p>
+            </div>
             <HeroEditor
               storeSlug={store.slug}
               tenantId={store.tenantId}
@@ -524,12 +588,12 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
               onUpdate={setHeroMedia}
             />
           </div>
-        </div>
-        
-        <div className="pt-4">
-          <IntegrationsPanel />
-        </div>
+        </section>
 
+        {/* Integrations Section */}
+        <section className="space-y-6 pb-12">
+          <IntegrationsPanel />
+        </section>
       </div>
     </div>
   );
