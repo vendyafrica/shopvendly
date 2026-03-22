@@ -39,6 +39,7 @@ export const storeRepo = {
                     description: true,
                     defaultCurrency: true,
                     logoUrl: true,
+                    heroMedia: true,
                     collectoPassTransactionFeeToCustomer: true,
                     collectoPayoutMode: true,
                 },
@@ -57,6 +58,7 @@ export const storeRepo = {
                     description: true,
                     defaultCurrency: true,
                     logoUrl: true,
+                    heroMedia: true,
                 },
             });
 
@@ -177,6 +179,7 @@ export const storeRepo = {
                     description: true,
                     defaultCurrency: true,
                     logoUrl: true,
+                    heroMedia: true,
                     collectoPassTransactionFeeToCustomer: true,
                     collectoPayoutMode: true,
                 },
@@ -195,6 +198,7 @@ export const storeRepo = {
                     description: true,
                     defaultCurrency: true,
                     logoUrl: true,
+                    heroMedia: true,
                 },
             });
 

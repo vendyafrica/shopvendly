@@ -99,6 +99,7 @@ export default async function AdminPage({
           storeDescription={store.description}
           storefrontUrl={storefrontUrl}
           logoUrl={store.logoUrl}
+          heroMedia={Array.isArray(store.heroMedia) ? store.heroMedia : []}
         />
 
         <div className="px-1 space-y-4">
