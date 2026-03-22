@@ -56,11 +56,12 @@ export interface OrderStatsResponse {
     currency: string;
 }
 
-export type TransactionRow = {
+export type OrderSummaryRow = {
   id: string;
   orderId?: string;
+  actualId: string;
   customer: string;
-  amount: string;
+  amount: string | React.ReactNode;
   status: "Completed" | "Failed" | "Pending";
   date: string;
   product?: string;

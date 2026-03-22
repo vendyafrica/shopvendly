@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useTenant } from "@/modules/admin/context/tenant-context";
-import { type OrderTableRow, type OrderStatus, type PaymentStatus, type OrderAPIResponse, type OrdersListResponse, type OrderStatsResponse, type TransactionRow } from "@/modules/admin/models";
+import { type OrderTableRow, type OrderStatus, type PaymentStatus, type OrderAPIResponse, type OrdersListResponse, type OrderStatsResponse, type OrderSummaryRow } from "@/modules/admin/models";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -88,7 +88,20 @@ export default function OrdersPage() {
 
     const currency = stats?.currency || bootstrap?.defaultCurrency || "UGX";
 
-    const filteredOrders = React.useMemo<TransactionRow[]>(() => {
+    const renderPrice = (amount: number, currencyCode: string) => {
+        const formatted = new Intl.NumberFormat("en-US", { style: "currency", currency: currencyCode, minimumFractionDigits: 0 }).format(amount);
+        const match = formatted.match(/^([A-Z]{3})[\s\u00a0]*(.*)$/);
+        if (!match) return formatted;
+        const [, code, numeric] = match;
+        return (
+          <span className="inline-flex items-baseline gap-1">
+            <span className="text-[10px] font-bold text-muted-foreground/60 align-sub tracking-tight uppercase leading-none">{code}</span>
+            <span className="leading-none">{numeric}</span>
+          </span>
+        );
+    };
+
+    const filteredOrders = React.useMemo<OrderSummaryRow[]>(() => {
         let rows = orders.map((o, index) => {
             const productName = o.items?.find((item) => item?.productName)?.productName || "Order";
 
@@ -97,7 +110,7 @@ export default function OrdersPage() {
                 orderId: o.orderNumber,
                 actualId: o.id, // For detail navigation
                 customer: o.customerName,
-                amount: new Intl.NumberFormat("en-US", { style: "currency", currency }).format(o.totalAmount),
+                amount: renderPrice(o.totalAmount, currency),
                 product: productName,
                 paymentMethod: o.paymentMethod,
                 status: (o.paymentStatus === "paid"
@@ -125,8 +138,8 @@ export default function OrdersPage() {
         return rows;
     }, [orders, statusFilter, searchQuery, currency]);
 
-    const handleRowClick = (row: TransactionRow) => {
-        const id = (row as any).actualId;
+    const handleRowClick = (row: OrderSummaryRow) => {
+        const id = row.actualId;
         if (id && bootstrap?.storeSlug) {
             router.push(`/admin/${bootstrap.storeSlug}/orders/${id}`);
         }
@@ -245,7 +258,7 @@ export default function OrdersPage() {
                 <div className="md:hidden">
                     <OrdersMobileView
                         bootstrap={bootstrap}
-                        transactions={filteredOrders}
+                        orders={filteredOrders}
                     />
                 </div>
             </div>

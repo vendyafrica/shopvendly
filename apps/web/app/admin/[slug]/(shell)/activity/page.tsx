@@ -16,6 +16,7 @@ import {
   ArrowRight01Icon,
   ShoppingBag01Icon,
 } from "@hugeicons/core-free-icons";
+import { useRouter } from "next/navigation";
 import { cn } from "@shopvendly/ui/lib/utils";
 
 function getActivityIcon(type: ActivityEventType) {
@@ -48,6 +49,7 @@ function getActivityBg(type: ActivityEventType) {
 
 export default function ActivityPage() {
   const { bootstrap, error: bootstrapError } = useTenant();
+  const router = useRouter();
   const [events, setEvents] = React.useState<ActivityEvent[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -85,6 +87,18 @@ export default function ActivityPage() {
       if (diffHrs < 24) return `${diffHrs}h ago`;
       if (diffDays === 1) return "Yesterday";
       return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+  const handleActivityClick = (event: ActivityEvent) => {
+      if (!bootstrap?.storeSlug) return;
+      
+      const orderId = event.metadata?.orderId;
+      const productId = event.metadata?.productId;
+
+      if (orderId) {
+          router.push(`/admin/${bootstrap.storeSlug}/orders/${orderId}`);
+      } else if (productId) {
+          router.push(`/admin/${bootstrap.storeSlug}/products/${productId}`);
+      }
   };
 
   return (
@@ -172,6 +186,7 @@ export default function ActivityPage() {
                                         <Button 
                                             variant="ghost" 
                                             size="sm" 
+                                            onClick={() => handleActivityClick(event)}
                                             className="h-7 text-[10px] font-bold px-2 uppercase tracking-wide hover:bg-primary/5 hover:text-primary transition-all rounded-lg group/btn"
                                         >
                                             View details
@@ -185,7 +200,6 @@ export default function ActivityPage() {
                 </div>
             </div>
         )}
-
         {!isLoading && events.length > 0 && (
             <div className="py-8 text-center">
                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40">End of recent activity</p>

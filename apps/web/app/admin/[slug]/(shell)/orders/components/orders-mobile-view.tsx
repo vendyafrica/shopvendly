@@ -3,7 +3,7 @@
 import * as React from "react";
 import { StoreAvatar } from "@/components/store-avatar";
 import { type TenantBootstrap } from "@/modules/admin/context";
-import { type TransactionRow } from "@/modules/admin/models";
+import { type OrderSummaryRow } from "@/modules/admin/models";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PackageOpenIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
@@ -12,7 +12,7 @@ import { cn } from "@shopvendly/ui/lib/utils";
 
 interface OrdersMobileViewProps {
     bootstrap: TenantBootstrap | null;
-    transactions: TransactionRow[];
+    orders: OrderSummaryRow[];
 }
 
 const STATUS_COLORS = {
@@ -23,7 +23,7 @@ const STATUS_COLORS = {
 
 export function OrdersMobileView({
     bootstrap,
-    transactions,
+    orders: transactions,
 }: OrdersMobileViewProps) {
     const router = useRouter();
 
@@ -33,7 +33,7 @@ export function OrdersMobileView({
     const pendingCount = transactions.filter((tx) => tx.status === "Pending").length;
     const transactionCount = transactions.length;
 
-    const handleOrderClick = (tx: TransactionRow) => {
+    const handleOrderClick = (tx: OrderSummaryRow) => {
         const id = (tx as any).actualId;
         if (id && bootstrap?.storeSlug) {
             router.push(`/admin/${bootstrap.storeSlug}/orders/${id}`);

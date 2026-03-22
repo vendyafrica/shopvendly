@@ -4,9 +4,9 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@shopvendly/ui/components/badge";
 import { cn } from "@shopvendly/ui/lib/utils";
 import { DataTable } from "./data-table";
-import { type TransactionRow } from "@/modules/admin/models";
+import { type OrderSummaryRow } from "@/modules/admin/models";
 
-const columns: ColumnDef<TransactionRow>[] = [
+const columns: ColumnDef<OrderSummaryRow>[] = [
   {
     accessorKey: "id",
     header: "ID",
@@ -51,8 +51,8 @@ export function OrdersTable({
   rows, 
   onRowClick 
 }: { 
-  rows: TransactionRow[];
-  onRowClick?: (row: TransactionRow) => void;
+  rows: OrderSummaryRow[];
+  onRowClick?: (row: OrderSummaryRow) => void;
 }) {
   return (
     <div className="w-full">
