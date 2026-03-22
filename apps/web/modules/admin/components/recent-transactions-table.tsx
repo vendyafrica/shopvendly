@@ -18,10 +18,6 @@ const columns: ColumnDef<TransactionRow>[] = [
     header: "Customer",
   },
   {
-    accessorKey: "product",
-    header: "Product",
-  },
-  {
     accessorKey: "amount",
     header: "Amount",
   },
@@ -43,7 +39,6 @@ const columns: ColumnDef<TransactionRow>[] = [
       );
     },
   },
-  { accessorKey: "payment", header: "Payment" },
   {
     accessorKey: "date",
     header: () => <div className="text-right">Date</div>,

@@ -59,9 +59,7 @@ export interface OrderStatsResponse {
 export type TransactionRow = {
   id: string;
   customer: string;
-  product: string;
   amount: string;
   status: "Completed" | "Failed" | "Pending";
-  payment: string;
   date: string;
 };

@@ -197,6 +197,71 @@ export function OrdersPageSkeleton() {
 }
 
 /**
+ * Full-page skeleton for the Customers page
+ */
+export function CustomersPageSkeleton() {
+    return (
+        <div className="flex-1 space-y-4 px-4 py-4 md:px-8 md:py-6">
+            <div className="flex flex-col gap-4">
+                {/* Header */}
+                <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <Skeleton className="h-8 w-32" />
+                        <Skeleton className="h-4 w-64 hidden md:block" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="hidden items-center bg-muted/40 rounded-lg p-0.5 border border-border/40 md:flex">
+                            <Skeleton className="h-8 w-20" />
+                            <Skeleton className="h-8 w-20" />
+                        </div>
+                        <Skeleton className="h-8 w-32" />
+                    </div>
+                </div>
+
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-white px-6 py-4 shadow-sm">
+                            <Skeleton className="h-3 w-24" />
+                            <Skeleton className="h-6 w-16" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Table Content */}
+            <div className="flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
+                <div className="flex flex-col gap-3 p-2 sm:flex-row sm:items-center justify-between border-b border-border/40 bg-muted/5">
+                    <div className="flex items-center gap-2 px-1">
+                        {[1, 2, 3, 4].map((i) => (
+                            <Skeleton key={i} className="h-8 w-16 rounded-lg" />
+                        ))}
+                    </div>
+                    <div className="px-1">
+                        <Skeleton className="h-9 w-full sm:w-72 rounded-lg" />
+                    </div>
+                </div>
+                
+                <div className="p-4 space-y-4">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <div key={i} className="flex items-center gap-4 py-2 border-b border-border/40 last:border-0">
+                            <Skeleton className="size-8 rounded-full shrink-0" />
+                            <div className="flex-1 space-y-2">
+                                <Skeleton className="h-4 w-40" />
+                                <Skeleton className="h-3 w-24" />
+                            </div>
+                            <Skeleton className="h-4 w-20 hidden md:block" />
+                            <Skeleton className="h-6 w-16 rounded-full" />
+                            <Skeleton className="size-8 rounded ml-auto" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/**
  * Skeleton for a generic data table
  */
 export function DataTableSkeleton({ rows = 5 }: { rows?: number }) {

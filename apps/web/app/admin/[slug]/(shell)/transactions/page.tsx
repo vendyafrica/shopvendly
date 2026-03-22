@@ -87,25 +87,17 @@ export default function TransactionsPage() {
     const currency = stats?.currency || bootstrap?.defaultCurrency || "UGX";
 
     const filteredTransactions = React.useMemo(() => {
-        let rows = orders.map((o) => {
-            const itemLabel =
-                o.items?.length === 1
-                    ? o.items[0]?.productName
-                    : o.items?.length
-                        ? `${o.items.length} items`
-                        : "—";
-
+        let rows = orders.map((o, index) => {
             return {
-                id: o.orderNumber,
+                id: (index + 1).toString().padStart(3, '0'),
+                orderId: o.orderNumber,
                 customer: o.customerName,
-                product: itemLabel || "—",
                 amount: new Intl.NumberFormat("en-US", { style: "currency", currency }).format(o.totalAmount),
                 status: (o.paymentStatus === "paid"
                     ? "Completed"
                     : o.paymentStatus === "failed"
                         ? "Failed"
                         : "Pending") as "Completed" | "Failed" | "Pending",
-                payment: o.paymentMethod,
                 date: new Date(o.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }),
             };
         });
@@ -119,7 +111,7 @@ export default function TransactionsPage() {
             rows = rows.filter((r) =>
                 r.customer.toLowerCase().includes(q) ||
                 r.id.toLowerCase().includes(q) ||
-                r.product.toLowerCase().includes(q)
+                (r as any).orderId.toLowerCase().includes(q)
             );
         }
 
