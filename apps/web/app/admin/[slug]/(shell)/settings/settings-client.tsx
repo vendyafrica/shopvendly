@@ -404,7 +404,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
                     <ComboboxInput 
                       placeholder="Search currency..." 
                       showClear
-                      className="h-10 w-[140px] rounded-xl border-neutral-200 bg-white"
+                      className="h-10 w-[140px] rounded-xl border-neutral-200 bg-white text-base sm:text-sm"
                     />
                     <ComboboxContent className="rounded-xl border-neutral-200 shadow-xl overflow-hidden">
                       <ComboboxEmpty className="p-3 text-xs text-neutral-400">No currency found.</ComboboxEmpty>
@@ -497,7 +497,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
               >
                 <ComboboxInput 
                   placeholder="Search mode..." 
-                  className="h-10 w-full sm:w-[220px] rounded-xl border-neutral-200 bg-white"
+                  className="h-10 w-full sm:w-[220px] rounded-xl border-neutral-200 bg-white text-base sm:text-sm"
                 />
                 <ComboboxContent className="rounded-xl border-neutral-200 shadow-xl overflow-hidden">
                   <ComboboxEmpty className="p-3 text-xs text-neutral-400">No mode found.</ComboboxEmpty>
