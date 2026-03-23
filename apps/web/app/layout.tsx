@@ -1,6 +1,6 @@
 import "@shopvendly/ui/globals.css";
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Public_Sans } from "next/font/google";
+import { Geist, Geist_Mono, Public_Sans, Caveat } from "next/font/google";
 import type { ReactNode } from "react";
 import { ThirdParty } from "./third-party";
 
@@ -13,6 +13,11 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const caveat = Caveat({
+  variable: "--font-handwriting",
   subsets: ["latin"],
 });
 
@@ -162,7 +167,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${publicSans.variable} h-full`}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen h-full bg-background`}
+        className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} antialiased min-h-screen h-full bg-background`}
       >
         <script
           type="application/ld+json"

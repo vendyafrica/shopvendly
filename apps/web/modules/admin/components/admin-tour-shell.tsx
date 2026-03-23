@@ -19,65 +19,42 @@ const tours = [
         title: "Your command center",
         content: "These cards show sales, activity, and what needs attention today.",
         side: "bottom",
-        className: "border-fuchsia-300 bg-gradient-to-br from-fuchsia-50 to-pink-50 shadow-xl",
-        nextLabel: (
-          <span className="inline-flex items-center gap-1.5">
-            Next <HugeiconsIcon icon={ArrowRight02Icon} size={14} />
-          </span>
-        ),
-      },
-      {
-        id: "admin-products",
-        title: "Add products fast",
-        content: "Create items here and keep your catalog ready for shoppers.",
-        side: "right",
-        className: "border-sky-300 bg-gradient-to-br from-sky-50 to-cyan-50 shadow-xl",
-        nextRoute: "/admin/vendly/collections",
-      },
-      {
-        id: "admin-collections",
-        title: "Group products into drops",
-        content: "Use collections to organize products and build cleaner storefront sections.",
-        side: "right",
-        className: "border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50 shadow-xl",
+        variant: "playful",
+        color: "rgba(236, 72, 153, 0.9)", // Pink
         nextRoute: "/admin/vendly/settings",
-      },
-      {
-        id: "store-policy",
-        title: "Set the store rules",
-        content: "Write your policy here so buyers know delivery, returns, and exchanges.",
-        side: "left",
-        className: "border-emerald-300 bg-gradient-to-br from-emerald-50 to-lime-50 shadow-xl",
       },
       {
         id: "store-logo",
         title: "Brand it your way",
         content: "Upload a logo so the store feels yours everywhere customers see it.",
-        side: "left",
-        className: "border-violet-300 bg-gradient-to-br from-violet-50 to-fuchsia-50 shadow-xl",
+        side: "bottom",
+        variant: "playful",
+        color: "rgba(139, 92, 246, 0.9)", // Violet
+      },
+      {
+        id: "store-policy",
+        title: "Set the store rules",
+        content: "Write your policy here so buyers know delivery, returns, and exchanges.",
+        side: "top",
+        variant: "playful",
+        color: "rgba(16, 185, 129, 0.9)", // Emerald
       },
       {
         id: "store-hero",
         title: "Make the page feel alive",
         content: "Add a hero image to turn the storefront into a bold first impression.",
-        side: "left",
-        className: "border-rose-300 bg-gradient-to-br from-rose-50 to-pink-50 shadow-xl",
-        previousRoute: "/admin/vendly/settings",
-        nextRoute: "/admin/vendly/orders",
+        side: "top",
+        variant: "playful",
+        color: "rgba(244, 63, 94, 0.9)", // Rose
+        nextRoute: "/admin/vendly",
       },
       {
         id: "recent-activity",
         title: "Live activity",
         content: "See new orders and customer action as they happen in real time.",
         side: "top",
-        className: "border-indigo-300 bg-gradient-to-br from-indigo-50 to-blue-50 shadow-xl",
-      },
-      {
-        id: "orders-table",
-        title: "Track orders here",
-        content: "Open an order to follow payment, customer details, and fulfillment.",
-        side: "top",
-        className: "border-teal-300 bg-gradient-to-br from-teal-50 to-cyan-50 shadow-xl",
+        variant: "playful",
+        color: "rgba(79, 70, 229, 0.9)", // Indigo
       },
     ],
   },

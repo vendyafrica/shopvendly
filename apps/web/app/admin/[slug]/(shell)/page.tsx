@@ -274,7 +274,9 @@ export default async function AdminPage({
           </div>
         </div>
 
-        <RecentOrdersTableSection rows={transactionRows} viewAllHref={`${basePath}/orders`} />
+        <div data-tour-step-id="recent-activity">
+          <RecentOrdersTableSection rows={transactionRows} viewAllHref={`${basePath}/orders`} />
+        </div>
       </div>
     </div>
   );
