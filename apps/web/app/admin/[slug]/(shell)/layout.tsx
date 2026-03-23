@@ -8,11 +8,10 @@ import { SidebarInset, SidebarProvider } from "@shopvendly/ui/components/sidebar
 import { Providers } from "../../../providers";
 import { HeaderActionsProvider } from "@/modules/admin/context/header-actions-context";
 import { TenantProvider } from "@/modules/admin/context/tenant-context";
-import { AppSessionProvider } from "@/contexts/app-session-context";
+import { AppSessionProvider, type AppSession } from "@/contexts/app-session-context";
 import { AppSidebar } from "@/modules/admin/components/app-sidebar";
 import { AdminMobileDock } from "@/modules/admin/components/admin-mobile-dock";
 import { CollectoPayoutModal } from "@/modules/admin/components/collecto-payout-modal";
-import { AdminTourShell } from "@/modules/admin/components/admin-tour-shell";
 
 const DEMO_ADMIN_USER = {
   id: "demo-user-id",
@@ -25,6 +24,8 @@ const DEMO_ADMIN_USER = {
 type DemoAdminSession = {
   user: typeof DEMO_ADMIN_USER;
 };
+
+type DemoAppSession = AppSession & DemoAdminSession;
 
 export default async function TenantAdminLayout({
   children,
@@ -56,19 +57,20 @@ async function TenantAdminLayoutInner({
 }) {
   const headerList = await headers();
 
-  let session = await auth.api.getSession({ headers: headerList });
+  const authSession = await auth.api.getSession({ headers: headerList });
+  let appSession: DemoAppSession | AppSession | null = authSession;
 
-  if (slug === "vendly" && !session?.user) {
-    session = {
+  if (slug === "vendly" && !appSession?.user) {
+    appSession = {
       user: DEMO_ADMIN_USER,
     } satisfies DemoAdminSession;
   }
 
-  if (!session?.user) {
+  if (!appSession?.user) {
     redirect(`/admin/${slug}/login?next=${encodeURIComponent(basePath)}`);
   }
 
-  const access = await resolveTenantAdminAccess(session.user.id, slug);
+  const access = await resolveTenantAdminAccess(appSession.user.id, slug);
   const store = access.store;
 
   if (!store) {
@@ -81,39 +83,37 @@ async function TenantAdminLayoutInner({
 
   return (
     <Providers>
-      <AdminTourShell storeSlug={slug}>
-        <AppSessionProvider session={session}>
-          <TenantProvider
-            initialBootstrap={{
-              tenantId: store.tenantId,
-              storeId: store.id,
-              storeSlug: slug,
-              storeName: store.name,
-              defaultCurrency: store.defaultCurrency,
-              collectoPassTransactionFeeToCustomer: store.collectoPassTransactionFeeToCustomer ?? false,
-              collectoPayoutMode: store.collectoPayoutMode ?? "automatic_per_order",
-            }}
+      <AppSessionProvider session={appSession}>
+        <TenantProvider
+          initialBootstrap={{
+            tenantId: store.tenantId,
+            storeId: store.id,
+            storeSlug: slug,
+            storeName: store.name,
+            defaultCurrency: store.defaultCurrency,
+            collectoPassTransactionFeeToCustomer: store.collectoPassTransactionFeeToCustomer ?? false,
+            collectoPayoutMode: store.collectoPayoutMode ?? "automatic_per_order",
+          }}
+        >
+          <SidebarProvider
+            style={
+              {
+                "--sidebar-width": "14rem",
+              } as React.CSSProperties
+            }
           >
-            <SidebarProvider
-              style={
-                {
-                  "--sidebar-width": "14rem",
-                } as React.CSSProperties
-              }
-            >
-              <AppSidebar basePath={basePath} />
-              <HeaderActionsProvider>
-                <SidebarInset>
-                  <div className="flex flex-1 flex-col gap-4 p-4 pt-4 pb-24 md:pb-4">{children}</div>
-                </SidebarInset>
-              </HeaderActionsProvider>
+            <AppSidebar basePath={basePath} />
+            <HeaderActionsProvider>
+              <SidebarInset>
+                <div className="flex flex-1 flex-col gap-4 p-4 pt-4 pb-24 md:pb-4">{children}</div>
+              </SidebarInset>
+            </HeaderActionsProvider>
 
-              <CollectoPayoutModal />
-              <AdminMobileDock basePath={basePath} />
-            </SidebarProvider>
-          </TenantProvider>
-        </AppSessionProvider>
-      </AdminTourShell>
+            <CollectoPayoutModal />
+            <AdminMobileDock basePath={basePath} />
+          </SidebarProvider>
+        </TenantProvider>
+      </AppSessionProvider>
     </Providers>
   );
 }
