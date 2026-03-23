@@ -29,6 +29,24 @@ function formatCurrency(amount: number, currency: string) {
   }).format(amount);
 }
 
+type DashboardRevenueRow = {
+  date: string;
+  revenuePaid: number;
+  ordersPaid: number;
+};
+
+type DashboardRecentOrder = {
+  id: string;
+  orderNumber: string;
+  customerName: string | null;
+  totalAmount: number;
+  currency: string | null;
+  paymentStatus: "pending" | "paid" | "failed" | "refunded" | string;
+  paymentMethod: string;
+  createdAt: Date;
+  items?: Array<{ productName?: string | null } | null> | null;
+};
+
 export type DashboardRange = "daily" | "weekly" | "monthly";
 
 export const adminDashboardService = {
@@ -68,9 +86,13 @@ export const adminDashboardService = {
       ordersRepo.findRecentOrders(store),
     ]);
 
-    const revenueTotalsByDate = new Map(revenueRaw.map((row: any) => [row.date, row.revenuePaid]));
-    const prevRevenueTotalsByDate = new Map(prevRevenueRaw.map((row: any) => [row.date, row.revenuePaid]));
-    const ordersTotalsByDate = new Map(revenueRaw.map((row: any) => [row.date, row.ordersPaid]));
+    const revenueRows = revenueRaw as DashboardRevenueRow[];
+    const prevRevenueRows = prevRevenueRaw as DashboardRevenueRow[];
+    const recentOrderRows = recentOrders as DashboardRecentOrder[];
+
+    const revenueTotalsByDate = new Map(revenueRows.map((row) => [row.date, row.revenuePaid]));
+    const prevRevenueTotalsByDate = new Map(prevRevenueRows.map((row) => [row.date, row.revenuePaid]));
+    const ordersTotalsByDate = new Map(revenueRows.map((row) => [row.date, row.ordersPaid]));
 
     const pointsCount = range === "daily" ? 24 : days + 1;
     const revenueSeries = Array.from({ length: pointsCount }).map((_, index) => {
@@ -155,7 +177,8 @@ export const adminDashboardService = {
 
     const isVendly = store.slug === "vendly";
 
-    const transactionRows = recentOrders.map((o: any) => {
+    const transactionRows = recentOrderRows.map((o, index: number) => {
+      const maskedCustomerName = isVendly ? `Customer ${index + 1}` : o.customerName;
       const itemLabel =
         o.items?.length === 1
           ? o.items[0]?.productName
@@ -170,15 +193,10 @@ export const adminDashboardService = {
             ? "Failed"
             : "Pending";
 
-      let customerName = o.customerName;
-      if (isVendly && !customerName) {
-        customerName = "Customer";
-      }
-
       return {
         id: o.orderNumber,
         actualId: o.id,
-        customer: customerName || "—",
+        customer: maskedCustomerName || "—",
         product: itemLabel || "—",
         amount: formatCurrency(o.totalAmount, o.currency || currency),
         status: status as "Completed" | "Failed" | "Pending",

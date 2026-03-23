@@ -77,7 +77,9 @@ async function TenantAdminLayoutInner({
     redirect("/");
   }
 
-  if (!access.isAuthorized) {
+  const isDemoStore = slug === "vendly";
+
+  if (!access.isAuthorized && !isDemoStore) {
     redirect(`/admin/${slug}/unauthorized`);
   }
 

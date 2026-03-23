@@ -23,6 +23,7 @@ const API_BASE = "";
 export default function OrdersPage() {
     const { bootstrap, error: bootstrapError } = useTenant();
     const router = useRouter();
+    const isVendlyStore = bootstrap?.storeSlug === "vendly";
     const [orders, setOrders] = React.useState<OrderTableRow[]>([]);
     const [stats, setStats] = React.useState<OrderStatsResponse | null>(null);
     const [error, setError] = React.useState<string | null>(null);
@@ -98,12 +99,13 @@ export default function OrdersPage() {
     const filteredOrders = React.useMemo<OrderSummaryRow[]>(() => {
         let rows = orders.map((o, index) => {
             const productName = o.items?.find((item) => item?.productName)?.productName || "Order";
+            const customerName = isVendlyStore ? `Customer ${index + 1}` : o.customerName;
 
             return {
                 id: (index + 1).toString().padStart(3, '0'),
                 orderId: o.orderNumber,
                 actualId: o.id, // For detail navigation
-                customer: o.customerName,
+                customer: customerName,
                 amount: renderPrice(o.totalAmount, currency),
                 product: productName,
                 paymentMethod: o.paymentMethod,
@@ -130,7 +132,7 @@ export default function OrdersPage() {
         }
 
         return rows;
-    }, [orders, statusFilter, searchQuery, currency]);
+    }, [orders, statusFilter, searchQuery, currency, isVendlyStore]);
 
     const handleRowClick = (row: OrderSummaryRow) => {
         const id = row.actualId;

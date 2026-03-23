@@ -3,17 +3,14 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { db, orders, products, and, eq, isNull, desc, lt } from "@shopvendly/db";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { type ActivityEvent, type ActivityEventType } from "@/modules/admin/models/activity";
+import { type ActivityEvent } from "@/modules/admin/models/activity";
+import { storeRepo } from "@/repo/store-repo";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get("storeId");
@@ -22,12 +19,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Store ID is required" }, { status: 400 });
     }
 
-    const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
-    if (!access.store || !access.isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    const store = await storeRepo.findById(storeId);
+
+    if (!store) {
+      return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    const tenantId = access.store.tenantId;
+    const isDemoStore = store.slug === "vendly";
+
+    if (!session?.user && !isDemoStore) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    let tenantId = store.tenantId;
+
+    if (session?.user) {
+      const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
+      if (!access.store || !access.isAuthorized) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
+      tenantId = access.store.tenantId;
+    }
 
     // 1. Fetch recent orders
     const recentOrders = await db.query.orders.findMany({

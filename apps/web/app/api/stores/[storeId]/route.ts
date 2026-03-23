@@ -2,9 +2,9 @@ import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { storeRepo } from "@/repo/store-repo";
-import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
 import { productsAdminRepo } from "@/repo/products-admin-repo";
 import { z } from "zod";
+import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
 
 import { type StoreRouteParams as RouteParams } from "@/models";
 
@@ -71,11 +71,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Store not found" }, { status: 404 });
         }
 
-        const membership = await tenantMembershipRepo.findByUserAndTenant(session.user.id, store.tenantId);
+        const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "write");
 
-        if (!membership) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        if (!access.isAuthorized) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
+        const accessStore = access.store;
+
+        if (!accessStore) {
+            return NextResponse.json({ error: "Store not found" }, { status: 404 });
+        }
+
         const body = await request.json();
         const parsed = updateStoreSchema.parse(body);
         const input = {
@@ -84,14 +90,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             logoUrl: parsed.logoUrl === "" ? null : parsed.logoUrl,
         };
 
-        const updated = await storeRepo.update(storeId, membership.tenantId, input);
+        const updated = await storeRepo.update(storeId, accessStore.tenantId, input);
 
         if (!updated) {
             return NextResponse.json({ error: "Store not found" }, { status: 404 });
         }
 
         if (input.defaultCurrency) {
-            await productsAdminRepo.updateCurrencyByStore(storeId, membership.tenantId, input.defaultCurrency);
+            await productsAdminRepo.updateCurrencyByStore(storeId, accessStore.tenantId, input.defaultCurrency);
         }
 
         return NextResponse.json(updated);
@@ -121,12 +127,18 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Store not found" }, { status: 404 });
         }
 
-        const membership = await tenantMembershipRepo.findByUserAndTenant(session.user.id, store.tenantId);
+        const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "write");
 
-        if (!membership) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        if (!access.isAuthorized) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
-        await storeRepo.delete(storeId, membership.tenantId);
+        const accessStore = access.store;
+
+        if (!accessStore) {
+            return NextResponse.json({ error: "Store not found" }, { status: 404 });
+        }
+
+        await storeRepo.delete(storeId, accessStore.tenantId);
 
         return NextResponse.json({ success: true });
     } catch (error) {

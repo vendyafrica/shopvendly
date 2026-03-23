@@ -20,12 +20,24 @@ export async function GET(request: NextRequest) {
             headers: await headers()
         });
 
-        if (!session?.user) {
+        const { searchParams } = new URL(request.url);
+        const storeId = searchParams.get("storeId") || undefined;
+        if (!storeId) {
+            return NextResponse.json({ error: "Missing storeId" }, { status: 400 });
+        }
+
+        const store = await storeRepo.findById(storeId);
+
+        if (!store) {
+            return NextResponse.json({ error: "Store not found" }, { status: 404 });
+        }
+
+        const isDemoStore = store.slug === "vendly";
+
+        if (!session?.user && !isDemoStore) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { searchParams } = new URL(request.url);
-        const storeId = searchParams.get("storeId") || undefined;
         const filters = productQuerySchema.parse({
             storeId,
             source: searchParams.get("source") || undefined,
@@ -36,7 +48,7 @@ export async function GET(request: NextRequest) {
 
         let tenantId: string;
 
-        if (storeId) {
+        if (session?.user) {
             const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
 
             if (!access.store) {
@@ -49,13 +61,7 @@ export async function GET(request: NextRequest) {
 
             tenantId = access.store.tenantId;
         } else {
-            const membership = await getTenantMembership(session.user.id);
-
-            if (!membership) {
-                return NextResponse.json({ error: "No tenant found" }, { status: 404 });
-            }
-
-            tenantId = membership.tenantId;
+            tenantId = store.tenantId;
         }
 
         const result = await productService.listProducts(tenantId, filters);

@@ -3,8 +3,8 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { orderService } from "@/modules/orders";
 import { orderQuerySchema } from "@/modules/orders/lib/order-models";
-import { ordersRepo } from "@/repo/orders-repo";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
+import { storeRepo } from "@/repo/store-repo";
 
 /**
  * GET /api/orders
@@ -16,15 +16,27 @@ export async function GET(request: NextRequest) {
             headers: await headers()
         });
 
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
         const { searchParams } = new URL(request.url);
         const storeId = searchParams.get("storeId") || undefined;
 
+        if (!storeId) {
+            return NextResponse.json({ error: "Missing storeId" }, { status: 400 });
+        }
+
+        const store = await storeRepo.findById(storeId);
+
+        if (!store) {
+            return NextResponse.json({ error: "Store not found" }, { status: 404 });
+        }
+
+        const isDemoStore = store.slug === "vendly";
+
+        if (!session?.user && !isDemoStore) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         let tenantId: string;
-        if (storeId) {
+        if (session?.user) {
             const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
             if (!access.store) {
                 return NextResponse.json({ error: "Store not found" }, { status: 404 });
@@ -34,12 +46,7 @@ export async function GET(request: NextRequest) {
             }
             tenantId = access.store.tenantId;
         } else {
-            const tenantIdResult = await ordersRepo.findTenantIdByUserId(session.user.id);
-
-            if (!tenantIdResult) {
-                return NextResponse.json({ error: "No tenant found" }, { status: 404 });
-            }
-            tenantId = tenantIdResult;
+            tenantId = store.tenantId;
         }
 
         const filters = orderQuerySchema.parse({

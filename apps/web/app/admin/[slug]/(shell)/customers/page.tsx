@@ -29,8 +29,18 @@ export default function CustomersPage() {
 
   const { data: customers = [], isLoading, error: queryError, refetch } = useCustomers(bootstrap?.storeId);
 
+  const displayCustomers = React.useMemo(() => {
+    if (slug !== "vendly") return customers;
+
+    return customers.map((customer, index) => ({
+      ...customer,
+      name: `Customer ${index + 1}`,
+      email: `customer${index + 1}@example.com`,
+    }));
+  }, [customers, slug]);
+
   const filteredCustomers = React.useMemo(() => {
-    let result = customers;
+    let result = displayCustomers;
 
     if (statusFilter !== "all") {
       result = result.filter((c) => c.status === statusFilter);
@@ -45,7 +55,7 @@ export default function CustomersPage() {
     }
 
     return result;
-  }, [customers, statusFilter, searchQuery]);
+  }, [displayCustomers, statusFilter, searchQuery]);
 
   if (isLoading && customers.length === 0) {
     return <CustomersPageSkeleton />;
@@ -53,10 +63,10 @@ export default function CustomersPage() {
 
   const error = queryError?.message ?? null;
 
-  const totalCustomers = customers.length;
-  const newCount = customers.filter((c) => c.status === "New").length;
-  const activeCount = customers.filter((c) => c.status === "Active").length;
-  const churnCount = customers.filter((c) => c.status === "Churn Risk").length;
+  const totalCustomers = displayCustomers.length;
+  const newCount = displayCustomers.filter((c) => c.status === "New").length;
+  const activeCount = displayCustomers.filter((c) => c.status === "Active").length;
+  const churnCount = displayCustomers.filter((c) => c.status === "Churn Risk").length;
 
   return (
     <div className="flex-1 space-y-4 px-4 py-4 md:px-8 md:py-6">
@@ -120,6 +130,7 @@ export default function CustomersPage() {
 
         {/* Desktop Table Content */}
         <div className="hidden md:flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
+
           <div className="flex flex-col gap-3 p-2 sm:flex-row sm:items-center justify-between border-b border-border/40 bg-muted/5">
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar px-1">
               {(["all", "New", "Active", "Churn Risk"] as const).map((tab) => (
@@ -152,7 +163,7 @@ export default function CustomersPage() {
           </div>
 
           <div className="border-none shadow-none">
-            <CustomersTable rows={filteredCustomers} />
+            <CustomersTable rows={filteredCustomers} storeSlug={slug} />
           </div>
         </div>
 
@@ -160,7 +171,7 @@ export default function CustomersPage() {
         <div className="md:hidden">
           <CustomersMobileView
             bootstrap={bootstrap}
-            customers={customers}
+            customers={displayCustomers}
             statSegments={[
                 { label: "Total Customers", value: totalCustomers.toLocaleString(), changeLabel: "", changeTone: "neutral" },
                 { label: "New (30 days)", value: newCount.toLocaleString(), changeLabel: "", changeTone: "neutral" },

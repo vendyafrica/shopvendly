@@ -5,6 +5,7 @@ import { z } from "zod";
 import { revalidateTag } from "next/cache";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
 import { storeCollectionsRepo } from "@/repo/store-collections-repo";
+import { storeRepo } from "@/repo/store-repo";
 
 const createCollectionSchema = z.object({
   storeId: z.string().uuid(),
@@ -15,9 +16,6 @@ const createCollectionSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get("storeId") || "";
@@ -27,12 +25,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "storeId is required" }, { status: 400 });
     }
 
-    const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
-    if (!access.store) {
+    const store = await storeRepo.findById(storeId);
+
+    if (!store) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
-    if (!access.isAuthorized) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const isDemoStore = store.slug === "vendly";
+
+    if (!session?.user && !isDemoStore) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (session?.user) {
+      const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
+      if (!access.store) {
+        return NextResponse.json({ error: "Store not found" }, { status: 404 });
+      }
+      if (!access.isAuthorized) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     const collections = await storeCollectionsRepo.listByStore(storeId, q);

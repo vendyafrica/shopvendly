@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { orderService } from "@/modules/orders";
 import { updateOrderStatusSchema } from "@/modules/orders/lib/order-models";
+import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
 import { ordersRepo } from "@/repo/orders-repo";
 
 import { type OrderRouteParams as RouteParams } from "@/models";
@@ -55,13 +56,25 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const { orderId } = await params;
         const tenantId = await ordersRepo.findTenantIdByUserId(session.user.id);
 
         if (!tenantId) {
             return NextResponse.json({ error: "No tenant found" }, { status: 404 });
         }
 
-        const { orderId } = await params;
+        const order = await orderService.getOrder(orderId, tenantId);
+
+        if (!order) {
+            return NextResponse.json({ error: "Order not found" }, { status: 404 });
+        }
+
+        const access = await resolveTenantAdminAccessByStoreId(session.user.id, order.storeId, "write");
+
+        if (!access.isAuthorized || !access.store) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
         const body = await request.json();
         const input = updateOrderStatusSchema.parse(body);
 

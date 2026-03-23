@@ -3,16 +3,13 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { db, orders, and, eq, isNull, sql, desc } from "@shopvendly/db";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
+import { storeRepo } from "@/repo/store-repo";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get("storeId");
@@ -21,9 +18,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Store ID is required" }, { status: 400 });
     }
 
-    const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
-    if (!access.store || !access.isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    const store = await storeRepo.findById(storeId);
+
+    if (!store) {
+      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    }
+
+    const isDemoStore = store.slug === "vendly";
+
+    if (!session?.user && !isDemoStore) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    let tenantId = store.tenantId;
+
+    if (session?.user) {
+      const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
+      if (!access.store || !access.isAuthorized) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
+      tenantId = access.store.tenantId;
     }
 
     const now = new Date();
@@ -42,7 +56,7 @@ export async function GET(request: NextRequest) {
       .from(orders)
       .where(
         and(
-          eq(orders.tenantId, access.store.tenantId),
+          eq(orders.tenantId, tenantId),
           eq(orders.storeId, storeId),
           isNull(orders.deletedAt)
         )
@@ -50,9 +64,11 @@ export async function GET(request: NextRequest) {
       .groupBy(orders.customerEmail)
       .orderBy(desc(sql`MAX(${orders.createdAt})`));
 
-    const currency = access.store.defaultCurrency || "USD";
+    const currency = store.defaultCurrency || "USD";
 
-    const isVendly = access.store.slug === "vendly";
+    const isVendly = store.slug === "vendly";
+
+    let demoCustomerIndex = 0;
 
     const customers = rowsAgg.map((r) => {
       const last = r.lastOrderAt ? new Date(r.lastOrderAt) : null;
@@ -69,18 +85,9 @@ export async function GET(request: NextRequest) {
       let email = r.email || "—";
 
       if (isVendly) {
-        if (name.toLowerCase().includes("sentomero") || name.toLowerCase().includes("jeremiah")) {
-          // Semi-randomize but keep consistent placeholders as requested
-          if (name.toLowerCase().startsWith("sentomero")) {
-            name = "Jane Smith";
-          } else {
-            name = "Nakato Jane";
-          }
-          email = "customer@example.com";
-        } else if (name === "—") {
-          name = "Jane Smith";
-          email = "customer@example.com";
-        }
+        demoCustomerIndex += 1;
+        name = `Customer ${demoCustomerIndex}`;
+        email = `customer${demoCustomerIndex}@example.com`;
       }
 
       return {
