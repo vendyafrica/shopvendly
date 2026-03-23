@@ -302,7 +302,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
         ) : null}
 
         {/* General Section */}
-        <section className="space-y-6">
+        <section className="space-y-6" data-tour-step-id="store-logo">
           <div className="flex items-center gap-2.5 px-1">
             <HugeiconsIcon icon={Settings02Icon} size={20} className="text-primary" />
             <div className="space-y-0.5">
@@ -432,7 +432,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
         </section>
 
         {/* Policies Section */}
-        <section className="space-y-6">
+        <section className="space-y-6" data-tour-step-id="store-policy">
           <div className="flex items-center gap-2.5 px-1">
             <HugeiconsIcon icon={LegalIcon} size={20} className="text-primary" />
             <div className="space-y-0.5">
@@ -568,7 +568,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
         </section>
 
         {/* Storefront Section */}
-        <section className="space-y-6">
+        <section className="space-y-6" data-tour-step-id="store-hero">
           <div className="flex items-center gap-2.5 px-1">
             <HugeiconsIcon icon={Layout01Icon} size={20} className="text-primary" />
             <div className="space-y-0.5">
@@ -591,7 +591,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
         </section>
 
         {/* Integrations Section */}
-        <section className="space-y-6 pb-12">
+        <section className="space-y-6 pb-12" data-tour-step-id="store-hero">
           <IntegrationsPanel />
         </section>
       </div>

@@ -147,7 +147,7 @@ export default function OrdersPage() {
         <div className="flex-1 space-y-4 px-4 py-4 md:px-8 md:py-6">
             <div className="flex flex-col gap-4">
                 {/* Desktop Header */}
-                <div className="hidden md:flex items-center justify-between gap-4">
+                <div className="hidden md:flex items-center justify-between gap-4" data-tour-step-id="orders-table">
                     <div>
                         <h1 className="text-xl font-semibold tracking-tight">Orders</h1>
                         <p className="hidden text-xs text-muted-foreground sm:block">
@@ -169,7 +169,7 @@ export default function OrdersPage() {
                 </div>
 
                 {/* Stats Cards Grid */}
-                <div className="hidden md:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="hidden md:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" data-tour-step-id="admin-overview">
                     {[
                         { 
                             label: "Total Volume", 
@@ -249,7 +249,7 @@ export default function OrdersPage() {
                 </div>
 
                 {/* Mobile View */}
-                <div className="md:hidden">
+                <div className="md:hidden" data-tour-step-id="orders-table">
                     <OrdersMobileView
                         bootstrap={bootstrap}
                         orders={filteredOrders}

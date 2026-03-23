@@ -12,6 +12,7 @@ import { AppSessionProvider } from "@/contexts/app-session-context";
 import { AppSidebar } from "@/modules/admin/components/app-sidebar";
 import { AdminMobileDock } from "@/modules/admin/components/admin-mobile-dock";
 import { CollectoPayoutModal } from "@/modules/admin/components/collecto-payout-modal";
+import { AdminTourShell } from "@/modules/admin/components/admin-tour-shell";
 
 const DEMO_ADMIN_USER = {
   id: "demo-user-id",
@@ -58,7 +59,6 @@ async function TenantAdminLayoutInner({
   let session = await auth.api.getSession({ headers: headerList });
 
   if (slug === "vendly" && !session?.user) {
-    // Provide a mock session for the demo store
     session = {
       user: DEMO_ADMIN_USER,
     } satisfies DemoAdminSession;
@@ -81,37 +81,39 @@ async function TenantAdminLayoutInner({
 
   return (
     <Providers>
-      <AppSessionProvider session={{ user: session.user }}>
-        <TenantProvider
-          initialBootstrap={{
-            tenantId: store.tenantId,
-            storeId: store.id,
-            storeSlug: slug,
-            storeName: store.name,
-            defaultCurrency: store.defaultCurrency,
-            collectoPassTransactionFeeToCustomer: store.collectoPassTransactionFeeToCustomer ?? false,
-            collectoPayoutMode: store.collectoPayoutMode ?? "automatic_per_order",
-          }}
-        >
-          <SidebarProvider
-            style={
-              {
-                "--sidebar-width": "14rem",
-              } as React.CSSProperties
-            }
+      <AdminTourShell storeSlug={slug}>
+        <AppSessionProvider session={session}>
+          <TenantProvider
+            initialBootstrap={{
+              tenantId: store.tenantId,
+              storeId: store.id,
+              storeSlug: slug,
+              storeName: store.name,
+              defaultCurrency: store.defaultCurrency,
+              collectoPassTransactionFeeToCustomer: store.collectoPassTransactionFeeToCustomer ?? false,
+              collectoPayoutMode: store.collectoPayoutMode ?? "automatic_per_order",
+            }}
           >
-            <AppSidebar basePath={basePath} />
-            <HeaderActionsProvider>
-              <SidebarInset>
-                <div className="flex flex-1 flex-col gap-4 p-4 pt-4 pb-24 md:pb-4">{children}</div>
-              </SidebarInset>
-            </HeaderActionsProvider>
+            <SidebarProvider
+              style={
+                {
+                  "--sidebar-width": "14rem",
+                } as React.CSSProperties
+              }
+            >
+              <AppSidebar basePath={basePath} />
+              <HeaderActionsProvider>
+                <SidebarInset>
+                  <div className="flex flex-1 flex-col gap-4 p-4 pt-4 pb-24 md:pb-4">{children}</div>
+                </SidebarInset>
+              </HeaderActionsProvider>
 
-            <CollectoPayoutModal />
-            <AdminMobileDock basePath={basePath} />
-          </SidebarProvider>
-        </TenantProvider>
-      </AppSessionProvider>
+              <CollectoPayoutModal />
+              <AdminMobileDock basePath={basePath} />
+            </SidebarProvider>
+          </TenantProvider>
+        </AppSessionProvider>
+      </AdminTourShell>
     </Providers>
   );
 }

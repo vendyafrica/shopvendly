@@ -322,6 +322,7 @@ export default function CollectionsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button 
+                data-tour-step-id="admin-collections"
                 onClick={() => setUploadModalOpen(true)}
                 size="sm" 
                 className="h-8 gap-1.5 text-xs font-medium text-background hover:bg-primary/90 shadow-sm"

@@ -190,6 +190,7 @@ export function ProductsMobileView({
                     </Button>
 
                     <Button
+                        data-tour-step-id="admin-products"
                         size="sm"
                         className="h-8 gap-1.5 hover:bg-slate-800 text-white font-medium text-[13px] rounded-md px-5 shadow-sm active:scale-95 transition-all"
                         onClick={handleAddProduct}

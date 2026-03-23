@@ -387,7 +387,7 @@ export default function ProductsPage() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Link href={`/admin/${slug}/products/new`}>
+            <Link href={`/admin/${slug}/products/new`} data-tour-step-id="admin-products">
               <Button size="sm" className="h-8 gap-1.5 text-xs font-medium text-background hover:bg-primary/90 shadow-sm">
                 <HugeiconsIcon icon={Add01Icon} className="size-4" />
                 Add product

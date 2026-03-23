@@ -102,7 +102,7 @@ export default async function AdminPage({
           heroMedia={Array.isArray(store.heroMedia) ? store.heroMedia : []}
         />
 
-        <div className="px-1 space-y-4">
+        <div className="px-1 space-y-4" data-tour-step-id="admin-overview">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold tracking-tight">Store Overview</h2>
             <DashboardFilter />
@@ -174,7 +174,7 @@ export default async function AdminPage({
           </div>
         </div>
 
-        <div className="space-y-4 px-1">
+        <div className="space-y-4 px-1" data-tour-step-id="recent-activity">
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold tracking-tight">Recent Activity</p>
             <Badge variant="outline" className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest animate-pulse border-emerald-500/30 text-emerald-600 bg-emerald-500/5">Live</Badge>
@@ -209,7 +209,7 @@ export default async function AdminPage({
               </div>
             ))}
           </div>
-          <Link href={`${basePath}/orders`} className="flex w-full items-center justify-center py-3 text-xs font-bold text-muted-foreground hover:text-primary transition-colors border rounded-2xl border-dashed hover:border-primary/30">
+          <Link href={`${basePath}/orders`} data-tour-step-id="orders-table" className="flex w-full items-center justify-center py-3 text-xs font-bold text-muted-foreground hover:text-primary transition-colors border rounded-2xl border-dashed hover:border-primary/30">
             See all orders
           </Link>
         </div>
@@ -233,7 +233,7 @@ export default async function AdminPage({
 
         <CollectoPayoutCard />
 
-        <div className="rounded-2xl border bg-card shadow-sm overflow-hidden flex divide-x">
+        <div className="rounded-2xl border bg-card shadow-sm overflow-hidden flex divide-x" data-tour-step-id="admin-overview">
           {stats.map((s) => (
             <div key={s.label} className="flex-1 p-8 flex flex-col justify-between group transition-colors hover:bg-muted/30">
               <div className="flex items-center justify-between">

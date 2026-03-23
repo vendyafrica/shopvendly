@@ -113,9 +113,6 @@ export const adminDashboardService = {
 
     const currency = store.defaultCurrency || "UGX";
 
-    const conversionRate = trafficTotals.visits > 0 ? (paidKpis.ordersPaid / trafficTotals.visits) * 100 : 0;
-    const prevConversionRate = prevTrafficTotals.visits > 0 ? (prevKpis.ordersPaid / prevTrafficTotals.visits) * 100 : 0;
-
     const balance = paidKpis.revenuePaid * 0.97;
     const prevBalance = prevKpis.revenuePaid * 0.97;
     const paidOut = Math.max(0, balance - (paidKpis.ordersPaid * 1200));
@@ -174,11 +171,8 @@ export const adminDashboardService = {
             : "Pending";
 
       let customerName = o.customerName;
-      if (isVendly && (customerName?.toLowerCase().includes("sentomero") || customerName?.toLowerCase().includes("jeremiah"))) {
-        customerName = customerName.toLowerCase().startsWith("sentomero") ? "Jane Smith" : "Nakato Jane";
-      }
       if (isVendly && !customerName) {
-        customerName = "Jane Smith";
+        customerName = "Customer";
       }
 
       return {
