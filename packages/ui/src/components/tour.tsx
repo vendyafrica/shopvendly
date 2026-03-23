@@ -3,6 +3,7 @@
 import type { Popover as PopoverPrimitive } from "@base-ui/react/popover";
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { createPortal } from "react-dom";
@@ -150,7 +151,7 @@ function TourOverlay({
 }) {
   const router = useRouter();
   const [targets, setTargets] = React.useState<
-    { rect: DOMRect; radius: number; element: Element }[]
+    { rect: DOMRect; radius: number }[]
   >([]);
 
   // Handle next with navigation
@@ -252,7 +253,7 @@ function TourOverlay({
           });
         });
 
-        const newTargets = validElements.map(({ rect, radius, element }) => ({ rect, radius, element }));
+        const newTargets = validElements.map(({ rect, radius }) => ({ rect, radius }));
         const newTargetsJson = JSON.stringify(newTargets.map(t => ({
           l: Math.round(t.rect.left),
           t: Math.round(t.rect.top),
@@ -299,36 +300,51 @@ function TourOverlay({
 
     function debouncedUpdate() {
       if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(updatePosition, 100);
+      debounceTimer = setTimeout(updatePosition, 16);
     }
 
     // Initial update
     updatePosition();
 
-    // Keep polling for elements until found (useful after navigation)
+    // Keep polling for elements (useful after navigation)
     searchInterval = setInterval(() => {
       if (searchAttempts <= 100) {
         updatePosition();
       }
     }, 50);
 
-    // Only update on resize, NOT on scroll - this prevents the shimmering
     window.addEventListener("resize", debouncedUpdate);
+    window.addEventListener("scroll", debouncedUpdate, true);
+
+    // Use a more targeted observer - only watch for layout changes, not all mutations
+    const observer = new MutationObserver(debouncedUpdate);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: false, // Disable attribute watching to reduce noise
+    });
+
+    const resizeObserver = new ResizeObserver(debouncedUpdate);
+    // Only observe the target elements, not the entire body
+    const targetElements = document.querySelectorAll(`[data-tour-step-id*='${step.id}']`);
+    targetElements.forEach(el => resizeObserver.observe(el));
 
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
       if (searchInterval) clearInterval(searchInterval);
       window.removeEventListener("resize", debouncedUpdate);
+      window.removeEventListener("scroll", debouncedUpdate, true);
+      observer.disconnect();
+      resizeObserver.disconnect();
     };
   }, [step]);
 
-  // Lock body scroll when tour is active to keep user focused
+  // Only lock body overflow when we have targets to show
   React.useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
+    if (targets.length > 0) {
       document.body.style.overflow = "";
-    };
-  }, []);
+    }
+  }, [targets.length]);
 
   if (typeof document === "undefined") return null;
   
@@ -340,106 +356,157 @@ function TourOverlay({
     );
   }
 
-  // Calculate curly arrow path from dialog to target
-  const renderCurlyArrow = () => {
+  const renderArrow = () => {
     if (!isPlayful || !popoverRect || targets.length === 0 || !targets[0]?.rect) return null;
     
     const target = targets[0].rect;
+    
+    // Determine which side of the popover to start the arrow from
+    let startX = popoverRect.left + popoverRect.width / 2;
+    let startY = popoverRect.top + popoverRect.height / 2;
+    
     const targetCenterX = target.left + target.width / 2;
     const targetCenterY = target.top + target.height / 2;
     
-    // Start from bottom of dialog
-    const startX = popoverRect.left + popoverRect.width / 2;
-    const startY = popoverRect.bottom;
+    if (targetCenterX < popoverRect.left) {
+      startX = popoverRect.left;
+    } else if (targetCenterX > popoverRect.right) {
+      startX = popoverRect.right;
+    }
     
-    // End at target
+    if (targetCenterY < popoverRect.top) {
+      startY = popoverRect.top;
+    } else if (targetCenterY > popoverRect.bottom) {
+      startY = popoverRect.bottom;
+    }
+
     const endX = targetCenterX;
     const endY = targetCenterY;
+
+    // Create a natural curve based on the distance
+    const dist = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+    const midX = (startX + endX) / 2 + (endY - startY) * 0.2 + randomShake.x * (dist / 100);
+    const midY = (startY + endY) / 2 - (endX - startX) * 0.2 + randomShake.y * (dist / 100);
     
-    // Create a curly/loopy path like the reference image
-    const dx = endX - startX;
-    const dy = endY - startY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    
-    // Loop control points - creates the curl/loop effect
-    const loopSize = Math.min(60, dist * 0.3);
-    const loopX = startX + dx * 0.3 + loopSize + randomShake.x;
-    const loopY = startY + dy * 0.3 + randomShake.y;
-    
-    // Create path with a loop then curve to target
-    const path = `
-      M ${startX} ${startY}
-      C ${startX + loopSize} ${startY + loopSize * 0.5},
-        ${loopX} ${loopY - loopSize},
-        ${loopX} ${loopY}
-      C ${loopX} ${loopY + loopSize},
-        ${loopX - loopSize * 1.5} ${loopY + loopSize * 0.5},
-        ${startX + dx * 0.4} ${startY + dy * 0.5}
-      Q ${startX + dx * 0.7} ${startY + dy * 0.75},
-        ${endX} ${endY}
-    `;
-    
-    // Arrow head
-    const angle = Math.atan2(endY - (startY + dy * 0.75), endX - (startX + dx * 0.7));
-    const arrowSize = 12;
-    const arrow1X = endX - arrowSize * Math.cos(angle - 0.5);
-    const arrow1Y = endY - arrowSize * Math.sin(angle - 0.5);
-    const arrow2X = endX - arrowSize * Math.cos(angle + 0.5);
-    const arrow2Y = endY - arrowSize * Math.sin(angle + 0.5);
+    const path = `M ${startX} ${startY} Q ${midX} ${midY} ${endX} ${endY}`;
 
     return (
-      <>
-        <motion.path
-          d={path}
-          fill="none"
-          stroke={crayonColor}
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          filter="url(#crayon-texture)"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-        />
-        <motion.path
-          d={`M ${arrow1X} ${arrow1Y} L ${endX} ${endY} L ${arrow2X} ${arrow2Y}`}
-          fill="none"
-          stroke={crayonColor}
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          filter="url(#crayon-texture)"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.6 }}
-        />
-      </>
+      <motion.path
+        d={path}
+        fill="none"
+        stroke={crayonColor}
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeDasharray="1 5"
+        filter="url(#crayon-texture)"
+        className="opacity-80"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 1.2, ease: "easeInOut" }}
+      />
     );
   };
 
-  // For playful variant, use fixed position dialog with curly arrow
-  if (isPlayful) {
-    return createPortal(
-      <div className="fixed inset-0 z-50 pointer-events-none overflow-hidden">
-        {/* SVG for curly arrow */}
-        <svg className="absolute inset-0 size-full pointer-events-none">
-          <defs>
-            <filter id="crayon-texture" x="-20%" y="-20%" width="140%" height="140%">
-              <feTurbulence type="fractalNoise" baseFrequency="0.4" numOctaves="4" result="noise" />
-              <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" xChannelSelector="R" yChannelSelector="G" />
-            </filter>
-          </defs>
-          {renderCurlyArrow()}
-        </svg>
-        
-        {/* Fixed position dialog at top */}
-        <div 
-          ref={popoverRef}
-          className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:top-4 sm:w-[380px] p-4 sm:p-5 text-gray-900 select-none rounded-2xl bg-white shadow-2xl border border-gray-200 pointer-events-auto"
-          style={{ 
-            fontFamily: "var(--font-handwriting)",
-          }}
-        >
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 pointer-events-none overflow-hidden">
+      <svg className="absolute inset-0 size-full pointer-events-none">
+        <defs>
+          <mask id="tour-mask">
+            <rect x="0" y="0" width="100%" height="100%" fill="white" />
+            {targets.map((target, i) => (
+              <rect
+                key={i}
+                x={target.rect.left}
+                y={target.rect.top}
+                width={target.rect.width}
+                height={target.rect.height}
+                rx={target.radius}
+                fill="black"
+              />
+            ))}
+          </mask>
+          <filter id="crayon-texture" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+        <rect
+          width="100%"
+          height="100%"
+          mask="url(#tour-mask)"
+          className="fill-black opacity-20"
+        />
+        {renderArrow()}
+        {targets.map((target, i) => {
+          if (isPlayful) {
+            return (
+              <rect
+                key={i}
+                x={target.rect.left - 4}
+                y={target.rect.top - 4}
+                width={target.rect.width + 8}
+                height={target.rect.height + 8}
+                rx={target.radius + 4}
+                fill="none"
+                stroke={crayonColor}
+                strokeWidth="3"
+                strokeLinecap="round"
+                filter="url(#crayon-texture)"
+                className="opacity-70"
+              />
+            );
+          }
+          return (
+            <rect
+              key={i}
+              x={target.rect.left}
+              y={target.rect.top}
+              width={target.rect.width}
+              height={target.rect.height}
+              rx={target.radius}
+              className="stroke-primary fill-none stroke-2 outline-none"
+            />
+          );
+        })}
+      </svg>
+      {targets.length > 0 && (
+        <Popover key={step.id} open={true}>
+          <PopoverContent
+            anchor={{
+              getBoundingClientRect: () =>
+                targets[0]?.rect || {
+                  top: 0,
+                  left: 0,
+                  width: 0,
+                  height: 0,
+                  bottom: 0,
+                  right: 0,
+                  x: 0,
+                  y: 0,
+                  toJSON: () => {},
+                },
+            }}
+            className={cn(
+              "p-0 pointer-events-auto", 
+              !isPlayful && "shadow-2xl",
+              isPlayful && "bg-transparent border-none shadow-none ring-0 overflow-visible",
+              step.className
+            )}
+            side={step.side}
+            sideOffset={step.sideOffset || (isPlayful ? 20 : 8)}
+            align={step.align}
+            alignOffset={step.alignOffset}
+            render={!isPlayful ? <Card /> : <div />}
+          >
+            {isPlayful ? (
+              <div 
+                ref={popoverRef}
+                className="relative min-w-[280px] max-w-[340px] sm:min-w-[340px] sm:max-w-[420px] p-4 sm:p-5 text-gray-900 select-none rounded-2xl bg-white/95 backdrop-blur-sm shadow-xl border border-gray-100"
+                style={{ 
+                  fontFamily: "var(--font-handwriting)",
+                }}
+              >
                 <div className="flex flex-col gap-2 sm:gap-3">
                   <div className="flex items-start justify-between gap-2">
                     <h3 
@@ -507,101 +574,61 @@ function TourOverlay({
                     </div>
                   </div>
                 </div>
-        </div>
-      </div>,
-      document.body
-    );
-  }
-
-  // Standard (non-playful) variant with Popover
-  return createPortal(
-    <div className="fixed inset-0 z-50 pointer-events-none overflow-hidden">
-      <svg className="absolute inset-0 size-full pointer-events-none">
-        <defs>
-          <mask id="tour-mask">
-            <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            {targets.map((target, i) => (
-              <rect
-                key={i}
-                x={target.rect.left}
-                y={target.rect.top}
-                width={target.rect.width}
-                height={target.rect.height}
-                rx={target.radius}
-                fill="black"
-              />
-            ))}
-          </mask>
-        </defs>
-        <rect
-          width="100%"
-          height="100%"
-          mask="url(#tour-mask)"
-          className="fill-black opacity-20"
-        />
-        {targets.map((target, i) => (
-          <rect
-            key={i}
-            x={target.rect.left}
-            y={target.rect.top}
-            width={target.rect.width}
-            height={target.rect.height}
-            rx={target.radius}
-            className="stroke-primary fill-none stroke-2 outline-none"
-          />
-        ))}
-      </svg>
-      {targets.length > 0 && (
-        <Popover key={step.id} open={true}>
-          <PopoverContent
-            anchor={targets[0]?.element || {
-              getBoundingClientRect: () => ({
-                top: 0,
-                left: 0,
-                width: 0,
-                height: 0,
-                bottom: 0,
-                right: 0,
-                x: 0,
-                y: 0,
-                toJSON: () => {},
-              }),
-            }}
-            className={cn("p-0 pointer-events-auto shadow-2xl", step.className)}
-            side={step.side}
-            sideOffset={step.sideOffset || 8}
-            align={step.align || "center"}
-            alignOffset={step.alignOffset}
-            collisionPadding={20}
-            render={<Card />}
-          >
-            <CardHeader>
-              <CardTitle>{step.title}</CardTitle>
-              <CardDescription>
-                Step {currentStepIndex + 1} of {totalSteps}
-              </CardDescription>
-              <CardAction>
-                <Button variant="ghost" size="icon" onClick={onClose}>
-                  <HugeiconsIcon icon={Cancel01Icon} />
-                </Button>
-              </CardAction>
-            </CardHeader>
-            <CardContent>{step.content}</CardContent>
-            <CardFooter className="justify-between">
-              {currentStepIndex > 0 && (
-                <Button variant="outline" onClick={handlePrevious}>
-                  {step.previousLabel ?? "Previous"}
-                </Button>
-              )}
-              <Button className="ml-auto" onClick={handleNext}>
-                {step.nextLabel ?? (currentStepIndex === totalSteps - 1 ? "Finish" : "Next")}
-              </Button>
-            </CardFooter>
+              </div>
+            ) : (
+              <>
+                <CardHeader>
+                  <CardTitle>{step.title}</CardTitle>
+                  <CardDescription>
+                    Step {currentStepIndex + 1} of {totalSteps}
+                  </CardDescription>
+                  <CardAction>
+                    <Button variant="ghost" size="icon" onClick={onClose}>
+                      <HugeiconsIcon icon={Cancel01Icon} />
+                    </Button>
+                  </CardAction>
+                </CardHeader>
+                <CardContent>{step.content}</CardContent>
+                <CardFooter className="justify-between">
+                  {currentStepIndex > 0 &&
+                    (step.previousRoute ? (
+                      <Button
+                        variant="outline"
+                        onClick={onPrevious}
+                        render={<Link href={step.previousRoute} />}
+                        nativeButton={false}
+                      >
+                        {step.previousLabel ?? "Previous"}
+                      </Button>
+                    ) : (
+                      <Button variant="outline" onClick={onPrevious}>
+                        {step.previousLabel ?? "Previous"}
+                      </Button>
+                    ))}
+                  {step.nextRoute ? (
+                    <Button
+                      className="ml-auto"
+                      onClick={onNext}
+                      render={<Link href={step.nextRoute} />}
+                      nativeButton={false}
+                    >
+                      {step.nextLabel ??
+                        (currentStepIndex === totalSteps - 1 ? "Finish" : "Next")}
+                    </Button>
+                  ) : (
+                    <Button className="ml-auto" onClick={onNext}>
+                      {step.nextLabel ??
+                        (currentStepIndex === totalSteps - 1 ? "Finish" : "Next")}
+                    </Button>
+                  )}
+                </CardFooter>
+              </>
+            )}
           </PopoverContent>
         </Popover>
       )}
     </div>,
-    document.body
+    document.body,
   );
 }
 
