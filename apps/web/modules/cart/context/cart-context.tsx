@@ -114,22 +114,29 @@ const sanitizeCartItems = (items: unknown): CartItem[] => {
     if (!Array.isArray(items)) return [];
     return items
         .filter((item): item is CartItem => Boolean(item && typeof item === "object"))
-        .map((item) => ({
-            ...item,
-            product: {
-                ...item.product,
-                originalPrice: typeof item.product?.originalPrice === "number" ? item.product.originalPrice : null,
-                availableQuantity:
-                    typeof item.product?.availableQuantity === "number" && Number.isFinite(item.product.availableQuantity)
-                        ? Math.max(item.product.availableQuantity, 0)
-                        : undefined,
-                selectedOptions: normalizeSelectedOptions(item.product?.selectedOptions),
-            },
-            id: buildCartLineId(
-                item.product?.id,
-                normalizeSelectedOptions(item.product?.selectedOptions)
-            )
-        }));
+        .map((item) => {
+            const normalizedOptions = normalizeSelectedOptions(item.product?.selectedOptions);
+
+            return {
+                ...item,
+                // Always trust cart-line quantity from cart state/API payload.
+                // Never infer checkout/cart quantity from product inventory.
+                quantity:
+                    typeof item.quantity === "number" && Number.isFinite(item.quantity)
+                        ? Math.max(1, Math.floor(item.quantity))
+                        : 1,
+                product: {
+                    ...item.product,
+                    originalPrice: typeof item.product?.originalPrice === "number" ? item.product.originalPrice : null,
+                    availableQuantity:
+                        typeof item.product?.availableQuantity === "number" && Number.isFinite(item.product.availableQuantity)
+                            ? Math.max(item.product.availableQuantity, 0)
+                            : undefined,
+                    selectedOptions: normalizedOptions,
+                },
+                id: buildCartLineId(item.product?.id, normalizedOptions),
+            };
+        });
 };
 
 async function syncItemsWithLatestProducts(cartItems: CartItem[]): Promise<CartItem[]> {
