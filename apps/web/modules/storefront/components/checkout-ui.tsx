@@ -250,7 +250,7 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
 
                         {/* Customer Information */}
                         <div className="rounded-none sm:rounded-2xl border-x-0 sm:border border-neutral-200 bg-white p-6 sm:p-8 space-y-6 shadow-none sm:shadow-sm">
-                            <h2 className="text-sm uppercase tracking-widest font-semibold text-neutral-900">1. Customer Information</h2>
+                            <h2 className="text-sm uppercase tracking-widest font-semibold text-neutral-900">Customer Information</h2>
                             <div className="space-y-6">
                                 <div className="space-y-2">
                                     <label className="text-[11px] uppercase tracking-widest font-medium text-neutral-500">Full Name</label>
@@ -290,18 +290,8 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
                         </div>
 
                         {/* Payment Method */}
-                        <div className="rounded-none sm:rounded-2xl border-x-0 sm:border border-neutral-200 bg-white p-6 sm:p-8 space-y-6 shadow-none sm:shadow-sm">
-                            <h2 className="text-sm uppercase tracking-widest font-semibold text-neutral-900">2. Payment Method</h2>
-                            <div className="p-4 rounded-xl border border-primary bg-primary/5 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-full flex items-center justify-center">
-                                        <HugeiconsIcon icon={CheckmarkCircle02Icon} className="text-primary h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-neutral-900">Mobile Money</p>
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="rounded-none sm:rounded-2xl border-x-0 sm:border border-neutral-200 p-6 sm:p-8 space-y-6">
+                            <h2 className="text-sm uppercase tracking-widest font-semibold text-neutral-900">Payment</h2>
                         </div>
 
                         {/* CTA */}
@@ -310,6 +300,9 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
                                 {isSubmitting ? "Processing..." : "Place Order"}
                                 <HugeiconsIcon icon={ArrowRight01Icon} className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                             </Button>
+                            <p className="text-center text-sm text-neutral-500">
+                                After placing your order, you&apos;ll be prompted on your phone to complete the payment via mobile money.
+                            </p>
                         </div>
                     </form>
 

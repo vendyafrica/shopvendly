@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { StarIcon } from "@hugeicons/core-free-icons";
+import { FavouriteIcon } from "@hugeicons/core-free-icons";
 import { ProductActions } from "./product-actions";
 import { Product, MediaItem } from "@/modules/storefront/models/product";
 
@@ -36,11 +36,9 @@ interface ProductDetailsUIProps {
 
 export function ProductDetailsUI({ product, storePolicy, state, actions }: ProductDetailsUIProps) {
     const {
-        selectedMediaIndex,
         selectedColor,
         selectedSize,
         averageRating,
-        ratingCount,
         userRating,
         isSubmittingRating,
         hoverRating,
@@ -231,13 +229,13 @@ export function ProductDetailsUI({ product, storePolicy, state, actions }: Produ
                                             onMouseEnter={() => setHoverRating(idx + 1)}
                                             onMouseLeave={() => setHoverRating(null)}
                                             disabled={isSubmittingRating}
-                                            className="p-0.5 text-yellow-500 transition-transform duration-150 hover:-translate-y-0.5 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200 disabled:opacity-50"
+                                            className="p-0.5 transition-transform duration-150 hover:-translate-y-0.5 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:opacity-50"
                                             aria-label={`Rate ${idx + 1} stars`}
                                         >
                                             <HugeiconsIcon
-                                                icon={StarIcon}
+                                                icon={FavouriteIcon}
                                                 size={16}
-                                                className={filled ? "fill-yellow-400 text-yellow-400" : "text-neutral-300"}
+                                                className={filled ? "fill-red-500 text-red-500" : "text-neutral-300"}
                                             />
                                         </button>
                                     );
@@ -247,12 +245,6 @@ export function ProductDetailsUI({ product, storePolicy, state, actions }: Produ
                                 <span className="font-semibold text-neutral-900">
                                     {Number.isFinite(averageRating) && averageRating > 0 ? averageRating.toFixed(1) : "0.0"}
                                 </span>
-                                <span className="text-neutral-400">·</span>
-                                {userRating ? (
-                                    <span className="text-neutral-600">You rated {userRating}★</span>
-                                ) : (
-                                    <span className="text-neutral-500 cursor-pointer hover:text-neutral-800 transition-colors">Tap to rate</span>
-                                )}
                             </div>
                         </div>
                     </div>

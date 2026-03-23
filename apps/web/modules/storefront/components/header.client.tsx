@@ -8,23 +8,15 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ShoppingBag01Icon,
   FavouriteIcon,
-  Menu01Icon,
   UserLock01Icon,
   Search01Icon,
 } from "@hugeicons/core-free-icons";
 import { HeaderSkeleton } from "./skeletons";
-import { StorefrontSearch } from "./storefront-search";
 import { StorefrontSearchModal } from "./search-modal.client";
 import { useCart } from "@/modules/cart/context/cart-context";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { bricolage } from "@/utils/fonts";
 import { getRootUrl } from "@/utils/misc";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@shopvendly/ui/components/dropdown-menu";
 import { Button } from "@shopvendly/ui/components/button";
 
 export interface StoreData {
@@ -79,7 +71,6 @@ export default function StorefrontHeaderClient({
   const [loading, setLoading] = useState(!initialStore);
   const [isVisible, setIsVisible] = useState(true);
   const [isOverlay, setIsOverlay] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const lastScrollYRef = useRef(0);
 
@@ -195,95 +186,64 @@ export default function StorefrontHeaderClient({
 
   const overlayActive = isHomePath && isOverlay;
 
-  // ─── Shared icon button classes ────────────────────────────────────────────
   const iconBtnBase =
     "group relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors shrink-0 sm:h-12 sm:w-12 cursor-pointer";
   const iconBtnOverlay = `${iconBtnBase} hover:bg-white/10`;
   const iconBtnSolid = `${iconBtnBase} hover:bg-black/5`;
 
-  // ─── Dropdown menu (shared between overlay + solid headers) ────────────────
-  const MainMenu = ({ overlay }: { overlay?: boolean }) => {
-    const totalCount = storeItemCount + wishlistCount;
+  const MobileLinks = ({ overlay }: { overlay?: boolean }) => {
     return (
-      <DropdownMenu open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <DropdownMenuTrigger
-          render={
-            <button
-              type="button"
-              className={overlay ? iconBtnOverlay : iconBtnSolid}
-              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-              aria-expanded={mobileMenuOpen}
-            >
-              <HugeiconsIcon
-                icon={Menu01Icon}
-                size={24}
-                className={overlay ? "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
-              />
-              <Badge count={totalCount} dark={!overlay} />
-            </button>
-          }
+      <div className="md:hidden flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => setIsSearchModalOpen(true)}
+          className={overlay ? iconBtnOverlay : iconBtnSolid}
+          aria-label="Search"
         >
-        </DropdownMenuTrigger>
-
-        <DropdownMenuContent
-          align="end"
-          sideOffset={8}
-          className="w-72 rounded-2xl border border-black/8 bg-white p-2 text-neutral-900 shadow-2xl flex flex-col gap-1 z-50"
+          <HugeiconsIcon
+            icon={Search01Icon}
+            size={22}
+            className={overlay ? "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
+          />
+        </button>
+        <button
+          type="button"
+          onClick={() => router.push(`/${store.slug}/wishlist`)}
+          className={overlay ? iconBtnOverlay : iconBtnSolid}
+          aria-label="Liked Items"
         >
-          <div className="px-2 py-2 mb-1">
-            <StorefrontSearch 
-              storeSlug={store.slug} 
-              onSubmitted={() => setMobileMenuOpen(false)} 
-            />
-          </div>
-
-          <DropdownMenuItem
-            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); router.push(`/${store.slug}/cart`); }}
-            className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 cursor-pointer outline-none hover:bg-neutral-100 focus:bg-neutral-100"
-          >
-            <div className="flex items-center gap-3">
-              <HugeiconsIcon icon={ShoppingBag01Icon} size={18} />
-              <span>Cart</span>
-            </div>
-            {storeItemCount > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
-                {storeItemCount}
-              </span>
-            )}
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); router.push(`/${store.slug}/wishlist`); }}
-            className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 cursor-pointer outline-none hover:bg-neutral-100 focus:bg-neutral-100"
-          >
-            <div className="flex items-center gap-3">
-              <HugeiconsIcon icon={FavouriteIcon} size={18} />
-              <span>Liked Items</span>
-            </div>
-            {wishlistCount > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900 text-[10px] font-bold text-white">
-                {wishlistCount}
-              </span>
-            )}
-          </DropdownMenuItem>
-
-          <div className="my-1 border-t border-black/5" />
-
-          <DropdownMenuItem
-            render={
-              <Link 
-                href={sellerLoginUrl}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Sign in to admin
-              </Link>
-            }
-            className="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 outline-none hover:bg-neutral-100 focus:bg-neutral-100 cursor-pointer"
-          >
-          </DropdownMenuItem>
-
-        </DropdownMenuContent>
-      </DropdownMenu>
+          <HugeiconsIcon
+            icon={FavouriteIcon}
+            size={22}
+            className={overlay ? "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
+          />
+          <Badge count={wishlistCount} dark={!overlay} />
+        </button>
+        <button
+          type="button"
+          onClick={() => router.push(`/${store.slug}/cart`)}
+          className={overlay ? iconBtnOverlay : iconBtnSolid}
+          aria-label="Cart"
+        >
+          <HugeiconsIcon
+            icon={ShoppingBag01Icon}
+            size={22}
+            className={overlay ? "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
+          />
+          <Badge count={storeItemCount} dark={!overlay} />
+        </button>
+        <Link
+          href={sellerLoginUrl}
+          className={overlay ? iconBtnOverlay : iconBtnSolid}
+          aria-label="Admin"
+        >
+          <HugeiconsIcon
+            icon={UserLock01Icon}
+            size={22}
+            className={overlay ? "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
+          />
+        </Link>
+      </div>
     );
   };
 
@@ -292,62 +252,60 @@ export default function StorefrontHeaderClient({
       <div className="hidden md:flex items-center gap-1 sm:gap-1.5">
         <button
           type="button"
-          className={overlay ? iconBtnOverlay : iconBtnSolid}
           onClick={() => setIsSearchModalOpen(true)}
+          className={overlay ? iconBtnOverlay : iconBtnSolid}
           aria-label="Search"
         >
           <HugeiconsIcon
             icon={Search01Icon}
             size={24}
-            className={`${overlay ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : "text-neutral-900"} transition-colors group-hover:text-primary`}
+            className={overlay ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
           />
         </button>
 
         <button
           type="button"
-          className={overlay ? iconBtnOverlay : iconBtnSolid}
           onClick={() => router.push(`/${store.slug}/wishlist`)}
+          className={overlay ? iconBtnOverlay : iconBtnSolid}
           aria-label="Liked Items"
         >
           <HugeiconsIcon
             icon={FavouriteIcon}
             size={24}
-            className={`${overlay ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : "text-neutral-900"} transition-colors group-hover:text-primary`}
+            className={overlay ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
           />
           <Badge count={wishlistCount} dark={!overlay} />
         </button>
 
         <button
           type="button"
-          className={overlay ? iconBtnOverlay : iconBtnSolid}
           onClick={() => router.push(`/${store.slug}/cart`)}
+          className={overlay ? iconBtnOverlay : iconBtnSolid}
           aria-label="Cart"
         >
           <HugeiconsIcon
             icon={ShoppingBag01Icon}
             size={24}
-            className={`${overlay ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : "text-neutral-900"} transition-colors group-hover:text-primary`}
+            className={overlay ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
           />
           <Badge count={storeItemCount} dark={!overlay} />
         </button>
 
         <Link
           href={sellerLoginUrl}
-          className={`${overlay ? `${iconBtnOverlay} text-white/90 hover:bg-white/10` : `${iconBtnSolid} text-red-600 hover:bg-red-50`}`}
+          className={overlay ? iconBtnOverlay : iconBtnSolid}
           aria-label="Admin"
         >
           <HugeiconsIcon
             icon={UserLock01Icon}
             size={24}
-            className={`${overlay ? "drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : ""} transition-colors group-hover:text-primary`}
+            className={overlay ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
           />
         </Link>
       </div>
     );
   };
 
-  // ─── Render Conditionals ───────────────────────────────────────────────────
-  
   if (isHomePath && !headerVisible) {
     return (
       <StorefrontSearchModal
@@ -453,21 +411,7 @@ export default function StorefrontHeaderClient({
 
               <div className="flex items-center gap-1 sm:gap-1.5">
                 <DesktopActions overlay={overlayActive} />
-                <div className="md:hidden flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setIsSearchModalOpen(true)}
-                    className={overlayActive ? iconBtnOverlay : iconBtnSolid}
-                    aria-label="Search"
-                  >
-                    <HugeiconsIcon
-                      icon={Search01Icon}
-                      size={22}
-                      className={overlayActive ? "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
-                    />
-                  </button>
-                  <MainMenu overlay={overlayActive} />
-                </div>
+                <MobileLinks overlay={overlayActive} />
               </div>
             </div>
           </div>

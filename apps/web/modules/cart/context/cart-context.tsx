@@ -73,6 +73,13 @@ const normalizeSelectedOptions = (value: unknown): CartSelectedOption[] => {
         .filter((option): option is CartSelectedOption => Boolean(option));
 };
 
+const normalizeCartLineQuantity = (quantity: unknown) => {
+    if (typeof quantity === "number" && Number.isFinite(quantity)) {
+        return Math.max(1, Math.floor(quantity));
+    }
+    return 1;
+};
+
 const buildCartLineId = (productId: string, selectedOptions: CartSelectedOption[] = []) => {
     if (!productId) return crypto.randomUUID();
     if (selectedOptions.length === 0) return productId;
@@ -121,10 +128,7 @@ const sanitizeCartItems = (items: unknown): CartItem[] => {
                 ...item,
                 // Always trust cart-line quantity from cart state/API payload.
                 // Never infer checkout/cart quantity from product inventory.
-                quantity:
-                    typeof item.quantity === "number" && Number.isFinite(item.quantity)
-                        ? Math.max(1, Math.floor(item.quantity))
-                        : 1,
+                quantity: normalizeCartLineQuantity(item.quantity),
                 product: {
                     ...item.product,
                     originalPrice: typeof item.product?.originalPrice === "number" ? item.product.originalPrice : null,
@@ -227,10 +231,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                     });
                     if (res.ok) {
                         const serverItems = sanitizeCartItems(await res.json());
-                        const stored = localStorage.getItem(CART_STORAGE_KEY);
-                        const localItems = stored ? sanitizeCartItems(JSON.parse(stored)) : [];
-                        const mergedItems = mergeCartItems(serverItems, localItems);
-                        setItems(await syncItemsWithLatestProducts(mergedItems));
+                        setItems(await syncItemsWithLatestProducts(serverItems));
                     } else {
                         setItems([]);
                     }
@@ -331,7 +332,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         if (isLoaded && !session?.user) {
             localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
         } else if (isLoaded && session?.user) {
-            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+            localStorage.removeItem(CART_STORAGE_KEY);
         }
     }, [items, isLoaded, session?.user]);
 

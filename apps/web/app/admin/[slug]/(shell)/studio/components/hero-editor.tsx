@@ -15,6 +15,7 @@ interface HeroEditorProps {
 }
 
 const VIDEO_EXTENSIONS = [".mp4", ".webm", ".ogg"];
+const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".svg"];
 
 function isVideoUrl(url: string) {
     try {
@@ -26,17 +27,21 @@ function isVideoUrl(url: string) {
         const hasVideoExt = VIDEO_EXTENSIONS.some((ext) => pathname.endsWith(ext));
         if (hasVideoExt) return true;
 
-        // Treat extensionless UploadThing URLs as video by default
-        const hasNoExtension = !pathname.includes(".");
-        return hasNoExtension;
+        const hasImageHint = IMAGE_EXTENSIONS.some((ext) => pathname.endsWith(ext));
+        if (hasImageHint) return false;
+
+        if (parsed.hostname.endsWith(".ufs.sh") || parsed.hostname === "utfs.io") {
+            return false;
+        }
+
+        return false;
     } catch {
         const cleanUrl = url.split("?")[0]?.split("#")[0] ?? url;
         const lower = cleanUrl.toLowerCase();
         const hasVideoExt = VIDEO_EXTENSIONS.some((ext) => lower.endsWith(ext));
         if (hasVideoExt) return true;
 
-        const hasNoExtension = !lower.includes(".");
-        return hasNoExtension;
+        return false;
     }
 }
 
@@ -50,6 +55,27 @@ export function HeroEditor({
     const [isDragging, setIsDragging] = useState(false);
     const inputRef = useRef<HTMLInputElement | null>(null);
     const { uploadFile, isUploading } = useUpload();
+
+    const isImageUrl = (url: string) => {
+        try {
+            const parsed = new URL(url);
+            const typeParam = parsed.searchParams.get("x-ut-file-type") || parsed.searchParams.get("file-type");
+            if (typeParam && typeParam.toLowerCase().startsWith("image")) return true;
+
+            const pathname = parsed.pathname.toLowerCase();
+            if (IMAGE_EXTENSIONS.some((ext) => pathname.endsWith(ext))) return true;
+
+            if (parsed.hostname.endsWith(".ufs.sh") || parsed.hostname === "utfs.io") {
+                return true;
+            }
+
+            return false;
+        } catch {
+            const cleanUrl = url.split("?")[0]?.split("#")[0] ?? url;
+            const lower = cleanUrl.toLowerCase();
+            return IMAGE_EXTENSIONS.some((ext) => lower.endsWith(ext));
+        }
+    };
 
     const handleCoverSelected = async (file: File | null) => {
         if (!file) return;
@@ -164,6 +190,9 @@ export function HeroEditor({
                                 loop
                                 playsInline
                             />
+                        ) : isImageUrl(heroMedia[0] ?? "") ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={heroMedia[0]} alt="Current hero" className="h-full w-full object-cover" />
                         ) : (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={heroMedia[0]} alt="Current hero" className="h-full w-full object-cover" />

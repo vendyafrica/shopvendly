@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Tabs, TabsList, TabsTrigger } from "@shopvendly/ui/components/tabs";
+import Image from "next/image";
+import { cn } from "@shopvendly/ui/lib/utils";
 
 import { ProductGrid } from "./product-grid";
 import { ProductGridSkeleton } from "./skeletons";
@@ -24,14 +26,12 @@ type StoreCollection = {
   id: string;
   name: string;
   slug: string;
+  image?: string | null;
 };
 
 interface StorefrontContentSwitcherProps {
   handle?: string;
   collections?: StoreCollection[];
-  activeCollectionSlug?: string;
-  activeSection?: string;
-  hasSaleTab?: boolean;
   initialQuery?: string;
   products: StorefrontProduct[];
 }
@@ -39,9 +39,6 @@ interface StorefrontContentSwitcherProps {
 export function StorefrontContentSwitcher({
   handle = "",
   collections = [],
-  activeCollectionSlug,
-  activeSection,
-  hasSaleTab = false,
   initialQuery,
   products,
 }: StorefrontContentSwitcherProps) {
@@ -53,25 +50,19 @@ export function StorefrontContentSwitcher({
   const [, startTransition] = useTransition();
 
   const query = useMemo(() => {
-    return searchParams.get("q") ?? "";
-  }, [searchParams]);
+    return searchParams.get("q") ?? initialQuery ?? "";
+  }, [searchParams, initialQuery]);
 
   useEffect(() => {
     setDisplayProducts(products);
   }, [products]);
 
-  const currentSection = searchParams.get("section") ?? activeSection;
-  const currentCollectionSlug = searchParams.get("collection") ?? activeCollectionSlug;
+  const collectionCards = collections.filter(
+    (c): c is StoreCollection & { image: string } =>
+      typeof c.image === "string" && c.image.length > 0
+  );
 
-  const tabValue = currentSection === "new-arrivals"
-    ? "section:new-arrivals"
-    : currentSection === "sale"
-    ? "section:sale"
-    : currentCollectionSlug
-    ? `collection:${currentCollectionSlug}`
-    : "all";
-
-  const updateRouteAndProducts = async (nextCollectionSlug?: string, nextSection?: string) => {
+  const updateRouteAndProducts = async (nextCollectionSlug?: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
 
     // Clear search query when switching categories/sections
@@ -81,12 +72,6 @@ export function StorefrontContentSwitcher({
       nextParams.set("collection", nextCollectionSlug);
     } else {
       nextParams.delete("collection");
-    }
-
-    if (nextSection) {
-      nextParams.set("section", nextSection);
-    } else {
-      nextParams.delete("section");
     }
 
     const nextQueryString = nextParams.toString();
@@ -102,7 +87,6 @@ export function StorefrontContentSwitcher({
       const productUrl = new URL(`/api/storefront/${handle}/products`, window.location.origin);
       if (query) productUrl.searchParams.set("q", query);
       if (nextCollectionSlug) productUrl.searchParams.set("collection", nextCollectionSlug);
-      if (nextSection) productUrl.searchParams.set("section", nextSection);
 
       const response = await fetch(productUrl.toString(), { cache: "no-store" });
       if (!response.ok) {
@@ -121,76 +105,53 @@ export function StorefrontContentSwitcher({
   return (
     <>
       <section className="relative z-10 -mt-8 rounded-t-[28px] bg-background pt-8 shadow-[0_-1px_0_rgba(255,255,255,0.35)] sm:-mt-10 sm:pt-10 lg:-mt-12 lg:pt-12">
-        <nav
-          id="storefront-categories-rail"
-          className="w-full"
-        >
-          <div className="w-full px-4 sm:px-6 lg:px-8">
-            <div className="overflow-x-auto overflow-y-hidden scrollbar-hide">
-              <Tabs
-                value={tabValue}
-                className="mx-auto w-max"
-                onValueChange={(value) => {
-                  if (value === "all") {
-                    void updateRouteAndProducts();
-                    return;
-                  }
-
-                  if (value === "section:new-arrivals") {
-                    void updateRouteAndProducts(undefined, "new-arrivals");
-                    return;
-                  }
-
-                  if (value === "section:sale") {
-                    void updateRouteAndProducts(undefined, "sale");
-                    return;
-                  }
-
-                  if (value.startsWith("collection:")) {
-                    const slug = value.replace("collection:", "");
-                    void updateRouteAndProducts(slug);
-                  }
-                }}
+        <nav id="storefront-categories-rail" className="w-full px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl space-y-4 sm:space-y-5">
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                Categories
+              </p>
+              <button
+                type="button"
+                onClick={() => void updateRouteAndProducts()}
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                <TabsList
-                  variant="line"
-                  className="mx-auto flex min-w-max items-center justify-center gap-6 border-0 bg-transparent p-0 text-center"
-                >
-                  <TabsTrigger
-                    value="all"
-                    className="h-auto flex-none rounded-none border-0 px-0 py-2 text-sm font-medium text-foreground/45 hover:text-foreground/70 data-active:bg-transparent! data-active:text-foreground! data-active:shadow-none after:bottom-0"
-                  >
-                    All Products
-                  </TabsTrigger>
-
-                  <TabsTrigger
-                    value="section:new-arrivals"
-                    className="h-auto flex-none rounded-none border-0 px-0 py-2 text-sm font-medium text-foreground/45 hover:text-foreground/70 data-active:bg-transparent! data-active:text-foreground! data-active:shadow-none after:bottom-0"
-                  >
-                    New Arrivals
-                  </TabsTrigger>
-
-                  {hasSaleTab ? (
-                    <TabsTrigger
-                      value="section:sale"
-                      className="h-auto flex-none rounded-none border-0 px-0 py-2 text-sm font-medium text-foreground/45 hover:text-foreground/70 data-active:bg-transparent! data-active:text-foreground! data-active:shadow-none after:bottom-0"
-                    >
-                      On Sale
-                    </TabsTrigger>
-                  ) : null}
-
-                  {collections.map((collection) => (
-                    <TabsTrigger
-                      key={collection.id}
-                      value={`collection:${collection.slug}`}
-                      className="h-auto max-w-[160px] flex-none rounded-none border-0 px-0 py-2 text-sm font-medium text-foreground/45 hover:text-foreground/70 data-active:bg-transparent! data-active:text-foreground! data-active:shadow-none after:bottom-0"
-                    >
-                      {collection.name}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
+                All Products
+              </button>
             </div>
+
+            {collectionCards.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:justify-between sm:gap-4">
+                {collectionCards.map((collection, index) => {
+                  const isLastOdd = collectionCards.length % 2 === 1 && index === collectionCards.length - 1;
+                  return (
+                    <button
+                      key={collection.id}
+                      type="button"
+                      onClick={() => void updateRouteAndProducts(collection.slug)}
+                      className={cn(
+                        "relative h-[120px] overflow-hidden rounded-2xl sm:h-[110px] sm:flex-1 sm:min-w-[200px] sm:max-w-[280px]",
+                        isLastOdd && "col-span-2 mx-auto w-1/2 sm:col-span-1 sm:mx-0 sm:w-auto"
+                      )}
+                    >
+                      <Image
+                        src={collection.image}
+                        alt={collection.name}
+                        fill
+                        sizes="(max-width: 640px) 50vw, 280px"
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+                      <div className="absolute bottom-3 left-3">
+                        <span className="text-sm font-medium text-white drop-shadow-md">
+                          {collection.name}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
         </nav>
       </section>

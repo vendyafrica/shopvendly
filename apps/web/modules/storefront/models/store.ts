@@ -4,6 +4,7 @@ export interface StoreCollection {
     id: string;
     name: string;
     slug: string;
+    image?: string | null;
 }
 
 export interface StorefrontProduct extends Pick<Product, 'id' | 'slug' | 'name' | 'price' | 'originalPrice' | 'currency'> {

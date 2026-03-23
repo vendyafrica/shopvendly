@@ -130,18 +130,6 @@ export function ProductActions({ product, selectedOptions = [] }: ProductActions
     setTimeout(() => setIsAdded(false), 2000);
   };
 
-  const handleBuyNow = () => {
-    if (!product || isOutOfStock) return;
-    const searchParams = new URLSearchParams();
-    searchParams.set("storeId", product.store.id);
-    searchParams.set("buyNowProductId", product.id);
-    searchParams.set("buyNowQty", quantity.toString());
-    if (selectedOptions.length > 0) {
-      searchParams.set("buyNowOptions", JSON.stringify(selectedOptions));
-    }
-    window.location.href = `/${product.store.slug}/checkout?${searchParams.toString()}`;
-  };
-
   const wishlisted = isInWishlist(product.id);
 
   return (
@@ -182,10 +170,10 @@ export function ProductActions({ product, selectedOptions = [] }: ProductActions
       </div>
 
       <div className="pt-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <div className="grid grid-cols-1 gap-3 mb-3">
             <Button
                 onClick={handleAddToCart}
-                className="h-14 w-full rounded-xl border border-neutral-200 bg-white px-5 text-sm font-semibold uppercase tracking-[0.22em] text-neutral-900 transition-colors hover:bg-neutral-50"
+                className="h-14 w-full rounded-xl border border-neutral-200 px-5 text-sm font-semibold uppercase tracking-[0.22em] text-white transition-colors hover:bg-neutral-50"
                 disabled={isAdded || isOutOfStock || isAlreadyInCart}
             >
             {isAlreadyInCart ? (
@@ -201,14 +189,6 @@ export function ProductActions({ product, selectedOptions = [] }: ProductActions
             ) : (
                 isOutOfStock ? "Sold out" : "Add to Cart"
             )}
-            </Button>
-
-            <Button
-                onClick={handleBuyNow}
-                className="h-14 w-full rounded-xl bg-primary px-5 text-sm font-semibold uppercase tracking-[0.22em] text-white transition-colors hover:bg-primary/90"
-                disabled={isOutOfStock}
-            >
-                Buy Now
             </Button>
         </div>
 

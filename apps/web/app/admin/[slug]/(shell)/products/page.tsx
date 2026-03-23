@@ -195,14 +195,24 @@ export default function ProductsPage() {
     const selected = Object.keys(rowSelection);
     if (selected.length === 0) return;
     try {
-      await Promise.all(
-        selected.map((id) =>
-          updateProductMutation.mutateAsync({
-            id,
-            data: { status: "ready" },
-          })
-        )
-      );
+      if (!bootstrap?.storeId) return;
+
+      const response = await fetch("/api/products/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storeId: bootstrap.storeId,
+          ids: selected,
+          action: "publish",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to publish products");
+      }
+
+      invalidate(bootstrap.storeId);
+      void refetch();
       setRowSelection({});
     } catch (e) {
       console.error("Failed to publish products", e);

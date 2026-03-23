@@ -35,6 +35,19 @@ function hasLikelyImageExtension(url: string) {
   return IMAGE_EXTENSIONS.some((ext) => lower.endsWith(ext));
 }
 
+function isImageUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    const typeParam = parsed.searchParams.get("x-ut-file-type") || parsed.searchParams.get("file-type");
+    if (typeParam && typeParam.toLowerCase().startsWith("image")) return true;
+
+    const pathname = parsed.pathname.toLowerCase();
+    return IMAGE_EXTENSIONS.some((ext) => pathname.endsWith(ext));
+  } catch {
+    return hasLikelyImageExtension(url);
+  }
+}
+
 function isVideoUrl(url: string) {
   try {
     const parsed = new URL(url);
@@ -63,7 +76,7 @@ export function Hero({ store }: HeroProps) {
   const heroMedia = Array.isArray(store.heroMedia) ? store.heroMedia : [];
   const mediaUrl = heroMedia[0] || FALLBACK_HERO_MEDIA;
   const isUploadThing = typeof mediaUrl === "string" && isUploadThingBlobUrl(mediaUrl);
-  const looksLikeImage = typeof mediaUrl === "string" && hasLikelyImageExtension(mediaUrl);
+  const looksLikeImage = typeof mediaUrl === "string" && isImageUrl(mediaUrl);
 
   const isVideo =
     typeof mediaUrl === "string" &&
