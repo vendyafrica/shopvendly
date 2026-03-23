@@ -156,6 +156,8 @@ export const adminDashboardService = {
       }
     ];
 
+    const isVendly = store.slug === "vendly";
+
     const transactionRows = recentOrders.map((o: any) => {
       const itemLabel =
         o.items?.length === 1
@@ -171,10 +173,18 @@ export const adminDashboardService = {
             ? "Failed"
             : "Pending";
 
+      let customerName = o.customerName;
+      if (isVendly && (customerName?.toLowerCase().includes("sentomero") || customerName?.toLowerCase().includes("jeremiah"))) {
+        customerName = customerName.toLowerCase().startsWith("sentomero") ? "Jane Smith" : "Nakato Jane";
+      }
+      if (isVendly && !customerName) {
+        customerName = "Jane Smith";
+      }
+
       return {
         id: o.orderNumber,
         actualId: o.id,
-        customer: o.customerName,
+        customer: customerName || "—",
         product: itemLabel || "—",
         amount: formatCurrency(o.totalAmount, o.currency || currency),
         status: status as "Completed" | "Failed" | "Pending",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useAppSession } from "@/contexts/app-session-context";
+import { useParams } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@shopvendly/ui/components/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
 import { Button } from "@shopvendly/ui/components/button";
@@ -9,17 +10,23 @@ import { User02Icon, Mail01Icon, Calendar03Icon } from "@hugeicons/core-free-ico
 
 export default function ProfilePage() {
   const { session } = useAppSession();
+  const params = useParams();
   const user = session?.user;
+  const isVendly = params.slug === "vendly";
 
-  if (!user) return null;
+  if (!user && !isVendly) return null;
 
-  const fullName = user.name || "Admin User";
+  const fullName = isVendly ? "Jane Smith" : (user?.name || "Admin User");
   const firstName = fullName.split(" ")[0] || "A";
-  const avatarUrl = user.image || "";
+  const avatarUrl = isVendly ? "" : (user?.image || "");
 
-  const memberSince = user.createdAt
-    ? new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(new Date(user.createdAt))
-    : "—";
+  const memberSince = isVendly 
+    ? "March 2026"
+    : (user?.createdAt
+      ? new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(new Date(user.createdAt))
+      : "—");
+  
+  const email = isVendly ? "jane.smith@example.com" : user?.email;
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto py-6">
@@ -77,7 +84,7 @@ export default function ProfilePage() {
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">Email Address</p>
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/30">
                   <HugeiconsIcon icon={Mail01Icon} size={18} className="text-muted-foreground" />
-                  <span className="font-medium">{user.email}</span>
+                  <span className="font-medium">{email}</span>
                 </div>
               </div>
 

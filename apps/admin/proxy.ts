@@ -5,6 +5,8 @@ export default function proxy(request: NextRequest) {
   const sessionToken = request.cookies.get("vendly.session_token")?.value ||
     request.cookies.get("__Secure-vendly.session_token")?.value;
 
+  const isVendlyDemoRoute = request.nextUrl.pathname.startsWith("/admin/vendly");
+
   const isAuthRoute = request.nextUrl.pathname.startsWith("/sign-in") ||
     request.nextUrl.pathname.startsWith("/sign-up") ||
     request.nextUrl.pathname.startsWith("/login") ||
@@ -15,7 +17,8 @@ export default function proxy(request: NextRequest) {
 
   const isPublic = request.nextUrl.pathname === "/favicon.ico" ||
     request.nextUrl.pathname.startsWith("/_next") ||
-    request.nextUrl.pathname.startsWith("/images");
+    request.nextUrl.pathname.startsWith("/images") ||
+    isVendlyDemoRoute;
 
   // Allow public routes
   if (isPublic) {

@@ -1,7 +1,7 @@
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { db, orders, stores, and, eq, isNull, sql, desc } from "@shopvendly/db";
+import { db, orders, and, eq, isNull, sql, desc } from "@shopvendly/db";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
 
 export async function GET(request: NextRequest) {
@@ -52,6 +52,8 @@ export async function GET(request: NextRequest) {
 
     const currency = access.store.defaultCurrency || "USD";
 
+    const isVendly = access.store.slug === "vendly";
+
     const customers = rowsAgg.map((r) => {
       const last = r.lastOrderAt ? new Date(r.lastOrderAt) : null;
       const first = r.firstOrderAt ? new Date(r.firstOrderAt) : null;
@@ -63,9 +65,27 @@ export async function GET(request: NextRequest) {
             ? "Churn Risk"
             : "Active";
 
+      let name = r.name || "—";
+      let email = r.email || "—";
+
+      if (isVendly) {
+        if (name.toLowerCase().includes("sentomero") || name.toLowerCase().includes("jeremiah")) {
+          // Semi-randomize but keep consistent placeholders as requested
+          if (name.toLowerCase().startsWith("sentomero")) {
+            name = "Jane Smith";
+          } else {
+            name = "Nakato Jane";
+          }
+          email = "customer@example.com";
+        } else if (name === "—") {
+          name = "Jane Smith";
+          email = "customer@example.com";
+        }
+      }
+
       return {
-        name: r.name || "—",
-        email: r.email || "—",
+        name,
+        email,
         orders: r.orders,
         totalSpend: Number(r.totalSpend || 0),
         currency,

@@ -181,13 +181,20 @@ export function AppSidebar({
   const { session } = useAppSession();
   const router = useRouter();
 
-  const fullName = session?.user?.name || "Admin";
+  const isVendly = bootstrap?.storeSlug === "vendly";
+  const fullName = isVendly ? "Jane Smith" : (session?.user?.name || "Admin");
   const firstName = fullName.split(" ")[0] ?? "A";
-  const avatarUrl = session?.user?.image || "";
+  const avatarUrl = isVendly ? "" : (session?.user?.image || "");
   const storeName = bootstrap?.storeName || "Vendly";
   const storefrontUrl = bootstrap?.storeSlug ? getStorefrontUrl(bootstrap.storeSlug) : "/";
+  const isDemoSession = isVendly && session?.user?.id === "demo-user-id";
 
   const handleSignOut = async () => {
+    if (isDemoSession) {
+      router.push(storefrontUrl);
+      return;
+    }
+
     await signOut();
     router.push(storefrontUrl);
   };
@@ -377,6 +384,7 @@ export function AppSidebar({
             <SidebarMenuButton
               size="lg"
               onClick={handleSignOut}
+              disabled={isDemoSession}
               className="h-10 w-full px-3 hover:bg-rose-50/50 text-rose-600 transition-all hover:text-rose-700 font-medium group"
             >
               <HugeiconsIcon icon={Logout01Icon} size={18} className="group-hover:translate-x-0.5 transition-transform" />

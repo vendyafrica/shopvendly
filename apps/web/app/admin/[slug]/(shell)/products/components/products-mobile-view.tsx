@@ -149,7 +149,6 @@ export function ProductsMobileView({
         setIsSelectionMode(false);
     };
 
-    const isProductSelectable = (product: ProductTableRow) => product.status !== "active";
 
     const publishProducts = async (items: ProductTableRow[]) => {
         if (!onStatusChange || items.length === 0) return;

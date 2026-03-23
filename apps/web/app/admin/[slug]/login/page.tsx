@@ -14,10 +14,15 @@ export default async function TenantAdminLoginPage({
 }) {
   const { slug } = await params;
   const { next, verified, error } = await searchParams;
+  const adminPath = `/admin/${slug}`;
+
+  if (slug === "vendly") {
+    const safeNext = next && next.startsWith(adminPath) ? next : `${adminPath}/`;
+    redirect(safeNext);
+  }
 
   const headerList = await headers();
   const session = await auth.api.getSession({ headers: headerList });
-  const adminPath = `/admin/${slug}`;
   const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
   const proto = headerList.get("x-forwarded-proto") ?? "https";
   const origin = host ? `${proto}://${host}` : getRootUrl();

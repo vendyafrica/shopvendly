@@ -13,6 +13,18 @@ import { AppSidebar } from "@/modules/admin/components/app-sidebar";
 import { AdminMobileDock } from "@/modules/admin/components/admin-mobile-dock";
 import { CollectoPayoutModal } from "@/modules/admin/components/collecto-payout-modal";
 
+const DEMO_ADMIN_USER = {
+  id: "demo-user-id",
+  name: "Jane Smith",
+  email: "jane.smith@example.com",
+  image: null,
+  createdAt: new Date().toISOString(),
+};
+
+type DemoAdminSession = {
+  user: typeof DEMO_ADMIN_USER;
+};
+
 export default async function TenantAdminLayout({
   children,
   params,
@@ -43,7 +55,14 @@ async function TenantAdminLayoutInner({
 }) {
   const headerList = await headers();
 
-  const session = await auth.api.getSession({ headers: headerList });
+  let session = await auth.api.getSession({ headers: headerList });
+
+  if (slug === "vendly" && !session?.user) {
+    // Provide a mock session for the demo store
+    session = {
+      user: DEMO_ADMIN_USER,
+    } satisfies DemoAdminSession;
+  }
 
   if (!session?.user) {
     redirect(`/admin/${slug}/login?next=${encodeURIComponent(basePath)}`);
