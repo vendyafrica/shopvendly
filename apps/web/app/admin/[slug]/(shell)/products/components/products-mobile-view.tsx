@@ -4,12 +4,13 @@ import * as React from "react";
 import Image from "next/image";
 import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ShoppingBag01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
+import { ShoppingBag01Icon, Delete02Icon, Tick01Icon, CheckmarkCircle02Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import type { ProductTableRow } from "@/modules/products/hooks/use-products";
 import { type TenantBootstrap } from "@/modules/admin/context";
 import { isLikelyVideoMedia } from "@/utils/misc";
 import { useRouter } from "next/navigation";
 import { StoreAvatar } from "@/components/store-avatar";
+import { cn } from "@shopvendly/ui/lib/utils";
 
 function formatMoney(amount: number, currency: string) {
     return new Intl.NumberFormat("en-KE", {
@@ -102,9 +103,7 @@ interface ProductsMobileViewProps {
     bootstrap: TenantBootstrap | null;
     rows: ProductTableRow[];
     isLoading?: boolean;
-    onEdit?: (id: string) => void;
     onDelete: (id: string) => void;
-    onAddSelect?: (mode: "single" | "multiple") => void;
     onStatusChange?: (productId: string, newStatus: ProductTableRow["status"]) => void;
     statusUpdatingProductId?: string | null;
     isPublishing?: boolean;
@@ -114,10 +113,14 @@ export function ProductsMobileView({
     bootstrap,
     rows,
     onDelete,
+    onStatusChange,
+    statusUpdatingProductId,
+    isPublishing = false,
     isLoading = false,
 }: ProductsMobileViewProps) {
 
     const router = useRouter();
+    const [selectedIds, setSelectedIds] = React.useState<Record<string, boolean>>({});
 
     if (isLoading) {
         return <ProductsMobileSkeleton />;
@@ -134,6 +137,24 @@ export function ProductsMobileView({
         router.push(`${AdminHref}/products/${id}`);
     };
 
+    const selectedCount = Object.values(selectedIds).filter(Boolean).length;
+
+    const toggleSelected = (id: string) => {
+        setSelectedIds((prev) => ({ ...prev, [id]: !prev[id] }));
+    };
+
+    const clearSelection = () => setSelectedIds({});
+
+    const isProductSelectable = (product: ProductTableRow) => product.status !== "active";
+
+    const publishProducts = async (items: ProductTableRow[]) => {
+        if (!onStatusChange || items.length === 0) return;
+        await Promise.all(items.map((product) => onStatusChange(product.id, "active")));
+        clearSelection();
+    };
+
+    const selectedProducts = rows.filter((product) => selectedIds[product.id]);
+
     return (
         <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden bg-slate-50/50 min-h-screen font-sans">
             {/* Elegant Header */}
@@ -148,15 +169,37 @@ export function ProductsMobileView({
                     <h1 className="font-semibold text-[15px] tracking-tight text-slate-800 truncate max-w-[150px]">{storeName}</h1>
                 </div>
 
-                <Button
-                    size="sm"
-                    className="h-8 gap-1.5 hover:bg-slate-800 text-white font-medium text-[13px] rounded-md px-5 shadow-sm active:scale-95 transition-all"
-                    onClick={handleAddProduct}
-                >
-                    <HugeiconsIcon icon={ShoppingBag01Icon} className="size-3.5" />
-                    Add
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 gap-1.5 hover:bg-slate-800 font-medium text-[13px] rounded-md px-4 shadow-sm active:scale-95 transition-all"
+                        onClick={() => void publishProducts(selectedProducts.length > 0 ? selectedProducts : rows)}
+                        disabled={isPublishing || rows.length === 0}
+                    >
+                        <HugeiconsIcon icon={Tick01Icon} className="size-3.5" />
+                        Publish{selectedCount > 0 ? ` (${selectedCount})` : " All"}
+                    </Button>
+
+                    <Button
+                        size="sm"
+                        className="h-8 gap-1.5 hover:bg-slate-800 text-white font-medium text-[13px] rounded-md px-5 shadow-sm active:scale-95 transition-all"
+                        onClick={handleAddProduct}
+                    >
+                        <HugeiconsIcon icon={ShoppingBag01Icon} className="size-3.5" />
+                        Add
+                    </Button>
+                </div>
             </div>
+
+            {selectedCount > 0 && (
+                <div className="mx-3 mb-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 flex items-center justify-between">
+                    <span>{selectedCount} selected</span>
+                    <button type="button" onClick={clearSelection} className="font-medium text-slate-900">
+                        Clear
+                    </button>
+                </div>
+            )}
 
             {/* Product Grid (2 columns) - Starting immediately */}
             <div className="grid grid-cols-2 gap-3 px-3 py-4 pb-12">
@@ -172,10 +215,33 @@ export function ProductsMobileView({
                     rows.map((product) => (
                         <div
                             key={product.id}
-                            className="group flex flex-col overflow-hidden rounded-md border border-border/50 bg-white shadow-sm transition-all active:scale-[0.98] hover:shadow-md cursor-pointer"
+                            className={cn(
+                                "group flex flex-col overflow-hidden rounded-md border border-border/50 bg-white shadow-sm transition-all active:scale-[0.98] hover:shadow-md cursor-pointer",
+                                selectedIds[product.id] && "ring-2 ring-primary ring-offset-2"
+                            )}
                             onClick={() => handleEditProduct(product.id)}
                         >
                             <div className="relative aspect-square w-full overflow-hidden bg-muted/10 border-b border-border/30">
+                                {isProductSelectable(product) ? (
+                                    <button
+                                        type="button"
+                                        className="absolute left-2 top-2 z-10 rounded-full p-1.5"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleSelected(product.id);
+                                        }}
+                                        aria-label={selectedIds[product.id] ? "Deselect product" : "Select product"}
+                                    >
+                                        <HugeiconsIcon
+                                            icon={selectedIds[product.id] ? CheckmarkCircle02Icon : Cancel01Icon}
+                                            className={selectedIds[product.id] ? "size-4 text-primary" : "size-4 text-rose-500"}
+                                        />
+                                    </button>
+                                ) : (
+                                    <div className="absolute left-2 top-2 z-10 rounded-full p-1.5">
+                                        <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4 text-emerald-500" />
+                                    </div>
+                                )}
                                 <ProductThumbnail
                                     url={product.thumbnailUrl}
                                     name={product.name}
@@ -206,20 +272,37 @@ export function ProductsMobileView({
                                     <div className="text-[13px] font-semibold text-slate-900">
                                         {formatMoney(product.priceAmount, product.currency)}
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon-xs"
-                                        className="size-7 rounded-full text-rose-500 hover:bg-rose-50 active:bg-rose-100 transition-colors"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
-                                                onDelete(product.id);
-                                            }
-                                        }}
-                                    >
-                                        <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
-                                    </Button>
+                                    <div className="flex items-center gap-1">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon-xs"
+                                            className="size-7 rounded-full text-primary hover:bg-primary/10 active:bg-primary/15 transition-colors"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                void publishProducts([product]);
+                                            }}
+                                            disabled={isPublishing || product.status === "active"}
+                                        >
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon-xs"
+                                            className="size-7 rounded-full text-rose-500 hover:bg-rose-50 active:bg-rose-100 transition-colors"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
+                                                    onDelete(product.id);
+                                                }
+                                            }}
+                                        >
+                                            <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
+                                        </Button>
+                                    </div>
                                 </div>
+
+                                {statusUpdatingProductId === product.id && (
+                                    <p className="text-[11px] text-primary font-medium">Publishing...</p>
+                                )}
                             </div>
                         </div>
                     ))

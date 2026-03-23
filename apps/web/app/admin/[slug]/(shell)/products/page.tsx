@@ -503,10 +503,11 @@ export default function ProductsPage() {
           <ProductsMobileView
             bootstrap={bootstrap}
             rows={rows}
+            isLoading={isLoading}
             onDelete={handleDelete}
             onStatusChange={handleMobileStatusChange}
             statusUpdatingProductId={mobileStatusUpdatingId}
-            isPublishing={false}
+            isPublishing={Boolean(mobileStatusUpdatingId)}
           />
         </div>
       </div>
