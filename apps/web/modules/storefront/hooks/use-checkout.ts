@@ -19,6 +19,13 @@ function calculateCollectoFee(amount: number) {
     return Math.round(Math.max(amount, 0) * COLLECTO_FEE_RATE);
 }
 
+function resolveCartQuantity(quantity: unknown) {
+    if (typeof quantity === "number" && Number.isFinite(quantity)) {
+        return Math.max(1, Math.floor(quantity));
+    }
+    return 1;
+}
+
 export function useCheckout() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -28,7 +35,7 @@ export function useCheckout() {
 
     const storeId = searchParams.get("storeId");
     const buyNowProductId = searchParams.get("buyNowProductId");
-    const buyNowQty = parseInt(searchParams.get("buyNowQty") || "1", 10);
+    const buyNowQty = Number.parseInt(searchParams.get("buyNowQty") || "1", 10);
     const buyNowOptionsRaw = searchParams.get("buyNowOptions");
     
     const { itemsByStore, clearStoreFromCart, isLoaded } = useCart();
@@ -124,7 +131,7 @@ export function useCheckout() {
                     
                     setBuyNowItem({
                         id: `buynow-${data.id}`,
-                        quantity: buyNowQty,
+                        quantity: resolveCartQuantity(buyNowQty),
                         product: {
                             id: data.id,
                             name: data.name || data.productName,
@@ -148,7 +155,12 @@ export function useCheckout() {
 
     const storeItems = useMemo(() => {
         if (buyNowItem) return [buyNowItem];
-        return storeId ? itemsByStore[storeId] ?? [] : [];
+        return storeId
+            ? (itemsByStore[storeId] ?? []).map((item) => ({
+                  ...item,
+                  quantity: resolveCartQuantity(item.quantity),
+              }))
+            : [];
     }, [itemsByStore, storeId, buyNowItem]);
     
     const store = storeItems?.[0]?.store;
