@@ -121,6 +121,7 @@ export function ProductsMobileView({
 
     const router = useRouter();
     const [selectedIds, setSelectedIds] = React.useState<Record<string, boolean>>({});
+    const [isSelectionMode, setIsSelectionMode] = React.useState(false);
 
     if (isLoading) {
         return <ProductsMobileSkeleton />;
@@ -143,7 +144,10 @@ export function ProductsMobileView({
         setSelectedIds((prev) => ({ ...prev, [id]: !prev[id] }));
     };
 
-    const clearSelection = () => setSelectedIds({});
+    const clearSelection = () => {
+        setSelectedIds({});
+        setIsSelectionMode(false);
+    };
 
     const isProductSelectable = (product: ProductTableRow) => product.status !== "active";
 
@@ -172,13 +176,18 @@ export function ProductsMobileView({
                 <div className="flex items-center gap-2">
                     <Button
                         size="sm"
-                        variant="outline"
-                        className="h-8 gap-1.5 hover:bg-slate-800 font-medium text-[13px] rounded-md px-4 shadow-sm active:scale-95 transition-all"
-                        onClick={() => void publishProducts(selectedProducts.length > 0 ? selectedProducts : rows)}
-                        disabled={isPublishing || rows.length === 0}
+                        variant={isSelectionMode ? "default" : "outline"}
+                        className={cn(
+                             "h-8 gap-1.5 font-medium text-[13px] rounded-md px-4 shadow-sm active:scale-95 transition-all",
+                             isSelectionMode ? "bg-slate-900 text-white hover:bg-slate-800" : "hover:bg-slate-50"
+                        )}
+                        onClick={() => {
+                            if (isSelectionMode) clearSelection();
+                            else setIsSelectionMode(true);
+                        }}
+                        disabled={rows.length === 0}
                     >
-                        <HugeiconsIcon icon={Tick01Icon} className="size-3.5" />
-                        Publish{selectedCount > 0 ? ` (${selectedCount})` : " All"}
+                        {isSelectionMode ? "Done" : "Select"}
                     </Button>
 
                     <Button
@@ -193,11 +202,39 @@ export function ProductsMobileView({
             </div>
 
             {selectedCount > 0 && (
-                <div className="mx-3 mb-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 flex items-center justify-between">
-                    <span>{selectedCount} selected</span>
-                    <button type="button" onClick={clearSelection} className="font-medium text-slate-900">
-                        Clear
-                    </button>
+                <div className="mx-3 mb-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-1">
+                    <div className="flex items-center gap-2">
+                         <span className="font-semibold text-slate-900">{selectedCount}</span>
+                         <span className="text-slate-500">selected</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button 
+                            type="button" 
+                            onClick={() => void publishProducts(selectedProducts)}
+                            className="font-medium text-primary flex items-center gap-1 active:scale-95 transition-transform"
+                            disabled={isPublishing}
+                        >
+                            <HugeiconsIcon icon={Tick01Icon} className="size-3" />
+                            Publish
+                        </button>
+                        <button 
+                            type="button" 
+                            onClick={() => {
+                                if (confirm(`Delete ${selectedCount} items?`)) {
+                                    selectedProducts.forEach(p => onDelete(p.id));
+                                    clearSelection();
+                                }
+                            }}
+                            className="font-medium text-rose-500 flex items-center gap-1 active:scale-95 transition-transform"
+                        >
+                            <HugeiconsIcon icon={Delete02Icon} className="size-3" />
+                            Delete
+                        </button>
+                        <div className="w-px h-3 bg-slate-200 mx-1" />
+                        <button type="button" onClick={clearSelection} className="font-medium text-slate-400">
+                            Clear
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -217,30 +254,33 @@ export function ProductsMobileView({
                             key={product.id}
                             className={cn(
                                 "group flex flex-col overflow-hidden rounded-md border border-border/50 bg-white shadow-sm transition-all active:scale-[0.98] hover:shadow-md cursor-pointer",
-                                selectedIds[product.id] && "ring-2 ring-primary ring-offset-2"
+                                selectedIds[product.id] && "ring-2 ring-primary ring-offset-2",
+                                isSelectionMode && product.status === "active" && "opacity-40 pointer-events-none grayscale-[0.5]"
                             )}
-                            onClick={() => handleEditProduct(product.id)}
+                             onClick={() => {
+                                 if (isSelectionMode && product.status !== "active") toggleSelected(product.id);
+                                 else handleEditProduct(product.id);
+                             }}
                         >
                             <div className="relative aspect-square w-full overflow-hidden bg-muted/10 border-b border-border/30">
-                                {isProductSelectable(product) ? (
-                                    <button
-                                        type="button"
-                                        className="absolute left-2 top-2 z-10 rounded-full p-1.5"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            toggleSelected(product.id);
-                                        }}
-                                        aria-label={selectedIds[product.id] ? "Deselect product" : "Select product"}
-                                    >
-                                        <HugeiconsIcon
-                                            icon={selectedIds[product.id] ? CheckmarkCircle02Icon : Cancel01Icon}
-                                            className={selectedIds[product.id] ? "size-4 text-primary" : "size-4 text-rose-500"}
-                                        />
-                                    </button>
-                                ) : (
-                                    <div className="absolute left-2 top-2 z-10 rounded-full p-1.5">
-                                        <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4 text-emerald-500" />
-                                    </div>
+                                { (isSelectionMode || selectedIds[product.id] || product.status === "active") && (
+                                     <div className="absolute left-2 top-2 z-10 rounded-full p-1.5">
+                                         {product.status === "active" ? (
+                                              <div className="rounded-full bg-white/90 p-1.5 shadow-sm opacity-60">
+                                                  <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4 text-emerald-500" />
+                                              </div>
+                                         ) : (
+                                              <div className={cn(
+                                                  "rounded-full p-1.5 shadow-sm transition-all",
+                                                  selectedIds[product.id] ? "bg-primary text-white scale-110" : "bg-white/90 text-rose-500"
+                                              )}>
+                                                  <HugeiconsIcon 
+                                                      icon={selectedIds[product.id] ? CheckmarkCircle02Icon : Cancel01Icon} 
+                                                      className="size-4" 
+                                                  />
+                                              </div>
+                                         )}
+                                     </div>
                                 )}
                                 <ProductThumbnail
                                     url={product.thumbnailUrl}
@@ -272,32 +312,35 @@ export function ProductsMobileView({
                                     <div className="text-[13px] font-semibold text-slate-900">
                                         {formatMoney(product.priceAmount, product.currency)}
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon-xs"
-                                            className="size-7 rounded-full text-primary hover:bg-primary/10 active:bg-primary/15 transition-colors"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                void publishProducts([product]);
-                                            }}
-                                            disabled={isPublishing || product.status === "active"}
-                                        >
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon-xs"
-                                            className="size-7 rounded-full text-rose-500 hover:bg-rose-50 active:bg-rose-100 transition-colors"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
-                                                    onDelete(product.id);
-                                                }
-                                            }}
-                                        >
-                                            <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
-                                        </Button>
-                                    </div>
+                                    {!isSelectionMode && (
+                                        <div className="flex items-center gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon-xs"
+                                                className="size-7 rounded-full text-primary hover:bg-primary/10 active:bg-primary/15 transition-colors"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    void publishProducts([product]);
+                                                }}
+                                                disabled={isPublishing || product.status === "active"}
+                                            >
+                                                <HugeiconsIcon icon={Tick01Icon} className="size-3.5" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon-xs"
+                                                className="size-7 rounded-full text-rose-500 hover:bg-rose-50 active:bg-rose-100 transition-colors"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
+                                                        onDelete(product.id);
+                                                    }
+                                                }}
+                                            >
+                                                <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {statusUpdatingProductId === product.id && (
