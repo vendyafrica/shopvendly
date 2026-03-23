@@ -8,17 +8,16 @@ import {
   Settings01Icon,
   Home01Icon,
   ShoppingBag01Icon,
-  Loading03Icon, Notification01Icon, StarsIcon
+  GroupLayersIcon,
+  Loading03Icon,
+  Notification01Icon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@shopvendly/ui/lib/utils";
-import { useTour } from "@shopvendly/ui/components/tour";
-import { useTenant } from "@/modules/admin/context/tenant-context";
 
 type DockItem = {
   label: string;
-  href?: string;
-  onClick?: () => void;
-  icon: any;
+  href: string;
+  icon: typeof Home01Icon;
   exact?: boolean;
   intent?: "primary";
 };
@@ -35,7 +34,6 @@ function joinPaths(a: string, b: string) {
 }
 
 function isActivePath(pathname: string, item: DockItem) {
-  if (!item.href) return false;
   const itemHref = normalizePath(item.href);
   const current = normalizePath(pathname);
 
@@ -63,10 +61,6 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
     }
   }, [pathname, pendingHref]);
 
-  const tour = useTour();
-  const { bootstrap } = useTenant();
-  const isVendly = bootstrap?.storeSlug === "vendly";
-
   if (!mounted) return null;
 
   const items: DockItem[] = [
@@ -74,12 +68,6 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
     { label: "Products", href: joinPaths(basePath, "/products"), icon: ShoppingBag01Icon },
     { label: "Activity", href: joinPaths(basePath, "/activity"), icon: Notification01Icon },
     { label: "Orders", href: joinPaths(basePath, "/orders"), icon: PackageOpenIcon },
-    ...(isVendly ? [{
-      label: "Tour",
-      onClick: () => tour.start("vendly-admin-demo"),
-      icon: StarsIcon,
-      intent: "primary" as const
-    }] : []),
     { label: "Settings", href: joinPaths(basePath, "/settings"), icon: Settings01Icon },
   ];
 
@@ -92,15 +80,28 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
         )}
       >
         {items.map((item) => {
-          const isActive = item.href ? isActivePath(pathname, item) : false;
-          const content = (
-            <>
-              {pendingHref === item.href && item.href ? (
+          const isActive = isActivePath(pathname, item);
+          return (
+            <Link
+              key={item.label}
+              href={item.href}
+              aria-label={item.label}
+              onClick={() => {
+                setPendingHref(item.href);
+              }}
+              className={cn(
+                "relative flex flex-1 min-w-0 shrink-0 flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-out",
+                "py-1",
+                item.intent === "primary" ? "bg-primary/10 text-primary" : isActive ? "text-primary" : "text-muted-foreground",
+                "hover:bg-muted/50"
+              )}
+            >
+              {pendingHref === item.href ? (
                 <HugeiconsIcon
                   icon={Loading03Icon}
                   className={cn(
                     "animate-spin transition-all duration-200",
-                    "size-5",
+                    "size-6",
                     "text-primary"
                   )}
                 />
@@ -109,59 +110,24 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
                   icon={item.icon}
                   className={cn(
                     "transition-all duration-200",
-                    "size-5",
+                    "size-6",
                     (isActive || item.intent === "primary") && "text-primary"
                   )}
                 />
               )}
               <span
                 className={cn(
-                  "text-[9px] font-medium leading-none transition-all duration-200",
+                  "text-[10px] font-medium leading-none transition-all duration-200",
                   "opacity-100 translate-y-0 scale-100 h-3",
                   isActive && "font-semibold"
-                )}
+                )
+              }
               >
                 {item.label}
               </span>
               {isActive ? (
                 <span className="absolute inset-x-0 -bottom-px mx-auto h-1 w-8 rounded-t-full bg-primary/20" />
               ) : null}
-            </>
-          );
-
-          if (item.onClick) {
-            return (
-              <button
-                key={item.label}
-                onClick={item.onClick}
-                className={cn(
-                  "relative flex flex-1 min-w-0 shrink-0 flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-out",
-                  "py-1",
-                  item.intent === "primary" ? "bg-primary/10 text-primary font-bold" : "text-muted-foreground",
-                  "hover:bg-muted/50"
-                )}
-              >
-                {content}
-              </button>
-            );
-          }
-
-          return (
-            <Link
-              key={item.label}
-              href={item.href!}
-              aria-label={item.label}
-              onClick={() => {
-                setPendingHref(item.href!);
-              }}
-              className={cn(
-                "relative flex flex-1 min-w-0 shrink-0 flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-out",
-                "py-1",
-                isActive ? "text-primary font-bold" : "text-muted-foreground",
-                "hover:bg-muted/50"
-              )}
-            >
-              {content}
             </Link>
           );
         })}

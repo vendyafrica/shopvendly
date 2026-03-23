@@ -43,7 +43,6 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@shopvendly/ui/components/sidebar";
-import { useTour } from "@shopvendly/ui/components/tour";
 import { cn } from "@shopvendly/ui/lib/utils";
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
@@ -65,7 +64,6 @@ type SidebarNavItem = {
   url: string;
   icon: typeof Home01Icon;
   items?: SidebarNavSubItem[];
-  tourStepId?: string;
 };
 
 const tenantAdminItems: SidebarNavItem[] = [
@@ -78,13 +76,11 @@ const tenantAdminItems: SidebarNavItem[] = [
     title: "Products",
     url: "/products",
     icon: ShoppingBag01Icon,
-    tourStepId: "admin-products",
   },
   {
     title: "Collections",
     url: "/collections",
     icon: GroupLayersIcon,
-    tourStepId: "admin-collections",
   },
   {
     title: "Orders",
@@ -184,7 +180,6 @@ export function AppSidebar({
   const { bootstrap } = useTenant();
   const { session } = useAppSession();
   const router = useRouter();
-  const tour = useTour();
 
   const isVendly = bootstrap?.storeSlug === "vendly";
   const fullName = isVendly ? "Jane Smith" : (session?.user?.name || "Admin");
@@ -289,7 +284,7 @@ export function AppSidebar({
                   : pathname === fullUrl || pathname.startsWith(fullUrl + "/");
 
                 return (
-                  <SidebarMenuItem key={item.title} data-tour-step-id={item.tourStepId}>
+                  <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       className={cn(
                         "h-9 px-3 transition-all duration-200 hover:bg-sidebar-accent/50",
@@ -383,22 +378,6 @@ export function AppSidebar({
               );
             })()}
           </SidebarMenuItem>
-
-          {/* Tour Item */}
-          {isVendly && (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                size="lg"
-                onClick={() => tour.start("vendly-admin-demo")}
-                className="h-10 w-full px-3 hover:bg-sidebar-accent/50 text-blue-600 transition-all hover:text-blue-700 font-medium group"
-              >
-                <div className="flex size-5 items-center justify-center rounded-full bg-blue-50 text-[10px] group-hover:scale-110 transition-transform">
-                  👋
-                </div>
-                <span className="text-[14px] ml-2">Take Tour</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
 
           {/* Logout Item */}
           <SidebarMenuItem>

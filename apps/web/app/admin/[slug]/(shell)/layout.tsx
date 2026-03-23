@@ -19,20 +19,11 @@ const DEMO_ADMIN_USER = {
   name: "Jane Smith",
   email: "jane.smith@example.com",
   image: null,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  emailVerified: false,
+  createdAt: new Date().toISOString(),
 };
 
-const DEMO_SESSION = {
-  id: "demo-session-id",
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  userId: DEMO_ADMIN_USER.id,
-  expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-  token: "demo-token",
-  ipAddress: null,
-  userAgent: null,
+type DemoAdminSession = {
+  user: typeof DEMO_ADMIN_USER;
 };
 
 export default async function TenantAdminLayout({
@@ -69,9 +60,8 @@ async function TenantAdminLayoutInner({
 
   if (slug === "vendly" && !session?.user) {
     session = {
-      session: DEMO_SESSION,
       user: DEMO_ADMIN_USER,
-    };
+    } satisfies DemoAdminSession;
   }
 
   if (!session?.user) {
