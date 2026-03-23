@@ -107,7 +107,7 @@ Confirm the Bulk Account is funded before triggering payouts.
 
 **`POST /initiatePayout`**
 
-Once funds are in the Bulk Account, pay out to any seller. **No per-transaction fee** for MTN, Airtel, or Stanbic Bank payouts via Bulk.
+Once funds are in the Bulk Account, pay out to any seller. **1200 ugx transaction fee per transaction of any size** for MTN, Airtel.So We trigger **1200 ugx** less than seller amount owed to them to ceter for this.
 
 ```json
 {
