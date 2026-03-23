@@ -240,7 +240,7 @@ export default function StorefrontHeaderClient({
           <HugeiconsIcon
             icon={UserLock01Icon}
             size={22}
-            className={overlay ? "text-red drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" : "text-neutral-900"}
+            className={overlay ? "text-red-400 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" : "text-red-500"}
           />
         </Link>
       </div>
