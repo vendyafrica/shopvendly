@@ -31,6 +31,7 @@ export function IntegrationsPanel({
 
   const { bootstrap, error } = useTenant();
   const storeId = bootstrap?.storeId;
+  const isVendlyDemoStore = bootstrap?.storeSlug === "vendly";
 
   const [isConnecting, setIsConnecting] = React.useState(false);
   const [isSyncingPosts, setIsSyncingPosts] = React.useState(false);
@@ -119,7 +120,7 @@ export function IntegrationsPanel({
   }, [paramConnected, storeId, params, pathname, router]);
 
   const handleConnect = async () => {
-    if (!bootstrap?.storeSlug) return;
+    if (!bootstrap?.storeSlug || isVendlyDemoStore) return;
     setIsConnecting(true);
     try {
       const { linkInstagram } = await import("@shopvendly/auth/client");
@@ -195,6 +196,21 @@ export function IntegrationsPanel({
         </div>
       )}
 
+      {isVendlyDemoStore && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div className="flex items-start gap-2">
+            <HugeiconsIcon icon={AlertCircleIcon} className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+            <div className="space-y-1">
+              <p className="font-semibold">Demo store limitation</p>
+              <p className="text-amber-800/90">
+                Instagram and social account linking require a real logged-in account.
+                This a demo store only.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
           <HugeiconsIcon icon={AlertCircleIcon} className="h-4 w-4 shrink-0" />
@@ -256,7 +272,7 @@ export function IntegrationsPanel({
               </div>
               <Button
                 onClick={handleConnect}
-                disabled={isConnecting || !bootstrap?.storeSlug}
+                disabled={isConnecting || !bootstrap?.storeSlug || isVendlyDemoStore}
                 variant={connected ? "outline" : "default"}
                 className="h-10 rounded-xl px-5 font-semibold shrink-0"
               >
@@ -271,7 +287,7 @@ export function IntegrationsPanel({
                 ) : connected ? (
                   "Reconnect"
                 ) : (
-                  "Connect Instagram"
+                  isVendlyDemoStore ? "Demo only" : "Connect Instagram"
                 )}
               </Button>
             </div>

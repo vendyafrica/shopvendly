@@ -9,6 +9,7 @@ import {
   Settings01Icon,
   Home01Icon,
   ShoppingBag01Icon,
+  UserMultiple02Icon,
   Loading03Icon,
   Notification01Icon,
   Payment02Icon,
@@ -67,6 +68,7 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
   const items: DockItem[] = [
     { label: "Home", href: joinPaths(basePath, "/"), icon: Home01Icon, exact: true },
     { label: "Products", href: joinPaths(basePath, "/products"), icon: ShoppingBag01Icon },
+    { label: "Customers", href: joinPaths(basePath, "/customers"), icon: UserMultiple02Icon },
     { label: "Payments", href: joinPaths(basePath, "/payments"), icon: Payment02Icon },
     { label: "Activity", href: joinPaths(basePath, "/activity"), icon: Notification01Icon },
     { label: "Orders", href: joinPaths(basePath, "/orders"), icon: PackageOpenIcon },
@@ -77,8 +79,8 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center md:hidden" style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 4px)" }}>
       <nav
         className={cn(
-          "pointer-events-auto flex w-[95vw] max-w-xl items-center gap-2 rounded-3xl border border-white/10 bg-background/80 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] transition-all duration-300 ease-out",
-          "px-6 py-1"
+          "pointer-events-auto flex w-[95vw] max-w-xl items-center gap-2 overflow-x-auto rounded-3xl border border-white/10 bg-background/80 px-3 py-2 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] transition-all duration-300 ease-out",
+          "no-scrollbar"
         )}
       >
         {items.map((item) => {
@@ -92,8 +94,7 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
                 setPendingHref(item.href);
               }}
               className={cn(
-                "relative flex flex-1 min-w-0 shrink-0 flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-out",
-                "py-1",
+                "relative flex min-w-[74px] shrink-0 flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 transition-all duration-200 ease-out",
                 item.intent === "primary" ? "bg-primary/10 text-primary" : isActive ? "text-primary" : "text-muted-foreground",
                 "hover:bg-muted/50"
               )}
