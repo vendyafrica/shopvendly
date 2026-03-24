@@ -206,7 +206,6 @@ export function CustomersMobileView({
                         );
                     })
                 )}
-                </div>
             </div>
 
             {/* Customer Detail Bottom Sheet */}
