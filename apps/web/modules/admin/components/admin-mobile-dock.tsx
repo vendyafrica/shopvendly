@@ -12,13 +12,14 @@ import {
   Loading03Icon,
   Notification01Icon,
   Payment02Icon,
+  UserMultiple02Icon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@shopvendly/ui/lib/utils";
 
 type DockItem = {
   label: string;
   href: string;
-  icon: typeof Home01Icon;
+  icon: any; 
   exact?: boolean;
   intent?: "primary";
 };
@@ -51,8 +52,6 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
     setMounted(true);
   }, []);
 
-
-
   React.useEffect(() => {
     if (!pendingHref) return;
     const normalizedPending = normalizePath(pendingHref.split("?")[0] || pendingHref);
@@ -67,18 +66,19 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
   const items: DockItem[] = [
     { label: "Home", href: joinPaths(basePath, "/"), icon: Home01Icon, exact: true },
     { label: "Products", href: joinPaths(basePath, "/products"), icon: ShoppingBag01Icon },
+    { label: "Orders", href: joinPaths(basePath, "/orders"), icon: PackageOpenIcon },
+    { label: "Customers", href: joinPaths(basePath, "/customers"), icon: UserMultiple02Icon },
     { label: "Payments", href: joinPaths(basePath, "/payments"), icon: Payment02Icon },
     { label: "Activity", href: joinPaths(basePath, "/activity"), icon: Notification01Icon },
-    { label: "Orders", href: joinPaths(basePath, "/orders"), icon: PackageOpenIcon },
     { label: "Settings", href: joinPaths(basePath, "/settings"), icon: Settings01Icon },
   ];
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center md:hidden" style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 4px)" }}>
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center md:hidden" style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)" }}>
       <nav
         className={cn(
-          "pointer-events-auto flex w-[95vw] max-w-xl items-center gap-2 rounded-3xl border border-white/10 bg-background/80 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] transition-all duration-300 ease-out",
-          "px-6 py-1"
+          "pointer-events-auto flex items-center gap-6 rounded-[28px] border border-white/10 bg-background/80 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] transition-all duration-300 ease-out",
+          "px-6 py-2 overflow-x-auto no-scrollbar max-w-[95vw]"
         )}
       >
         {items.map((item) => {
@@ -92,8 +92,8 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
                 setPendingHref(item.href);
               }}
               className={cn(
-                "relative flex flex-1 min-w-0 shrink-0 flex-col items-center justify-center gap-1 rounded-xl transition-all duration-200 ease-out",
-                "py-1",
+                "relative flex flex-col items-center justify-center gap-1.5 rounded-xl transition-all duration-200 ease-out shrink-0",
+                "min-w-[56px] py-1",
                 item.intent === "primary" ? "bg-primary/10 text-primary" : isActive ? "text-primary" : "text-muted-foreground",
                 "hover:bg-muted/50"
               )}
@@ -103,7 +103,7 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
                   icon={Loading03Icon}
                   className={cn(
                     "animate-spin transition-all duration-200",
-                    "size-6",
+                    "size-5.5",
                     "text-primary"
                   )}
                 />
@@ -112,23 +112,23 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
                   icon={item.icon}
                   className={cn(
                     "transition-all duration-200",
-                    "size-6",
+                    "size-5.5",
                     (isActive || item.intent === "primary") && "text-primary"
                   )}
                 />
               )}
               <span
                 className={cn(
-                  "text-[10px] font-medium leading-none transition-all duration-200",
-                  "opacity-100 translate-y-0 scale-100 h-3",
-                  isActive && "font-semibold"
+                  "text-[10px] font-bold leading-none transition-all duration-200",
+                  "opacity-100 translate-y-0 scale-100",
+                  isActive ? "text-primary tracking-tight" : "text-slate-500"
                 )
               }
               >
                 {item.label}
               </span>
               {isActive ? (
-                <span className="absolute inset-x-0 -bottom-px mx-auto h-1 w-8 rounded-t-full bg-primary/20" />
+                <span className="absolute inset-x-0 -bottom-1 mx-auto h-1 w-6 rounded-t-full bg-primary" />
               ) : null}
             </Link>
           );

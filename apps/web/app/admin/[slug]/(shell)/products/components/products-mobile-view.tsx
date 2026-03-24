@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ShoppingBag01Icon, Delete02Icon, Tick01Icon, CheckmarkCircle02Icon, Cancel01Icon, Share01Icon } from "@hugeicons/core-free-icons";
+import { ShoppingBag01Icon, Delete02Icon, Tick01Icon, CheckmarkCircle02Icon, Cancel01Icon, Share01Icon, PackageOpenIcon } from "@hugeicons/core-free-icons";
 import type { ProductTableRow } from "@/modules/products/hooks/use-products";
 import { type TenantBootstrap } from "@/modules/admin/context";
 import { isLikelyVideoMedia } from "@/utils/misc";
@@ -123,6 +123,7 @@ export function ProductsMobileView({
     const router = useRouter();
     const [selectedIds, setSelectedIds] = React.useState<Record<string, boolean>>({});
     const [isSelectionMode, setIsSelectionMode] = React.useState(false);
+    const [activeTab, setActiveTab] = React.useState<"active" | "draft">("active");
 
     if (isLoading) {
         return <ProductsMobileSkeleton />;
@@ -159,58 +160,63 @@ export function ProductsMobileView({
 
     const selectedProducts = rows.filter((product) => selectedIds[product.id]);
 
-    return (
-        <div className="-mx-4 flex flex-col w-[calc(100%+2rem)] sm:hidden bg-white min-h-screen font-sans">
-            {/* Refined Profile Header */}
-            <div className="px-1 pt-4 pb-6 border-b border-slate-100">
-                <div className="flex items-center justify-between mb-5 px-4">
-                    <div className="relative">
-                        <div className="size-[80px] rounded-full border border-slate-200 overflow-hidden bg-slate-50 shadow-sm p-1">
-                             <StoreAvatar
-                                 storeName={storeName}
-                                 logoUrl={bootstrap?.storeLogoUrl}
-                                 size="lg"
-                                 className="size-full border-none rounded-full"
-                             />
-                         </div>
-                     </div>
+    const filteredRows = rows.filter((r) => {
+        if (activeTab === "active") return r.status === "active";
+        return r.status === "draft";
+    });
 
-                    <div className="flex-1 flex justify-around items-center pl-4">
+    return (
+        <div className="-mx-4 -mt-4 flex flex-col w-[calc(100%+2rem)] sm:hidden bg-white min-h-screen font-sans">
+            {/* Refined Profile Header */}
+            <div className="px-1 pt-6 pb-2 border-b border-slate-100">
+                <div className="flex items-center justify-between mb-6 px-5">
+                    <div className="relative">
+                        <div className="size-[88px] rounded-full border-[1.5px] border-slate-100 overflow-hidden bg-slate-50 shadow-sm">
+                            <StoreAvatar
+                                storeName={storeName}
+                                logoUrl={bootstrap?.storeLogoUrl}
+                                size="lg"
+                                className="size-full border-none rounded-full"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex-1 flex justify-around items-center pl-6">
                         <div className="flex flex-col items-center">
-                            <span className="font-bold text-[17px] leading-none mb-1">{rows.length}</span>
-                            <span className="text-[13px] text-slate-500 font-normal">Products</span>
+                            <span className="font-bold text-[18px] text-slate-900 leading-none mb-1">{rows.length}</span>
+                            <span className="text-[13px] text-slate-500 font-medium">Products</span>
                         </div>
                         <div className="flex flex-col items-center">
-                            <span className="font-bold text-[17px] leading-none mb-1">
+                            <span className="font-bold text-[18px] text-slate-900 leading-none mb-1">
                                 {rows.reduce((acc, r) => acc + (r.salesAmount || 0), 0)}
                             </span>
-                            <span className="text-[13px] text-slate-500 font-normal">Sales</span>
+                            <span className="text-[13px] text-slate-500 font-medium">Sales</span>
                         </div>
                         <div className="flex flex-col items-center">
-                            <span className="font-bold text-[17px] leading-none mb-1">
+                            <span className="font-bold text-[18px] text-slate-900 leading-none mb-1">
                                 {rows.filter(r => r.status === 'active').length}
                             </span>
-                            <span className="text-[13px] text-slate-500 font-normal">Active</span>
+                            <span className="text-[13px] text-slate-500 font-medium">Active</span>
                         </div>
                     </div>
                 </div>
 
-                <div className="space-y-0.5 mb-6 px-4">
-                    <h1 className="font-bold text-[15px] tracking-tight text-slate-900">{storeName}</h1>
-                    <p className="text-[13px] text-slate-600 leading-[1.4] max-w-[90%]">
+                <div className="space-y-1 mb-6 px-5">
+                    <h1 className="font-extrabold capitalize text-[16px] tracking-tight text-slate-900">{storeName}</h1>
+                    <p className="text-[14px] text-slate-600 leading-[1.5] max-w-[95%]">
                         {bootstrap?.storeDescription || "Manage your product catalog and track sales performance in real-time."}
                     </p>
                     <Link
                         href={bootstrap?.storeSlug ? `https://${bootstrap.storeSlug}.shopvendly.com` : "#"}
                         target="_blank"
-                        className="text-[13px] text-blue-600 font-medium hover:underline flex items-center gap-1"
+                        className="text-[15px] text-primary/90 font-bold hover:underline flex items-center gap-1 mt-1"
                     >
                         {bootstrap?.storeSlug ? `shopvendly.com/${bootstrap.storeSlug}` : "shopvendly.com"}
-                        <HugeiconsIcon icon={Share01Icon} className="size-3" />
+                        <HugeiconsIcon icon={Share01Icon} className="size-3.5" />
                     </Link>
                 </div>
 
-                <div className="flex gap-2 px-4">
+                <div className="flex gap-2.5 px-5 mb-6">
                     <Button
                         size="sm"
                         variant={isSelectionMode ? "default" : "outline"}
@@ -234,17 +240,39 @@ export function ProductsMobileView({
                         Add Product
                     </Button>
                 </div>
+
+                {/* Instagram Style Tabs */}
+                <div className="flex w-full mt-2">
+                    <button
+                        onClick={() => setActiveTab("active")}
+                        className={cn(
+                            "flex-1 flex justify-center py-3 border-b-2 transition-colors",
+                            activeTab === "active" ? "border-primary/70 text-primary/90" : "border-transparent text-slate-400"
+                        )}
+                    >
+                        <HugeiconsIcon icon={ShoppingBag01Icon} className="size-6" />
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("draft")}
+                        className={cn(
+                            "flex-1 flex justify-center py-3 border-b-2 transition-colors",
+                            activeTab === "draft" ? "border-primary/70 text-primary/90" : "border-transparent text-slate-400"
+                        )}
+                    >
+                        <HugeiconsIcon icon={PackageOpenIcon} className="size-6" />
+                    </button>
+                </div>
             </div>
 
             {selectedCount > 0 && (
                 <div className="mx-3 mb-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-1">
                     <div className="flex items-center gap-2">
-                         <span className="font-semibold text-slate-900">{selectedCount}</span>
-                         <span className="text-slate-500">selected</span>
+                        <span className="font-semibold text-slate-900">{selectedCount}</span>
+                        <span className="text-slate-500">selected</span>
                     </div>
                     <div className="flex items-center gap-3">
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             onClick={() => void publishProducts(selectedProducts)}
                             className="font-medium text-primary flex items-center gap-1 active:scale-95 transition-transform"
                             disabled={isPublishing}
@@ -252,8 +280,8 @@ export function ProductsMobileView({
                             <HugeiconsIcon icon={Tick01Icon} className="size-3" />
                             Publish
                         </button>
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             onClick={() => {
                                 if (confirm(`Delete ${selectedCount} items?`)) {
                                     selectedProducts.forEach(p => onDelete(p.id));
@@ -292,10 +320,10 @@ export function ProductsMobileView({
                                 selectedIds[product.id] && "ring-2 ring-blue-500 ring-offset-2",
                                 isSelectionMode && product.status === "active" && "opacity-40 pointer-events-none grayscale-[0.5]"
                             )}
-                             onClick={() => {
-                                 if (isSelectionMode && product.status !== "active") toggleSelected(product.id);
-                                 else handleEditProduct(product.id);
-                             }}
+                            onClick={() => {
+                                if (isSelectionMode && product.status !== "active") toggleSelected(product.id);
+                                else handleEditProduct(product.id);
+                            }}
                         >
                             <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-blue-500/5 to-transparent rounded-bl-[100%] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
@@ -339,7 +367,7 @@ export function ProductsMobileView({
                                 <span className="font-bold text-[14px] text-foreground tracking-tight">
                                     {formatMoney(product.priceAmount, product.currency)}
                                 </span>
-                                
+
                                 {isSelectionMode ? (
                                     <div className={cn(
                                         "size-5 rounded-full border-2 flex items-center justify-center transition-all",

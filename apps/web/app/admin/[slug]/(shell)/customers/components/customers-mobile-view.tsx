@@ -13,6 +13,7 @@ import { Button } from "@shopvendly/ui/components/button";
 import { type TenantBootstrap } from "@/modules/admin/context";
 import { type CustomerRow } from "@/modules/admin/models";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { cn } from "@shopvendly/ui/lib/utils";
 import { UserMultiple02Icon, Mail02Icon, ShoppingCart01Icon, AnalyticsUpIcon, CheckmarkBadge01Icon, Share01Icon } from "@hugeicons/core-free-icons";
 
 interface CustomersMobileViewProps {
@@ -39,60 +40,64 @@ export function CustomersMobileView({
 }: CustomersMobileViewProps) {
     const [selectedCustomer, setSelectedCustomer] = React.useState<CustomerRow | null>(null);
     const [sheetOpen, setSheetOpen] = React.useState(false);
+    const [activeTab, setActiveTab] = React.useState<"active" | "new">("active");
 
     const storeName = bootstrap?.storeName || "My Store";
 
+    const filteredCustomers = customers.filter((c) => {
+        if (activeTab === "active") return c.status === "Active";
+        return c.status === "New";
+    });
+
     return (
-        <div className="-mx-4 flex flex-col min-h-screen bg-white pb-20 fade-in-0 duration-500 animate-in font-sans">
-            {/* Instagram Style Profile Header */}
-            <div className="px-1 pt-8 pb-6 border-b border-slate-100 italic-style">
-                <div className="flex items-center justify-between mb-5 px-4">
+        <div className="-mx-4 -mt-4 flex flex-col min-h-screen bg-white pb-20 fade-in-0 duration-500 animate-in font-sans font-sans">
+            {/* Refined Profile Header */}
+            <div className="px-1 pt-6 pb-2 border-b border-slate-100 italic-style">
+                <div className="flex items-center justify-between mb-6 px-5">
                     <div className="relative">
-                        <div className="size-[86px] rounded-full p-[3px] bg-gradient-to-tr from-amber-400 via-fuchsia-500 to-indigo-600">
-                             <div className="size-full rounded-full border-2 border-white overflow-hidden bg-slate-50">
-                                 <StoreAvatar
-                                     storeName={storeName}
-                                     logoUrl={bootstrap?.storeLogoUrl}
-                                     size="lg"
-                                     className="size-full border-none rounded-none"
-                                 />
-                             </div>
+                        <div className="size-[88px] rounded-full border-[1.5px] border-slate-100 overflow-hidden bg-slate-50 shadow-sm">
+                             <StoreAvatar
+                                 storeName={storeName}
+                                 logoUrl={bootstrap?.storeLogoUrl}
+                                 size="lg"
+                                 className="size-full border-none rounded-full"
+                             />
                          </div>
                      </div>
  
-                     <div className="flex-1 flex justify-around items-center pl-4">
+                     <div className="flex-1 flex justify-around items-center pl-6">
                          {statSegments.slice(0, 3).map((s, idx) => (
                              <div key={idx} className="flex flex-col items-center">
-                                 <span className="font-bold text-[17px] leading-none mb-1">{s.value}</span>
-                                 <span className="text-[13px] text-slate-500 font-normal">{s.label.split(' ')[0]}</span>
+                                 <span className="font-bold text-[18px] text-slate-900 leading-none mb-1">{s.value}</span>
+                                 <span className="text-[13px] text-slate-500 font-medium">{s.label.split(' ')[0]}</span>
                              </div>
                          ))}
                      </div>
                  </div>
  
-                 <div className="space-y-0.5 mb-6 px-4">
-                     <h1 className="font-bold text-[15px] tracking-tight text-slate-900 flex items-center gap-1.5">
+                 <div className="space-y-1 mb-6 px-5">
+                     <h1 className="font-extrabold text-[16px] tracking-tight text-slate-900 flex items-center gap-1.5">
                          {storeName}
                          <HugeiconsIcon icon={CheckmarkBadge01Icon} className="size-3.5 text-blue-500" />
                      </h1>
-                     <p className="text-[13px] text-slate-600 leading-[1.4] max-w-[90%]">
+                     <p className="text-[14px] text-slate-600 leading-[1.5] max-w-[95%]">
                          {bootstrap?.storeDescription || "Key insights and details about your customers and their shopping behavior."}
                      </p>
                      <Link
                          href={bootstrap?.storeSlug ? `https://${bootstrap.storeSlug}.shopvendly.com` : "#"}
                          target="_blank"
-                         className="text-[13px] text-blue-600 font-medium hover:underline flex items-center gap-1"
+                         className="text-[14px] text-blue-600 font-bold hover:underline flex items-center gap-1 mt-1"
                      >
                          {bootstrap?.storeSlug ? `shopvendly.com/${bootstrap.storeSlug}` : "shopvendly.com"}
-                         <HugeiconsIcon icon={Share01Icon} className="size-3" />
+                         <HugeiconsIcon icon={Share01Icon} className="size-3.5" />
                      </Link>
                  </div>
  
-                 <div className="flex gap-2 px-4">
+                 <div className="flex gap-2.5 px-5 mb-6">
                      <Button
                          size="sm"
                          variant="outline"
-                         className="flex-1 h-10 bg-white border-slate-200 text-slate-900 font-bold text-[13px] rounded-lg transition-all active:scale-[0.97] shadow-sm"
+                         className="flex-1 h-10 bg-slate-100 border-none text-slate-900 font-bold text-[13px] rounded-lg transition-all active:scale-[0.97] shadow-none hover:bg-slate-200"
                      >
                          Export
                      </Button>
@@ -103,19 +108,44 @@ export function CustomersMobileView({
                          Add Customer
                      </Button>
                  </div>
-             </div>
 
+                 {/* Instagram Style Tabs */}
+                 <div className="flex w-full mt-2">
+                     <button
+                        onClick={() => setActiveTab("active")}
+                        className={cn(
+                            "flex-1 flex justify-center py-3 border-b-2 transition-colors",
+                            activeTab === "active" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400"
+                        )}
+                     >
+                        <HugeiconsIcon icon={AnalyticsUpIcon} className="size-6" />
+                     </button>
+                     <button
+                        onClick={() => setActiveTab("new")}
+                        className={cn(
+                            "flex-1 flex justify-center py-3 border-b-2 transition-colors",
+                            activeTab === "new" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400"
+                        )}
+                     >
+                        <HugeiconsIcon icon={UserMultiple02Icon} className="size-6" />
+                     </button>
+                 </div>
+             </div>
+ 
              {/* Customers List - Redesigned as Premium Cards */}
-             <div className="px-1 pt-6 flex flex-col gap-3">
-                {customers.length === 0 ? (
+             <div className="px-1 pt-6 pb-20 flex flex-col gap-3">
+                <div className="px-5 mb-4 items-center justify-between flex">
+                    <h3 className="text-[15px] font-extrabold tracking-tight text-slate-900 capitalize">{activeTab} Customers</h3>
+                </div>
+                {filteredCustomers.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 opacity-50">
                         <div className="size-16 rounded-full border-2 border-dashed border-border flex items-center justify-center mb-4">
                             <HugeiconsIcon icon={UserMultiple02Icon} className="size-8 text-muted-foreground" />
                         </div>
-                        <p className="font-semibold text-foreground">No Customers Yet</p>
+                        <p className="font-semibold text-foreground text-center">No {activeTab} customers found</p>
                     </div>
                 ) : (
-                    customers.map((c, i) => {
+                    filteredCustomers.map((c, i) => {
                         const colors = STATUS_COLORS[c.status];
                         const initials = c.name !== "—" ? c.name.substring(0, 2).toUpperCase() : "?";
 
