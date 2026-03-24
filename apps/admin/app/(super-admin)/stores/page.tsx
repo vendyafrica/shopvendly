@@ -58,7 +58,7 @@ export default function StoresPage() {
             <StoreStats stats={stats} isLoading={isLoading} />
 
             {/* Stores Table */}
-            <div className="rounded-md border border-border/70 bg-card shadow-sm">
+            <div className="rounded-md border border-border/70 bg-card shadow-sm overflow-x-auto">
                 <StoreTable stores={stores} isLoading={isLoading} />
             </div>
         </div>

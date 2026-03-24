@@ -140,7 +140,7 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
                                     )}
                                 </TableCell>
                                 <TableCell className="capitalize">{store.tenantName}</TableCell>
-                                <TableCell>
+                                <TableCell className="whitespace-normal break-all min-w-[200px] max-w-[300px]">
                                     {activeCell?.id === store.id && activeCell.field === "slug" ? (
                                         <Input
                                             autoFocus
@@ -154,17 +154,17 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
                                                     setActiveCell(null);
                                                 }
                                             }}
-                                            className="h-9 w-full min-w-[200px]"
+                                            className="h-9 w-full"
                                         />
                                     ) : (
                                         <button
                                             type="button"
                                             onClick={() => setActiveCell({ id: store.id, field: "slug" })}
-                                            className="group inline-flex items-center gap-2 text-left hover:bg-muted/50 px-1 py-0.5 -ml-1 rounded-md transition-colors"
+                                            className="group inline-flex items-center gap-2 text-left hover:bg-muted/50 px-1 py-0.5 -ml-1 rounded-md transition-colors w-full"
                                         >
                                             <a
                                                 href={`https://shopvendly.store/${store.slug}`}
-                                                className="text-sm text-primary underline-offset-4 group-hover:underline"
+                                                className="text-sm text-primary underline-offset-4 group-hover:underline break-all"
                                                 target="_blank"
                                                 rel="noreferrer"
                                             >

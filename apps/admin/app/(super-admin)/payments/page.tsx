@@ -5,16 +5,25 @@ import { SegmentedStatsCard } from "@/features/super-admin/components/segmented-
 import { Badge } from "@shopvendly/ui/components/badge";
 import { cn } from "@shopvendly/ui/lib/utils";
 
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@shopvendly/ui/components/table";
+
 interface Payment {
     id: string;
-    provider: string;
-    payerPhone: string | null;
+    customerNumber: string | null;
     status: string;
     amount: number;
     currency: string;
-    createdAt: Date;
+    createdAt: string;
     orderNumber: string | null;
     storeName: string | null;
+    storeSlug: string | null;
 }
 
 export default function PaymentsPage() {
@@ -82,58 +91,86 @@ export default function PaymentsPage() {
             />
 
             {/* Payments Table */}
-            <div className="rounded-md border border-border/70 bg-card shadow-sm">
-                <div className="p-6">
+            <div className="rounded-md border border-border/70 bg-card shadow-sm overflow-hidden">
+                <div className="p-0">
                     {isLoading ? (
-                        <p className="text-sm text-muted-foreground">Loading payments...</p>
+                        <div className="p-6 text-sm text-muted-foreground">Loading payments...</div>
                     ) : payments.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No payments found.</p>
+                        <div className="p-6 text-sm text-muted-foreground">No payments found.</div>
                     ) : (
                         <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-border/70">
-                                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">Provider</th>
-                                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">Payer Phone</th>
-                                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">Store</th>
-                                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">Order #</th>
-                                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">Status</th>
-                                        <th className="text-right p-3 text-xs font-medium text-muted-foreground">Amount</th>
-                                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Customer Number</TableHead>
+                                        <TableHead>Store Name</TableHead>
+                                        <TableHead>Order Link</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="text-center">Amount</TableHead>
+                                        <TableHead>Date</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
                                     {payments.map((payment) => (
-                                        <tr key={payment.id} className="border-b border-border/50 last:border-0">
-                                            <td className="p-3 text-sm">{payment.provider}</td>
-                                            <td className="p-3 font-mono text-xs text-muted-foreground">{payment.payerPhone || 'N/A'}</td>
-                                            <td className="p-3 text-sm">{payment.storeName || 'N/A'}</td>
-                                            <td className="p-3 text-sm">{payment.orderNumber || 'N/A'}</td>
-                                            <td className="p-3">
+                                        <TableRow key={payment.id} className="hover:bg-muted/30 transition-colors">
+                                            <TableCell className="font-medium text-foreground text-nowrap">
+                                                {payment.customerNumber || (
+                                                    <span className="text-muted-foreground/40 font-normal">N/A</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="font-medium">
+                                                {payment.storeName || (
+                                                    <span className="text-muted-foreground/40">N/A</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                {payment.orderNumber && payment.storeSlug ? (
+                                                    <a 
+                                                        href={`https://${payment.storeSlug}.shopvendly.store/orders/${payment.orderNumber}`} 
+                                                        target="_blank" 
+                                                        rel="noreferrer"
+                                                        className="text-primary hover:underline font-semibold"
+                                                    >
+                                                        {payment.orderNumber}
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-muted-foreground/40">{payment.orderNumber || 'N/A'}</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
                                                 <Badge
                                                     variant="outline"
                                                     className={cn(
-                                                        "px-2 py-0.5 rounded-full text-xs font-normal border-0",
+                                                        "px-2 py-0.5 rounded-full text-[10px] font-bold border-0 uppercase tracking-wider",
                                                         payment.status === "PAID"
-                                                            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-700"
+                                                            ? "bg-emerald-100 text-emerald-800"
                                                             : payment.status === "FAILED"
-                                                                ? "bg-rose-100 text-rose-700 hover:bg-rose-100 hover:text-rose-700"
-                                                                : "bg-amber-100 text-amber-700 hover:bg-amber-100 hover:text-amber-700"
+                                                                ? "bg-rose-100 text-rose-800"
+                                                                : "bg-amber-100 text-amber-800"
                                                     )}
                                                 >
                                                     {payment.status}
                                                 </Badge>
-                                            </td>
-                                            <td className="p-3 text-right text-sm font-medium">
-                                                {new Intl.NumberFormat('en-UG', { style: 'currency', currency: payment.currency }).format(payment.amount)}
-                                            </td>
-                                            <td className="p-3 text-sm text-muted-foreground">
-                                                {new Date(payment.createdAt).toLocaleDateString()}
-                                            </td>
-                                        </tr>
+                                            </TableCell>
+                                            <TableCell className="text-center font-bold tabular-nums">
+                                                {new Intl.NumberFormat('en-UG', {
+                                                    style: 'currency',
+                                                    currency: payment.currency,
+                                                    minimumFractionDigits: 0
+                                                }).format(payment.amount)}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium">{new Date(payment.createdAt).toLocaleDateString()}</span>
+                                                    <span className="text-[10px] text-muted-foreground">
+                                                        {new Date(payment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
                                     ))}
-                                </tbody>
-                            </table>
+                                </TableBody>
+                            </Table>
                         </div>
                     )}
                 </div>

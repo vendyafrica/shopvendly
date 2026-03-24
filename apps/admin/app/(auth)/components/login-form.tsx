@@ -73,7 +73,18 @@ export function LoginForm() {
   };
 
   return (
-    <div className="border-0 shadow-sm rounded-sm bg-muted/30">
+    <div className="relative border-0 shadow-sm rounded-sm bg-muted/30 overflow-hidden">
+      {isPending && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[1px] transition-all">
+          <div className="flex flex-col items-center gap-3 p-6 text-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <div className="space-y-1">
+              <p className="text-base font-semibold tracking-tight">Signing you in</p>
+              <p className="text-xs text-muted-foreground">Please wait while we connect to Google</p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="p-6 md:p-8">
         <form onSubmit={handleEmailSubmit}>
           <FieldGroup>
@@ -134,30 +145,34 @@ export function LoginForm() {
                 onClick={handleGoogleClick}
                 disabled={isPending}
               >
-                <svg
-                  role="img"
-                  viewBox="0 0 24 24"
-                  className="h-5 w-5"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.51h5.84c-.25 1.31-.98 2.42-2.07 3.16v2.63h3.35c1.96-1.81 3.09-4.47 3.09-7.8z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-1.01 7.28-2.73l-3.35-2.63c-1.01.68-2.29 1.08-3.93 1.08-3.02 0-5.58-2.04-6.49-4.79H.96v2.67C2.77 20.39 6.62 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.51 14.21c-.23-.68-.36-1.41-.36-2.21s.13-1.53.36-2.21V7.34H.96C.35 8.85 0 10.39 0 12s.35 3.15.96 4.66l4.55-2.45z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 4.98c1.64 0 3.11.56 4.27 1.66l3.19-3.19C17.46 1.01 14.97 0 12 0 6.62 0 2.77 2.61 0.96 6.34l4.55 2.45C6.42 6.02 8.98 4.98 12 4.98z"
-                  />
-                </svg>
-                Continue with Google
+                {isPending ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                ) : (
+                  <svg
+                    role="img"
+                    viewBox="0 0 24 24"
+                    className="h-5 w-5"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.51h5.84c-.25 1.31-.98 2.42-2.07 3.16v2.63h3.35c1.96-1.81 3.09-4.47 3.09-7.8z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-1.01 7.28-2.73l-3.35-2.63c-1.01.68-2.29 1.08-3.93 1.08-3.02 0-5.58-2.04-6.49-4.79H.96v2.67C2.77 20.39 6.62 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.51 14.21c-.23-.68-.36-1.41-.36-2.21s.13-1.53.36-2.21V7.34H.96C.35 8.85 0 10.39 0 12s.35 3.15.96 4.66l4.55-2.45z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 4.98c1.64 0 3.11.56 4.27 1.66l3.19-3.19C17.46 1.01 14.97 0 12 0 6.62 0 2.77 2.61 0.96 6.34l4.55 2.45C6.42 6.02 8.98 4.98 12 4.98z"
+                    />
+                  </svg>
+                )}
+                {isPending ? "Signing in..." : "Continue with Google"}
               </Button>
             </Field>
           </FieldGroup>

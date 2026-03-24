@@ -21,6 +21,7 @@ export async function GET() {
                 createdAt: orders.createdAt,
                 orderNumber: orders.orderNumber,
                 storeName: stores.name,
+                storeSlug: stores.slug,
                 customerPhone: orders.customerPhone,
             })
             .from(orders)
@@ -28,30 +29,39 @@ export async function GET() {
             .orderBy(desc(orders.createdAt));
 
         const orderIds = results.map((row) => row.id);
+        
+        // Fetch all related collections for these orders
         const collectionRows = orderIds.length
-            ? await db.query.collectoPaymentCollections.findMany({
-                where: inArray(collectoPaymentCollections.orderId, orderIds),
-                orderBy: (table, helpers) => [helpers.desc(table.createdAt)],
-            })
+            ? await db
+                .select({
+                    orderId: collectoPaymentCollections.orderId,
+                    payerPhone: collectoPaymentCollections.payerPhone,
+                    createdAt: collectoPaymentCollections.createdAt,
+                })
+                .from(collectoPaymentCollections)
+                .where(inArray(collectoPaymentCollections.orderId, orderIds))
+                .orderBy(desc(collectoPaymentCollections.createdAt))
             : [];
 
-        const latestCollectionsByOrderId = new Map<string, (typeof collectionRows)[number]>();
+        // Map orderId -> latest payerPhone
+        const phoneMap = new Map<string, string>();
         for (const row of collectionRows) {
-            if (!latestCollectionsByOrderId.has(row.orderId)) {
-                latestCollectionsByOrderId.set(row.orderId, row);
+            if (row.payerPhone && !phoneMap.has(row.orderId)) {
+                phoneMap.set(row.orderId, row.payerPhone);
             }
         }
 
         const payments = results.map((row) => ({
             id: row.id,
             provider: row.provider,
-            payerPhone: latestCollectionsByOrderId.get(row.id)?.payerPhone || row.customerPhone || null,
+            customerNumber: phoneMap.get(row.id) || row.customerPhone || null,
             status: row.status.toUpperCase(),
             amount: row.amount,
             currency: row.currency,
             createdAt: row.createdAt,
             orderNumber: row.orderNumber,
             storeName: row.storeName || null,
+            storeSlug: row.storeSlug || null,
         }));
 
         return NextResponse.json(payments);
