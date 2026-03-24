@@ -13,6 +13,7 @@ export default function EditProductPage() {
     const id = params.id as string;
     const { bootstrap } = useTenant();
     const { data: product, isLoading, error } = useProductDetail(id);
+    const isReadOnly = Boolean(bootstrap?.storeSlug === "vendly" && !bootstrap?.canWrite);
 
     if (isLoading) {
         return (
@@ -45,7 +46,8 @@ export default function EditProductPage() {
                 isEditing
                 initialData={product}
                 tenantId={bootstrap.tenantId} 
-                storeId={bootstrap.storeId} 
+                storeId={bootstrap.storeId}
+                readOnly={isReadOnly}
             />
         </div>
     );

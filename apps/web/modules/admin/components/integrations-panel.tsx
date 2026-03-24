@@ -31,6 +31,7 @@ export function IntegrationsPanel({
 
   const { bootstrap, error } = useTenant();
   const storeId = bootstrap?.storeId;
+  const canWrite = Boolean(bootstrap?.canWrite);
 
   const [isConnecting, setIsConnecting] = React.useState(false);
   const [isSyncingPosts, setIsSyncingPosts] = React.useState(false);
@@ -119,7 +120,7 @@ export function IntegrationsPanel({
   }, [paramConnected, storeId, params, pathname, router]);
 
   const handleConnect = async () => {
-    if (!bootstrap?.storeSlug) return;
+    if (!bootstrap?.storeSlug || !canWrite) return;
     setIsConnecting(true);
     try {
       const { linkInstagram } = await import("@shopvendly/auth/client");
@@ -131,10 +132,8 @@ export function IntegrationsPanel({
     }
   };
 
-
-
   const handleSyncPosts = async () => {
-    if (!bootstrap?.storeId) return;
+    if (!bootstrap?.storeId || !canWrite) return;
     setIsSyncingPosts(true);
     setSyncPostsError(null);
     setSyncPostsSuccess(false);
@@ -157,6 +156,7 @@ export function IntegrationsPanel({
   };
 
   const handleDelete = async () => {
+    if (!canWrite) return;
     setIsDeleting(true);
     setDeleteError(null);
     setDeleteSuccess(false);
@@ -246,17 +246,19 @@ export function IntegrationsPanel({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="max-w-md">
                 <p className="text-sm font-semibold text-neutral-900">
-                  {connected ? "Account linked" : "Connect your account"}
+                  {connected ? "Account linked" : canWrite ? "Connect your account" : "Read only"}
                 </p>
                 <p className="text-sm text-neutral-500 mt-1">
                   {connected
                     ? "Your Instagram account is connected and syncing."
-                    : "Link your Instagram to import products from posts."}
+                    : canWrite
+                      ? "Link your Instagram to import products from posts."
+                      : "Login from the Settings page to unlock Instagram linking and syncing."}
                 </p>
               </div>
               <Button
                 onClick={handleConnect}
-                disabled={isConnecting || !bootstrap?.storeSlug}
+                disabled={isConnecting || !bootstrap?.storeSlug || !canWrite}
                 variant={connected ? "outline" : "default"}
                 className="h-10 rounded-xl px-5 font-semibold shrink-0"
               >
@@ -271,10 +273,16 @@ export function IntegrationsPanel({
                 ) : connected ? (
                   "Reconnect"
                 ) : (
-                  "Connect Instagram"
+                  canWrite ? "Connect Instagram" : "Read only"
                 )}
               </Button>
             </div>
+
+            {!canWrite && (
+              <p className="text-xs text-neutral-500">
+                Demo viewers can browse integrations, but only a super admin can connect or sync Instagram.
+              </p>
+            )}
 
             {connected && (
               <div className="rounded-xl border border-neutral-200 bg-neutral-50/50 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -290,7 +298,7 @@ export function IntegrationsPanel({
                 </div>
                 <Button
                   onClick={handleSyncPosts}
-                  disabled={isSyncingPosts || !bootstrap?.storeId}
+                  disabled={isSyncingPosts || !bootstrap?.storeId || !canWrite}
                   variant="outline"
                   className="h-10 rounded-xl px-5 font-semibold shrink-0 bg-white"
                 >
@@ -367,7 +375,7 @@ export function IntegrationsPanel({
                     variant="destructive"
                     className="h-10 rounded-xl px-5 font-semibold text-sm"
                     onClick={handleDelete}
-                    disabled={isDeleting}
+                    disabled={isDeleting || !canWrite}
                   >
                     {isDeleting ? (
                       <>

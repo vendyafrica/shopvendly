@@ -99,6 +99,7 @@ export default function ProductsPage() {
   const params = useParams();
   const slug = params.slug as string;
   const { invalidate } = useInvalidateProducts();
+  const isReadOnly = Boolean(bootstrap?.storeSlug === "vendly" && !bootstrap?.canWrite);
 
   const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({});
   // const [ setActiveCell] = React.useState<{ id: string; field: EditableField } | null>(null);
@@ -135,6 +136,7 @@ export default function ProductsPage() {
   const updateProductMutation = useUpdateProduct(bootstrap?.storeId ?? "");
 
   const handleDelete = async (id: string) => {
+    if (isReadOnly) return;
     deleteProductMutation.mutate(id, {
       onError: (error) => {
         alert(error instanceof Error ? error.message : "Failed to delete product");
@@ -179,6 +181,7 @@ export default function ProductsPage() {
   // };
 
   const handleMobileStatusChange = async (id: string, status: "ready" | "draft" | "active" | "sold-out") => {
+    if (isReadOnly) return;
     setMobileStatusUpdatingId(id);
     try {
       if (!bootstrap?.storeId) return;
@@ -192,6 +195,7 @@ export default function ProductsPage() {
   };
 
   const handleBulkPublish = async () => {
+    if (isReadOnly) return;
     const selected = Object.keys(rowSelection);
     if (selected.length === 0) return;
     try {
@@ -220,6 +224,7 @@ export default function ProductsPage() {
   };
 
   const handleBulkDelete = async () => {
+    if (isReadOnly) return;
     const selected = Object.keys(rowSelection);
     if (selected.length === 0) return;
     if (confirm(`Are you sure you want to delete ${selected.length} products?`)) {
@@ -369,30 +374,44 @@ export default function ProductsPage() {
               </Button>
             </div>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger className={buttonVariants({ variant: "outline", size: "sm", className: "h-8 gap-1.5 text-xs font-semibold px-3 group" })}>
+            {isReadOnly ? (
+              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs font-semibold px-3" disabled>
                 More actions
-                <HugeiconsIcon icon={MoreHorizontalIcon} className="size-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={handleBulkPublish}>
-                  <HugeiconsIcon icon={Tick01Icon} className="mr-2 size-4 text-primary" />
-                  Publish Selected
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive" onClick={handleBulkDelete}>
-                  <HugeiconsIcon icon={Delete02Icon} className="mr-2 size-4" />
-                  Delete Selected
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                <HugeiconsIcon icon={MoreHorizontalIcon} className="size-3.5 opacity-60" />
+              </Button>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger className={buttonVariants({ variant: "outline", size: "sm", className: "h-8 gap-1.5 text-xs font-semibold px-3 group" })}>
+                  More actions
+                  <HugeiconsIcon icon={MoreHorizontalIcon} className="size-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={handleBulkPublish}>
+                    <HugeiconsIcon icon={Tick01Icon} className="mr-2 size-4 text-primary" />
+                    Publish Selected
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive" onClick={handleBulkDelete}>
+                    <HugeiconsIcon icon={Delete02Icon} className="mr-2 size-4" />
+                    Delete Selected
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
-            <Link href={`/admin/${slug}/products/new`} data-tour-step-id="admin-products">
-              <Button size="sm" className="h-8 gap-1.5 text-xs font-medium text-background hover:bg-primary/90 shadow-sm">
+            {isReadOnly ? (
+              <Button size="sm" className="h-8 gap-1.5 text-xs font-medium text-background shadow-sm" disabled>
                 <HugeiconsIcon icon={Add01Icon} className="size-4" />
                 Add product
               </Button>
-            </Link>
+            ) : (
+              <Link href={`/admin/${slug}/products/new`} data-tour-step-id="admin-products">
+                <Button size="sm" className="h-8 gap-1.5 text-xs font-medium text-background hover:bg-primary/90 shadow-sm">
+                  <HugeiconsIcon icon={Add01Icon} className="size-4" />
+                  Add product
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 

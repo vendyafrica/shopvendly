@@ -15,8 +15,8 @@ import { CollectoPayoutModal } from "@/modules/admin/components/collecto-payout-
 
 const DEMO_ADMIN_USER = {
   id: "demo-user-id",
-  name: "Jane Smith",
-  email: "jane.smith@example.com",
+  name: "Jeremiah Sentomero",
+  email: "[EMAIL_ADDRESS]",
   image: null,
   createdAt: new Date().toISOString(),
 };
@@ -56,11 +56,12 @@ async function TenantAdminLayoutInner({
   basePath: string;
 }) {
   const headerList = await headers();
+  const isDemoStore = slug === "vendly";
 
   const authSession = await auth.api.getSession({ headers: headerList });
   let appSession: DemoAppSession | AppSession | null = authSession;
 
-  if (slug === "vendly" && !appSession?.user) {
+  if (isDemoStore && !appSession?.user) {
     appSession = {
       user: DEMO_ADMIN_USER,
     } satisfies DemoAdminSession;
@@ -70,18 +71,20 @@ async function TenantAdminLayoutInner({
     redirect(`/admin/${slug}/login?next=${encodeURIComponent(basePath)}`);
   }
 
-  const access = await resolveTenantAdminAccess(appSession.user.id, slug);
-  const store = access.store;
+  const readAccess = await resolveTenantAdminAccess(appSession.user.id, slug, "read");
+  const writeAccess = await resolveTenantAdminAccess(appSession.user.id, slug, "write");
+  const store = readAccess.store;
 
   if (!store) {
     redirect("/");
   }
 
-  const isDemoStore = slug === "vendly";
-
-  if (!access.isAuthorized && !isDemoStore) {
+  if (!readAccess.isAuthorized && !isDemoStore) {
     redirect(`/admin/${slug}/unauthorized`);
   }
+
+  const canWrite = Boolean(writeAccess.isAuthorized);
+  const isDemoViewer = isDemoStore && !canWrite;
 
   return (
     <Providers>
@@ -92,9 +95,12 @@ async function TenantAdminLayoutInner({
             storeId: store.id,
             storeSlug: slug,
             storeName: store.name,
+            storeDescription: store.description ?? undefined,
             defaultCurrency: store.defaultCurrency,
             collectoPassTransactionFeeToCustomer: store.collectoPassTransactionFeeToCustomer ?? false,
             collectoPayoutMode: store.collectoPayoutMode ?? "automatic_per_order",
+            isDemoViewer,
+            canWrite,
           }}
         >
           <SidebarProvider
@@ -107,7 +113,9 @@ async function TenantAdminLayoutInner({
             <AppSidebar basePath={basePath} />
             <HeaderActionsProvider>
               <SidebarInset>
-                <div className="flex flex-1 flex-col gap-4 p-4 pt-4 pb-24 md:pb-4">{children}</div>
+                <div className="flex flex-1 flex-col gap-4 p-4 pt-4 pb-24 md:pb-4">
+                  {children}
+                </div>
               </SidebarInset>
             </HeaderActionsProvider>
 

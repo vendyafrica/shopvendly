@@ -37,6 +37,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
 
+        const store = await storeRepo.findById(scope.storeId);
+        if (!store) {
+            return NextResponse.json({ error: "Store not found" }, { status: 404 });
+        }
+
+        if (!session?.user) {
+            if (store.slug !== "vendly") {
+                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            }
+
+            const product = await productService.getProductWithMedia(productId, scope.tenantId);
+            return NextResponse.json(product);
+        }
+
         const access = await resolveTenantAdminAccessByStoreId(session.user.id, scope.storeId, "read");
         if (!access.store) {
             return NextResponse.json({ error: "Store not found" }, { status: 404 });

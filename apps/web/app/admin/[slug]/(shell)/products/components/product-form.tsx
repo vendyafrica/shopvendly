@@ -35,6 +35,7 @@ interface ProductFormProps {
     storeId: string;
     onSuccess?: (product: ProductApiRow) => void;
     onCancel?: () => void;
+    readOnly?: boolean;
 }
 
 interface UploadedFile {
@@ -106,11 +107,13 @@ export function ProductForm({
     storeId,
     onSuccess,
     onCancel,
+    readOnly = false,
 }: ProductFormProps) {
     const router = useRouter();
     const queryClient = useQueryClient();
     const { bootstrap } = useTenant();
     const storeCurrency = bootstrap?.defaultCurrency || "UGX";
+    const isReadOnly = readOnly || (bootstrap?.storeSlug === "vendly" && !bootstrap?.canWrite);
     const { uploadFile } = useUpload();
 
     const [productName, setProductName] = React.useState(initialData?.productName || "");
@@ -122,7 +125,6 @@ export function ProductForm({
     const [error, setError] = React.useState<string | null>(null);
     const [collections, setCollections] = React.useState<StoreCollection[]>([]);
     const [selectedCollectionIds, setSelectedCollectionIds] = React.useState<string[]>(initialData?.collectionIds || []);
-    const [variantsEnabled, setVariantsEnabled] = React.useState(true);
     const [selectedColors, setSelectedColors] = React.useState<string[]>([]);
     const [sizePreset, setSizePreset] = React.useState<"none" | "alpha" | "uk">("none");
     const [selectedSizes, setSelectedSizes] = React.useState<string[]>([]);
@@ -152,12 +154,10 @@ export function ProductForm({
             setSelectedColors(nextColorOption?.values ?? []);
             setSizePreset(nextSizeOption?.preset === "uk" ? "uk" : nextSizeOption ? "alpha" : "none");
             setSelectedSizes(nextSizeOption?.values ?? []);
-            setVariantsEnabled(true);
         } else {
             setSelectedColors([]);
             setSelectedSizes([]);
             setSizePreset("none");
-            setVariantsEnabled(false);
         }
 
         if (initialData?.media) {
@@ -304,7 +304,7 @@ export function ProductForm({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (isSaving) return;
+        if (isSaving || isReadOnly) return;
 
         if (files.some(f => f.isUploading)) {
             alert("Please wait for images to finish uploading.");
@@ -323,7 +323,7 @@ export function ProductForm({
                 throw new Error("Original price must be greater than the current price");
             }
 
-            const payload: Record<string, any> = {
+            const payload: Record<string, unknown> = {
                 productName,
                 description,
                 priceAmount: priceValue,
@@ -512,11 +512,17 @@ export function ProductForm({
                     <Button type="button" variant="outline" size="sm" onClick={() => onCancel ? onCancel() : router.back()} disabled={isSaving}>
                         Cancel
                     </Button>
-                    <Button type="submit" size="sm" disabled={isSaving || files.some(f => f.isUploading)}>
-                        {isSaving ? "Saving..." : isEditing ? "Save changes" : "Create product"}
+                    <Button type="submit" size="sm" disabled={isReadOnly || isSaving || files.some(f => f.isUploading)}>
+                        {isReadOnly ? "Read only" : isSaving ? "Saving..." : isEditing ? "Save changes" : "Create product"}
                     </Button>
                 </div>
             </div>
+
+            {isReadOnly && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                    Demo viewers can inspect products here, but only a super admin can make changes.
+                </div>
+            )}
 
             {error && (
                 <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive border border-destructive/20">
@@ -524,7 +530,7 @@ export function ProductForm({
                 </div>
             )}
 
-            <div className="space-y-6">
+            <div className={isReadOnly ? "space-y-6 pointer-events-none select-none opacity-70" : "space-y-6"}>
                 {/* Top Section: Basic Info & Pricing/Inventory */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <div className="lg:col-span-2 space-y-6">
@@ -539,7 +545,7 @@ export function ProductForm({
                                         onChange={(e) => setProductName(e.target.value)}
                                         placeholder="e.g. Necklace test"
                                         required
-                                        disabled={isSaving}
+                                        disabled={isReadOnly || isSaving}
                                         className="h-10 text-base"
                                     />
                                 </div>
@@ -551,7 +557,7 @@ export function ProductForm({
                                         onChange={(e) => setDescription(e.target.value)}
                                         placeholder="Tell us more about this product..."
                                         rows={8}
-                                        disabled={isSaving}
+                                        disabled={isReadOnly || isSaving}
                                         className="resize-none min-h-[160px]"
                                     />
                                 </div>
@@ -622,7 +628,7 @@ export function ProductForm({
                                         type="number"
                                         min="0"
                                         required
-                                        disabled={isSaving}
+                                        disabled={isReadOnly || isSaving}
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -634,7 +640,7 @@ export function ProductForm({
                                         placeholder="Optional"
                                         type="number"
                                         min="0"
-                                        disabled={isSaving}
+                                        disabled={isReadOnly || isSaving}
                                         className="bg-muted/5 h-9"
                                     />
                                 </div>
@@ -653,7 +659,7 @@ export function ProductForm({
                                     placeholder="0"
                                     type="number"
                                     min="0"
-                                    disabled={isSaving}
+                                    disabled={isReadOnly || isSaving}
                                 />
                                 <p className="text-[10px] text-muted-foreground">Adjust your stock levels here.</p>
                             </div>

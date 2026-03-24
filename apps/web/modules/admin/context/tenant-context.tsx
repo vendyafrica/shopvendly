@@ -15,6 +15,8 @@ export type TenantBootstrap = {
   defaultCurrency?: string;
   collectoPassTransactionFeeToCustomer?: boolean;
   collectoPayoutMode?: "automatic_per_order" | "manual_batch";
+  isDemoViewer?: boolean;
+  canWrite?: boolean;
 };
 
 type TenantContextValue = {

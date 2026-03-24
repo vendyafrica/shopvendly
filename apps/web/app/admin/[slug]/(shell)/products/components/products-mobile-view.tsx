@@ -124,6 +124,7 @@ export function ProductsMobileView({
     const [selectedIds, setSelectedIds] = React.useState<Record<string, boolean>>({});
     const [isSelectionMode, setIsSelectionMode] = React.useState(false);
     const [activeTab, setActiveTab] = React.useState<"active" | "draft">("active");
+    const isReadOnly = Boolean(bootstrap?.storeSlug === "vendly" && !bootstrap?.canWrite);
 
     if (isLoading) {
         return <ProductsMobileSkeleton />;
@@ -133,6 +134,7 @@ export function ProductsMobileView({
     const AdminHref = bootstrap?.storeSlug ? `/admin/${bootstrap.storeSlug}` : "/admin";
 
     const handleAddProduct = () => {
+        if (isReadOnly) return;
         router.push(`${AdminHref}/products/new`);
     };
 
@@ -140,25 +142,31 @@ export function ProductsMobileView({
         router.push(`${AdminHref}/products/${id}`);
     };
 
-    const selectedCount = Object.values(selectedIds).filter(Boolean).length;
-
-    const toggleSelected = (id: string) => {
-        setSelectedIds((prev) => ({ ...prev, [id]: !prev[id] }));
-    };
-
     const clearSelection = () => {
         setSelectedIds({});
         setIsSelectionMode(false);
     };
 
-
     const publishProducts = async (items: ProductTableRow[]) => {
-        if (!onStatusChange || items.length === 0) return;
+        if (isReadOnly || !onStatusChange || items.length === 0) return;
         await Promise.all(items.map((product) => onStatusChange(product.id, "active")));
         clearSelection();
     };
 
+    const toggleSelected = (id: string) => {
+        setSelectedIds((prev) => {
+            const next = { ...prev };
+            if (next[id]) {
+                delete next[id];
+            } else {
+                next[id] = true;
+            }
+            return next;
+        });
+    };
+
     const selectedProducts = rows.filter((product) => selectedIds[product.id]);
+    const selectedCount = selectedProducts.length;
 
     const filteredRows = rows.filter((r) => {
         if (activeTab === "active") return r.status === "active";
@@ -221,21 +229,24 @@ export function ProductsMobileView({
                     <Button
                         size="sm"
                         variant={isSelectionMode ? "default" : "outline"}
+                        disabled={isReadOnly}
                         className={cn(
                             "flex-1 h-10 font-bold text-[13px] rounded-lg transition-all active:scale-[0.97]",
                             isSelectionMode ? "bg-slate-900 text-white" : "bg-slate-100 border-none text-slate-900 hover:bg-slate-200"
                         )}
                         onClick={() => {
+                            if (isReadOnly) return;
                             if (isSelectionMode) clearSelection();
                             else setIsSelectionMode(true);
                         }}
                     >
-                        {isSelectionMode ? "Done" : "Select Items"}
+                        {isReadOnly ? "Read only" : isSelectionMode ? "Done" : "Select Items"}
                     </Button>
                     <Button
                         size="sm"
                         className="flex-1 h-10 bg-primary/90 hover:bg-primary/80 text-white font-bold text-[13px] rounded-lg shadow-none border-none transition-all active:scale-[0.97]"
                         onClick={handleAddProduct}
+                        disabled={isReadOnly}
                     >
                         <HugeiconsIcon icon={ShoppingBag01Icon} className="size-4" />
                         Add Product
@@ -276,7 +287,7 @@ export function ProductsMobileView({
                             type="button"
                             onClick={() => void publishProducts(selectedProducts)}
                             className="font-medium text-primary flex items-center gap-1 active:scale-95 transition-transform"
-                            disabled={isPublishing}
+                            disabled={isPublishing || isReadOnly}
                         >
                             <HugeiconsIcon icon={Tick01Icon} className="size-3" />
                             Publish
@@ -290,6 +301,7 @@ export function ProductsMobileView({
                                 }
                             }}
                             className="font-medium text-rose-500 flex items-center gap-1 active:scale-95 transition-transform"
+                            disabled={isReadOnly}
                         >
                             <HugeiconsIcon icon={Delete02Icon} className="size-3" />
                             Delete
@@ -304,7 +316,7 @@ export function ProductsMobileView({
 
             {/* Product List - Redesigned as Premium Cards */}
             <div className="flex flex-col gap-3 px-2 py-6 pb-20">
-                {rows.length === 0 ? (
+                {filteredRows.length === 0 ? (
                     <div className="py-24 flex flex-col items-center justify-center text-center opacity-80 rounded-[32px] border-2 border-dashed border-border/40 bg-muted/5">
                         <div className="size-20 rounded-full border-2 border-dashed border-border/60 flex items-center justify-center mb-5 bg-background shadow-sm">
                             <HugeiconsIcon icon={ShoppingBag01Icon} className="size-10 text-muted-foreground/40" />
@@ -313,15 +325,20 @@ export function ProductsMobileView({
                         <p className="text-[13px] text-muted-foreground mt-1 px-8 text-balance">Your catalog is currently empty.</p>
                     </div>
                 ) : (
-                    rows.map((product) => (
+                    filteredRows.map((product) => (
                         <div
                             key={product.id}
                             className={cn(
                                 "group flex items-center gap-4 p-4 rounded-2xl bg-card border border-border/50 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:border-blue-200/50 hover:shadow-md transition-all active:scale-[0.99] cursor-pointer relative overflow-hidden",
                                 selectedIds[product.id] && "ring-2 ring-blue-500 ring-offset-2",
-                                isSelectionMode && product.status === "active" && "opacity-40 pointer-events-none grayscale-[0.5]"
+                                (isSelectionMode && product.status === "active") || isReadOnly ? "opacity-40" : "",
+                                isSelectionMode && product.status === "active" && "pointer-events-none grayscale-[0.5]"
                             )}
                             onClick={() => {
+                                if (isReadOnly) {
+                                    handleEditProduct(product.id);
+                                    return;
+                                }
                                 if (isSelectionMode && product.status !== "active") toggleSelected(product.id);
                                 else handleEditProduct(product.id);
                             }}
@@ -369,7 +386,7 @@ export function ProductsMobileView({
                                     {formatMoney(product.priceAmount, product.currency)}
                                 </span>
 
-                                {isSelectionMode ? (
+                                {isSelectionMode && !isReadOnly ? (
                                     <div className={cn(
                                         "size-5 rounded-full border-2 flex items-center justify-center transition-all",
                                         selectedIds[product.id] ? "bg-blue-600 border-blue-600 text-white scale-110" : "border-slate-300"
@@ -382,10 +399,12 @@ export function ProductsMobileView({
                                         className="p-1 px-4 ml-3 rounded-lg text-rose-500 active:scale-90 transition-transform hover:bg-rose-50"
                                         onClick={(e) => {
                                             e.stopPropagation();
+                                            if (isReadOnly) return;
                                             if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
                                                 onDelete(product.id);
                                             }
                                         }}
+                                        disabled={isReadOnly}
                                     >
                                         <HugeiconsIcon icon={Delete02Icon} className="size-4" />
                                     </button>
