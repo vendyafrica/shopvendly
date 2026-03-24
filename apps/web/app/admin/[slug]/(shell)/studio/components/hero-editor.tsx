@@ -12,6 +12,7 @@ interface HeroEditorProps {
     tenantId: string | null;
     heroMedia: string[];
     onUpdate: (urls: string[]) => void;
+    readOnly?: boolean;
 }
 
 const VIDEO_EXTENSIONS = [".mp4", ".webm", ".ogg"];
@@ -49,7 +50,8 @@ export function HeroEditor({
     storeSlug, 
     tenantId,
     heroMedia,
-    onUpdate 
+    onUpdate,
+    readOnly = false,
 }: HeroEditorProps) {
     const [isSaving, setIsSaving] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -122,7 +124,7 @@ export function HeroEditor({
     const hasHeroMedia = heroMedia.length > 0;
 
     const triggerFileDialog = () => {
-        if (!tenantId || isSaving || isUploading) return;
+        if (readOnly || !tenantId || isSaving || isUploading) return;
         inputRef.current?.click();
     };
 
@@ -135,14 +137,14 @@ export function HeroEditor({
     const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
         setIsDragging(false);
-        if (!tenantId || isSaving || isUploading) return;
+        if (readOnly || !tenantId || isSaving || isUploading) return;
         const file = event.dataTransfer.files?.[0] ?? null;
         void handleCoverSelected(file);
     };
 
     const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
-        if (!tenantId || isSaving || isUploading) return;
+        if (readOnly || !tenantId || isSaving || isUploading) return;
         setIsDragging(true);
     };
 
@@ -175,10 +177,16 @@ export function HeroEditor({
                 onDragLeave={handleDragLeave}
                 className={cn(
                     "relative overflow-hidden rounded-xl border border-dashed px-6 py-12 text-center transition group",
-                    !tenantId || isSaving || isUploading ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-neutral-400 hover:bg-neutral-50/50",
+                    readOnly || !tenantId || isSaving || isUploading ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-neutral-400 hover:bg-neutral-50/50",
                     isDragging ? "border-primary bg-primary/5" : "border-neutral-300 bg-neutral-50/30"
                 )}
             >
+                {readOnly ? (
+                    <div className="absolute right-4 top-4 rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold text-amber-800">
+                        Demo view only
+                    </div>
+                ) : null}
+
                 {hasHeroMedia ? (
                     <div className="relative aspect-video w-full overflow-hidden rounded-lg">
                         {isVideoUrl(heroMedia[0] ?? "") ? (
@@ -226,7 +234,7 @@ export function HeroEditor({
                         type="button"
                         size="sm"
                         variant="outline"
-                        disabled={!tenantId || isSaving || isUploading}
+                        disabled={readOnly || !tenantId || isSaving || isUploading}
                     >
                         {isUploading ? "Uploading..." : "Choose file"}
                     </Button>

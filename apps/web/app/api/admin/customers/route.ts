@@ -75,11 +75,13 @@ export async function GET(request: NextRequest) {
       const first = r.firstOrderAt ? new Date(r.firstOrderAt) : null;
 
       const status =
-        first && first >= newThreshold
-          ? "New"
-          : last && last < churnThreshold
-            ? "Churn Risk"
-            : "Active";
+        r.orders > 1
+          ? "Returning"
+          : first && first >= newThreshold
+            ? "New"
+            : last && last < churnThreshold
+              ? "Churn Risk"
+              : "Active";
 
       let name = r.name || "—";
       let email = r.email || "—";

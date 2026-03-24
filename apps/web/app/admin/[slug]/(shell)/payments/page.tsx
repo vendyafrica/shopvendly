@@ -95,9 +95,14 @@ export default async function PaymentsPage({
 
       <div className="md:hidden">
         <PaymentsMobileView
-          storeName={store.name}
-          storeLogoUrl={store.logoUrl}
-          storeSlug={slug}
+          bootstrap={{
+            tenantId: store.tenantId,
+            storeId: store.id,
+            storeSlug: slug,
+            storeName: store.name,
+            storeLogoUrl: store.logoUrl || undefined,
+            defaultCurrency: currency,
+          }}
           revenue={breakdown.revenue}
           walletBalance={walletBalance}
           bulkBalance={bulkBalance}

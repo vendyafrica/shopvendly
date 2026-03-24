@@ -10,10 +10,13 @@ export type TenantBootstrap = {
   storeId: string;
   storeSlug: string;
   storeName?: string;
+  storeDescription?: string;
   storeLogoUrl?: string;
   defaultCurrency?: string;
   collectoPassTransactionFeeToCustomer?: boolean;
   collectoPayoutMode?: "automatic_per_order" | "manual_batch";
+  isDemoViewer?: boolean;
+  canWrite?: boolean;
 };
 
 type TenantContextValue = {

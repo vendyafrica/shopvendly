@@ -47,6 +47,8 @@ function getActivityBg(type: ActivityEventType) {
   }
 }
 
+import { ActivityMobileView } from "./components/activity-mobile-view";
+
 export default function ActivityPage() {
   const { bootstrap, error: bootstrapError } = useTenant();
   const router = useRouter();
@@ -103,7 +105,15 @@ export default function ActivityPage() {
 
   return (
     <div className="flex-1 space-y-4 px-4 py-4 md:px-8 md:py-6">
-      <div className="flex flex-col gap-4">
+      <div className="md:hidden">
+        <ActivityMobileView 
+          bootstrap={bootstrap}
+          events={events}
+          isLoading={isLoading}
+        />
+      </div>
+
+      <div className="hidden md:flex flex-col gap-4">
         {/* Desktop Header */}
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -124,7 +134,7 @@ export default function ActivityPage() {
         </div>
       </div>
 
-      <div className="mt-2 flex flex-col gap-4 max-w-2xl mx-auto md:mx-0">
+      <div className="hidden md:flex mt-2 flex-col gap-4 max-w-2xl mx-auto md:mx-0 w-full">
         {(error || bootstrapError) && (
           <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive border border-destructive/25 flex items-center gap-3">
             <HugeiconsIcon icon={AlertCircleIcon} className="size-5 shrink-0" />

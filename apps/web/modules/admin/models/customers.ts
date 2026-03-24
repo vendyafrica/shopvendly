@@ -5,5 +5,5 @@ export type CustomerRow = {
   totalSpend: number;
   currency: string;
   lastOrder: string;
-  status: "Active" | "Churn Risk" | "New";
+  status: "Active" | "Churn Risk" | "New" | "Returning";
 };

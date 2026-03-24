@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { Button } from "@shopvendly/ui/components/button";
 import { Textarea } from "@shopvendly/ui/components/textarea";
 import { Switch } from "@shopvendly/ui/components/switch";
@@ -17,10 +18,14 @@ import { useTenant } from "@/modules/admin/context/tenant-context";
 import { HeroEditor } from "../studio/components/hero-editor";
 import { IntegrationsPanel } from "@/modules/admin/components/integrations-panel";
 import { useUpload } from "@/modules/media/hooks/use-upload";
+import { signInWithGoogle } from "@shopvendly/auth/react";
+import { Google } from "@shopvendly/ui/components/svgs/google";
 
 import { 
+  AlertCircleIcon,
   ArrowRight01Icon, 
   Image02Icon, 
+  Loading03Icon,
   Settings02Icon, 
   LegalIcon, 
   Wallet02Icon, 
@@ -67,8 +72,10 @@ type CollectoBalanceSummary = {
 
 export function SettingsClient({ store }: { store: SettingsStore }) {
   const { bootstrap, refetch } = useTenant();
+  const pathname = usePathname();
   const logoInputRef = React.useRef<HTMLInputElement | null>(null);
   const { uploadFile, isUploading } = useUpload();
+  const [isSigningIn, setIsSigningIn] = React.useState(false);
 
   const [currency, setCurrency] = React.useState<AllowedCurrency>(
     (store.defaultCurrency as AllowedCurrency) || "UGX"
@@ -92,6 +99,8 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
   const [success, setSuccess] = React.useState<string | null>(null);
 
   const storeId = bootstrap?.storeId ?? store.id;
+  const isDemoStore = bootstrap?.storeSlug === "vendly";
+  const isReadOnly = Boolean(isDemoStore && !bootstrap?.canWrite);
   const persistedCollectoPayoutMode = store.collectoPayoutMode || bootstrap?.collectoPayoutMode || "automatic_per_order";
   const isManualPayoutMode = collectoPayoutMode === "manual_batch";
   const isCurrencyBusy = isSavingCurrency;
@@ -281,6 +290,18 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
     }
   };
 
+  const handleDemoLogin = async () => {
+    if (!isReadOnly) return;
+    try {
+      setIsSigningIn(true);
+      await signInWithGoogle({
+        callbackURL: pathname,
+      });
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-4xl p-4 pb-24 sm:p-6 lg:p-8">
       <div className="mb-12 flex flex-col gap-2">
@@ -288,7 +309,39 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
         <p className="text-sm text-neutral-500">Manage your store details, policies, payments, and integrations.</p>
       </div>
 
-      <div className="space-y-16">
+      {isReadOnly && (
+        <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 rounded-full bg-amber-100 p-2 text-amber-700">
+                <HugeiconsIcon icon={AlertCircleIcon} className="h-4 w-4" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-semibold text-amber-950">Demo Store</p>
+                <p className="text-sm text-amber-900/80">
+                 This is a demo store. To make changes, sign in with Google.
+                </p>
+              </div>
+            </div>
+
+            <Button variant="outline" onClick={handleDemoLogin} disabled={isSigningIn} className="h-10 rounded-xl px-4 font-semibold">
+              {isSigningIn ? (
+                <>
+                  <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in…
+                </>
+              ) : (
+                <>
+                  <Google />
+                  <span className="ml-2">Login for full access</span>
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className={isReadOnly ? "space-y-16 pointer-events-none opacity-70" : "space-y-16"}>
         {error ? (
           <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
             {error}
@@ -586,6 +639,7 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
               tenantId={store.tenantId}
               heroMedia={heroMedia}
               onUpdate={setHeroMedia}
+              readOnly={isReadOnly}
             />
           </div>
         </section>
