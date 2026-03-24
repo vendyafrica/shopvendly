@@ -60,7 +60,7 @@ const columns: ColumnDef<CustomerRow>[] = [
     cell: ({ row }) => {
       const status = row.original.status;
       const tone =
-        status === "Active" ? "text-emerald-600" : status === "New" ? "text-primary" : "text-amber-600";
+        status === "Returning" ? "text-blue-600" : status === "Active" ? "text-emerald-600" : status === "New" ? "text-primary" : "text-amber-600";
       return <span className={`text-sm font-medium ${tone}`}>{status}</span>;
     },
   },

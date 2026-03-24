@@ -134,14 +134,14 @@ export function ActivityMobileView({
                  </div>
 
                  <div className="space-y-1 mb-6 px-5">
-                     <h1 className="font-extrabold text-[16px] tracking-tight text-slate-900">{storeName}</h1>
+                     <h1 className="font-extrabold text-[16px] capitalize tracking-tight text-slate-900">{storeName}</h1>
                      <p className="text-[14px] text-slate-600 leading-[1.5] max-w-[95%]">
                          {bootstrap?.storeDescription || "Stay updated with real-time store activity and customer events."}
                      </p>
                      <Link
                          href={storeSlug ? `https://${storeSlug}.shopvendly.com` : "#"}
                          target="_blank"
-                         className="text-[14px] text-blue-600 font-bold hover:underline flex items-center gap-1 mt-1"
+                         className="text-[14px] text-primary/90 font-bold hover:underline flex items-center gap-1 mt-1"
                      >
                          {storeSlug ? `shopvendly.com/${storeSlug}` : "shopvendly.com"}
                          <HugeiconsIcon icon={Share01Icon} className="size-3.5" />

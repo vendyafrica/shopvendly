@@ -210,7 +210,7 @@ export function ProductsMobileView({
                     <Link
                         href={bootstrap?.storeSlug ? `https://${bootstrap.storeSlug}.shopvendly.com` : "#"}
                         target="_blank"
-                        className="text-[15px] text-primary/90 font-bold hover:underline flex items-center gap-1 mt-1"
+                        className="text-[14px] text-primary/90 font-bold hover:underline flex items-center gap-1 mt-1"
                     >
                         {bootstrap?.storeSlug ? `shopvendly.com/${bootstrap.storeSlug}` : "shopvendly.com"}
                         <HugeiconsIcon icon={Share01Icon} className="size-3.5" />
@@ -234,7 +234,7 @@ export function ProductsMobileView({
                     </Button>
                     <Button
                         size="sm"
-                        className="flex-1 h-10 bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-bold text-[13px] rounded-lg shadow-sm transition-all active:scale-[0.97] flex items-center gap-2"
+                        className="flex-1 h-10 bg-primary/90 hover:bg-primary/80 text-white font-bold text-[13px] rounded-lg shadow-none border-none transition-all active:scale-[0.97]"
                         onClick={handleAddProduct}
                     >
                         <HugeiconsIcon icon={ShoppingBag01Icon} className="size-4" />
@@ -303,7 +303,7 @@ export function ProductsMobileView({
             )}
 
             {/* Product List - Redesigned as Premium Cards */}
-            <div className="flex flex-col gap-3 px-4 py-6 pb-20">
+            <div className="flex flex-col gap-3 px-2 py-6 pb-20">
                 {rows.length === 0 ? (
                     <div className="py-24 flex flex-col items-center justify-center text-center opacity-80 rounded-[32px] border-2 border-dashed border-border/40 bg-muted/5">
                         <div className="size-20 rounded-full border-2 border-dashed border-border/60 flex items-center justify-center mb-5 bg-background shadow-sm">

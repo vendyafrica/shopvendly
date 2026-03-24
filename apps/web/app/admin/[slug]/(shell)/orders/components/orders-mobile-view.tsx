@@ -89,7 +89,7 @@ export function OrdersMobileView({
                      <Link
                          href={bootstrap?.storeSlug ? `https://${bootstrap.storeSlug}.shopvendly.com` : "#"}
                          target="_blank"
-                         className="text-[14px] text-blue-600 font-bold hover:underline flex items-center gap-1 mt-1"
+                         className="text-[14px] text-primary/80 font-bold hover:underline flex items-center gap-1 mt-1"
                      >
                          {bootstrap?.storeSlug ? `shopvendly.com/${bootstrap.storeSlug}` : "shopvendly.com"}
                          <HugeiconsIcon icon={Share01Icon} className="size-3.5" />
@@ -106,7 +106,7 @@ export function OrdersMobileView({
                      </Button>
                      <Button
                          size="sm"
-                         className="flex-1 h-10 bg-slate-900 hover:bg-slate-800 text-white font-bold text-[13px] rounded-lg shadow-none border-none transition-all active:scale-[0.97]"
+                         className="flex-1 h-10 bg-primary/90 hover:bg-primary/80 text-white font-bold text-[13px] rounded-lg shadow-none border-none transition-all active:scale-[0.97]"
                          onClick={() => router.push(adminHref)}
                      >
                          Dashboard
@@ -119,7 +119,7 @@ export function OrdersMobileView({
                         onClick={() => setActiveTab("completed")}
                         className={cn(
                             "flex-1 flex justify-center py-3 border-b-2 transition-colors",
-                            activeTab === "completed" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400"
+                            activeTab === "completed" ? "border-primary/90 text-primary/90" : "border-transparent text-slate-400"
                         )}
                      >
                         <HugeiconsIcon icon={Invoice01Icon} className="size-6" />
@@ -128,7 +128,7 @@ export function OrdersMobileView({
                         onClick={() => setActiveTab("pending")}
                         className={cn(
                             "flex-1 flex justify-center py-3 border-b-2 transition-colors",
-                            activeTab === "pending" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400"
+                            activeTab === "pending" ? "border-primary/90 text-primary/90" : "border-transparent text-slate-400"
                         )}
                      >
                         <HugeiconsIcon icon={PackageOpenIcon} className="size-6" />
@@ -160,8 +160,8 @@ export function OrdersMobileView({
                                     onClick={() => handleOrderClick(tx)}
                                     className="group flex items-center gap-4 p-4 rounded-2xl bg-card border border-border/50 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:border-blue-200/50 hover:shadow-md transition-all active:scale-[0.99] cursor-pointer relative overflow-hidden"
                                 >
-                                    <div className="size-12 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 shrink-0">
-                                        <HugeiconsIcon icon={Invoice01Icon} className="size-6 text-slate-400" />
+                                    <div className="size-12 rounded-xl flex items-center justify-center shrink-0">
+                                        <HugeiconsIcon icon={Invoice01Icon} className="size-6 text-green-600" />
                                     </div>
 
                                     <div className="flex-1 min-w-0 flex flex-col">

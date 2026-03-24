@@ -24,7 +24,7 @@ export default function CustomersPage() {
   const params = useParams();
   const slug = params.slug as string;
 
-  const [statusFilter, setStatusFilter] = React.useState<"all" | "New" | "Active" | "Churn Risk">("all");
+  const [statusFilter, setStatusFilter] = React.useState<"all" | "New" | "Active" | "Churn Risk" | "Returning">("all");
   const [searchQuery, setSearchQuery] = React.useState("");
 
   const { data: customers = [], isLoading, error: queryError, refetch } = useCustomers(bootstrap?.storeId);
@@ -67,6 +67,7 @@ export default function CustomersPage() {
   const newCount = displayCustomers.filter((c) => c.status === "New").length;
   const activeCount = displayCustomers.filter((c) => c.status === "Active").length;
   const churnCount = displayCustomers.filter((c) => c.status === "Churn Risk").length;
+  const returningCount = displayCustomers.filter((c) => c.status === "Returning").length;
 
   return (
     <div className="flex-1 space-y-4 px-4 py-4 md:px-8 md:py-6">
@@ -102,9 +103,9 @@ export default function CustomersPage() {
         <div className="hidden md:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { label: "Total Customers", value: totalCustomers.toLocaleString() },
-            { label: "New (30 days)", value: newCount.toLocaleString() },
+            { label: "Returning", value: returningCount.toLocaleString() },
             { label: "Active", value: activeCount.toLocaleString() },
-            { label: "Churn Risk", value: churnCount.toLocaleString() }
+            { label: "New (30 days)", value: newCount.toLocaleString() }
           ].map((stat, i) => (
             <div key={i} className="flex flex-col gap-1 rounded-2xl border border-border/60 bg-white px-6 py-4 shadow-sm">
               <span className="text-[11px] font-bold text-muted-foreground uppercase leading-tight tracking-wider">{stat.label}</span>
@@ -133,7 +134,7 @@ export default function CustomersPage() {
 
           <div className="flex flex-col gap-3 p-2 sm:flex-row sm:items-center justify-between border-b border-border/40 bg-muted/5">
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar px-1">
-              {(["all", "New", "Active", "Churn Risk"] as const).map((tab) => (
+              {(["all", "Returning", "Active", "New", "Churn Risk"] as const).map((tab) => (
                 <Button 
                   key={tab}
                   variant="ghost" 
@@ -174,9 +175,9 @@ export default function CustomersPage() {
             customers={displayCustomers}
             statSegments={[
                 { label: "Total Customers", value: totalCustomers.toLocaleString(), changeLabel: "", changeTone: "neutral" },
-                { label: "New (30 days)", value: newCount.toLocaleString(), changeLabel: "", changeTone: "neutral" },
+                { label: "Returning", value: returningCount.toLocaleString(), changeLabel: "", changeTone: "neutral" },
                 { label: "Active", value: activeCount.toLocaleString(), changeLabel: "", changeTone: "neutral" },
-                { label: "Churn Risk", value: churnCount.toLocaleString(), changeLabel: "", changeTone: "neutral" }
+                { label: "New", value: newCount.toLocaleString(), changeLabel: "", changeTone: "neutral" }
             ]}
           />
         </div>

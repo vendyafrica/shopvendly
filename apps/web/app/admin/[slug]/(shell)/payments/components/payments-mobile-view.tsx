@@ -84,11 +84,11 @@ export function PaymentsMobileView({
  
                      <div className="flex-1 flex justify-around items-center pl-6">
                          <div className="flex flex-col items-center">
-                             <span className="font-bold text-[18px] text-slate-900 leading-none mb-1">{formatCurrency(revenue).replace('$', '').replace('UGX', '')}</span>
+                             <span className="font-bold text-[18px] text-slate-900 leading-none mb-1">{formatCurrency(revenue)}</span>
                              <span className="text-[13px] text-slate-500 font-medium">Revenue</span>
                          </div>
                          <div className="flex flex-col items-center">
-                             <span className="font-bold text-[18px] text-slate-900 leading-none mb-1">{formatCurrency(withdrawable).replace('$', '').replace('UGX', '')}</span>
+                             <span className="font-bold text-[18px] text-slate-900 leading-none mb-1">{formatCurrency(withdrawable)}</span>
                              <span className="text-[13px] text-slate-500 font-medium">Withdrawable</span>
                          </div>
                      </div>
@@ -102,7 +102,7 @@ export function PaymentsMobileView({
                      <Link
                          href={storeSlug ? `https://${storeSlug}.shopvendly.com` : "#"}
                          target="_blank"
-                         className="text-[14px] text-blue-600 font-bold hover:underline flex items-center gap-1 mt-1"
+                         className="text-[14px] text-primary/90 font-bold hover:underline flex items-center gap-1 mt-1"
                      >
                          {storeSlug ? `shopvendly.com/${storeSlug}` : "shopvendly.com"}
                          <HugeiconsIcon icon={Share01Icon} className="size-3.5" />
@@ -119,7 +119,7 @@ export function PaymentsMobileView({
                      </Button>
                      <Button
                          size="sm"
-                         className="flex-1 h-10 bg-slate-900 hover:bg-slate-800 text-white font-bold text-[13px] rounded-lg shadow-none border-none transition-all active:scale-[0.97]"
+                         className="flex-1 h-10 bg-primary/90 hover:bg-primary/80 text-white font-bold text-[13px] rounded-lg shadow-none border-none transition-all active:scale-[0.97]"
                          onClick={() => router.push(adminHref)}
                      >
                          Dashboard
@@ -132,7 +132,7 @@ export function PaymentsMobileView({
                         onClick={() => setActiveTab("payments")}
                         className={cn(
                             "flex-1 flex justify-center py-3 border-b-2 transition-colors",
-                            activeTab === "payments" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400"
+                            activeTab === "payments" ? "border-primary/90 text-primary/90" : "border-transparent text-slate-400"
                         )}
                      >
                         <HugeiconsIcon icon={Invoice01Icon} className="size-6" />
@@ -141,7 +141,7 @@ export function PaymentsMobileView({
                         onClick={() => setActiveTab("analysis")}
                         className={cn(
                             "flex-1 flex justify-center py-3 border-b-2 transition-colors",
-                            activeTab === "analysis" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400"
+                            activeTab === "analysis" ? "border-primary/90 text-primary/90" : "border-transparent text-slate-400"
                         )}
                      >
                         <HugeiconsIcon icon={AnalyticsUpIcon} className="size-6" />
@@ -200,8 +200,8 @@ export function PaymentsMobileView({
                                                 onClick={() => handleOrderClick(tx)}
                                                 className="group flex items-center gap-4 p-4 rounded-2xl bg-white border border-slate-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] hover:border-blue-200/50 transition-all active:scale-[0.99] cursor-pointer mx-4"
                                             >
-                                                <div className="size-12 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 shrink-0">
-                                                    <HugeiconsIcon icon={Invoice01Icon} className="size-6 text-slate-400" />
+                                                <div className="size-12 rounded-xl flex items-center justify-center shrink-0">
+                                                    <HugeiconsIcon icon={Invoice01Icon} className="size-6 text-primary/90" />
                                                 </div>
 
                                                 <div className="flex-1 min-w-0 flex flex-col">

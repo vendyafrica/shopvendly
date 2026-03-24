@@ -31,6 +31,7 @@ const STATUS_COLORS = {
     "New": "text-blue-500 bg-blue-50 border-blue-200",
     "Active": "text-emerald-500 bg-emerald-50 border-emerald-200",
     "Churn Risk": "text-amber-500 bg-amber-50 border-amber-200",
+    "Returning": "text-indigo-500 bg-indigo-50 border-indigo-200",
 };
 
 export function CustomersMobileView({
@@ -40,12 +41,13 @@ export function CustomersMobileView({
 }: CustomersMobileViewProps) {
     const [selectedCustomer, setSelectedCustomer] = React.useState<CustomerRow | null>(null);
     const [sheetOpen, setSheetOpen] = React.useState(false);
-    const [activeTab, setActiveTab] = React.useState<"active" | "new">("active");
+    const [activeTab, setActiveTab] = React.useState<"active" | "new" | "returning">("active");
 
     const storeName = bootstrap?.storeName || "My Store";
 
     const filteredCustomers = customers.filter((c) => {
-        if (activeTab === "active") return c.status === "Active";
+        if (activeTab === "active") return c.status === "Active" || c.status === "Returning";
+        if (activeTab === "returning") return c.status === "Returning";
         return c.status === "New";
     });
 
@@ -87,7 +89,7 @@ export function CustomersMobileView({
                      <Link
                          href={bootstrap?.storeSlug ? `https://${bootstrap.storeSlug}.shopvendly.com` : "#"}
                          target="_blank"
-                         className="text-[14px] text-blue-600 font-bold hover:underline flex items-center gap-1 mt-1"
+                         className="text-[14px] text-primary/90 font-bold hover:underline flex items-center gap-1 mt-1"
                      >
                          {bootstrap?.storeSlug ? `shopvendly.com/${bootstrap.storeSlug}` : "shopvendly.com"}
                          <HugeiconsIcon icon={Share01Icon} className="size-3.5" />
@@ -104,7 +106,7 @@ export function CustomersMobileView({
                      </Button>
                      <Button
                          size="sm"
-                         className="flex-1 h-10 bg-slate-900 hover:bg-slate-800 text-white font-bold text-[13px] rounded-lg shadow-none border-none transition-all active:scale-[0.97]"
+                         className="flex-1 h-10 bg-primary/90 hover:bg-primary/80 text-white font-bold text-[13px] rounded-lg shadow-none border-none transition-all active:scale-[0.97]"
                      >
                          Add Customer
                      </Button>
@@ -116,16 +118,25 @@ export function CustomersMobileView({
                         onClick={() => setActiveTab("active")}
                         className={cn(
                             "flex-1 flex justify-center py-3 border-b-2 transition-colors",
-                            activeTab === "active" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400"
+                            activeTab === "active" ? "border-primary/90 text-primary/90" : "border-transparent text-slate-400"
                         )}
                      >
                         <HugeiconsIcon icon={AnalyticsUpIcon} className="size-6" />
                      </button>
                      <button
+                        onClick={() => setActiveTab("returning")}
+                        className={cn(
+                            "flex-1 flex justify-center py-3 border-b-2 transition-colors",
+                            activeTab === "returning" ? "border-primary/90 text-primary/90" : "border-transparent text-slate-400"
+                        )}
+                     >
+                        <HugeiconsIcon icon={CheckmarkBadge01Icon} className="size-6" />
+                     </button>
+                     <button
                         onClick={() => setActiveTab("new")}
                         className={cn(
                             "flex-1 flex justify-center py-3 border-b-2 transition-colors",
-                            activeTab === "new" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400"
+                            activeTab === "new" ? "border-primary/90 text-primary/90" : "border-transparent text-slate-400"
                         )}
                      >
                         <HugeiconsIcon icon={UserMultiple02Icon} className="size-6" />
