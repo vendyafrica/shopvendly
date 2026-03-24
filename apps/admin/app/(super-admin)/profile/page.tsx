@@ -5,18 +5,63 @@ import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/compone
 import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { User02Icon, Mail01Icon, Shield01Icon} from "@hugeicons/core-free-icons" ;
+import { authClient } from "@shopvendly/auth/client";
+import { Skeleton } from "@shopvendly/ui/components/skeleton";
 
 
 export default function SuperAdminProfilePage() {
-  // Normally we'd get this from a session context
-  const user = {
-    name: "Super Admin",
-    email: "admin@vendly.africa",
-    role: "Super Administrator",
-    avatar: ""
-  };
+  const { data: session, isPending: loading } = authClient.useSession();
+  const user = session?.user;
 
-  const firstName = user.name.split(" ")[0] || "Admin";
+  if (loading) {
+    return (
+      <div className="space-y-8 max-w-4xl mx-auto py-6">
+        <div className="space-y-2">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-4 w-96" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-3">
+            <Card className="md:col-span-1 border-border/50 shadow-sm overflow-hidden">
+                <div className="h-24 bg-muted/20" />
+                <CardContent className="pt-0 -mt-12 flex flex-col items-center text-center pb-8">
+                    <Skeleton className="h-24 w-24 rounded-full border-4 border-background" />
+                    <div className="mt-4 space-y-2">
+                        <Skeleton className="h-6 w-32" />
+                        <Skeleton className="h-4 w-24" />
+                    </div>
+                </CardContent>
+            </Card>
+            <Card className="md:col-span-2 border-border/50 shadow-sm">
+                <CardHeader>
+                    <Skeleton className="h-6 w-48" />
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="grid gap-6 sm:grid-cols-2">
+                        <div className="space-y-2">
+                            <Skeleton className="h-3 w-20" />
+                            <Skeleton className="h-12 w-full rounded-lg" />
+                        </div>
+                        <div className="space-y-2">
+                            <Skeleton className="h-3 w-24" />
+                            <Skeleton className="h-12 w-full rounded-lg" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+        <div className="flex items-center justify-center min-h-[400px]">
+            <p className="text-muted-foreground">Please sign in to view your profile.</p>
+        </div>
+    );
+  }
+
+  const firstName = user.name?.split(" ")[0] || "Admin";
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto py-6">
@@ -31,14 +76,14 @@ export default function SuperAdminProfilePage() {
           <div className="h-24 bg-gradient-to-r from-indigo-500/20 to-purple-500/5" />
           <CardContent className="pt-0 -mt-12 flex flex-col items-center text-center pb-8">
             <Avatar className="h-24 w-24 border-4 border-background shadow-md">
-              <AvatarImage src={user.avatar} alt={user.name} />
+              <AvatarImage src={user.image ?? ""} alt={user.name} />
               <AvatarFallback className="text-2xl font-bold bg-indigo-50 text-indigo-600">
                 {firstName.charAt(0)}
               </AvatarFallback>
             </Avatar>
-            <div className="mt-4 space-y-1">
-              <h2 className="text-xl font-bold">{user.name}</h2>
-              <p className="text-sm text-indigo-600 font-semibold">{user.role}</p>
+            <div className="mt-4 space-y-1 px-4 w-full">
+              <h2 className="text-xl font-bold truncate">{user.name}</h2>
+              <p className="text-sm text-indigo-600 font-semibold">Super Administrator</p>
             </div>
           </CardContent>
         </Card>
@@ -64,7 +109,7 @@ export default function SuperAdminProfilePage() {
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">System Email</p>
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/30">
                   <HugeiconsIcon icon={Mail01Icon} size={18} className="text-muted-foreground" />
-                  <span className="font-medium">{user.email}</span>
+                  <span className="font-medium truncate">{user.email}</span>
                 </div>
               </div>
             </div>

@@ -14,16 +14,8 @@ import {
   PackageOpenIcon,
   Analytics02Icon,
   Settings01Icon,
-  MenuSquareIcon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@shopvendly/ui/lib/utils";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@shopvendly/ui/components/sheet";
 
 type DockItem = {
   label: string;
@@ -55,25 +47,22 @@ export function AdminMobileDock() {
 
   if (!mounted) return null;
 
-  const primary: DockItem[] = [
+  const dockItems: DockItem[] = [
     { label: "Home", href: "/dashboard", icon: NineCircleIcon, exact: true },
-    { label: "Tenants", href: "/tenants", icon: UserMultiple02Icon },
     { label: "Stores", href: "/stores", icon: Store01Icon },
-    { label: "Categories", href: "/categories", icon: GroupLayersIcon },
-    { label: "Users", href: "/users", icon: UserGroupIcon },
-  ];
-
-  const more: DockItem[] = [
-    { label: "Payments", href: "/payments", icon: Payment02Icon },
     { label: "Orders", href: "/orders", icon: PackageOpenIcon },
+    { label: "Payments", href: "/payments", icon: Payment02Icon },
+    { label: "Users", href: "/users", icon: UserGroupIcon },
+    { label: "Tenants", href: "/tenants", icon: UserMultiple02Icon },
+    { label: "Categories", href: "/categories", icon: GroupLayersIcon },
     { label: "Analytics", href: "/analytics", icon: Analytics02Icon },
     { label: "Settings", href: "/settings", icon: Settings01Icon },
   ];
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80 md:hidden">
-      <nav className="flex items-center justify-around px-2 pt-2 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
-        {primary.map((item) => {
+      <nav className="flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth px-4 pt-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] snap-x snap-mandatory">
+        {dockItems.map((item) => {
           const isActive = isActivePath(pathname, item);
           return (
             <Link
@@ -81,7 +70,7 @@ export function AdminMobileDock() {
               href={item.href}
               aria-label={item.label}
               className={cn(
-                "relative flex h-11 w-14 items-center justify-center rounded-full transition-colors",
+                "relative flex h-11 w-14 shrink-0 snap-center items-center justify-center rounded-full transition-colors",
                 isActive ? "text-foreground bg-muted" : "text-muted-foreground"
               )}
             >
@@ -90,40 +79,6 @@ export function AdminMobileDock() {
             </Link>
           );
         })}
-
-        <Sheet>
-          <SheetTrigger
-            aria-label="More"
-            className={cn(
-              "relative flex h-11 w-14 items-center justify-center rounded-full text-muted-foreground transition-colors"
-            )}
-          >
-            <HugeiconsIcon icon={MenuSquareIcon} className="size-6" />
-          </SheetTrigger>
-          <SheetContent side="bottom" className="rounded-t-2xl">
-            <SheetHeader>
-              <SheetTitle>More</SheetTitle>
-            </SheetHeader>
-            <div className="grid gap-2 px-4 pb-4">
-              {more.map((item) => {
-                const isActive = isActivePath(pathname, item);
-                return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg border border-border/70 bg-card px-3 py-3 text-sm",
-                      isActive ? "text-foreground" : "text-muted-foreground"
-                    )}
-                  >
-                    <HugeiconsIcon icon={item.icon} className="size-5" />
-                    <span className="font-medium">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </SheetContent>
-        </Sheet>
       </nav>
     </div>
   );
