@@ -168,15 +168,16 @@ export function ProductsMobileView({
     return (
         <div className="-mx-4 -mt-4 flex flex-col w-[calc(100%+2rem)] sm:hidden bg-white min-h-screen font-sans">
             {/* Refined Profile Header */}
-            <div className="px-1 pt-6 pb-2 border-b border-slate-100">
+            <div className="px-1 pt-6 pb-2 border-b border-slate-100 italic-style">
                 <div className="flex items-center justify-between mb-6 px-5">
                     <div className="relative">
-                        <div className="size-[88px] rounded-full border-[1.5px] border-slate-100 overflow-hidden bg-slate-50 shadow-sm">
+                        <div className="size-[88px] rounded-full border border-slate-100 flex items-center justify-center bg-white shadow-sm overflow-hidden">
                             <StoreAvatar
                                 storeName={storeName}
                                 logoUrl={bootstrap?.storeLogoUrl}
                                 size="lg"
-                                className="size-full border-none rounded-full"
+                                shape="square"
+                                className="size-[58px] rounded-[24px] border-none"
                             />
                         </div>
                     </div>
@@ -202,7 +203,7 @@ export function ProductsMobileView({
                 </div>
 
                 <div className="space-y-1 mb-6 px-5">
-                    <h1 className="font-extrabold capitalize text-[16px] tracking-tight text-slate-900">{storeName}</h1>
+                    <h1 className="font-extrabold text-[16px] tracking-tight text-slate-900">{storeName}</h1>
                     <p className="text-[14px] text-slate-600 leading-[1.5] max-w-[95%]">
                         {bootstrap?.storeDescription || "Manage your product catalog and track sales performance in real-time."}
                     </p>

@@ -51,15 +51,16 @@ export function OrdersMobileView({
     return (
         <div className="-mx-4 -mt-4 flex flex-col w-[calc(100%+2rem)] sm:hidden bg-white min-h-screen font-sans">
             {/* Refined Profile Header */}
-            <div className="px-1 pt-6 pb-2 border-b border-slate-100">
+            <div className="px-1 pt-6 pb-2 border-b border-slate-100 italic-style">
                 <div className="flex items-center justify-between mb-6 px-5">
                     <div className="relative">
-                        <div className="size-[88px] rounded-full border-[1.5px] border-slate-100 overflow-hidden bg-slate-50 shadow-sm">
+                        <div className="size-[88px] rounded-full border border-slate-100 flex items-center justify-center bg-white shadow-sm overflow-hidden">
                              <StoreAvatar
                                  storeName={storeName}
                                  logoUrl={bootstrap?.storeLogoUrl}
                                  size="lg"
-                                 className="size-full border-none rounded-full"
+                                 shape="square"
+                                 className="size-[58px] rounded-[24px] border-none"
                              />
                          </div>
                      </div>
