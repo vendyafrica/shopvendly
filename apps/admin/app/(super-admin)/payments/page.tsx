@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { SegmentedStatsCard } from "@/features/super-admin/components/segmented-stats-card";
 import { Badge } from "@shopvendly/ui/components/badge";
 import { cn } from "@shopvendly/ui/lib/utils";
 
@@ -13,6 +12,12 @@ import {
     TableHeader,
     TableRow,
 } from "@shopvendly/ui/components/table";
+import { Skeleton } from "@shopvendly/ui/components/skeleton";
+
+import {
+    Card,
+    CardContent,
+} from "@shopvendly/ui/components/card";
 
 interface Payment {
     id: string;
@@ -51,6 +56,62 @@ export default function PaymentsPage() {
         .reduce((sum, p) => sum + p.amount, 0);
     const successRate = totalPayments > 0 ? (successfulPayments / totalPayments) * 100 : 0;
 
+    if (isLoading) {
+        return (
+            <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
+                {/* Header Skeleton */}
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-[240px]" />
+                </div>
+
+                {/* Stats Skeleton */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {[1, 2, 3, 4].map((i) => (
+                        <Card key={i} size="sm" className="bg-muted/20 border-border/40 shadow-none">
+                            <CardContent className="pt-4 flex flex-col gap-2">
+                                <Skeleton className="h-3 w-20" />
+                                <Skeleton className="h-7 w-24" />
+                                <Skeleton className="h-3 w-28" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+
+                {/* Table Skeleton */}
+                <div className="rounded-md border border-border/70 bg-card shadow-sm overflow-hidden">
+                    <div className="p-0">
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader className="bg-muted/30">
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableHead><Skeleton className="h-3 w-24" /></TableHead>
+                                        <TableHead><Skeleton className="h-3 w-16" /></TableHead>
+                                        <TableHead><Skeleton className="h-3 w-20" /></TableHead>
+                                        <TableHead><Skeleton className="h-3 w-24" /></TableHead>
+                                        <TableHead className="text-center"><Skeleton className="h-3 w-20 mx-auto" /></TableHead>
+                                        <TableHead><Skeleton className="h-3 w-20" /></TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {[1, 2, 3, 4, 5].map((i) => (
+                                        <TableRow key={i}>
+                                            <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                            <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                                            <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                                            <TableCell className="text-center"><Skeleton className="h-4 w-20 mx-auto" /></TableCell>
+                                            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
             {/* Header */}
@@ -61,41 +122,65 @@ export default function PaymentsPage() {
             </div>
 
             {/* Stats */}
-            <SegmentedStatsCard
-                segments={[
-                    {
-                        label: "Total Payments",
-                        value: isLoading ? "—" : totalPayments.toString(),
-                        changeLabel: "All transactions",
-                        changeTone: "neutral",
-                    },
-                    {
-                        label: "Successful",
-                        value: isLoading ? "—" : successfulPayments.toString(),
-                        changeLabel: "Paid orders",
-                        changeTone: "positive",
-                    },
-                    {
-                        label: "Total Revenue",
-                        value: isLoading ? "—" : new Intl.NumberFormat('en-UG', { style: 'currency', currency: 'UGX', minimumFractionDigits: 0 }).format(totalRevenue),
-                        changeLabel: "From paid orders",
-                        changeTone: "positive",
-                    },
-                    {
-                        label: "Success Rate",
-                        value: isLoading ? "—" : `${Math.round(successRate)}%`,
-                        changeLabel: "Payment completion",
-                        changeTone: successRate > 80 ? "positive" : successRate > 50 ? "neutral" : "negative",
-                    },
-                ]}
-            />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Card size="sm" className="bg-muted/20 border-border/40 shadow-none">
+                    <CardContent className="pt-4 flex flex-col gap-1.5">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">Total Payments</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-xl font-bold tracking-tight text-foreground">{totalPayments.toString()}</span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground/60">All transactions</span>
+                    </CardContent>
+                </Card>
+
+                <Card size="sm" className="bg-muted/20 border-border/40 shadow-none">
+                    <CardContent className="pt-4 flex flex-col gap-1.5">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">Successful</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-xl font-bold tracking-tight text-foreground">{successfulPayments.toString()}</span>
+                            <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">Paid</span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground/60">Across all stores</span>
+                    </CardContent>
+                </Card>
+
+                <Card size="sm" className="bg-muted/20 border-border/40 shadow-none">
+                    <CardContent className="pt-4 flex flex-col gap-1.5">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">Total Revenue</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-xl font-bold tracking-tight text-foreground">
+                                {new Intl.NumberFormat('en-UG', { 
+                                    style: 'currency', 
+                                    currency: 'UGX', 
+                                    minimumFractionDigits: 0 
+                                }).format(totalRevenue)}
+                            </span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground/60">From completed orders</span>
+                    </CardContent>
+                </Card>
+
+                <Card size="sm" className="bg-muted/20 border-border/40 shadow-none">
+                    <CardContent className="pt-4 flex flex-col gap-1.5">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">Success Rate</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-xl font-bold tracking-tight text-foreground">{`${Math.round(successRate)}%`}</span>
+                            <span className={cn(
+                                "text-[10px] font-medium px-1.5 py-0.5 rounded-full",
+                                successRate > 80 ? "text-emerald-600 bg-emerald-50" : "text-amber-600 bg-amber-50"
+                            )}>
+                                Health
+                            </span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground/60">Payment efficiency</span>
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* Payments Table */}
             <div className="rounded-md border border-border/70 bg-card shadow-sm overflow-hidden">
                 <div className="p-0">
-                    {isLoading ? (
-                        <div className="p-6 text-sm text-muted-foreground">Loading payments...</div>
-                    ) : payments.length === 0 ? (
+                    {payments.length === 0 ? (
                         <div className="p-6 text-sm text-muted-foreground">No payments found.</div>
                     ) : (
                         <div className="overflow-x-auto">

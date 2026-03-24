@@ -6,6 +6,7 @@ import { RevenueAreaChartCard } from "../../features/super-admin/components/reve
 import { TopProductsBarChartCard } from "../../features/super-admin/components/top-products-bar-chart-card";
 import { TopStoresCard } from "../../features/super-admin/components/top-stores-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
+import { Skeleton } from "@shopvendly/ui/components/skeleton";
 
 type RevenueSeriesPoint = { date: string; total: number };
 type TopStoresByOrdersRow = { storeId: string | null; storeName: string | null; orders: number };
@@ -52,7 +53,39 @@ export default function AdminPage() {
   if (loading) {
     return (
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <div className="text-sm text-muted-foreground">Loading admin...</div>
+        {/* Stats Header */}
+        <div>
+          <Skeleton className="h-8 w-[180px] mb-2" />
+        </div>
+
+        {/* Stats Cards Skeleton */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} size="sm" className="bg-muted/20 border-border/40 shadow-none">
+              <CardContent className="pt-4 flex flex-col gap-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-8 w-32" />
+                <Skeleton className="h-3 w-40" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Charts Skeleton */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <Card className="md:col-span-4 border-border/70 shadow-sm">
+            <CardContent className="p-6">
+              <Skeleton className="h-8 w-[150px] mb-4" />
+              <Skeleton className="h-[260px] md:h-[320px] w-full" />
+            </CardContent>
+          </Card>
+          <Card className="md:col-span-3 border-border/70 shadow-sm">
+            <CardContent className="p-6">
+              <Skeleton className="h-8 w-[120px] mb-4" />
+              <Skeleton className="h-[260px] md:h-[320px] w-full" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -104,34 +137,49 @@ export default function AdminPage() {
       </div>
 
       {/* KPI Stats */}
-      <SegmentedStatsCard
-        segments={[
-          {
-            label: "Total Revenue",
-            value: formatCurrency(marketplace.gmv),
-            changeLabel: "Lifetime GMV",
-            changeTone: "neutral",
-          },
-          {
-            label: "Total Stores",
-            value: stores.total.toString(),
-            changeLabel: `${stores.active} active`,
-            changeTone: "positive",
-          },
-          {
-            label: "Tenants",
-            value: tenants.total.toString(),
-            changeLabel: `+${tenants.new30d} last 30 days`,
-            changeTone: "positive",
-          },
-          {
-            label: "Total Orders",
-            value: marketplace.totalOrders.toString(),
-            changeLabel: "Across all stores",
-            changeTone: "neutral",
-          },
-        ]}
-      />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card size="sm" className="bg-muted/20 border-border/40 shadow-none">
+          <CardContent className="pt-4 flex flex-col gap-1.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">Total Revenue</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-xl font-bold tracking-tight text-foreground">{formatCurrency(marketplace.gmv)}</span>
+            </div>
+            <span className="text-[10px] text-muted-foreground/60">Lifetime GMV</span>
+          </CardContent>
+        </Card>
+
+        <Card size="sm" className="bg-muted/20 border-border/40 shadow-none">
+          <CardContent className="pt-4 flex flex-col gap-1.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">Total Stores</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-xl font-bold tracking-tight text-foreground">{stores.total.toString()}</span>
+              <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">{stores.active} active</span>
+            </div>
+            <span className="text-[10px] text-muted-foreground/60">Platform worldwide</span>
+          </CardContent>
+        </Card>
+
+        <Card size="sm" className="bg-muted/20 border-border/40 shadow-none">
+          <CardContent className="pt-4 flex flex-col gap-1.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">Tenants</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-xl font-bold tracking-tight text-foreground">{tenants.total.toString()}</span>
+              {tenants.new30d > 0 && <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">+{tenants.new30d}</span>}
+            </div>
+            <span className="text-[10px] text-muted-foreground/60">Last 30 days growth</span>
+          </CardContent>
+        </Card>
+
+        <Card size="sm" className="bg-muted/20 border-border/40 shadow-none">
+          <CardContent className="pt-4 flex flex-col gap-1.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">Total Orders</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-xl font-bold tracking-tight text-foreground">{marketplace.totalOrders.toString()}</span>
+            </div>
+            <span className="text-[10px] text-muted-foreground/60">Across all stores</span>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Charts Section */}
       <div className="grid gap-5 md:grid-cols-7 lg:grid-cols-7">

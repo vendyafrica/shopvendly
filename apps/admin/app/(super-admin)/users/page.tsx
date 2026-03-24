@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { UserTable, type User } from "./components/user-table";
-import { SegmentedStatsCard } from "@/features/super-admin/components/segmented-stats-card";
+import { Card, CardContent } from "@shopvendly/ui/components/card";
 
 export default function UsersPage() {
     const [users, setUsers] = React.useState<User[]>([]);
@@ -42,34 +42,50 @@ export default function UsersPage() {
             </div>
 
             {/* Stats */}
-            <SegmentedStatsCard
-                segments={[
-                    {
-                        label: "Total Users",
-                        value: isLoading ? "—" : totalUsers.toString(),
-                        changeLabel: "All registered users",
-                        changeTone: "neutral",
-                    },
-                    {
-                        label: "Active Users",
-                        value: isLoading ? "—" : activeUsers.toString(),
-                        changeLabel: "Email verified",
-                        changeTone: "positive",
-                    },
-                    {
-                        label: "Pending",
-                        value: isLoading ? "—" : pendingUsers.toString(),
-                        changeLabel: "Awaiting verification",
-                        changeTone: "neutral",
-                    },
-                    {
-                        label: "Verification Rate",
-                        value: isLoading ? "—" : totalUsers > 0 ? `${Math.round((activeUsers / totalUsers) * 100)}%` : "0%",
-                        changeLabel: "Completion rate",
-                        changeTone: totalUsers > 0 && (activeUsers / totalUsers) > 0.8 ? "positive" : "neutral",
-                    },
-                ]}
-            />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Card size="sm" className="bg-muted/20 border-border/40 shadow-none">
+                    <CardContent className="pt-4 flex flex-col gap-1.5">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">Total Users</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-xl font-bold tracking-tight text-foreground">{isLoading ? "—" : totalUsers.toString()}</span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground/60">All registered users</span>
+                    </CardContent>
+                </Card>
+
+                <Card size="sm" className="bg-muted/20 border-border/40 shadow-none">
+                    <CardContent className="pt-4 flex flex-col gap-1.5">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">Active Users</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-xl font-bold tracking-tight text-foreground">{isLoading ? "—" : activeUsers.toString()}</span>
+                            {!isLoading && <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">Verified</span>}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground/60">Email verified</span>
+                    </CardContent>
+                </Card>
+
+                <Card size="sm" className="bg-muted/20 border-border/40 shadow-none">
+                    <CardContent className="pt-4 flex flex-col gap-1.5">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">Pending</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-xl font-bold tracking-tight text-foreground">{isLoading ? "—" : pendingUsers.toString()}</span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground/60">Awaiting verification</span>
+                    </CardContent>
+                </Card>
+
+                <Card size="sm" className="bg-muted/20 border-border/40 shadow-none">
+                    <CardContent className="pt-4 flex flex-col gap-1.5">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">Verification Rate</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-xl font-bold tracking-tight text-foreground">
+                                {isLoading ? "—" : totalUsers > 0 ? `${Math.round((activeUsers / totalUsers) * 100)}%` : "0%"}
+                            </span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground/60">Email completion</span>
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* Users Table */}
             <div className="rounded-md border border-border/70 bg-card shadow-sm">

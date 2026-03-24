@@ -12,7 +12,9 @@ import { Badge } from "@shopvendly/ui/components/badge";
 import { Input } from "@shopvendly/ui/components/input";
 import { Edit02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { cn } from "@shopvendly/ui/lib/utils";
 import { format } from "date-fns";
+import { Skeleton } from "@shopvendly/ui/components/skeleton";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 
@@ -77,19 +79,44 @@ export function TenantTable({ tenants, isLoading }: TenantTableProps) {
     };
 
     if (isLoading) {
-        return <div className="p-8 text-center text-muted-foreground">Loading tenants...</div>;
+        return (
+            <Table>
+                <TableHeader className="bg-muted/30">
+                    <TableRow className="hover:bg-transparent">
+                        <TableHead><Skeleton className="h-3 w-24" /></TableHead>
+                        <TableHead><Skeleton className="h-3 w-16" /></TableHead>
+                        <TableHead><Skeleton className="h-3 w-20" /></TableHead>
+                        <TableHead><Skeleton className="h-3 w-24" /></TableHead>
+                        <TableHead><Skeleton className="h-3 w-32" /></TableHead>
+                        <TableHead><Skeleton className="h-3 w-20" /></TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <TableRow key={i}>
+                            <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                            <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                            <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        );
     }
 
     return (
         <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead>Full Name</TableHead>
-                    <TableHead>Plan</TableHead>
-                    <TableHead>Billing Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created At</TableHead>
+            <TableHeader className="bg-muted/30">
+                <TableRow className="hover:bg-transparent border-b border-border/70">
+                    <TableHead className="text-xs font-medium text-muted-foreground">Full Name</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Plan</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Billing Email</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Phone</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Created At</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -98,8 +125,8 @@ export function TenantTable({ tenants, isLoading }: TenantTableProps) {
                     const nameValue = drafts[tenant.id] ?? tenant.fullName;
 
                     return (
-                        <TableRow key={tenant.id}>
-                            <TableCell className="font-medium">
+                        <TableRow key={tenant.id} className="hover:bg-muted/30 transition-colors border-b border-border/50 last:border-0">
+                            <TableCell className="font-medium text-foreground">
                                 {isEditingName ? (
                                     <Input
                                         autoFocus
@@ -119,31 +146,37 @@ export function TenantTable({ tenants, isLoading }: TenantTableProps) {
                                     <button
                                         type="button"
                                         onClick={() => setActiveCell({ id: tenant.id, field: "fullName" })}
-                                        className="group flex flex-col capitalize text-left hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors w-full"
+                                        className="group flex items-center gap-2 capitalize text-left hover:bg-muted/50 p-1 -ml-1 rounded-md transition-colors w-full"
                                     >
-                                        <div className="flex items-center gap-2">
-                                            <span>{nameValue}</span>
-                                            <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity shrink-0" />
-                                        </div>
+                                        <span>{nameValue}</span>
+                                        <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity shrink-0" />
                                     </button>
                                 )}
                             </TableCell>
                             <TableCell>
-                                <Badge variant="outline" className="capitalize">
+                                <Badge
+                                    variant="outline"
+                                    className="px-2 py-0.5 rounded-full text-[10px] font-bold border-0 uppercase tracking-wider bg-primary/10 text-primary hover:bg-primary/20"
+                                >
                                     {tenant.plan || "Free"}
                                 </Badge>
                             </TableCell>
-                            <TableCell>{tenant.billingEmail || "-"}</TableCell>
-                            <TableCell>{tenant.phoneNumber || "-"}</TableCell>
+                            <TableCell className="text-muted-foreground">{tenant.billingEmail || "-"}</TableCell>
+                            <TableCell className="text-muted-foreground font-medium">{tenant.phoneNumber || "-"}</TableCell>
                             <TableCell>
                                 <Badge
-                                    variant={tenant.status === "active" ? "default" : "secondary"}
-                                    className="capitalize"
+                                    variant="outline"
+                                    className={cn(
+                                        "px-2 py-0.5 rounded-full text-[10px] font-bold border-0 uppercase tracking-wider",
+                                        tenant.status === "active"
+                                            ? "bg-emerald-100 text-emerald-800"
+                                            : "bg-amber-100 text-amber-800"
+                                    )}
                                 >
                                     {tenant.status}
                                 </Badge>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="text-muted-foreground">
                                 {format(new Date(tenant.createdAt), "MMM d, yyyy")}
                             </TableCell>
                         </TableRow>

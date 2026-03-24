@@ -88,7 +88,7 @@ export function TopProductsBarChartCard({
                         />
                         <XAxis type="number" hide />
                         <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                        <Bar dataKey="sales" fill="hsl(var(--primary))" radius={4} />
+                        <Bar dataKey="sales" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
                     </BarChart>
                 </ChartContainer>
             </CardContent>

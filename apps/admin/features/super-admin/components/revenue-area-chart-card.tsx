@@ -84,15 +84,15 @@ export function RevenueAreaChartCard({
                         <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                         <defs>
                             <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
-                                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.05} />
                             </linearGradient>
                         </defs>
                         <Area
                             type="monotone"
                             dataKey="total"
-                            stroke="var(--foreground)"
-                            strokeWidth={2}
+                            stroke="#8b5cf6"
+                            strokeWidth={2.5}
                             fill="url(#fillRevenue)"
                             dot={false}
                         />

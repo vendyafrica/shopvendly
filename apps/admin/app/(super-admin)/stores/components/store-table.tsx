@@ -14,6 +14,7 @@ import { Edit02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "@shopvendly/ui/components/skeleton";
 
 export interface Store {
     id: string;
@@ -85,7 +86,34 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
     };
 
     if (isLoading) {
-        return <div className="p-8 text-center text-muted-foreground">Loading stores...</div>;
+        return (
+            <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader className="bg-muted/30">
+                        <TableRow className="hover:bg-transparent">
+                            <TableHead><Skeleton className="h-3 w-24" /></TableHead>
+                            <TableHead><Skeleton className="h-3 w-16" /></TableHead>
+                            <TableHead><Skeleton className="h-3 w-20" /></TableHead>
+                            <TableHead><Skeleton className="h-3 w-24" /></TableHead>
+                            <TableHead><Skeleton className="h-3 w-32" /></TableHead>
+                            <TableHead><Skeleton className="h-3 w-20" /></TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                                <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+        );
     }
 
     return (
@@ -95,14 +123,14 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
             ) : null}
 
             <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Store Name</TableHead>
-                        <TableHead>Tenant</TableHead>
-                        <TableHead>Domain</TableHead>
-                        <TableHead>Contact</TableHead>
-                        <TableHead>Delivery Partner</TableHead>
-                        <TableHead>Created At</TableHead>
+                <TableHeader className="bg-muted/30">
+                    <TableRow className="hover:bg-transparent border-b border-border/70">
+                        <TableHead className="text-xs font-medium text-muted-foreground">Store Name</TableHead>
+                        <TableHead className="text-xs font-medium text-muted-foreground">Tenant</TableHead>
+                        <TableHead className="text-xs font-medium text-muted-foreground">Domain</TableHead>
+                        <TableHead className="text-xs font-medium text-muted-foreground">Contact</TableHead>
+                        <TableHead className="text-xs font-medium text-muted-foreground">Delivery Partner</TableHead>
+                        <TableHead className="text-xs font-medium text-muted-foreground">Created At</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -111,7 +139,7 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
                         const nameValue = drafts[store.id] ?? store.name;
 
                         return (
-                            <TableRow key={store.id}>
+                            <TableRow key={store.id} className="hover:bg-muted/30 transition-colors border-b border-border/50 last:border-0">
                                 <TableCell className="font-medium align-top">
                                     {isEditingName ? (
                                         <Input

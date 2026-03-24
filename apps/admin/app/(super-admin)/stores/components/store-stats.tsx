@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
+import { Card, CardContent } from "@shopvendly/ui/components/card";
+import { Skeleton } from "@shopvendly/ui/components/skeleton";
 import { Store01Icon as StoreIcon, Coins01Icon as DollarSignIcon, Analytics01Icon as TrendingUpIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
@@ -16,7 +17,13 @@ export function StoreStats({ stats, isLoading }: StoreStatsProps) {
         return (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-32 animate-pulse rounded-xl bg-muted/50" />
+                    <Card key={i} size="sm" className="bg-muted/20 border-border/40 shadow-none">
+                        <CardContent className="pt-4 flex flex-col gap-2">
+                            <Skeleton className="h-3 w-20" />
+                            <Skeleton className="h-7 w-32" />
+                            <Skeleton className="h-3 w-24" />
+                        </CardContent>
+                    </Card>
                 ))}
             </div>
         );
@@ -24,45 +31,39 @@ export function StoreStats({ stats, isLoading }: StoreStatsProps) {
 
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Stores</CardTitle>
-                    <HugeiconsIcon icon={StoreIcon} className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{stats.totalStores}</div>
-                    <p className="text-xs text-muted-foreground">
-                        Active storefronts
-                    </p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                    <HugeiconsIcon icon={DollarSignIcon} className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">
-                        {new Intl.NumberFormat("en-UG", {
-                            style: "currency",
-                            currency: "UGX",
-                        }).format(stats.totalRevenue)}
+            <Card size="sm" className="bg-muted/20 border-border/40 shadow-none">
+                <CardContent className="pt-4 flex flex-col gap-1.5">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">Total Stores</span>
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-xl font-bold tracking-tight text-foreground">{stats.totalStores}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                        Across all stores
-                    </p>
+                    <span className="text-[10px] text-muted-foreground/60">Active storefronts</span>
                 </CardContent>
             </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-                    <HugeiconsIcon icon={TrendingUpIcon} className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{stats.totalSales}</div>
-                    <p className="text-xs text-muted-foreground">
-                        Completed orders
-                    </p>
+
+            <Card size="sm" className="bg-muted/20 border-border/40 shadow-none">
+                <CardContent className="pt-4 flex flex-col gap-1.5">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">Total Revenue</span>
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-xl font-bold tracking-tight text-foreground">
+                            {new Intl.NumberFormat("en-UG", {
+                                style: "currency",
+                                currency: "UGX",
+                                minimumFractionDigits: 0
+                            }).format(stats.totalRevenue)}
+                        </span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground/60">Across all stores</span>
+                </CardContent>
+            </Card>
+
+            <Card size="sm" className="bg-muted/20 border-border/40 shadow-none">
+                <CardContent className="pt-4 flex flex-col gap-1.5">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">Total Sales</span>
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-xl font-bold tracking-tight text-foreground">{stats.totalSales}</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground/60">Completed orders</span>
                 </CardContent>
             </Card>
         </div>
