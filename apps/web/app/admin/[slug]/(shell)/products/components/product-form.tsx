@@ -395,41 +395,13 @@ export function ProductForm({
                 <p className="text-xs text-muted-foreground">Upload and manage product images/videos.</p>
             </div>
 
-            <div className={cn(
-                "group relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/25 bg-muted/5 py-8 px-4 transition-all hover:border-primary/50 hover:bg-primary/5 cursor-pointer",
-                files.length > 0 && "mb-4",
-                isSaving && "opacity-50 pointer-events-none"
-            )} onClick={() => fileInputRef.current?.click()}>
-                <div className="flex flex-col items-center gap-2 text-center">
-                    <div className="rounded-full bg-muted p-3">
-                        <HugeiconsIcon icon={ImageUpload01Icon} className="size-6 text-muted-foreground" />
-                    </div>
-                    <div>
-                        <p className="text-sm font-medium">Click or drag to upload</p>
-                        <p className="text-xs text-muted-foreground">Images or videos up to 10MB</p>
-                    </div>
-                    <Button type="button" variant="outline" size="sm" className="mt-2 h-8">
-                        Select files
-                    </Button>
-                </div>
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,video/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleFileChange}
-                />
-            </div>
-
-            {files.length > 0 && (
-                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
-                    {files.map((f, i) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 sm:gap-6">
+                {files.map((f, i) => (
+                    <div key={f.id} className="group relative">
                         <div
-                            key={f.id}
                             className={cn(
-                                "group relative aspect-square overflow-hidden rounded-lg border bg-muted/30",
-                                i === 0 && "border-primary ring-1 ring-primary/25"
+                                "aspect-square overflow-hidden rounded-xl border bg-muted/30 cursor-pointer transition-all",
+                                i === 0 ? "border-primary ring-1 ring-primary/25" : "hover:border-primary/50"
                             )}
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -456,33 +428,57 @@ export function ProductForm({
                             )}
 
                             {i === 0 && (
-                                <div className="absolute left-2 top-2 rounded bg-background/90 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider shadow-sm">
+                                <div className="absolute left-3 top-3 rounded bg-background/95 backdrop-blur-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm z-10 border border-primary/20">
                                     Main
                                 </div>
                             )}
 
                             {f.isUploading && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-[2px]">
+                                <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-[2px] z-20">
                                     <UploadProgressSpinner progress={f.displayProgress} />
                                 </div>
                             )}
-
-                            {!isSaving && (
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeFile(i);
-                                    }}
-                                    className="absolute right-1.5 top-1.5 rounded-full bg-destructive p-1.5 text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                                >
-                                    <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
-                                </button>
-                            )}
                         </div>
-                    ))}
+
+                        {!isSaving && (
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeFile(i);
+                                }}
+                                className="absolute -right-2 -top-2 rounded-full bg-destructive p-2 text-white shadow-xl z-30 ring-4 ring-background transform transition-all duration-200 hover:scale-110 active:scale-95 hover:bg-red-600 group-hover:opacity-100"
+                                title="Remove image"
+                            >
+                                <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
+                            </button>
+                        )}
+                    </div>
+                ))}
+
+                {/* Add Image Action Item */}
+                <div
+                    className={cn(
+                        "group relative aspect-square flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/25 bg-muted/5 transition-all hover:border-primary/30 hover:bg-primary/5 cursor-pointer",
+                        isSaving && "opacity-50 pointer-events-none"
+                    )}
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                    <div className="rounded-full bg-muted p-4 group-hover:bg-primary/10 transition-all transform group-hover:scale-110 shadow-sm border border-transparent group-hover:border-primary/20">
+                        <HugeiconsIcon icon={ImageUpload01Icon} className="size-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                    <span className="text-xs font-semibold text-muted-foreground group-hover:text-primary transition-colors mt-3">Add image</span>
+                    
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*,video/*"
+                        multiple
+                        className="hidden"
+                        onChange={handleFileChange}
+                    />
                 </div>
-            )}
+            </div>
         </div>
     );
 

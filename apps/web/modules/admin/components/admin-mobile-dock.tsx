@@ -13,7 +13,6 @@ import {
   Loading03Icon,
   Notification01Icon,
   Payment02Icon,
-  UserMultiple02Icon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@shopvendly/ui/lib/utils";
 
