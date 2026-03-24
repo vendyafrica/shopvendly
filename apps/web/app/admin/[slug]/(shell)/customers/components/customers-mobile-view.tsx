@@ -158,7 +158,6 @@ export function CustomersMobileView({
                     </div>
                 ) : (
                     filteredCustomers.map((c, i) => {
-                        const colors = STATUS_COLORS[c.status];
                         const initials = c.name !== "—" ? c.name.substring(0, 2).toUpperCase() : "?";
 
                         return (

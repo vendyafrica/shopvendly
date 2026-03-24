@@ -32,6 +32,7 @@ export function IntegrationsPanel({
   const { bootstrap, error } = useTenant();
   const storeId = bootstrap?.storeId;
   const canWrite = Boolean(bootstrap?.canWrite);
+  const isVendlyDemoStore = Boolean(bootstrap?.isDemoViewer);
 
   const [isConnecting, setIsConnecting] = React.useState(false);
   const [isSyncingPosts, setIsSyncingPosts] = React.useState(false);
