@@ -5,8 +5,6 @@ import { RecentOrdersTableSection } from "@/modules/admin/components/recent-orde
 import { QuickActionMobile } from "@/modules/admin/components/quick-action-mobile";
 import { MobileStoreHeader } from "@/modules/admin/components/mobile-store-header";
 import { DashboardFilter } from "@/modules/admin/components/dashboard-filter";
-import { CollectoPayoutButton } from "@/modules/admin/components/collecto-payout-button";
-import { CollectoPayoutCard } from "@/modules/admin/components/collecto-payout-card";
 import { adminDashboardService, type DashboardRange } from "@/modules/admin";
 import { type OrderSummaryRow } from "@/modules/admin/models";
 import { getStorefrontUrl } from "@/utils/misc";
@@ -74,6 +72,7 @@ export default async function AdminPage({
   const { store, stats, revenueSeries, breakdown, transactionRows, currency } = data;
   const basePath = `/admin/${slug}`;
   const storefrontUrl = getStorefrontUrl(slug);
+  const coreStats = stats.filter((s) => ["Revenue", "Paid Orders", "Store Visits"].includes(s.label));
 
   const quickActions = [
     { label: "New Product", href: `${basePath}/products/new`, icon: Add01Icon, color: "text-blue-500" },
@@ -107,8 +106,6 @@ export default async function AdminPage({
             <h2 className="text-sm font-bold tracking-tight">Store Overview</h2>
             <DashboardFilter />
           </div>
-          <CollectoPayoutCard />
-
           <div className="rounded-2xl border bg-card shadow-sm overflow-hidden flex flex-col divide-y">
             <div className="p-5 flex flex-col gap-1 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none text-emerald-500">
@@ -134,7 +131,7 @@ export default async function AdminPage({
             </div>
 
             <div className="grid grid-cols-2 divide-x">
-              {stats.slice(1).map((s, idx) => (
+              {coreStats.slice(1).map((s, idx) => (
                 <div key={s.label} className={cn("p-4 flex flex-col gap-1", idx > 1 && "border-t")}>
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">{s.label}</span>
@@ -226,15 +223,12 @@ export default async function AdminPage({
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <CollectoPayoutButton />
             <DashboardFilter />
           </div>
         </div>
 
-        <CollectoPayoutCard />
-
         <div className="rounded-2xl border bg-card shadow-sm overflow-hidden flex divide-x" data-tour-step-id="admin-overview">
-          {stats.map((s) => (
+          {coreStats.map((s) => (
             <div key={s.label} className="flex-1 p-8 flex flex-col justify-between group transition-colors hover:bg-muted/30">
               <div className="flex items-center justify-between">
                 <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/90">{s.label}</p>

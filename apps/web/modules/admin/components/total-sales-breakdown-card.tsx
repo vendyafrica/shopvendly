@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
 import { cn } from "@shopvendly/ui/lib/utils";
-import { Info } from "lucide-react";
 
 export type SalesBreakdown = {
   grossSales: number;
@@ -10,8 +9,6 @@ export type SalesBreakdown = {
   netSales: number;
   totalSales: number;
   revenue: number;
-  balance: number;
-  paidOut: number;
 };
 
 export function TotalSalesBreakdownCard({
@@ -34,8 +31,6 @@ export function TotalSalesBreakdownCard({
     { label: "Net sales", value: breakdown.netSales, highlighted: false },
     { label: "Total sales", value: breakdown.totalSales, highlighted: false },
     { label: "Revenue", value: breakdown.revenue, highlighted: false },
-    { label: "Balance", value: breakdown.balance, highlighted: false },
-    { label: "Paid out", value: breakdown.paidOut, highlighted: true },
   ];
 
   return (
@@ -47,7 +42,7 @@ export function TotalSalesBreakdownCard({
       </CardHeader>
       <CardContent className="px-6 pb-6">
         <div className="space-y-1">
-          {items.map((item, index) => (
+          {items.map((item) => (
             <div
               key={item.label}
               className={cn(

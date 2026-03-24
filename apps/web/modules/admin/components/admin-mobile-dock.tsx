@@ -3,14 +3,15 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
+
 import {
   PackageOpenIcon,
   Settings01Icon,
   Home01Icon,
   ShoppingBag01Icon,
-  GroupLayersIcon,
   Loading03Icon,
   Notification01Icon,
+  Payment02Icon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@shopvendly/ui/lib/utils";
 
@@ -66,6 +67,7 @@ export function AdminMobileDock({ basePath }: { basePath: string }) {
   const items: DockItem[] = [
     { label: "Home", href: joinPaths(basePath, "/"), icon: Home01Icon, exact: true },
     { label: "Products", href: joinPaths(basePath, "/products"), icon: ShoppingBag01Icon },
+    { label: "Payments", href: joinPaths(basePath, "/payments"), icon: Payment02Icon },
     { label: "Activity", href: joinPaths(basePath, "/activity"), icon: Notification01Icon },
     { label: "Orders", href: joinPaths(basePath, "/orders"), icon: PackageOpenIcon },
     { label: "Settings", href: joinPaths(basePath, "/settings"), icon: Settings01Icon },

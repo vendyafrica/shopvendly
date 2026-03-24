@@ -459,6 +459,18 @@ export async function runCollectoWalletTransferForOrder(orderId: string) {
     });
 
     if (!walletTransferAccepted) {
+      console.error("[Collecto] settlement:wallet-transfer:FAILED", {
+        orderId: targetOrderId,
+        settlementOrderIds,
+        walletTransferReference,
+        walletTransferAmount,
+        walletTransactionId,
+        walletTransferStatus,
+        walletTransferMessage,
+        httpOk: transferResponse.ok,
+        httpStatus: transferResponse.status,
+        rawResponse: JSON.stringify(transferPayload),
+      });
       await markSettlementFailed(targetOrderId, walletTransferMessage || "Collecto wallet to bulk transfer failed.");
       return null;
     }
@@ -737,34 +749,79 @@ export async function runCollectoPayoutForOrder(orderId: string) {
   return getOrderCollectoMeta(targetOrderId);
 }
 
-export async function fetchAvailableBalance(tenantId: string): Promise<{ availableBalance: number, totalOwedBalance: number, orderIds: string[] }> {
+export type AvailableBalanceResult = {
+  /** Amount in Collecto Wallet (collected but not yet transferred to Bulk) */
+  walletBalance: number;
+  /** Amount already transferred to Bulk and ready for payout */
+  bulkBalance: number;
+  /** Amount that can be withdrawn (bulkBalance - 1200 fee) */
+  withdrawable: number;
+  /** Amount stuck in wallet pending transfer */
+  pendingTransfer: number;
+  /** Total owed to seller (walletBalance + bulkBalance) */
+  totalOwedBalance: number;
+  /** Order IDs eligible for manual payout */
+  orderIds: string[];
+  /** Order IDs with funds still in wallet */
+  pendingOrderIds: string[];
+};
+
+export async function fetchAvailableBalance(tenantId: string): Promise<AvailableBalanceResult> {
   const unsettledOrders = await listUnsettledSuccessfulMobileMoneyOrders(tenantId);
   const orderIds: string[] = [];
-  let availableBalance = 0;
-  let totalOwedBalance = 0;
+  const pendingOrderIds: string[] = [];
+  let walletBalance = 0;
+  let bulkBalance = 0;
 
   for (const order of unsettledOrders) {
-    const amount = (order.collectoMeta?.walletTransfer?.amount ?? 0);
-    totalOwedBalance += amount;
+    // Use merchantReceivableAmount (what lands in wallet after 3% fee) as the source of truth
+    // Fall back to walletTransfer.amount if pricing isn't set, then to calculated amount
+    const merchantReceivable = order.collectoMeta?.pricing?.merchantReceivableAmount ?? 0;
+    const walletTransferAmount = order.collectoMeta?.walletTransfer?.amount ?? 0;
+    const calculatedAmount = Math.round(order.totalAmount * 0.97);
+    
+    // Best estimate of what this order contributed to the pool
+    const orderAmount = merchantReceivable || walletTransferAmount || calculatedAmount;
 
-    if (
-      order.collectoMeta?.walletTransfer?.status === "successful" &&
-      order.collectoMeta?.payoutPlan?.mode === "manual_batch" &&
-      order.collectoMeta?.payoutPlan?.manualPayoutEligible === true
-    ) {
-        availableBalance += amount;
+    if (order.collectoMeta?.walletTransfer?.status === "successful") {
+      // Funds have been transferred to Bulk
+      bulkBalance += walletTransferAmount || orderAmount;
+      
+      if (
+        order.collectoMeta?.payoutPlan?.mode === "manual_batch" &&
+        order.collectoMeta?.payoutPlan?.manualPayoutEligible === true
+      ) {
         orderIds.push(order.id);
+      }
+    } else {
+      // Funds are still in Wallet (transfer pending or failed)
+      walletBalance += orderAmount;
+      pendingOrderIds.push(order.id);
     }
   }
-  return { availableBalance, totalOwedBalance, orderIds };
+
+  const totalOwedBalance = walletBalance + bulkBalance;
+  const withdrawable = Math.max(bulkBalance - COLLECTO_PAYOUT_FEE, 0);
+  const pendingTransfer = walletBalance;
+
+  return {
+    walletBalance,
+    bulkBalance,
+    withdrawable,
+    pendingTransfer,
+    totalOwedBalance,
+    orderIds,
+    pendingOrderIds,
+  };
 }
 
 export async function runCollectoBatchPayout(tenantId: string, storeId: string, storeName: string) {
-  const { availableBalance: balance, orderIds } = await fetchAvailableBalance(tenantId);
-  const payoutAmount = balance - 1200;
+  const balanceResult = await fetchAvailableBalance(tenantId);
+  const { bulkBalance, withdrawable, orderIds } = balanceResult;
+  const payoutAmount = withdrawable;
 
   if (payoutAmount <= 0) {
-      throw new Error(`Insufficient funds for withdrawal. Balance is UGX ${balance}`);
+      throw new Error(`Insufficient funds for withdrawal. Bulk balance is UGX ${bulkBalance}, withdrawable after fee: ${withdrawable}`);
   }
 
   const recipient = await getSellerRecipient(tenantId);

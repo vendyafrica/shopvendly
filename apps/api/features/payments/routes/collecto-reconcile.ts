@@ -362,17 +362,23 @@ collectoReconcileRouter.get("/api/stores/:storeId/collecto/available-balance", a
       return res.status(404).json({ error: "Store not found" });
     }
 
-    const { availableBalance, totalOwedBalance, orderIds } = await fetchAvailableBalance(store.tenantId);
-    const payoutAmount = Math.max(availableBalance - 1200, 0);
+    const balanceResult = await fetchAvailableBalance(store.tenantId);
 
     return res.status(200).json({
       ok: true,
-      availableBalance,
-      totalOwedBalance,
-      payoutAmount,
+      // New detailed breakdown
+      walletBalance: balanceResult.walletBalance,
+      bulkBalance: balanceResult.bulkBalance,
+      withdrawable: balanceResult.withdrawable,
+      pendingTransfer: balanceResult.pendingTransfer,
+      totalOwedBalance: balanceResult.totalOwedBalance,
+      // Legacy fields for backward compatibility
+      availableBalance: balanceResult.bulkBalance,
+      payoutAmount: balanceResult.withdrawable,
       payoutFee: 1200,
-      orderCount: orderIds.length,
-      orderIds,
+      orderCount: balanceResult.orderIds.length,
+      orderIds: balanceResult.orderIds,
+      pendingOrderIds: balanceResult.pendingOrderIds,
     });
   } catch (err) {
     next(err);

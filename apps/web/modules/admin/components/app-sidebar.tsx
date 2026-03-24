@@ -5,7 +5,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ShoppingBag01Icon,
   Analytics02Icon,
-  Message01Icon,
   UserGroupIcon,
   CustomerServiceIcon,
   Settings01Icon,
@@ -86,6 +85,11 @@ const tenantAdminItems: SidebarNavItem[] = [
     title: "Orders",
     url: "/orders",
     icon: PackageOpenIcon,
+  },
+  {
+    title: "Payments",
+    url: "/payments",
+    icon: Payment02Icon,
   },
   {
     title: "Activity",

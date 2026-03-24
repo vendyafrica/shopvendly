@@ -7,6 +7,7 @@ import { Button } from "@shopvendly/ui/components/button";
 import { useTenant } from "@/modules/admin/context/tenant-context";
 import { toast } from "sonner";
 import { cn } from "@shopvendly/ui/lib/utils";
+import { Skeleton } from "@shopvendly/ui/components/skeleton";
 
 interface CollectoBalance {
   availableBalance: number;
@@ -74,7 +75,50 @@ export function CollectoPayoutCard({ className }: { className?: string }) {
     }
   };
 
-  if (!isManualMode || isFetching) return null;
+  if (!isManualMode) return null;
+
+  if (isFetching) {
+    return (
+      <div className={cn(
+        "relative overflow-hidden rounded-2xl border border-emerald-200/60 bg-gradient-to-r from-emerald-50/80 to-transparent px-5 py-4 shadow-sm",
+        className
+      )}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4 min-w-0 flex-1">
+            <div className="flex items-center gap-2 shrink-0">
+              <Skeleton className="h-2 w-2 rounded-full" />
+              <Skeleton className="h-3 w-24 rounded-full" />
+            </div>
+
+            <div className="hidden sm:flex items-center gap-5 text-sm flex-1">
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-3 w-20 rounded-full" />
+                <Skeleton className="h-5 w-24 rounded-full" />
+              </div>
+              <Skeleton className="h-6 w-px" />
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-3 w-16 rounded-full" />
+                <Skeleton className="h-5 w-24 rounded-full" />
+              </div>
+              <Skeleton className="h-6 w-px" />
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-3 w-14 rounded-full" />
+                <Skeleton className="h-5 w-10 rounded-full" />
+              </div>
+            </div>
+
+            <div className="flex sm:hidden flex-col gap-2">
+              <Skeleton className="h-3 w-16 rounded-full" />
+              <Skeleton className="h-6 w-28 rounded-full" />
+              <Skeleton className="h-3 w-20 rounded-full" />
+            </div>
+          </div>
+
+          <Skeleton className="h-9 w-32 rounded-xl shrink-0" />
+        </div>
+      </div>
+    );
+  }
 
   const hasBalance = (balance?.availableBalance ?? 0) > 0;
   const currency = bootstrap?.defaultCurrency || "UGX";
