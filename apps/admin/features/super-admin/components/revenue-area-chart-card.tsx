@@ -51,12 +51,16 @@ export function RevenueAreaChartCard({
 
     return (
         <Card className={cn("w-full border-border/70 shadow-sm", className)}>
-            <CardHeader className="space-y-1 pb-2">
-                <CardTitle className="text-base">{title}</CardTitle>
-                <div className="text-3xl font-bold text-foreground">{totalLabel}</div>
+            <CardHeader className="space-y-1 pb-4 bg-muted/5 border-b border-border/40 mb-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle className="text-base font-bold tracking-tight">{title}</CardTitle>
+                    </div>
+                    <div className="text-2xl font-black text-primary tabular-nums tracking-tight">{totalLabel}</div>
+                </div>
             </CardHeader>
             <CardContent className="px-3 pb-4 md:px-5">
-                <ChartContainer config={chartConfig} className="aspect-auto h-[260px] w-full md:h-[320px]">
+                <ChartContainer config={chartConfig} className="aspect-auto h-[260px] w-full md:h-[300px]">
                     <AreaChart
                         accessibilityLayer
                         data={chartData}
@@ -92,9 +96,13 @@ export function RevenueAreaChartCard({
                             type="monotone"
                             dataKey="total"
                             stroke="#8b5cf6"
-                            strokeWidth={2.5}
+                            strokeWidth={3}
                             fill="url(#fillRevenue)"
-                            dot={false}
+                            fillOpacity={1}
+                            activeDot={{
+                                r: 6,
+                                style: { fill: "#8b5cf6", opacity: 0.9 },
+                            }}
                         />
                     </AreaChart>
                 </ChartContainer>

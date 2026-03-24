@@ -6,6 +6,7 @@ import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { CategoryList } from "./components/category-list";
+import { Skeleton } from "@shopvendly/ui/components/skeleton";
 import {
     Dialog,
     DialogContent,
@@ -98,9 +99,24 @@ export default function CategoriesPage() {
                 </Button>
             </div>
 
-            <div className="rounded-md bg-card">
+            <div className="rounded-md">
                 {isLoading ? (
-                    <div className="p-8 text-center text-muted-foreground">Loading categories...</div>
+                    <div className="space-y-4">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="border border-border/50 rounded-lg p-4 bg-card/50">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3 flex-1">
+                                        <Skeleton className="h-4 w-4 rounded" />
+                                        <Skeleton className="h-6 w-40" />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Skeleton className="h-5 w-20 rounded-full" />
+                                        <Skeleton className="h-8 w-8 rounded-md" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 ) : (
                     <CategoryList
                         categories={categories}

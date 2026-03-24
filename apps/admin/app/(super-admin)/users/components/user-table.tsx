@@ -32,23 +32,23 @@ export function UserTable({ users, isLoading }: UserTableProps) {
     if (isLoading) {
         return (
             <Table>
-                <TableHeader className="bg-muted/30">
-                    <TableRow className="hover:bg-transparent">
-                        <TableHead className="w-[80px]"><Skeleton className="h-3 w-12" /></TableHead>
-                        <TableHead><Skeleton className="h-3 w-24" /></TableHead>
-                        <TableHead><Skeleton className="h-3 w-32" /></TableHead>
-                        <TableHead><Skeleton className="h-3 w-16" /></TableHead>
-                        <TableHead><Skeleton className="h-3 w-20" /></TableHead>
+                <TableHeader className="bg-muted/10">
+                    <TableRow className="hover:bg-transparent border-b border-border/70">
+                        <TableHead className="w-[80px] py-4"><Skeleton className="h-3 w-12" /></TableHead>
+                        <TableHead className="py-4"><Skeleton className="h-3 w-24" /></TableHead>
+                        <TableHead className="py-4"><Skeleton className="h-3 w-32" /></TableHead>
+                        <TableHead className="py-4"><Skeleton className="h-3 w-16" /></TableHead>
+                        <TableHead className="py-4 flex justify-end"><Skeleton className="h-3 w-20" /></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {[1, 2, 3, 4, 5].map((i) => (
-                        <TableRow key={i}>
-                            <TableCell><Skeleton className="h-8 w-8 rounded-full" /></TableCell>
-                            <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                            <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                            <TableCell><Skeleton className="h-4 w-20 rounded-full" /></TableCell>
-                            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableRow key={i} className="border-b border-border/50">
+                            <TableCell className="py-4"><Skeleton className="h-8 w-8 rounded-full" /></TableCell>
+                            <TableCell className="py-4"><Skeleton className="h-4 w-32" /></TableCell>
+                            <TableCell className="py-4"><Skeleton className="h-4 w-48" /></TableCell>
+                            <TableCell className="py-4"><Skeleton className="h-4 w-20 rounded-full" /></TableCell>
+                            <TableCell className="py-4 flex justify-end"><Skeleton className="h-4 w-24" /></TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
@@ -58,27 +58,27 @@ export function UserTable({ users, isLoading }: UserTableProps) {
 
     return (
         <Table>
-            <TableHeader className="bg-muted/30">
+            <TableHeader className="bg-muted/10">
                 <TableRow className="hover:bg-transparent border-b border-border/70">
-                    <TableHead className="w-[80px] text-xs font-medium text-muted-foreground">Avatar</TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground">Full Name</TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground">Email</TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground">Joined</TableHead>
+                    <TableHead className="w-[80px] text-[11px] font-bold uppercase tracking-tight text-muted-foreground/80 py-4">Avatar</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-tight text-muted-foreground/80 py-4">Full Name</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-tight text-muted-foreground/80 py-4">Email Address</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-tight text-muted-foreground/80 py-4">Verified</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-tight text-muted-foreground/80 py-4 text-right">Joined</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {users.map((user) => (
                     <TableRow key={user.id} className="hover:bg-muted/30 transition-colors border-b border-border/50 last:border-0">
-                        <TableCell>
+                        <TableCell className="py-4">
                             <Avatar className="h-8 w-8">
                                 <AvatarImage src={user.image || ""} alt={user.name} />
                                 <AvatarFallback className="text-[10px]">{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                             </Avatar>
                         </TableCell>
-                        <TableCell className="font-medium text-foreground">{user.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                        <TableCell>
+                        <TableCell className="py-4 font-medium text-foreground">{user.name}</TableCell>
+                        <TableCell className="py-4 text-muted-foreground">{user.email}</TableCell>
+                        <TableCell className="py-4">
                             <Badge
                                 variant="outline"
                                 className={cn(
@@ -91,7 +91,7 @@ export function UserTable({ users, isLoading }: UserTableProps) {
                                 {user.emailVerified ? "Verified" : "Unverified"}
                             </Badge>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="text-right text-xs font-medium text-muted-foreground tabular-nums whitespace-nowrap py-4">
                             {format(new Date(user.createdAt), "MMM d, yyyy")}
                         </TableCell>
                     </TableRow>

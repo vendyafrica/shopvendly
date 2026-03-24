@@ -1,14 +1,7 @@
 "use client";
 
-import {
-    ChartContainer,
-    ChartTooltip,
-    ChartTooltipContent,
-    type ChartConfig,
-} from "@shopvendly/ui/components/chart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
 import { cn } from "@shopvendly/ui/lib/utils";
-import { Bar, BarChart, XAxis, YAxis } from "recharts";
 
 export type StoreData = {
     storeId: string;
@@ -23,13 +16,14 @@ export function TopStoresCard({
     description,
     stores,
     dataKey = "revenue",
+    formatValue,
     className,
 }: {
     title: string;
     description: string;
     stores: StoreData[];
     dataKey?: keyof StoreData;
-    formatValue?: (store: StoreData) => string; // Kept for compatibility but unused in chart for now
+    formatValue?: (store: StoreData) => string;
     className?: string;
 }) {
     const totalValue = stores.reduce((acc, curr) => acc + (Number(curr[dataKey]) || 0), 0);
@@ -39,81 +33,61 @@ export function TopStoresCard({
         minimumFractionDigits: 0,
     }).format(totalValue);
 
-    const chartConfig = {
-        [dataKey]: {
-            label: dataKey === "revenue" ? "Revenue" : "Value",
-            color: "hsl(var(--primary))",
-        },
-    } satisfies ChartConfig;
-
-    const chartData = stores.map((s) => ({
-        ...s,
-        storeName: s.storeName ?? "—",
-    }));
-
-    while (chartData.length < 5) {
-        chartData.push({
-            storeId: `empty-${chartData.length}`,
-            storeName: `empty-${chartData.length}`,
-            revenue: 0,
-            visits: 0,
-            orders: 0,
-        });
-    }
+    const maxVal = Math.max(...stores.map(s => Number(s[dataKey]) || 0), 1);
 
     return (
-        <Card className={cn("w-full border-border/70 shadow-sm", className)}>
-            <CardHeader className="pb-0">
+        <Card className={cn("w-full border-border/70 shadow-sm overflow-hidden", className)}>
+            <CardHeader className="pb-4 bg-muted/5 border-b border-border/40">
                 <div className="flex items-center justify-between">
-                    <div>
-                        <CardTitle className="text-base">{title}</CardTitle>
-                        <CardDescription>{description}</CardDescription>
+                    <div className="space-y-1">
+                        <CardTitle className="text-base font-bold tracking-tight">{title}</CardTitle>
+                        <CardDescription className="text-xs">{description}</CardDescription>
                     </div>
-                    <div className="text-2xl font-bold">{formattedTotal}</div>
                 </div>
             </CardHeader>
-            <CardContent>
-                <ChartContainer config={chartConfig} className="h-[260px] w-full md:h-[340px]">
-                    <BarChart
-                        accessibilityLayer
-                        data={chartData}
-                        layout="vertical"
-                        margin={{
-                            left: 0,
-                            right: 0,
-                            top: 8,
-                            bottom: 0,
-                        }}
-                        barSize={32}
-                    >
-                        <YAxis
-                            dataKey="storeName"
-                            type="category"
-                            tickLine={false}
-                            tickMargin={10}
-                            axisLine={false}
-                            width={100}
-                            tick={(props) => {
-                                const { x, y, payload } = props;
-                                const isHidden = payload.value.toString().startsWith("empty-");
-                                if (isHidden) return <g></g>;
-                                return (
-                                    <text x={x} y={y} dy={4} textAnchor="end" fill="currentColor" fontSize={12}>
-                                        {payload.value}
-                                    </text>
-                                );
-                            }}
-                        />
-                        <XAxis type="number" hide />
-                        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                        <Bar
-                            dataKey={dataKey as string}
-                            layout="vertical"
-                            radius={5}
-                            fill="hsl(var(--primary))"
-                        />
-                    </BarChart>
-                </ChartContainer>
+            <CardContent className="p-0">
+                <div className="divide-y divide-border/40">
+                    {stores.length === 0 ? (
+                        <div className="p-12 text-center text-sm text-muted-foreground italic">
+                            No store rankings available yet
+                        </div>
+                    ) : (
+                        stores.map((store, idx) => {
+                            const val = Number(store[dataKey]) || 0;
+                            const percentage = (val / maxVal) * 100;
+                            
+                            return (
+                                <div key={store.storeId || idx} className="group flex items-center gap-4 p-4 hover:bg-muted/30 transition-all duration-200">
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors border border-primary/20">
+                                        {idx + 1}
+                                    </div>
+                                    <div className="flex-1 min-w-0 space-y-1.5">
+                                        <div className="flex items-center justify-between gap-4">
+                                            <span className="text-sm font-semibold truncate text-foreground group-hover:text-primary transition-colors">
+                                                {store.storeName || "Unnamed Store"}
+                                            </span>
+                                            <span className="text-sm font-bold tabular-nums text-foreground">
+                                                {formatValue ? formatValue(store) : formattedTotal}
+                                            </span>
+                                        </div>
+                                        <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted/50 border border-border/20">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-primary/60 to-primary transition-all duration-500 ease-out rounded-full shadow-[0_0_8px_rgba(var(--primary-rgb),0.3)]"
+                                                style={{ width: `${Math.max(percentage, 2)}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+                {stores.length > 0 && (
+                    <div className="p-3 bg-muted/5 border-t border-border/40 flex justify-between items-center px-4">
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Aggregate Total</span>
+                        <span className="text-xs font-bold text-primary">{formattedTotal}</span>
+                    </div>
+                )}
             </CardContent>
         </Card>
     );

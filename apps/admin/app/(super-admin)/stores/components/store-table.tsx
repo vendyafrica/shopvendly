@@ -89,25 +89,25 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
         return (
             <div className="overflow-x-auto">
                 <Table>
-                    <TableHeader className="bg-muted/30">
-                        <TableRow className="hover:bg-transparent">
-                            <TableHead><Skeleton className="h-3 w-24" /></TableHead>
-                            <TableHead><Skeleton className="h-3 w-16" /></TableHead>
-                            <TableHead><Skeleton className="h-3 w-20" /></TableHead>
-                            <TableHead><Skeleton className="h-3 w-24" /></TableHead>
-                            <TableHead><Skeleton className="h-3 w-32" /></TableHead>
-                            <TableHead><Skeleton className="h-3 w-20" /></TableHead>
+                    <TableHeader className="bg-muted/10">
+                        <TableRow className="hover:bg-transparent border-b border-border/70">
+                            <TableHead className="py-4"><Skeleton className="h-3 w-24" /></TableHead>
+                            <TableHead className="py-4"><Skeleton className="h-3 w-16" /></TableHead>
+                            <TableHead className="py-4"><Skeleton className="h-3 w-20" /></TableHead>
+                            <TableHead className="py-4"><Skeleton className="h-3 w-24" /></TableHead>
+                            <TableHead className="py-4"><Skeleton className="h-3 w-32" /></TableHead>
+                            <TableHead className="py-4 flex justify-end"><Skeleton className="h-3 w-20" /></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {[1, 2, 3, 4, 5].map((i) => (
-                            <TableRow key={i}>
-                                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                                <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                                <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                            <TableRow key={i} className="border-b border-border/50">
+                                <TableCell className="py-4"><Skeleton className="h-4 w-32" /></TableCell>
+                                <TableCell className="py-4"><Skeleton className="h-4 w-24" /></TableCell>
+                                <TableCell className="py-4"><Skeleton className="h-4 w-40" /></TableCell>
+                                <TableCell className="py-4"><Skeleton className="h-4 w-28" /></TableCell>
+                                <TableCell className="py-4"><Skeleton className="h-4 w-32" /></TableCell>
+                                <TableCell className="py-4 flex justify-end"><Skeleton className="h-4 w-24" /></TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -123,14 +123,14 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
             ) : null}
 
             <Table>
-                <TableHeader className="bg-muted/30">
+                <TableHeader className="bg-muted/10">
                     <TableRow className="hover:bg-transparent border-b border-border/70">
-                        <TableHead className="text-xs font-medium text-muted-foreground">Store Name</TableHead>
-                        <TableHead className="text-xs font-medium text-muted-foreground">Tenant</TableHead>
-                        <TableHead className="text-xs font-medium text-muted-foreground">Domain</TableHead>
-                        <TableHead className="text-xs font-medium text-muted-foreground">Contact</TableHead>
-                        <TableHead className="text-xs font-medium text-muted-foreground">Delivery Partner</TableHead>
-                        <TableHead className="text-xs font-medium text-muted-foreground">Created At</TableHead>
+                        <TableHead className="w-[200px] text-[11px] font-bold uppercase tracking-tight text-muted-foreground/80 py-4">Store Name</TableHead>
+                        <TableHead className="text-[11px] font-bold uppercase tracking-tight text-muted-foreground/80 py-4">Tenant</TableHead>
+                        <TableHead className="text-[11px] font-bold uppercase tracking-tight text-muted-foreground/80 py-4">Domain</TableHead>
+                        <TableHead className="text-[11px] font-bold uppercase tracking-tight text-muted-foreground/80 py-4">Contact Info</TableHead>
+                        <TableHead className="text-[11px] font-bold uppercase tracking-tight text-muted-foreground/80 py-4">Logistics Partner</TableHead>
+                        <TableHead className="text-[11px] font-bold uppercase tracking-tight text-muted-foreground/80 py-4 text-right">Added On</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -168,7 +168,7 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
                                     )}
                                 </TableCell>
                                 <TableCell className="capitalize">{store.tenantName}</TableCell>
-                                <TableCell className="whitespace-normal break-all min-w-[200px] max-w-[300px]">
+                                <TableCell className="whitespace-nowrap">
                                     {activeCell?.id === store.id && activeCell.field === "slug" ? (
                                         <Input
                                             autoFocus
@@ -182,24 +182,26 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
                                                     setActiveCell(null);
                                                 }
                                             }}
-                                            className="h-9 w-full"
+                                            className="h-8 w-full max-w-[120px] text-xs"
                                         />
                                     ) : (
-                                        <button
-                                            type="button"
-                                            onClick={() => setActiveCell({ id: store.id, field: "slug" })}
-                                            className="group inline-flex items-center gap-2 text-left hover:bg-muted/50 px-1 py-0.5 -ml-1 rounded-md transition-colors w-full"
-                                        >
+                                        <div className="flex items-center gap-2 group">
                                             <a
                                                 href={`https://shopvendly.store/${store.slug}`}
-                                                className="text-sm text-primary underline-offset-4 group-hover:underline break-all"
+                                                className="text-sm font-semibold text-primary/90 hover:text-primary hover:underline underline-offset-4 decoration-primary/30 transition-all"
                                                 target="_blank"
                                                 rel="noreferrer"
                                             >
-                                                {`https://shopvendly.store/${store.slug}`}
+                                                {store.slug}
                                             </a>
-                                            <HugeiconsIcon icon={Edit02Icon} className="size-3.5 opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity shrink-0" />
-                                        </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveCell({ id: store.id, field: "slug" })}
+                                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-muted rounded-md transition-all shrink-0"
+                                            >
+                                                <HugeiconsIcon icon={Edit02Icon} className="size-3 text-muted-foreground" />
+                                            </button>
+                                        </div>
                                     )}
                                 </TableCell>
                                 <TableCell>
@@ -237,7 +239,7 @@ export function StoreTable({ stores, isLoading }: StoreTableProps) {
                                         </button>
                                     )}
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="text-right text-xs font-medium text-muted-foreground whitespace-nowrap tabular-nums">
                                     {format(new Date(store.createdAt), "MMM d, yyyy")}
                                 </TableCell>
                             </TableRow>
