@@ -1,18 +1,19 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
+import Link from "next/link";
+import { StoreAvatar } from "@/components/store-avatar";
 import { Avatar, AvatarFallback } from "@shopvendly/ui/components/avatar";
 import {
     Sheet,
     SheetContent
 } from "@shopvendly/ui/components/sheet";
 import { Badge } from "@shopvendly/ui/components/badge";
+import { Button } from "@shopvendly/ui/components/button";
 import { type TenantBootstrap } from "@/modules/admin/context";
-import { SegmentedStatsCard } from "@/modules/admin/components/segmented-stats-card";
 import { type CustomerRow } from "@/modules/admin/models";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { UserMultiple02Icon, Mail02Icon, ShoppingCart01Icon, AnalyticsUpIcon, CheckmarkBadge01Icon } from "@hugeicons/core-free-icons";
+import { UserMultiple02Icon, Mail02Icon, ShoppingCart01Icon, AnalyticsUpIcon, CheckmarkBadge01Icon, Share01Icon } from "@hugeicons/core-free-icons";
 
 interface CustomersMobileViewProps {
     bootstrap: TenantBootstrap | null;
@@ -39,66 +40,73 @@ export function CustomersMobileView({
     const [selectedCustomer, setSelectedCustomer] = React.useState<CustomerRow | null>(null);
     const [sheetOpen, setSheetOpen] = React.useState(false);
 
-    const storeInitials = bootstrap?.storeName?.substring(0, 2).toUpperCase() || "SV";
+    const storeName = bootstrap?.storeName || "My Store";
 
     return (
-        <div className="flex flex-col min-h-screen bg-background pb-20 fade-in-0 duration-500 animate-in">
-            {/* Header section resembling a profile header */}
-            <div className="px-5 pt-8 pb-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Avatar className="size-12 border border-border/50">
-                        {bootstrap?.storeLogoUrl ? (
-                            <Image
-                                src={bootstrap.storeLogoUrl}
-                                alt={bootstrap.storeName || "Store logo"}
-                                width={48}
-                                height={48}
-                                className="object-cover rounded-full"
-                            />
-                        ) : (
-                            <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
-                                {storeInitials}
-                            </AvatarFallback>
-                        )}
-                    </Avatar>
-                    <div className="flex flex-col">
-                        <h1 className="font-bold text-lg leading-tight flex items-center gap-1.5">
-                            Customers
-                            <HugeiconsIcon icon={CheckmarkBadge01Icon} className="size-4 text-blue-500" />
-                        </h1>
-                        <p className="text-xs text-muted-foreground font-medium">
-                            {bootstrap?.storeSlug ? `#${bootstrap.storeSlug}` : "Customer insights"}
-                        </p>
-                    </div>
-                </div>
-            </div>
+        <div className="-mx-4 flex flex-col min-h-screen bg-white pb-20 fade-in-0 duration-500 animate-in font-sans">
+            {/* Instagram Style Profile Header */}
+            <div className="px-1 pt-8 pb-6 border-b border-slate-100 italic-style">
+                <div className="flex items-center justify-between mb-5 px-4">
+                    <div className="relative">
+                        <div className="size-[86px] rounded-full p-[3px] bg-gradient-to-tr from-amber-400 via-fuchsia-500 to-indigo-600">
+                             <div className="size-full rounded-full border-2 border-white overflow-hidden bg-slate-50">
+                                 <StoreAvatar
+                                     storeName={storeName}
+                                     logoUrl={bootstrap?.storeLogoUrl}
+                                     size="lg"
+                                     className="size-full border-none rounded-none"
+                                 />
+                             </div>
+                         </div>
+                     </div>
+ 
+                     <div className="flex-1 flex justify-around items-center pl-4">
+                         {statSegments.slice(0, 3).map((s, idx) => (
+                             <div key={idx} className="flex flex-col items-center">
+                                 <span className="font-bold text-[17px] leading-none mb-1">{s.value}</span>
+                                 <span className="text-[13px] text-slate-500 font-normal">{s.label.split(' ')[0]}</span>
+                             </div>
+                         ))}
+                     </div>
+                 </div>
+ 
+                 <div className="space-y-0.5 mb-6 px-4">
+                     <h1 className="font-bold text-[15px] tracking-tight text-slate-900 flex items-center gap-1.5">
+                         {storeName}
+                         <HugeiconsIcon icon={CheckmarkBadge01Icon} className="size-3.5 text-blue-500" />
+                     </h1>
+                     <p className="text-[13px] text-slate-600 leading-[1.4] max-w-[90%]">
+                         {bootstrap?.storeDescription || "Key insights and details about your customers and their shopping behavior."}
+                     </p>
+                     <Link
+                         href={bootstrap?.storeSlug ? `https://${bootstrap.storeSlug}.shopvendly.com` : "#"}
+                         target="_blank"
+                         className="text-[13px] text-blue-600 font-medium hover:underline flex items-center gap-1"
+                     >
+                         {bootstrap?.storeSlug ? `shopvendly.com/${bootstrap.storeSlug}` : "shopvendly.com"}
+                         <HugeiconsIcon icon={Share01Icon} className="size-3" />
+                     </Link>
+                 </div>
+ 
+                 <div className="flex gap-2 px-4">
+                     <Button
+                         size="sm"
+                         variant="outline"
+                         className="flex-1 h-10 bg-white border-slate-200 text-slate-900 font-bold text-[13px] rounded-lg transition-all active:scale-[0.97] shadow-sm"
+                     >
+                         Export
+                     </Button>
+                     <Button
+                         size="sm"
+                         className="flex-1 h-10 bg-slate-900 hover:bg-slate-800 text-white font-bold text-[13px] rounded-lg shadow-none border-none transition-all active:scale-[0.97]"
+                     >
+                         Add Customer
+                     </Button>
+                 </div>
+             </div>
 
-            {/* Bio / Description */}
-            <div className="px-5 mb-5 space-y-1.5">
-                <p className="text-sm">
-                    Key insights and details about your customers.
-                </p>
-            </div>
-
-            {/* Stats section */}
-            <div className="px-5 mb-6">
-                <SegmentedStatsCard segments={statSegments} />
-            </div>
-
-            <div className="w-full h-1px bg-border/40" />
-
-            {/* Navigation Tabs */}
-            <div className="flex w-full border-b border-border/40">
-                <div className="flex-1 py-3.5 flex justify-center items-center border-b-[1.5px] border-foreground">
-                    <HugeiconsIcon icon={UserMultiple02Icon} className="size-[22px] text-foreground" />
-                </div>
-                <div className="flex-1 py-3.5 flex justify-center items-center text-muted-foreground opacity-50">
-                    <HugeiconsIcon icon={AnalyticsUpIcon} className="size-[22px]" />
-                </div>
-            </div>
-
-            {/* Customers List */}
-            <div className="flex flex-col px-4 pt-4 gap-3">
+             {/* Customers List - Redesigned as Premium Cards */}
+             <div className="px-1 pt-6 flex flex-col gap-3">
                 {customers.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 opacity-50">
                         <div className="size-16 rounded-full border-2 border-dashed border-border flex items-center justify-center mb-4">

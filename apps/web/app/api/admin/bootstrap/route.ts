@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
         storeId: store.id,
         storeSlug,
         storeName: store.name,
+        storeDescription: store.description,
         storeLogoUrl: store.logoUrl,
         defaultCurrency: store.defaultCurrency,
         collectoPassTransactionFeeToCustomer: store.collectoPassTransactionFeeToCustomer ?? false,

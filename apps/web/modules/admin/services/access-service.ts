@@ -44,6 +44,7 @@ export type TenantAdminAccess = {
     id: string;
     tenantId: string;
     name: string;
+    description: string | null;
     defaultCurrency: string | undefined;
     logoUrl: string | null;
     slug: string;
@@ -63,6 +64,7 @@ type StoreAccessContext = {
   id: string;
   tenantId: string;
   name: string;
+  description: string | null;
   defaultCurrency: string | undefined;
   logoUrl: string | null;
   slug: string;
@@ -137,13 +139,14 @@ export async function resolveTenantAdminAccess(
 ): Promise<TenantAdminAccess> {
   const store = await storeRepo.findAdminBySlug(storeSlug);
   const normalizedStore: StoreAccessContext | null = store
-    ? {
+    ? ({
         ...store,
+        description: store.description,
         logoUrl: store.logoUrl,
         slug: store.slug,
         collectoPassTransactionFeeToCustomer: store.collectoPassTransactionFeeToCustomer ?? false,
         collectoPayoutMode: normalizeCollectoPayoutMode(store.collectoPayoutMode),
-      } as StoreAccessContext
+      } as StoreAccessContext)
     : null;
 
   const initialAccess = await resolveAccessForStore(userId, normalizedStore, mode);
@@ -193,14 +196,15 @@ export async function resolveTenantAdminAccessByStoreId(
 ): Promise<TenantAdminAccess> {
   const store = await storeRepo.findAdminByStoreId(storeId);
 
-  const initialAccess = resolveAccessForStore(userId, store ? {
+  const initialAccess = resolveAccessForStore(userId, store ? ({
     ...store,
+    description: store.description,
     defaultCurrency: store.defaultCurrency,
     logoUrl: store.logoUrl,
     slug: store.slug,
     collectoPassTransactionFeeToCustomer: store.collectoPassTransactionFeeToCustomer ?? false,
     collectoPayoutMode: normalizeCollectoPayoutMode(store.collectoPayoutMode),
-  } as StoreAccessContext : null, mode);
+  } as StoreAccessContext) : null, mode);
 
   // Handle demo store bypass for vendly
   if (store?.slug === "vendly" && mode === "read") {
