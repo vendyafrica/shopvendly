@@ -7,5 +7,6 @@ export interface MarketplaceStore {
     instagramAvatarUrl?: string | null;
     images?: string[];
     heroMedia?: string[];
+    mediaItems?: { url: string; contentType: string | null }[];
     categories: string[];
 }

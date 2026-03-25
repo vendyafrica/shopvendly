@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Avatar, AvatarImage, AvatarFallback } from "@shopvendly/ui/components/avatar";
 
-const DEFAULT_STORE_LOGO = "/vendly.png";
+// No default image logo - we use initials by default
 
 function capitalizeFirst(value?: string | null) {
     if (!value) return "Store";
@@ -35,7 +35,7 @@ export function StoreAvatar({
     shape = "circle",
     className = "",
 }: StoreAvatarProps) {
-    const avatarUrl = logoUrl || instagramAvatarUrl || DEFAULT_STORE_LOGO;
+    const avatarUrl = logoUrl || instagramAvatarUrl;
     const displayName = capitalizeFirst(storeName);
 
     // Get initials from store name (up to 2 characters)
@@ -90,7 +90,7 @@ export function StoreAvatar({
                     className={shapeClasses[shape].media}
                 />
             )}
-            <AvatarFallback className={`bg-neutral-100 text-neutral-700 font-semibold ${shapeClasses[shape].media}`}>
+            <AvatarFallback className={`bg-white text-black font-bold text-[0.8rem] ${shapeClasses[shape].media}`}>
                 {initials}
             </AvatarFallback>
         </Avatar>
@@ -114,7 +114,7 @@ export function StoreAvatarSimple({
     size?: number;
     className?: string;
 }) {
-    const avatarUrl = logoUrl || instagramAvatarUrl || DEFAULT_STORE_LOGO;
+    const avatarUrl = logoUrl || instagramAvatarUrl;
 
     const getInitials = (name: string): string => {
         if (!name) return "S";
@@ -144,7 +144,7 @@ export function StoreAvatarSimple({
 
     return (
         <div
-            className={`relative rounded-none overflow-hidden bg-neutral-100 flex items-center justify-center ${className}`}
+            className={`relative rounded-full overflow-hidden bg-white flex items-center justify-center border border-border/40 ${className}`}
             style={{ width: size, height: size }}
         >
             {avatarUrl ? (
@@ -158,8 +158,8 @@ export function StoreAvatarSimple({
                 />
             ) : (
                 <span
-                    className="font-semibold text-neutral-700"
-                    style={{ fontSize: size * 0.4 }}
+                    className="font-medium text-black"
+                    style={{ fontSize: size * 0.35 }}
                 >
                     {initials}
                 </span>

@@ -51,6 +51,7 @@ export default async function HomePage() {
     instagramAvatarUrl: s.instagramAvatarUrl ?? null,
     heroMedia: Array.isArray(s.heroMedia) ? s.heroMedia : [],
     images: Array.isArray(s.images) ? s.images : [],
+    mediaItems: Array.isArray(s.mediaItems) ? s.mediaItems : [],
   });
 
   const uiStores = stores.map(mapToMarketplaceStore);

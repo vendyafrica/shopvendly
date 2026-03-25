@@ -2,7 +2,7 @@ import { categoryRepo } from "@/repo/category-repo";
 import { storeRepo } from "@/repo/store-repo";
 import { withCache, cacheKeys, TTL } from "@shopvendly/db";
 
-const DEFAULT_STORE_LOGO = "/vendly.png";
+
 
 export interface StoreWithCategory {
     id: string;
@@ -14,6 +14,7 @@ export interface StoreWithCategory {
     categories: string[];
     heroMedia?: string[];
     images?: string[];
+    mediaItems?: { url: string; contentType: string | null }[];
 }
 
 function slugifyName(name: string): string {
@@ -61,7 +62,7 @@ function mapProductRecord(product: ProductRecordForMarketplace, store: { id: str
             id: store.id,
             name: store.name,
             slug: store.slug,
-            logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO,
+            logoUrl: store.logoUrl ?? null,
         },
     };
 }
@@ -87,9 +88,22 @@ export interface MarketplaceSearchResult {
 }
 
 /**
+ * Detect if a URL points to a video based on common extensions
+ */
+function isVideoUrl(url: string): boolean {
+    const lower = url.toLowerCase();
+    // Check for common video extensions
+    const hasVideoExtension = [".mp4", ".mov", ".webm", ".avi", ".m4v", ".mkv"].some((ext) => lower.includes(ext));
+    // Check for query parameters often used by storage providers (like UploadThing/S3)
+    const hasVideoQueryParam = lower.includes("video") || lower.includes("quicktime");
+
+    return hasVideoExtension || hasVideoQueryParam;
+}
+
+/**
  * Batch fetch product images for multiple stores to avoid N+1 queries
  */
-async function batchFetchStoreProductImages(storeIds: string[]): Promise<Map<string, string[]>> {
+async function batchFetchStoreProductImages(storeIds: string[]): Promise<Map<string, { url: string; contentType: string | null }[]>> {
     if (storeIds.length === 0) return new Map();
     const { db, products, inArray } = await import("@shopvendly/db");
 
@@ -109,16 +123,18 @@ async function batchFetchStoreProductImages(storeIds: string[]): Promise<Map<str
         }
     });
 
-    // Group images by store
-    const storeImages = new Map<string, string[]>();
-    for (const product of productsWithMedia) {
+    // Group media items by store
+    const storeImages = new Map<string, { url: string; contentType: string | null }[]>();
+    for (const product of productsWithMedia as any[]) {
         const existingImages = storeImages.get(product.storeId) || [];
-        const productImages = (product.media ?? [])
-            .map((m) => m?.media?.blobUrl)
-            .filter((url): url is string => Boolean(url)); // Note: we are currently only returning strings here for StoreCard compatibility. StoreCard needs update if we want video on store cards.
+        const productMedia = (product.media ?? [])
+            .map((m: any) => ({ url: m?.media?.blobUrl as string | null, contentType: m?.media?.contentType as string | null }))
+            .filter((item: { url: string | null; contentType: string | null }): item is { url: string; contentType: string | null } =>
+                Boolean(item.url) && typeof item.url === "string" && item.url.trim() !== ""
+            );
 
-        // Limit to 5 images per store
-        const combined = [...existingImages, ...productImages].slice(0, 5);
+        // Limit to 5 items per store
+        const combined = [...existingImages, ...productMedia].slice(0, 5);
         storeImages.set(product.storeId, combined);
     }
 
@@ -154,7 +170,7 @@ export const marketplaceService = {
 
                 for (const store of stores) {
                     const heroImages = Array.isArray((store as { heroMedia?: unknown }).heroMedia)
-                        ? (((store as { heroMedia?: unknown }).heroMedia as unknown[])?.filter((u) => typeof u === "string") as string[])
+                        ? (((store as { heroMedia?: unknown }).heroMedia as unknown[])?.filter((u) => typeof u === "string" && u.trim() !== "") as string[])
                         : [];
 
                     if (heroImages.length > 0) {
@@ -168,18 +184,35 @@ export const marketplaceService = {
                 const productImages = await batchFetchStoreProductImages(storesNeedingImages);
 
                 return stores.map((store) => {
-                    const images = storeHeroImages.get(store.id) || productImages.get(store.id) || [];
+                    const heroMedia = (store as { heroMedia?: string[] }).heroMedia ?? [];
+                    const heroImages = heroMedia.filter((u) => typeof u === "string" && u.trim() !== "");
+
+                    // Build ordered mediaItems: hero first, then product images for stores without hero
+                    let mediaItems: { url: string; contentType: string | null }[];
+                    if (heroImages.length > 0) {
+                        // Map hero media: detect content type from URL extension
+                        mediaItems = heroImages.map((url) => ({
+                            url,
+                            contentType: isVideoUrl(url) ? "video/mp4" : "image/jpeg",
+                        }));
+                    } else {
+                        mediaItems = productImages.get(store.id) || [];
+                    }
+
+                    // Keep backward-compat images array
+                    const images = mediaItems.map((m) => m.url);
 
                     return {
                         id: store.id,
                         name: store.name,
                         slug: store.slug,
                         description: store.description,
-                        logoUrl: store.logoUrl ?? DEFAULT_STORE_LOGO,
+                        logoUrl: store.logoUrl ?? null,
                         instagramAvatarUrl: igMap.get(store.tenantId) ?? null,
                         categories: store.categories || [],
-                        heroMedia: (store as { heroMedia?: string[] }).heroMedia ?? [],
+                        heroMedia,
                         images,
+                        mediaItems,
                     };
                 });
             },
@@ -236,7 +269,7 @@ export const marketplaceService = {
 
         return Promise.all(stores.map(async (store) => {
             const heroImages = Array.isArray((store as { heroMedia?: unknown }).heroMedia)
-                ? (((store as { heroMedia?: unknown }).heroMedia as unknown[])?.filter((u) => typeof u === "string") as string[])
+                ? (((store as { heroMedia?: unknown }).heroMedia as unknown[])?.filter((u) => typeof u === "string" && u.trim() !== "") as string[])
                 : [];
 
             let images: string[] = heroImages;
@@ -244,10 +277,10 @@ export const marketplaceService = {
             if (images.length === 0) {
                 const products = await productRepo.findByStoreId(store.id);
                 images = products
-                    .flatMap((p) =>
+                    .flatMap((p: any) =>
                         (p.media ?? [])
-                            .map((m) => m?.media?.blobUrl)
-                            .filter((u): u is string => typeof u === "string" && u.length > 0)
+                            .map((m: any) => m?.media?.url || m?.media?.blobUrl)
+                            .filter((u: any): u is string => typeof u === "string" && u.trim() !== "")
                     )
                     .slice(0, 5);
             }
@@ -320,7 +353,7 @@ export const marketplaceService = {
                     ? products.filter((p) => p.productName?.toLowerCase().includes(normalizedQuery))
                     : products;
 
-                return filtered.map((p) => ({
+                return filtered.map((p: any) => ({
                     id: p.id,
                     slug: p.slug || p.productName.toLowerCase().replace(/\s+/g, "-"),
                     name: p.productName,
@@ -376,7 +409,7 @@ export const marketplaceService = {
                     ? filteredByCategory.filter((p) => p.productName?.toLowerCase().includes(normalizedQuery))
                     : filteredByCategory;
 
-                return filtered.map((p) => ({
+                return filtered.map((p: any) => ({
                     id: p.id,
                     slug: p.slug || p.productName.toLowerCase().replace(/\s+/g, "-"),
                     name: p.productName,

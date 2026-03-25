@@ -16,7 +16,7 @@ interface HeroProps {
 }
 
 const FALLBACK_HERO_MEDIA =
-  "https://cdn.cosmos.so/998437cb-290b-4361-9f94-a3b1a1f65c47?format=jpeg";
+  "https://cdn.cosmos.so/974817a0-84de-4604-95c9-93db9b929ea9?format=jpeg";
 const VIDEO_EXTENSIONS = [".mp4", ".webm", ".ogg", ".mov"];
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".svg"];
 
