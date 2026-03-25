@@ -1,6 +1,8 @@
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
+import { z } from "zod";
 import { and, db, eq, gt, isNull, orders, stores } from "@shopvendly/db";
+import { requireAuth, requireTenantRole } from "../../../shared/middleware/auth.js";
 import { collectoApiFetch } from "./collecto-http.js";
 import {
   normalizeCollectoBusinessStatus,
@@ -344,41 +346,53 @@ collectoReconcileRouter.post("/storefront/:slug/payments/collecto/reconcile-orde
   }
 });
 
+const storeIdParamSchema = z.object({ storeId: z.string().uuid() });
+
 /**
- * GET /api/stores/:storeId/collecto/available-balance
- * 
- * Fetch the available balance for manual payout (orders with successful wallet transfer)
+ * GET /stores/:storeId/collecto/available-balance
+ *
+ * Fetch the available balance for manual payout (orders with successful wallet transfer).
+ * Requires authentication and owner/admin role on the tenant.
  */
-collectoReconcileRouter.get("/api/stores/:storeId/collecto/available-balance", async (req, res, next) => {
+collectoReconcileRouter.get(
+  "/stores/:storeId/collecto/available-balance",
+  requireAuth,
+  requireTenantRole(["owner", "admin"]),
+  async (req, res, next) => {
   try {
-    const { storeId } = req.params;
+    const params = storeIdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({
+        error: "Invalid storeId — must be a valid UUID",
+        code: "VALIDATION_ERROR",
+      });
+    }
 
     const store = await db.query.stores.findFirst({
-      where: and(eq(stores.id, storeId), isNull(stores.deletedAt)),
+      where: and(eq(stores.id, params.data.storeId), isNull(stores.deletedAt)),
       columns: { id: true, tenantId: true },
     });
 
     if (!store || !store.tenantId) {
-      return res.status(404).json({ error: "Store not found" });
+      return res.status(404).json({ error: "Store not found", code: "NOT_FOUND" });
     }
 
     const balanceResult = await fetchAvailableBalance(store.tenantId);
 
     return res.status(200).json({
-      ok: true,
-      // New detailed breakdown
-      walletBalance: balanceResult.walletBalance,
-      bulkBalance: balanceResult.bulkBalance,
-      withdrawable: balanceResult.withdrawable,
-      pendingTransfer: balanceResult.pendingTransfer,
-      totalOwedBalance: balanceResult.totalOwedBalance,
-      // Legacy fields for backward compatibility
-      availableBalance: balanceResult.bulkBalance,
-      payoutAmount: balanceResult.withdrawable,
-      payoutFee: 1200,
-      orderCount: balanceResult.orderIds.length,
-      orderIds: balanceResult.orderIds,
-      pendingOrderIds: balanceResult.pendingOrderIds,
+      data: {
+        walletBalance: balanceResult.walletBalance,
+        bulkBalance: balanceResult.bulkBalance,
+        withdrawable: balanceResult.withdrawable,
+        pendingTransfer: balanceResult.pendingTransfer,
+        totalOwedBalance: balanceResult.totalOwedBalance,
+        availableBalance: balanceResult.bulkBalance,
+        payoutAmount: balanceResult.withdrawable,
+        payoutFee: 1200,
+        orderCount: balanceResult.orderIds.length,
+        orderIds: balanceResult.orderIds,
+        pendingOrderIds: balanceResult.pendingOrderIds,
+      },
     });
   } catch (err) {
     next(err);
@@ -386,36 +400,40 @@ collectoReconcileRouter.get("/api/stores/:storeId/collecto/available-balance", a
 });
 
 /**
- * POST /api/stores/:storeId/collecto/initiate-payout
- * 
- * Manually initiate batch payout for all unsettled orders
+ * POST /stores/:storeId/collecto/initiate-payout
+ *
+ * Manually initiate batch payout for all unsettled orders.
+ * Requires authentication and owner/admin role on the tenant.
  */
-collectoReconcileRouter.post("/api/stores/:storeId/collecto/initiate-payout", async (req, res, next) => {
-  try {
-    const { storeId } = req.params;
+collectoReconcileRouter.post(
+  "/stores/:storeId/collecto/initiate-payout",
+  requireAuth,
+  requireTenantRole(["owner", "admin"]),
+  async (req, res, next) => {
+    try {
+      const params = storeIdParamSchema.safeParse(req.params);
+      if (!params.success) {
+        return res.status(400).json({
+          error: "Invalid storeId — must be a valid UUID",
+          code: "VALIDATION_ERROR",
+        });
+      }
 
-    const store = await db.query.stores.findFirst({
-      where: and(eq(stores.id, storeId), isNull(stores.deletedAt)),
-      columns: { id: true, name: true, tenantId: true },
-    });
-
-    if (!store || !store.tenantId) {
-      return res.status(404).json({ error: "Store not found" });
-    }
-
-    const result = await runCollectoBatchPayout(store.tenantId, store.id, store.name || "Store");
-
-    return res.status(200).json({
-      ok: true,
-      ...result,
-    });
-  } catch (err) {
-    if (err instanceof Error) {
-      return res.status(400).json({ 
-        ok: false,
-        error: err.message 
+      const store = await db.query.stores.findFirst({
+        where: and(eq(stores.id, params.data.storeId), isNull(stores.deletedAt)),
+        columns: { id: true, name: true, tenantId: true },
       });
+
+      if (!store || !store.tenantId) {
+        return res.status(404).json({ error: "Store not found", code: "NOT_FOUND" });
+      }
+
+      const result = await runCollectoBatchPayout(store.tenantId, store.id, store.name || "Store");
+
+      return res.status(200).json({ data: result });
+    } catch (err) {
+      // Don't leak internal error messages — pass to centralized handler
+      next(err);
     }
-    next(err);
   }
-});
+);

@@ -1,9 +1,11 @@
 import express, { Request, Response, Application } from "express";
 import cors from "cors";
 import { apiRouter } from "./routes/api-router.js";
+import { errorHandler } from "./shared/middleware/errorHandler.js";
+import { apiLimiter, webhookLimiter, strictLimiter } from "./shared/middleware/rateLimiter.js";
 import type { RawBodyRequest } from "./shared/types/raw-body.js";
 
-export function createApp():Application {
+export function createApp(): Application {
   const app = express();
 
   app.set("trust proxy", true);
@@ -26,19 +28,36 @@ export function createApp():Application {
       ],
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-      allowedHeaders: ["Content-Type", "Authorization", "X-Request-With", "x-tenant-id", "x-tenant-slug"],
+      allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "X-Request-With",
+        "x-tenant-id",
+        "x-tenant-slug",
+        "x-internal-api-key",
+        "Idempotency-Key",
+      ],
     })
   );
 
   app.use(
     express.json({
-     verify: (req: Request, _res: Response, buf: Buffer) => {
+      verify: (req: Request, _res: Response, buf: Buffer) => {
         (req as RawBodyRequest).rawBody = buf;
       },
     })
   );
   app.use(express.urlencoded({ extended: true }));
 
+  // ─── Rate Limiting ────────────────────────────────────────────────────────
+  // Webhook routes get a relaxed limit — Meta/Collecto/QStash can burst
+  app.use("/api/webhooks", webhookLimiter);
+  // Internal routes get a strict limit
+  app.use("/api/internal", strictLimiter);
+  // All other public API routes get the standard limit
+  app.use("/api", apiLimiter);
+
+  // ─── Utility ──────────────────────────────────────────────────────────────
   app.get("/", (_req, res) => {
     res.send("API is running");
   });
@@ -52,24 +71,19 @@ export function createApp():Application {
     });
   });
 
+  // ─── API Router ───────────────────────────────────────────────────────────
   app.use("/api", apiRouter);
 
+  // ─── 404 Handler ─────────────────────────────────────────────────────────
   app.use((_req, res) => {
     res.status(404).json({
-      message: "Route not found",
-      error: true,
+      error: "Route not found",
+      code: "NOT_FOUND",
     });
   });
 
-  app.use(
-    (err: Error & { status?: number }, _req: Request, res: Response) => {
-      console.error("Error:", err);
-      res.status(err.status || 500).json({
-        message: err.message || "Internal server error",
-        error: true,
-      });
-    }
-  );
+  // ─── Centralized Error Handler (must be last) ─────────────────────────────
+  app.use(errorHandler);
 
   return app;
 }

@@ -1,10 +1,16 @@
 import { Router } from "express";
 import type { Router as ExpressRouter } from "express";
+import { z } from "zod";
 import { requireAuth, requireTenantRole } from "../../../shared/middleware/auth.js";
 import { orderService } from "../services/order-service.js";
 import { handlePaidOrderTransition } from "../../payments/services/payment-order-transition.js";
 
 export const orderSimulationsRouter: ExpressRouter = Router();
+
+const simulateParamsSchema = z.object({
+  tenantId: z.string().uuid(),
+  orderId: z.string().uuid(),
+});
 
 // POST /api/tenants/:tenantId/orders/:orderId/simulate-paid
 orderSimulationsRouter.post(
@@ -13,32 +19,37 @@ orderSimulationsRouter.post(
   requireTenantRole(["owner", "admin"]),
   async (req, res, next) => {
     try {
-      const { tenantId, orderId } = req.params;
-
-      const tenantIdStr = Array.isArray(tenantId) ? tenantId[0] : tenantId ?? "";
-      const orderIdStr = Array.isArray(orderId) ? orderId[0] : orderId ?? "";
-
-      if (!tenantIdStr || !orderIdStr) {
-        return res.status(400).json({ error: "tenantId and orderId are required" });
+      const params = simulateParamsSchema.safeParse(req.params);
+      if (!params.success) {
+        return res.status(400).json({
+          error: "Invalid path parameters — tenantId and orderId must be valid UUIDs",
+          code: "VALIDATION_ERROR",
+        });
       }
 
-      const existingOrder = await orderService.getOrderById(orderIdStr);
+      const { tenantId, orderId } = params.data;
+
+      const existingOrder = await orderService.getOrderById(orderId);
       if (!existingOrder) {
-        return res.status(404).json({ error: "Order not found" });
+        return res.status(404).json({ error: "Order not found", code: "NOT_FOUND" });
       }
 
-      if (existingOrder.tenantId !== tenantIdStr) {
-        return res.status(403).json({ error: "Order does not belong to this tenant" });
+      if (existingOrder.tenantId !== tenantId) {
+        return res.status(403).json({
+          error: "Order does not belong to this tenant",
+          code: "FORBIDDEN",
+        });
       }
 
       const updated = await handlePaidOrderTransition({
-        orderId: orderIdStr,
+        orderId,
         includeSellerContext: true,
       });
 
-      return res.json({ ok: true, order: updated });
+      return res.json({ data: updated });
     } catch (err) {
       next(err);
     }
   }
 );
+

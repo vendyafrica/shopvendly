@@ -84,7 +84,9 @@ storefrontOrdersRouter.post("/storefront/:slug/checkout", async (req, res, next)
 
     if (input.paymentMethod !== "mobile_money") {
       await notifyOrderCreated(order);
-      return res.status(201).json({ ok: true, order, paymentPricing });
+      return res.status(201).json({
+        data: { order, paymentPricing },
+      });
     }
 
     await orderService.updateOrderStatusByOrderId(order.id, {
@@ -94,19 +96,20 @@ storefrontOrdersRouter.post("/storefront/:slug/checkout", async (req, res, next)
     });
 
     return res.status(201).json({
-      ok: true,
-      order: {
-        ...order,
-        status: "awaiting_payment",
-        paymentMethod: "mobile_money",
-        paymentStatus: "pending",
-      },
-      payment: {
-        mode: "live",
-        status: "ready_to_initiate",
-      },
-      paymentPricing,
-    });
+        data: {
+          order: {
+            ...order,
+            status: "awaiting_payment",
+            paymentMethod: "mobile_money",
+            paymentStatus: "pending",
+          },
+          payment: {
+            mode: "live",
+            status: "ready_to_initiate",
+          },
+          paymentPricing,
+        },
+      });
   } catch (err) {
     next(err);
   }
@@ -123,7 +126,7 @@ storefrontOrdersRouter.post("/storefront/:slug/orders", async (req, res, next) =
     captureOrderCreated(order, slug);
     await notifyOrderCreated(order);
 
-    return res.status(201).json({ order });
+    return res.status(201).json({ data: { order } });
   } catch (err) {
     next(err);
   }
