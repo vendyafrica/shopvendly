@@ -20,6 +20,7 @@
   },
   "registries": {
     "@magicui": "https://magicui.design/r/{name}",
-    "@tour": "https://onboarding-tour.vercel.app/r/{name}.json"
+    "@tour": "https://onboarding-tour.vercel.app/r/{name}.json",
+    "@kibo-ui": "https://www.kibo-ui.com/r/{name}.json"
   }
 }

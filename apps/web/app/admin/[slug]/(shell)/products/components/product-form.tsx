@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Cancel01Icon, ImageUpload01Icon, ArrowLeft02Icon,Add01Icon } from "@hugeicons/core-free-icons";
+import { Cancel01Icon, ImageUpload01Icon, ArrowLeft02Icon, Add01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@shopvendly/ui/lib/utils";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
@@ -28,6 +28,8 @@ import type { ProductApiRow } from "@/modules/products/hooks/use-products";
 import { useUpload } from "@/modules/media/hooks/use-upload";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
+import { HexPicker } from "./hex-picker";
+import { COLOR_MAP, getColorName } from "@/lib/constants/colors";
 
 interface ProductFormProps {
     initialData?: Partial<ProductApiRow>;
@@ -57,28 +59,6 @@ type StoreCollection = {
     name: string;
 };
 
-const COLOR_MAP: Record<string, string> = {
-    "Black": "#000000",
-    "White": "#FFFFFF",
-    "Grey": "#808080",
-    "Brown": "#A52A2A",
-    "Beige": "#F5F5DC",
-    "Navy": "#000080",
-    "Blue": "#0000FF",
-    "Green": "#008000",
-    "Olive": "#808000",
-    "Yellow": "#FFFF00",
-    "Orange": "#FFA500",
-    "Red": "#FF0000",
-    "Pink": "#FFC0CB",
-    "Purple": "#800080",
-    "Gold": "#FFD700",
-    "Silver": "#C0C0C0",
-    "Burgundy": "#800020",
-    "Teal": "#008080",
-    "Coral": "#FF7F50",
-    "Cream": "#FFFDD0",
-};
 
 function UploadProgressSpinner({ progress }: { progress: number }) {
     const radius = 18;
@@ -379,9 +359,9 @@ export function ProductForm({
 
             const result = (await response.json()) as ProductApiRow;
 
-            queryClient.removeQueries({ 
+            queryClient.removeQueries({
                 queryKey: queryKeys.products.all,
-                exact: false 
+                exact: false
             });
 
             onSuccess?.(result);
@@ -473,7 +453,7 @@ export function ProductForm({
                         <HugeiconsIcon icon={ImageUpload01Icon} className="size-6 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
                     <span className="text-xs font-semibold text-muted-foreground group-hover:text-primary transition-colors mt-3">Add image</span>
-                    
+
                     <input
                         ref={fileInputRef}
                         type="file"
@@ -685,36 +665,49 @@ export function ProductForm({
                     <div className="space-y-6 pt-2 border-t">
                         <div className="space-y-3">
                             <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Colors</Label>
-                            <div className="grid grid-cols-5 gap-3 sm:grid-cols-8 lg:grid-cols-10">
-                                {[...PRODUCT_COLOR_PRESETS].slice(0, 20).map((color) => {
-                                    const checked = selectedColors.includes(color);
-                                    const swatchColor = COLOR_MAP[color] || color.toLowerCase();
-                                    return (
-                                        <Button
-                                            key={color}
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className={cn(
-                                                "relative size-7 rounded-full border transition-all hover:scale-110 active:scale-95 shadow-sm p-0 focus-visible:ring-0 focus-visible:ring-offset-0",
-                                                checked ? "ring-2 ring-offset-2" : "border-neutral-200 hover:border-neutral-300"
-                                            )}
-                                            style={{
-                                                backgroundColor: swatchColor,
-                                                // Using swatchColor for both border and ring to ensure it looks cohesive
-                                                borderColor: checked ? swatchColor : (swatchColor === "#FFFFFF" ? "#e5e5e5" : "transparent"),
-                                                boxShadow: checked ? `0 0 0 2px white, 0 0 0 4px ${swatchColor}` : undefined,
-                                            }}
-                                            aria-pressed={checked}
-                                            aria-label={color}
-                                            onClick={() => {
-                                                setSelectedColors(prev =>
-                                                    checked ? prev.filter(c => c !== color) : [...prev, color]
-                                                );
-                                            }}
-                                        />
-                                    );
-                                })}
+                            <div className="flex flex-col gap-5">
+                                <div className="grid grid-cols-5 gap-3 sm:grid-cols-8 lg:grid-cols-10">
+                                    {/* Render all selected colors first (so custom ones appear) then presets */}
+                                    {Array.from(new Set([...selectedColors, ...PRODUCT_COLOR_PRESETS.slice(0, 5)])).map((color) => {
+                                        const checked = selectedColors.includes(color);
+                                        const swatchColor = COLOR_MAP[color] || 
+                                                           (color.includes(":") ? (color.split(":")[1] || "#000000") : 
+                                                           (color.startsWith("#") ? color : color.toLowerCase())) || "#000000";
+                                        return (
+                                            <Button
+                                                key={color}
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className={cn(
+                                                    "relative cursor-pointer size-6 rounded-full border transition-all hover:scale-110 active:scale-95 shadow-sm p-0 focus-visible:ring-0 focus-visible:ring-offset-0",
+                                                    checked ? "ring-2 ring-offset-2" : "border-neutral-200 hover:border-neutral-300"
+                                                )}
+                                                style={{
+                                                    backgroundColor: swatchColor,
+                                                    borderColor: checked ? swatchColor : (swatchColor.toLowerCase() === "#ffffff" ? "#e5e5e5" : "transparent"),
+                                                    boxShadow: checked ? `0 0 0 2px white, 0 0 0 4px ${swatchColor}` : undefined,
+                                                }}
+                                                aria-pressed={checked}
+                                                aria-label={getColorName(color)}
+                                                onClick={() => {
+                                                    setSelectedColors(prev =>
+                                                        checked ? prev.filter(c => c !== color) : [...prev, color]
+                                                    );
+                                                }}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                                <div className="flex items-center gap-3 py-1">
+                                    <HexPicker
+                                        onColorSelect={(hex: string) => {
+                                            setSelectedColors(prev =>
+                                                prev.includes(hex) ? prev : [...prev, hex]
+                                            );
+                                        }}
+                                    />
+                                </div>
                             </div>
                         </div>
 

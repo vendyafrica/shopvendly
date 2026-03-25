@@ -5,6 +5,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { FavouriteIcon } from "@hugeicons/core-free-icons";
 import { ProductActions } from "./product-actions";
 import { Product, MediaItem } from "@/modules/storefront/models/product";
+import { cn } from "@shopvendly/ui/lib/utils";
+import { getColorName } from "@/lib/constants/colors";
 
 interface ProductDetailsUIProps {
     product: Product;
@@ -277,13 +279,15 @@ export function ProductDetailsUI({ product, storePolicy, state, actions }: Produ
                         <div className="mt-6 space-y-2.5 border-b border-neutral-100 pb-6">
                             <div className="flex items-center gap-2 text-sm">
                                 <span className="font-semibold text-neutral-950">Color</span>
-                                {selectedColor ? <span className="text-sm text-neutral-700">{selectedColor}</span> : null}
+                                {selectedColor ? <span className="text-sm text-neutral-700">{getColorName(selectedColor)}</span> : null}
                             </div>
                             <div className="flex flex-wrap gap-3">
                                 {colorValues.map((value: string) => {
                                     const isActive = selectedColor === value;
-
-                                    const cssColor = value.toLowerCase().replace(/\s+/g, '');
+                                    // Use the value directly if it's a hex, otherwise normalize it
+                                    // If it's Name:Hex format, extract the Hex part
+                                    const cssColor = value.includes(":") ? (value.split(":")[1] || "#000000") : 
+                                                    (value.startsWith("#") ? value : value.toLowerCase().replace(/\s+/g, ''));
                                     const isWhiteLike = cssColor === 'white' || cssColor === '#fff' || cssColor === '#ffffff';
 
                                     return (
@@ -291,18 +295,17 @@ export function ProductDetailsUI({ product, storePolicy, state, actions }: Produ
                                             key={value}
                                             type="button"
                                             onClick={() => setSelectedColor(value)}
-                                            className={`group flex items-center gap-2.5 rounded-full border px-4 py-2 text-[15px] font-medium transition-all ${isActive
-                                                    ? "border-transparent bg-neutral-50 shadow-[0_0_0_2px_var(--tw-shadow-color)] ring-offset-1"
-                                                    : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50"
-                                                }`}
-                                            style={isActive ? { "--tw-shadow-color": isWhiteLike ? "#e5e5e5" : cssColor } as React.CSSProperties : undefined}
-                                        >
-                                            <span
-                                                className={`h-4 w-4 rounded-full ${isWhiteLike ? "border border-neutral-200" : "shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]"}`}
-                                                style={{ backgroundColor: cssColor }}
-                                            />
-                                            <span className={isActive ? "text-neutral-950" : ""}>{value}</span>
-                                        </button>
+                                            className={cn(
+                                                "relative size-6 rounded-full border transition-all hover:scale-110 active:scale-95 shadow-sm p-0",
+                                                isActive ? "ring-2 ring-offset-2" : "border-neutral-200 hover:border-neutral-300"
+                                            )}
+                                            style={{
+                                                backgroundColor: cssColor,
+                                                borderColor: isActive ? cssColor : (isWhiteLike ? "#e5e5e5" : "transparent"),
+                                                boxShadow: isActive ? `0 0 0 2px white, 0 0 0 4px ${cssColor}` : undefined,
+                                            } as React.CSSProperties}
+                                            title={value}
+                                        />
                                     );
                                 })}
                             </div>
