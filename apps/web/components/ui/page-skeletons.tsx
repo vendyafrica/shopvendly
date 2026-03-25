@@ -463,3 +463,129 @@ export function CardGridSkeleton({ cards = 6 }: { cards?: number }) {
         </div>
     );
 }
+
+/**
+ * Full-page skeleton for the Product Form (Create/Edit)
+ */
+export function ProductFormSkeleton() {
+    return (
+        <div className="mx-auto max-w-5xl md:space-y-6 space-y-4 pb-12">
+            {/* Sticky Header Skeleton */}
+            <div className="flex items-center justify-between sticky top-0 z-10 bg-background/95 backdrop-blur-md py-4 border-b -mx-4 px-4 sm:mx-0 sm:px-0">
+                <div className="flex items-center gap-3">
+                    <Skeleton className="h-9 w-9 rounded-md" />
+                    <div>
+                        <Skeleton className="h-7 w-40 mb-1" />
+                        <Skeleton className="h-3 w-64 hidden sm:block" />
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Skeleton className="h-9 w-20 rounded-md" />
+                    <Skeleton className="h-9 w-32 rounded-md" />
+                </div>
+            </div>
+
+            <div className="space-y-6">
+                {/* Top Section Grid */}
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    {/* Left Column (2/3) */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="rounded-xl border bg-card p-5 space-y-5">
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-24" />
+                                <Skeleton className="h-10 w-full rounded-md" />
+                            </div>
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-40 w-full rounded-md" />
+                            </div>
+                            <div className="space-y-2 pt-2 border-t">
+                                <Skeleton className="h-3 w-20 mt-3" />
+                                <Skeleton className="h-10 w-full rounded-md" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column (1/3) */}
+                    <div className="space-y-6">
+                        {/* Pricing */}
+                        <div className="rounded-xl border bg-card p-5 space-y-5">
+                            <Skeleton className="h-3 w-24 opacity-60" />
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Skeleton className="h-3 w-16" />
+                                    <Skeleton className="h-10 w-full rounded-md" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Skeleton className="h-3 w-20" />
+                                    <Skeleton className="h-10 w-full rounded-md" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Inventory */}
+                        <div className="rounded-xl border bg-card p-5 space-y-4">
+                            <Skeleton className="h-3 w-24 opacity-60" />
+                            <div className="space-y-2">
+                                <Skeleton className="h-3 w-28" />
+                                <Skeleton className="h-10 w-full rounded-md" />
+                                <Skeleton className="h-3 w-40 mt-1" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Media Manager */}
+                <div className="rounded-xl border bg-card p-5 space-y-4">
+                    <div className="space-y-1">
+                        <Skeleton className="h-4 w-16" />
+                        <Skeleton className="h-3 w-64" />
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 sm:gap-6">
+                        {[1, 2, 3, 4].map((i) => (
+                            <Skeleton key={i} className="aspect-square rounded-xl" />
+                        ))}
+                    </div>
+                </div>
+
+                {/* Variants */}
+                <div className="rounded-xl border bg-card p-5 space-y-6">
+                    <div className="space-y-1">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-3 w-64" />
+                    </div>
+                    <div className="space-y-6 pt-2 border-t">
+                        <div className="space-y-3">
+                            <Skeleton className="h-3 w-16 mt-2" />
+                            <div className="grid grid-cols-5 gap-3 sm:grid-cols-8 lg:grid-cols-10">
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+                                    <Skeleton key={i} className="size-7 rounded-full" />
+                                ))}
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Skeleton className="h-3 w-24" />
+                                <div className="flex gap-2">
+                                    <Skeleton className="h-8 w-16 rounded-md" />
+                                    <Skeleton className="h-8 w-24 rounded-md" />
+                                    <Skeleton className="h-8 w-20 rounded-md" />
+                                    <Skeleton className="h-8 w-24 rounded-md" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Pro Tip */}
+                <div className="rounded-xl bg-primary/5 border border-primary/10 p-5 space-y-3">
+                    <Skeleton className="h-4 w-20" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-3 w-full" />
+                        <Skeleton className="h-3 w-[90%]" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

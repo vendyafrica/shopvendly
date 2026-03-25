@@ -173,7 +173,7 @@ export function ProductActions({ product, selectedOptions = [] }: ProductActions
         <div className="grid grid-cols-1 gap-3 mb-3">
             <Button
                 onClick={handleAddToCart}
-                className="h-14 w-full rounded-xl border border-neutral-200 px-5 text-sm font-semibold uppercase tracking-[0.22em] text-white transition-colors hover:bg-neutral-50"
+                className="h-14 w-full rounded-xl border border-neutral-200 px-5 text-sm font-semibold uppercase tracking-[0.22em] text-white transition-colors hover:bg-primary/70"
                 disabled={isAdded || isOutOfStock || isAlreadyInCart}
             >
             {isAlreadyInCart ? (

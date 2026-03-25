@@ -8,6 +8,8 @@ import { useProductDetail } from "@/modules/products/hooks/use-products";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 
+import { ProductFormSkeleton } from "@/components/ui/page-skeletons";
+
 export default function EditProductPage() {
     const params = useParams();
     const id = params.id as string;
@@ -17,9 +19,8 @@ export default function EditProductPage() {
 
     if (isLoading) {
         return (
-            <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
-                <HugeiconsIcon icon={Loading03Icon} className="size-10 animate-spin text-primary" />
-                <p className="text-sm font-medium text-muted-foreground">Loading product details...</p>
+            <div className="container py-6">
+                <ProductFormSkeleton />
             </div>
         );
     }

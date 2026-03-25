@@ -139,6 +139,7 @@ function mapToStorefrontProduct(product: any, rating?: RatingAggregate) {
       url: resolveMediaUrl(m),
       contentType: resolveMediaContentType(m)
     })).filter((m): m is { url: string; contentType: string | null } => !!m.url),
+    variants: product.variants ?? null,
     variantSummary,
     averageRating: rating?.average ?? 0,
     ratingCount: rating?.count ?? 0,

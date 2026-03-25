@@ -36,13 +36,36 @@ export const PRODUCT_COLOR_PRESETS = [
   "Purple",
   "Gold",
   "Silver",
+  "Burgundy",
+  "Teal",
+  "Coral",
+  "Cream",
 ] as const;
 
 export const PRODUCT_ALPHA_SIZE_PRESET = ["XS", "S", "M", "L", "XL"] as const;
 export const PRODUCT_UK_SIZE_PRESET = ["4", "6", "8", "10", "12", "14", "16", "18"] as const;
+export const PRODUCT_SHOE_SIZE_PRESET = [
+  "30",
+  "31",
+  "32",
+  "33",
+  "34",
+  "35",
+  "36",
+  "37",
+  "38",
+  "39",
+  "40",
+  "41",
+  "42",
+  "43",
+  "44",
+  "45",
+  "46",
+] as const;
 
 export type ProductVariantOptionType = "color" | "size";
-export type ProductSizePreset = "alpha" | "uk";
+export type ProductSizePreset = "alpha" | "uk" | "shoe";
 
 export type ProductVariantOption = {
   type: ProductVariantOptionType;

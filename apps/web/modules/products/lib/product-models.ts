@@ -1,9 +1,4 @@
 import { z } from "zod";
-import {
-  PRODUCT_ALPHA_SIZE_PRESET,
-  PRODUCT_COLOR_PRESETS,
-  PRODUCT_UK_SIZE_PRESET,
-} from "@shopvendly/db/schema";
 import type { Product, MediaObject } from "@shopvendly/db/schema";
 
 const mediaInputSchema = z.object({
@@ -16,12 +11,10 @@ const variantOptionSchema = z.object({
   type: z.enum(["color", "size"]),
   label: z.string().min(1).max(32),
   values: z.array(z.string().min(1).max(32)).min(1).max(20),
-  preset: z.enum(["alpha", "uk"]).nullable().optional(),
+  preset: z.enum(["alpha", "uk", "shoe"]).nullable().optional(),
 });
 
-const allowedColors = new Set<string>(PRODUCT_COLOR_PRESETS);
-const allowedAlphaSizes = new Set<string>(PRODUCT_ALPHA_SIZE_PRESET);
-const allowedUkSizes = new Set<string>(PRODUCT_UK_SIZE_PRESET);
+
 
 export const productVariantsSchema = z
   .object({

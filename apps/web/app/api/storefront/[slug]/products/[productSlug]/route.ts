@@ -63,7 +63,7 @@ export async function GET(request: NextRequest, { params }: StorefrontProductRou
             originalPrice: product.originalPrice ?? null,
             currency: product.currency,
             availableQuantity: (product as { quantity?: number })?.quantity ?? null,
-            variants: null,
+            variants: (product as { variants?: unknown })?.variants ?? null,
             images: Array.isArray(product.images) ? product.images : [],
             mediaItems: Array.isArray(product.mediaItems) ? product.mediaItems : [],
             rating: product.averageRating ?? 0,

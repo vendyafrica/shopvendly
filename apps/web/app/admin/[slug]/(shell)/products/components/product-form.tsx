@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Cancel01Icon, ImageUpload01Icon, Add01Icon, ArrowLeft02Icon } from "@hugeicons/core-free-icons";
+import { Cancel01Icon, ImageUpload01Icon, ArrowLeft02Icon,Add01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@shopvendly/ui/lib/utils";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import {
     PRODUCT_ALPHA_SIZE_PRESET,
     PRODUCT_COLOR_PRESETS,
+    PRODUCT_SHOE_SIZE_PRESET,
     PRODUCT_UK_SIZE_PRESET,
 } from "@shopvendly/db/schema";
 import { useTenant } from "@/modules/admin/context/tenant-context";
@@ -73,6 +74,10 @@ const COLOR_MAP: Record<string, string> = {
     "Purple": "#800080",
     "Gold": "#FFD700",
     "Silver": "#C0C0C0",
+    "Burgundy": "#800020",
+    "Teal": "#008080",
+    "Coral": "#FF7F50",
+    "Cream": "#FFFDD0",
 };
 
 function UploadProgressSpinner({ progress }: { progress: number }) {
@@ -126,10 +131,8 @@ export function ProductForm({
     const [collections, setCollections] = React.useState<StoreCollection[]>([]);
     const [selectedCollectionIds, setSelectedCollectionIds] = React.useState<string[]>(initialData?.collectionIds || []);
     const [selectedColors, setSelectedColors] = React.useState<string[]>([]);
-    const [sizePreset, setSizePreset] = React.useState<"none" | "alpha" | "uk">("none");
+    const [sizePreset, setSizePreset] = React.useState<"none" | "alpha" | "uk" | "shoe">("none");
     const [selectedSizes, setSelectedSizes] = React.useState<string[]>([]);
-    const [customColor, setCustomColor] = React.useState("");
-    const [customSize, setCustomSize] = React.useState("");
 
     // Image management
     const [files, setFiles] = React.useState<UploadedFile[]>([]);
@@ -148,11 +151,16 @@ export function ProductForm({
         }
 
         if (initialData?.variants?.enabled) {
-            const nextVariantOptions = initialData.variants.options ?? [];
+            const nextVariantOptions: Array<{
+                type: string;
+                values?: string[];
+                preset?: string | null;
+            }> = initialData.variants.options ?? [];
             const nextColorOption = nextVariantOptions.find((option) => option.type === "color");
             const nextSizeOption = nextVariantOptions.find((option) => option.type === "size");
+            const nextSizePresetValue = (nextSizeOption?.preset as string | undefined) ?? "";
             setSelectedColors(nextColorOption?.values ?? []);
-            setSizePreset(nextSizeOption?.preset === "uk" ? "uk" : nextSizeOption ? "alpha" : "none");
+            setSizePreset(nextSizePresetValue === "uk" ? "uk" : nextSizePresetValue === "shoe" ? "shoe" : nextSizeOption ? "alpha" : "none");
             setSelectedSizes(nextSizeOption?.values ?? []);
         } else {
             setSelectedColors([]);
@@ -371,9 +379,6 @@ export function ProductForm({
 
             const result = (await response.json()) as ProductApiRow;
 
-            // Invalidate queries to ensure UI is fresh
-            // We use removeQueries to force a mandatory refetch on the next mount, 
-            // bypassing aggressive global staleTime/refetchOnMount settings.
             queryClient.removeQueries({ 
                 queryKey: queryKeys.products.all,
                 exact: false 
@@ -680,71 +685,36 @@ export function ProductForm({
                     <div className="space-y-6 pt-2 border-t">
                         <div className="space-y-3">
                             <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Colors</Label>
-                            <div className="flex flex-wrap gap-2 items-center">
-                                {[...PRODUCT_COLOR_PRESETS, ...selectedColors.filter(c => (PRODUCT_COLOR_PRESETS as readonly string[]).indexOf(c) === -1)].map((color) => {
+                            <div className="grid grid-cols-5 gap-3 sm:grid-cols-8 lg:grid-cols-10">
+                                {[...PRODUCT_COLOR_PRESETS].slice(0, 20).map((color) => {
                                     const checked = selectedColors.includes(color);
+                                    const swatchColor = COLOR_MAP[color] || color.toLowerCase();
                                     return (
                                         <Button
                                             key={color}
                                             type="button"
-                                            variant={checked ? "default" : "outline"}
-                                            size="sm"
+                                            variant="ghost"
+                                            size="icon"
                                             className={cn(
-                                                "h-8 rounded-full text-xs gap-2 px-3 transition-all",
-                                                checked && "ring-2 ring-primary/20 ring-offset-1 border-primary/50"
+                                                "relative size-7 rounded-full border transition-all hover:scale-110 active:scale-95 shadow-sm p-0 focus-visible:ring-0 focus-visible:ring-offset-0",
+                                                checked ? "ring-2 ring-offset-2" : "border-neutral-200 hover:border-neutral-300"
                                             )}
+                                            style={{
+                                                backgroundColor: swatchColor,
+                                                // Using swatchColor for both border and ring to ensure it looks cohesive
+                                                borderColor: checked ? swatchColor : (swatchColor === "#FFFFFF" ? "#e5e5e5" : "transparent"),
+                                                boxShadow: checked ? `0 0 0 2px white, 0 0 0 4px ${swatchColor}` : undefined,
+                                            }}
+                                            aria-pressed={checked}
+                                            aria-label={color}
                                             onClick={() => {
                                                 setSelectedColors(prev =>
                                                     checked ? prev.filter(c => c !== color) : [...prev, color]
                                                 );
                                             }}
-                                        >
-                                            <div
-                                                className="size-3 rounded-full border border-black/10 shadow-sm"
-                                                style={{ backgroundColor: COLOR_MAP[color] || color.toLowerCase() }}
-                                            />
-                                            {color}
-                                        </Button>
+                                        />
                                     );
                                 })}
-
-                                <div className="flex items-center gap-1.5 ml-1">
-                                    <div className="relative">
-                                        <Input
-                                            placeholder="Add color..."
-                                            value={customColor}
-                                            onChange={(e) => setCustomColor(e.target.value)}
-                                            className="h-8 w-44 text-xs pr-8 rounded-full"
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    if (customColor && !selectedColors.includes(customColor)) {
-                                                        setSelectedColors(prev => [...prev, customColor]);
-                                                        setCustomColor("");
-                                                    }
-                                                }
-                                            }}
-                                        />
-                                        <div
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 size-4 rounded-full border border-black/10 shadow-inner"
-                                            style={{ backgroundColor: customColor || 'transparent' }}
-                                        />
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-full"
-                                        onClick={() => {
-                                            if (customColor && !selectedColors.includes(customColor)) {
-                                                setSelectedColors(prev => [...prev, customColor]);
-                                                setCustomColor("");
-                                            }
-                                        }}
-                                    >
-                                        <HugeiconsIcon icon={Add01Icon} className="size-3" />
-                                    </Button>
-                                </div>
                             </div>
                         </div>
 
@@ -752,7 +722,7 @@ export function ProductForm({
                             <div className="space-y-2">
                                 <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Size System</Label>
                                 <div className="flex flex-wrap gap-2">
-                                    {(["none", "alpha", "uk"] as const).map((preset) => (
+                                    {(["none", "alpha", "uk", "shoe"] as const).map((preset) => (
                                         <Button
                                             key={preset}
                                             type="button"
@@ -764,7 +734,7 @@ export function ProductForm({
                                                 setSelectedSizes([]);
                                             }}
                                         >
-                                            {preset === "none" ? "None" : preset === "alpha" ? "Alpha (S/M/L)" : "UK Numeric"}
+                                            {preset === "none" ? "None" : preset === "alpha" ? "Alpha (S/M/L)" : preset === "uk" ? "UK Numeric" : "Shoe (30-46)"}
                                         </Button>
                                     ))}
                                 </div>
@@ -774,15 +744,23 @@ export function ProductForm({
                                 <div className="space-y-3 pt-2">
                                     <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Available Sizes</Label>
                                     <div className="flex flex-wrap gap-2 items-center">
-                                        {(sizePreset === "alpha" ? PRODUCT_ALPHA_SIZE_PRESET : PRODUCT_UK_SIZE_PRESET).map((size) => {
+                                        {(sizePreset === "alpha"
+                                            ? PRODUCT_ALPHA_SIZE_PRESET
+                                            : sizePreset === "uk"
+                                                ? PRODUCT_UK_SIZE_PRESET
+                                                : PRODUCT_SHOE_SIZE_PRESET
+                                        ).map((size) => {
                                             const checked = selectedSizes.includes(size);
                                             return (
                                                 <Button
                                                     key={size}
                                                     type="button"
-                                                    variant={checked ? "default" : "outline"}
+                                                    variant={checked ? "secondary" : "outline"}
                                                     size="sm"
-                                                    className="min-w-[40px] h-8"
+                                                    className={cn(
+                                                        "min-w-[42px] h-9 rounded-full px-3 text-xs font-medium transition-colors",
+                                                        checked && "border-neutral-900 bg-white text-neutral-950 shadow-[inset_0_0_0_1px_rgba(10,10,10,0.08)]"
+                                                    )}
                                                     onClick={() => {
                                                         setSelectedSizes(prev =>
                                                             checked ? prev.filter(s => s !== size) : [...prev, size]
@@ -793,54 +771,6 @@ export function ProductForm({
                                                 </Button>
                                             );
                                         })}
-
-                                        {/* Show custom sizes that aren't in the preset */}
-                                        {selectedSizes.filter(s =>
-                                            ((sizePreset === "alpha" ? PRODUCT_ALPHA_SIZE_PRESET : PRODUCT_UK_SIZE_PRESET) as readonly string[]).indexOf(s) === -1
-                                        ).map((size) => (
-                                            <Button
-                                                key={size}
-                                                type="button"
-                                                variant="default"
-                                                size="sm"
-                                                className="min-w-[40px] h-8 border-primary/50"
-                                                onClick={() => setSelectedSizes(prev => prev.filter(s => s !== size))}
-                                            >
-                                                {size}
-                                            </Button>
-                                        ))}
-
-                                        <div className="flex items-center gap-1.5 ml-1">
-                                            <Input
-                                                placeholder="Add custom..."
-                                                value={customSize}
-                                                onChange={(e) => setCustomSize(e.target.value)}
-                                                className="h-8 w-32 text-xs rounded-md"
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        if (customSize && !selectedSizes.includes(customSize)) {
-                                                            setSelectedSizes(prev => [...prev, customSize]);
-                                                            setCustomSize("");
-                                                        }
-                                                    }
-                                                }}
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8"
-                                                onClick={() => {
-                                                    if (customSize && !selectedSizes.includes(customSize)) {
-                                                        setSelectedSizes(prev => [...prev, customSize]);
-                                                        setCustomSize("");
-                                                    }
-                                                }}
-                                            >
-                                                <HugeiconsIcon icon={Add01Icon} className="size-3" />
-                                            </Button>
-                                        </div>
                                     </div>
                                 </div>
                             )}
