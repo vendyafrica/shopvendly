@@ -87,11 +87,11 @@ export function OrdersMobileView({
                          {bootstrap?.storeDescription || "Track payments and order flow in real time."}
                      </p>
                      <Link
-                         href={bootstrap?.storeSlug ? `https://${bootstrap.storeSlug}.shopvendly.com` : "#"}
+                         href={bootstrap?.storeSlug ? `https://shopvendly.store/${bootstrap.storeSlug}` : "#"}
                          target="_blank"
                          className="text-[14px] text-primary/80 font-bold hover:underline flex items-center gap-1 mt-1"
                      >
-                         {bootstrap?.storeSlug ? `shopvendly.com/${bootstrap.storeSlug}` : "shopvendly.com"}
+                         {bootstrap?.storeSlug ? `shopvendly.store/${bootstrap.storeSlug}` : "shopvendly.store"}
                          <HugeiconsIcon icon={Share01Icon} className="size-3.5" />
                      </Link>
                  </div>

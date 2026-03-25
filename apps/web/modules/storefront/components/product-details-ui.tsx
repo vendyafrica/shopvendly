@@ -7,6 +7,7 @@ import { ProductActions } from "./product-actions";
 import { Product, MediaItem } from "@/modules/storefront/models/product";
 import { cn } from "@shopvendly/ui/lib/utils";
 import { getColorName } from "@/lib/constants/colors";
+import * as React from "react";
 
 interface ProductDetailsUIProps {
     product: Product;
@@ -59,6 +60,19 @@ export function ProductDetailsUI({ product, storePolicy, state, actions }: Produ
         handleImageError,
         isVideoUrl
     } = actions;
+    
+    const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+
+    const handleScroll = () => {
+        if (!scrollContainerRef.current) return;
+        const container = scrollContainerRef.current;
+        const scrollLeft = container.scrollLeft;
+        const width = container.offsetWidth;
+        const newIndex = Math.round(scrollLeft / width);
+        if (newIndex !== safeSelectedIndex) {
+            setSelectedMediaIndex(newIndex);
+        }
+    };
 
     const currentMedia = mediaItems[safeSelectedIndex] ?? mediaItems[0] ?? { url: FALLBACK_PRODUCT_IMAGE, contentType: "image/jpeg" };
     const posterFallback = product.images?.find((img) => !isVideoUrl(img)) || FALLBACK_PRODUCT_IMAGE;
@@ -96,39 +110,60 @@ export function ProductDetailsUI({ product, storePolicy, state, actions }: Produ
             <div className="max-w-[1520px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)] xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.9fr)] gap-6 lg:gap-10 xl:gap-14 px-4 sm:px-6 lg:px-12 pt-0 lg:pt-0 -mt-4">
                 {/* Left: Gallery */}
                 <div className="flex flex-col gap-4 lg:sticky lg:top-20 lg:self-start lg:h-max">
-                    <div className="lg:hidden flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide">
-                        {mediaItems.map((media, index) => {
-                            const isVideo = isVideoUrl(media.url, media.contentType);
-                            return (
-                                <div
-                                    key={`${media.url}-${index}`}
-                                    className="relative w-[85vw] sm:w-[70vw] shrink-0 snap-center rounded-none md:rounded-md overflow-hidden bg-neutral-100 aspect-3/4 min-h-[320px]"
-                                    style={{ aspectRatio: "3 / 4" }}
-                                >
-                                    {isVideo ? (
-                                        <video
-                                            src={media.url}
-                                            className="h-full w-full object-cover bg-neutral-100"
-                                            muted
-                                            loop
-                                            playsInline
-                                            autoPlay
-                                            preload="metadata"
-                                        />
-                                    ) : (
-                                        <Image
-                                            src={media.url}
-                                            alt={`${product.name} ${index + 1}`}
-                                            fill
-                                            className="object-cover bg-neutral-100"
-                                            priority={index === 0}
-                                            unoptimized={shouldUnoptimize(media.url)}
-                                            onError={() => handleImageError(media.url)}
-                                        />
-                                    )}
-                                </div>
-                            );
-                        })}
+                    <div className="relative group/gallery">
+                        <div 
+                            ref={scrollContainerRef}
+                            onScroll={handleScroll}
+                            className="lg:hidden flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide"
+                        >
+                            {mediaItems.map((media, index) => {
+                                const isVideo = isVideoUrl(media.url, media.contentType);
+                                return (
+                                    <div
+                                        key={`${media.url}-${index}`}
+                                        className="relative w-[85vw] sm:w-[70vw] shrink-0 snap-center rounded-none md:rounded-md overflow-hidden bg-neutral-100 aspect-3/4 min-h-[320px]"
+                                        style={{ aspectRatio: "3 / 4" }}
+                                    >
+                                        {isVideo ? (
+                                            <video
+                                                src={media.url}
+                                                className="h-full w-full object-cover bg-neutral-100"
+                                                muted
+                                                loop
+                                                playsInline
+                                                autoPlay
+                                                preload="metadata"
+                                            />
+                                        ) : (
+                                            <Image
+                                                src={media.url}
+                                                alt={`${product.name} ${index + 1}`}
+                                                fill
+                                                className="object-cover bg-neutral-100 border-none"
+                                                priority={index === 0}
+                                                unoptimized={shouldUnoptimize(media.url)}
+                                                onError={() => handleImageError(media.url)}
+                                            />
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        
+                        {/* Mobile Image Indicator (Short Lines) */}
+                        {mediaItems.length > 1 && (
+                            <div className="lg:hidden flex justify-center gap-1.5 py-4 mb-2">
+                                {mediaItems.map((_, index) => (
+                                    <div 
+                                        key={index}
+                                        className={cn(
+                                            "h-1 w-5 rounded-full transition-all duration-300",
+                                            safeSelectedIndex === index ? "bg-primary w-8" : "bg-slate-200"
+                                        )}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     <div className="hidden lg:flex flex-row gap-6 lg:gap-8 h-[78vh] min-h-[620px] max-h-[920px]">

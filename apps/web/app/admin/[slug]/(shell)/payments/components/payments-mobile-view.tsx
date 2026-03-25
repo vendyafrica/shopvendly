@@ -100,11 +100,11 @@ export function PaymentsMobileView({
                          {bootstrap?.storeDescription || "Manage your earnings and payouts in real-time."}
                      </p>
                      <Link
-                         href={storeSlug ? `https://${storeSlug}.shopvendly.com` : "#"}
+                         href={storeSlug ? `https://shopvendly.store/${storeSlug}` : "#"}
                          target="_blank"
                          className="text-[14px] text-primary/90 font-bold hover:underline flex items-center gap-1 mt-1"
                      >
-                         {storeSlug ? `shopvendly.com/${storeSlug}` : "shopvendly.com"}
+                         {storeSlug ? `shopvendly.store/${storeSlug}` : "shopvendly.store"}
                          <HugeiconsIcon icon={Share01Icon} className="size-3.5" />
                      </Link>
                  </div>
