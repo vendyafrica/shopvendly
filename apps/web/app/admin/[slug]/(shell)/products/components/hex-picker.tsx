@@ -79,7 +79,7 @@ export function HexPicker({ onColorSelect, className }: HexPickerProps) {
                                 setColorName(e.target.value);
                                 setIsManualName(true);
                             }}
-                            className="h-10 rounded-lg border-neutral-200 focus-visible:ring-1"
+                            className="h-10 rounded-lg border-neutral-200 focus-visible:ring-1 text-base"
                         />
                         <p className="text-[10px] text-muted-foreground px-1">
                             Name your custom brand color (e.g. "Sky Blue")

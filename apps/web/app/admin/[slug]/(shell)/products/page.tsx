@@ -521,7 +521,7 @@ export default function ProductsPage() {
         <div className="md:hidden">
           <ProductsMobileView
             bootstrap={bootstrap}
-            rows={rows}
+            rows={filteredRows}
             isLoading={isLoading}
             onDelete={handleDelete}
             onStatusChange={handleMobileStatusChange}

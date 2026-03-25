@@ -24,7 +24,7 @@ import {
     PRODUCT_UK_SIZE_PRESET,
 } from "@shopvendly/db/schema";
 import { useTenant } from "@/modules/admin/context/tenant-context";
-import type { ProductApiRow } from "@/modules/products/hooks/use-products";
+import type { ProductApiRow, ProductTableRow } from "@/modules/products/hooks/use-products";
 import { useUpload } from "@/modules/media/hooks/use-upload";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
@@ -359,9 +359,32 @@ export function ProductForm({
 
             const result = (await response.json()) as ProductApiRow;
 
-            queryClient.removeQueries({
-                queryKey: queryKeys.products.all,
-                exact: false
+            // Optimistic update for the products list
+            if (!isEditing) {
+                const newProduct: ProductTableRow = {
+                    id: result.id,
+                    name: result.productName,
+                    slug: result.slug,
+                    description: result.description,
+                    priceAmount: result.priceAmount,
+                    originalPriceAmount: result.originalPriceAmount ?? null,
+                    currency: result.currency,
+                    quantity: result.quantity,
+                    status: result.status,
+                    thumbnailUrl: result.media?.[0]?.blobUrl,
+                    thumbnailType: result.media?.[0]?.contentType || undefined,
+                    salesAmount: result.salesAmount ?? 0,
+                    category: (result as any).productCollections?.[0]?.collection?.name || "Uncategorized",
+                };
+
+                queryClient.setQueryData<ProductTableRow[]>(
+                    queryKeys.products.list(storeId),
+                    (old) => [newProduct, ...(old || [])]
+                );
+            }
+
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.products.list(storeId),
             });
 
             onSuccess?.(result);
@@ -539,7 +562,7 @@ export function ProductForm({
                                         placeholder="Tell us more about this product..."
                                         rows={8}
                                         disabled={isReadOnly || isSaving}
-                                        className="resize-none min-h-[160px]"
+                                        className="resize-none min-h-[160px] text-base"
                                     />
                                 </div>
 
@@ -551,12 +574,12 @@ export function ProductForm({
                                             render={
                                                 <Button
                                                     variant="outline"
-                                                    className="flex w-full items-center justify-between h-10 font-normal px-3 bg-background hover:bg-accent/50 shadow-sm transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                                    className="flex w-full items-center justify-between h-10 font-normal px-3 bg-background hover:bg-accent/50 shadow-sm transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring text-base"
                                                     type="button"
                                                 />
                                             }
                                         >
-                                            <span className={selectedCollectionIds.length === 0 ? "text-muted-foreground text-sm" : "text-foreground text-sm"}>
+                                            <span className={cn(selectedCollectionIds.length === 0 ? "text-muted-foreground" : "text-foreground", "text-base")}>
                                                 {selectedCollectionIds.length === 0
                                                     ? "Select collections"
                                                     : `${selectedCollectionIds.length} collection${selectedCollectionIds.length > 1 ? 's' : ''} selected`
@@ -610,6 +633,7 @@ export function ProductForm({
                                         min="0"
                                         required
                                         disabled={isReadOnly || isSaving}
+                                        className="h-10 text-base"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -622,7 +646,7 @@ export function ProductForm({
                                         type="number"
                                         min="0"
                                         disabled={isReadOnly || isSaving}
-                                        className="bg-muted/5 h-9"
+                                        className="bg-muted/5 h-10 text-base"
                                     />
                                 </div>
                             </div>
@@ -641,6 +665,7 @@ export function ProductForm({
                                     type="number"
                                     min="0"
                                     disabled={isReadOnly || isSaving}
+                                    className="h-10 text-base"
                                 />
                                 <p className="text-[10px] text-muted-foreground">Adjust your stock levels here.</p>
                             </div>

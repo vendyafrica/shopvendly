@@ -123,7 +123,6 @@ export function ProductsMobileView({
     const router = useRouter();
     const [selectedIds, setSelectedIds] = React.useState<Record<string, boolean>>({});
     const [isSelectionMode, setIsSelectionMode] = React.useState(false);
-    const [activeTab, setActiveTab] = React.useState<"active" | "draft">("active");
     const isReadOnly = Boolean(bootstrap?.storeSlug === "vendly" && !bootstrap?.canWrite);
 
     if (isLoading) {
@@ -168,10 +167,7 @@ export function ProductsMobileView({
     const selectedProducts = rows.filter((product) => selectedIds[product.id]);
     const selectedCount = selectedProducts.length;
 
-    const filteredRows = rows.filter((r) => {
-        if (activeTab === "active") return r.status === "active";
-        return r.status === "draft";
-    });
+    const filteredRows = rows;
 
     return (
         <div className="-mx-4 -mt-4 flex flex-col w-[calc(100%+2rem)] sm:hidden bg-white min-h-screen font-sans">
@@ -203,9 +199,9 @@ export function ProductsMobileView({
                         </div>
                         <div className="flex flex-col items-center">
                             <span className="font-bold text-[18px] text-slate-900 leading-none mb-1">
-                                {rows.filter(r => r.status === 'active').length}
+                                {rows.filter(r => r.status === 'active' || r.status === 'ready').length}
                             </span>
-                            <span className="text-[13px] text-slate-500 font-medium">Active</span>
+                            <span className="text-[13px] text-slate-500 font-medium">Live</span>
                         </div>
                     </div>
                 </div>
@@ -253,27 +249,6 @@ export function ProductsMobileView({
                     </Button>
                 </div>
 
-                {/* Instagram Style Tabs */}
-                <div className="flex w-full mt-2">
-                    <button
-                        onClick={() => setActiveTab("active")}
-                        className={cn(
-                            "flex-1 flex justify-center py-3 border-b-2 transition-colors",
-                            activeTab === "active" ? "border-primary/70 text-primary/90" : "border-transparent text-slate-400"
-                        )}
-                    >
-                        <HugeiconsIcon icon={ShoppingBag01Icon} className="size-6" />
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("draft")}
-                        className={cn(
-                            "flex-1 flex justify-center py-3 border-b-2 transition-colors",
-                            activeTab === "draft" ? "border-primary/70 text-primary/90" : "border-transparent text-slate-400"
-                        )}
-                    >
-                        <HugeiconsIcon icon={PackageOpenIcon} className="size-6" />
-                    </button>
-                </div>
             </div>
 
             {selectedCount > 0 && (
@@ -364,17 +339,23 @@ export function ProductsMobileView({
                                 <h4 className="font-bold text-sm text-foreground truncate group-hover:text-blue-700 transition-colors leading-tight capitalize">
                                     {product.name}
                                 </h4>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 mt-1">
                                     <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
                                         <HugeiconsIcon icon={ShoppingBag01Icon} className="size-2.5 opacity-50" />
                                         {product.salesAmount || 0} sales
                                     </span>
-                                    {product.status !== "active" && (
+                                    {product.quantity === 0 ? (
+                                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wide bg-rose-500/10 text-rose-600">
+                                            Out of Stock
+                                        </span>
+                                    ) : (
                                         <span className={cn(
                                             "text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wide",
-                                            product.status === "draft" ? "bg-amber-500/10 text-amber-600" : "bg-blue-500/10 text-blue-600"
+                                            (product.status === "active" || product.status === "ready") ? "bg-emerald-500/10 text-emerald-600" :
+                                            product.status === "draft" ? "bg-amber-500/10 text-amber-600" :
+                                            "bg-blue-500/10 text-blue-600"
                                         )}>
-                                            {product.status}
+                                            {(product.status === "active" || product.status === "ready") ? "Live" : product.status}
                                         </span>
                                     )}
                                 </div>
