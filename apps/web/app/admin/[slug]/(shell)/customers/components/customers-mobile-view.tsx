@@ -87,11 +87,11 @@ export function CustomersMobileView({
                          {bootstrap?.storeDescription || "Key insights and details about your customers and their shopping behavior."}
                      </p>
                      <Link
-                         href={bootstrap?.storeSlug ? `https://${bootstrap.storeSlug}.shopvendly.com` : "#"}
+                         href={bootstrap?.storeSlug ? `https://shopvendly.store/${bootstrap.storeSlug}` : "#"}
                          target="_blank"
                          className="text-[14px] text-primary/90 font-bold hover:underline flex items-center gap-1 mt-1"
                      >
-                         {bootstrap?.storeSlug ? `shopvendly.com/${bootstrap.storeSlug}` : "shopvendly.com"}
+                         {bootstrap?.storeSlug ? `shopvendly.store/${bootstrap.storeSlug}` : "shopvendly.store"}
                          <HugeiconsIcon icon={Share01Icon} className="size-3.5" />
                      </Link>
                  </div>
