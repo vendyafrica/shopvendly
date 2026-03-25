@@ -18,7 +18,7 @@ type Collection = {
 
 export function CollectionsRail({
     categories,
-    title = "Curated Collections",
+    title = "Collections",
 }: {
     categories: { id: string; name: string; slug: string; image: string | null }[];
     title?: string;

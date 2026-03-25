@@ -528,21 +528,38 @@ export const marketplaceService = {
         ]);
 
         return {
-            stores: storeResults.map((s) => ({
-                id: s.id,
-                name: s.name,
-                slug: s.slug,
-                description: s.description,
-                logoUrl: s.logoUrl ?? null,
-                categories: s.categories || [],
-            })),
+            stores: storeResults.map((s) => {
+                const heroMedia = (s as any).heroMedia || [];
+                const heroImages = heroMedia.filter((u: any) => typeof u === "string" && u.trim() !== "");
+                
+                // Map hero media: detect content type from URL extension
+                const mediaItems = heroImages.map((url: string) => ({
+                    url,
+                    contentType: isVideoUrl(url) ? "video/mp4" : "image/jpeg",
+                }));
+
+                // Fallback images array
+                const images = mediaItems.map((m: any) => m.url);
+
+                return {
+                    id: s.id,
+                    name: s.name,
+                    slug: s.slug,
+                    description: s.description,
+                    logoUrl: s.logoUrl ?? null,
+                    images,
+                    heroMedia,
+                    mediaItems,
+                    categories: s.categories || [],
+                };
+            }),
             products: productResults.map((p) => ({
                 id: p.id,
                 name: p.productName,
                 slug: p.slug,
                 price: Number(p.priceAmount ?? 0),
                 currency: p.currency,
-                image: p.media?.[0]?.media?.blobUrl || null,
+                image: (p.media?.[0]?.media as any)?.url || p.media?.[0]?.media?.blobUrl || null,
                 contentType: p.media?.[0]?.media?.contentType || null,
                 store: p.store ? { slug: p.store.slug, name: p.store.name } : null,
             })),

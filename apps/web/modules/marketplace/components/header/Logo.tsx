@@ -14,27 +14,13 @@ export function Logo({ className = "" }: { className?: string }) {
                 <Image
                     src="/vendly.png"
                     alt="Vendly"
-                    width={36}
-                    height={36}
+                    width={32}
+                    height={32}
                     className="object-contain"
                 />
             </div>
             <span className={`${geistSans.className} text-lg font-semibold tracking-tight`}>
-                duuka
-            </span>
-        </Link>
-    );
-}
-
-export function MobileLogo() {
-    return (
-        <Link
-            href="/"
-            className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2"
-        >
-            <Image src="/vendly.png" alt="Vendly" width={28} height={28} />
-            <span className="text-base font-semibold tracking-tight">
-              duuka
+                vendly
             </span>
         </Link>
     );

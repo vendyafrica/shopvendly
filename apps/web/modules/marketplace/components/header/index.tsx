@@ -11,16 +11,15 @@ import {
 import { signOut } from "@shopvendly/auth/react";
 import { useRouter } from "next/navigation";
 import { LoginOverlay } from "@/app/(auth)/login/page";
-import Search from "../search";
 import { useAppSession } from "@/contexts/app-session-context";
 import { useCart } from "@/modules/cart/context/cart-context";
 import { Portal } from "@/components/portal";
-import { Logo, MobileLogo } from "./Logo";
+import { Logo } from "./Logo";
 import { WishlistButton } from "./WishlistButton";
 import { CartButton } from "./CartButton";
 import { UserMenu } from "./UserMenu";
 import { MobileMenu } from "./MobileMenu";
-import { MobileSearch } from "./MobileSearch";
+import { MarketplaceSearchModal } from "./MarketplaceSearchModal";
 
 export default function Header({
     hideSearch = false,
@@ -78,7 +77,7 @@ export default function Header({
     }, [lastScrollY, isMenuOpen, isSearchOpen]);
 
     useEffect(() => {
-        if (isMenuOpen || isSearchOpen || showLogin) {
+        if (isMenuOpen || showLogin) {
             document.body.style.overflow = "hidden";
         } else {
             document.body.style.overflow = "";
@@ -86,7 +85,7 @@ export default function Header({
         return () => {
             document.body.style.overflow = "";
         };
-    }, [isMenuOpen, isSearchOpen, showLogin]);
+    }, [isMenuOpen, showLogin]);
 
     const handleSellNow = () => router.push("/account");
     const handleSignOut = async () => {
@@ -110,18 +109,22 @@ export default function Header({
                         {/* Logo */}
                         <Logo />
 
-                        {/* Search */}
-                        {!hideSearch && (
-                            <div className="flex-1 max-w-3xl">
-                                <Search />
-                            </div>
-                        )}
+                        {/* Search icon to open modal */}
+                        <div className="flex-1" />
 
                         {/* Actions */}
                         <div
-                            className={`flex shrink-0 items-center justify-end gap-4 ${hideSearch ? "ml-auto" : ""}`}
+                            className="flex shrink-0 items-center justify-end gap-2"
                             style={{ minWidth: 220 }}
                         >
+                            <button
+                                onClick={() => setIsSearchOpen(true)}
+                                className="group p-2.5 rounded-full hover:bg-muted/70 hover:-translate-y-0.5 active:scale-95 transition-all text-muted-foreground hover:text-foreground"
+                                aria-label="Search"
+                            >
+                                <HugeiconsIcon icon={Search01Icon} size={22} />
+                            </button>
+
                             {/* Wishlist */}
                             <WishlistButton />
 
@@ -166,24 +169,21 @@ export default function Header({
                             />
                         </button>
 
-                        {/* Logo */}
-                        <MobileLogo />
+                        {/* Logo placeholder - hidden if no logo or just spacers */}
+                        <div className="flex-1" />
 
                         {/* Right Actions */}
                         <div className="flex items-center gap-1">
                             <button
-                                aria-label="Search"
+                                onClick={() => setIsSearchOpen(true)}
                                 className="p-2 rounded-lg hover:bg-muted/70 active:bg-muted active:scale-95 transition-all"
-                                onClick={() => {
-                                    setIsSearchOpen((v) => !v);
-                                    setIsMenuOpen(false);
-                                }}
+                                aria-label="Search"
                             >
                                 <HugeiconsIcon icon={Search01Icon} size={22} />
                             </button>
-
+                            <WishlistButton />
                             <CartButton itemCount={itemCount} mobile />
-                            </div>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -199,11 +199,10 @@ export default function Header({
                 onSignOut={handleSignOut}
             />
 
-            {/* Mobile Search */}
-            <MobileSearch
+            {/* Marketplace Search Modal (covers both mobile and desktop) */}
+            <MarketplaceSearchModal
                 isOpen={isSearchOpen}
                 onClose={() => setIsSearchOpen(false)}
-                hideSearch={hideSearch}
             />
 
             {/* Login Overlay */}

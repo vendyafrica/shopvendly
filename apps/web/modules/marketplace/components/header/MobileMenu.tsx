@@ -158,13 +158,13 @@ export function MobileMenu({
 
                         <MenuItem
                             label="Contact us"
-                            href="/accountontact"
+                            href="/account/contact"
                             onClick={onClose}
                             delay={150}
                         />
 
                         <MenuItem
-                            label="Admin admin"
+                            label="Dashboard"
                             href="/admin"
                             onClick={onClose}
                             delay={175}
