@@ -910,10 +910,10 @@ export async function updateCollectoCollectionState(params: {
   const timestamp = recordedAt.toISOString();
   await patchCollectoMeta(params.orderId, {
     collection: {
-      reference: params.reference ?? undefined,
-      transactionId: params.transactionId ?? undefined,
+      ...(params.reference != null && { reference: params.reference }),
+      ...(params.transactionId != null && { transactionId: params.transactionId }),
       status: params.status,
-      message: params.message ?? undefined,
+      ...(params.message != null && { message: params.message }),
       updatedAt: timestamp,
     },
   });
