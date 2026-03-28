@@ -428,9 +428,10 @@ export function useCheckout() {
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data?.error?.message || data?.message || "Checkout failed");
-            const orderId = data.order?.id || data.id;
-            if (data?.paymentPricing) {
-                setPaymentPricing(data.paymentPricing);
+            const responseBody = data?.data ?? data;
+            const orderId = responseBody.order?.id || responseBody.id;
+            if (responseBody?.paymentPricing) {
+                setPaymentPricing(responseBody.paymentPricing);
             }
             setActiveOrderId(orderId);
             if (!(await verifyPromise)) {
