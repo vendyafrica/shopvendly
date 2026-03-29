@@ -86,7 +86,6 @@ export function useCheckout() {
 
     const handlePaymentFailure = (message?: string | null) => {
         clearPaymentPoll();
-        clearCheckoutState();
         paymentFlowStartedAtRef.current = null;
         setShowPaymentCancelHint(false);
         setPaymentFlowStatus("failed");
@@ -328,12 +327,11 @@ export function useCheckout() {
         setPaymentStatusMessage("Payment prompt expired. Please try again.");
         setIsSubmitting(false);
         paymentFlowStartedAtRef.current = null;
-        clearCheckoutState();
         if (orderId) {
             void fetch(`${API_BASE}/api/storefront/${store?.slug}/payments/collecto/abandon`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderId, transactionId, reason: "expired_after_90_seconds" }),
+                body: JSON.stringify({ orderId, transactionId, reason: "expired_after_120_seconds" }),
             }).catch(() => undefined);
         }
     };

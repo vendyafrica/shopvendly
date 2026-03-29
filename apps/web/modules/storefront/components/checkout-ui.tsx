@@ -241,6 +241,13 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
                     </div>
 
                     <form id="checkout-form" onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 lg:order-1">
+                        {/* Payment Failure Alert */}
+                        {paymentFlowStatus === "failed" && paymentStatusMessage && (
+                            <div className="mx-4 sm:mx-0 p-4 rounded-xl border border-amber-100 bg-amber-50 text-amber-700 text-sm">
+                                {paymentStatusMessage}
+                            </div>
+                        )}
+
                         {/* Error Alert */}
                         {error && (
                             <div className="mx-4 sm:mx-0 p-4 rounded-xl border border-red-100 bg-red-50 text-red-600 text-sm">
@@ -297,11 +304,13 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
                         {/* CTA */}
                         <div className="px-4 sm:px-0 space-y-4">
                             <Button type="submit" className="w-full h-14 rounded-2xl uppercase text-[13px] tracking-[0.15em] font-bold shadow-lg shadow-primary/10 group">
-                                {isSubmitting ? "Processing..." : "Place Order"}
+                                {isSubmitting ? "Processing..." : activeOrderId && paymentFlowStatus === "failed" ? "Retry Payment" : "Place Order"}
                                 <HugeiconsIcon icon={ArrowRight01Icon} className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                             </Button>
                             <p className="text-center text-sm text-neutral-500">
-                                After placing your order, you&apos;ll be prompted on your phone to complete the payment via mobile money.
+                                {activeOrderId && paymentFlowStatus === "failed"
+                                    ? "Your order is saved. Tap retry to send a new payment prompt to your phone."
+                                    : "After placing your order, you\u2019ll be prompted on your phone to complete the payment via mobile money."}
                             </p>
                         </div>
                     </form>

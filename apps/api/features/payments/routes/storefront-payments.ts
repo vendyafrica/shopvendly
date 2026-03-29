@@ -349,11 +349,14 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/abandon", asy
 
     const { order } = await assertStoreAndOrder(slug, body.orderId);
 
+    const orderAgeSeconds = Math.round((Date.now() - new Date(order.createdAt).getTime()) / 1000);
     logCollectoDebug("abandon:request", {
       slug,
       orderId: order.id,
       transactionId: body.transactionId ?? null,
       reason: body.reason ?? "timeout",
+      orderAgeSeconds,
+      currentPaymentStatus: order.paymentStatus,
     });
 
     // If already paid, don't mark failed
@@ -706,6 +709,16 @@ storefrontPaymentsRouter.post("/storefront/:slug/payments/collecto/status", asyn
           stage: "status_poll",
           response: payload,
         },
+      });
+    }
+
+    if (normalizedStatus !== "pending") {
+      logCollectoDebug("status:transition", {
+        slug,
+        transactionId: body.transactionId,
+        resolvedOrderId,
+        normalizedStatus,
+        statusMessage,
       });
     }
 

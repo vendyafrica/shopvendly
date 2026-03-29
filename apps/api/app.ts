@@ -8,7 +8,7 @@ import type { RawBodyRequest } from "./shared/types/raw-body.js";
 export function createApp(): Application {
   const app = express();
 
-  app.set("trust proxy", true);
+  app.set("trust proxy", 1);
 
   app.use(
     cors({

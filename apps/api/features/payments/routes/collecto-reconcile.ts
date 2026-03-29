@@ -26,177 +26,186 @@ type ReconcileResult = {
 };
 
 /**
+ * Reconcile pending mobile money orders against Collecto.
+ * Callable from both the HTTP route and the scheduled interval.
+ */
+export async function runCollectoReconciliation(): Promise<{
+  ok: boolean;
+  reconciled: number;
+  total: number;
+  results: ReconcileResult[];
+  message?: string;
+}> {
+  const cutoff = new Date(Date.now() - RECONCILE_WINDOW_MINUTES * 60 * 1000);
+
+  const pendingOrders = await db.query.orders.findMany({
+    where: and(
+      eq(orders.paymentMethod, "mobile_money"),
+      eq(orders.paymentStatus, "pending"),
+      gt(orders.createdAt, cutoff),
+      isNull(orders.deletedAt),
+    ),
+    columns: {
+      id: true,
+      orderNumber: true,
+      collectoMeta: true,
+      createdAt: true,
+    },
+    orderBy: (table, { asc }) => [asc(table.createdAt)],
+  });
+
+  const candidates = pendingOrders.filter((order) => {
+    const txId = order.collectoMeta?.collection?.transactionId;
+    return typeof txId === "string" && txId.trim() !== "" && txId !== "0" && txId !== "null";
+  });
+
+  if (candidates.length === 0) {
+    return {
+      ok: true,
+      reconciled: 0,
+      total: 0,
+      results: [],
+      message: "No pending mobile money orders to reconcile.",
+    };
+  }
+
+  const results: ReconcileResult[] = [];
+
+  for (const order of candidates) {
+    const transactionId = order.collectoMeta!.collection!.transactionId!;
+
+    try {
+      const response = await collectoApiFetch(
+        "requestToPayStatus",
+        { transactionId },
+        { timeoutMs: 10000 },
+      );
+
+      const payload = (response.json ?? {}) as Record<string, unknown>;
+      const rawStatus = readCollectoStatus(payload);
+      const normalizedStatus = normalizeCollectoBusinessStatus(rawStatus);
+      const statusMessage = readCollectoMessage(payload);
+
+      if (normalizedStatus === "successful") {
+        await updateCollectoCollectionState({
+          orderId: order.id,
+          transactionId,
+          status: "successful",
+          message: statusMessage,
+        });
+
+        await handlePaidOrderTransition({
+          orderId: order.id,
+          paymentMethod: "mobile_money",
+          includeSellerContext: true,
+        });
+
+        results.push({
+          orderId: order.id,
+          transactionId,
+          previousStatus: "pending",
+          newStatus: "successful",
+          message: statusMessage,
+        });
+        continue;
+      }
+
+      if (normalizedStatus === "failed") {
+        await updateCollectoCollectionState({
+          orderId: order.id,
+          transactionId,
+          status: "failed",
+          message: statusMessage,
+        });
+
+        await handleFailedOrderTransition({
+          orderId: order.id,
+          paymentMethod: "mobile_money",
+        });
+
+        results.push({
+          orderId: order.id,
+          transactionId,
+          previousStatus: "pending",
+          newStatus: "failed",
+          message: statusMessage,
+        });
+        continue;
+      }
+
+      const ageMinutes = (Date.now() - new Date(order.createdAt).getTime()) / (60 * 1000);
+      if (ageMinutes > STALE_THRESHOLD_MINUTES) {
+        await updateCollectoCollectionState({
+          orderId: order.id,
+          transactionId,
+          status: "failed",
+          message: "Payment timed out — no response received from mobile money within 10 minutes.",
+        });
+
+        await handleFailedOrderTransition({
+          orderId: order.id,
+          paymentMethod: "mobile_money",
+        });
+
+        results.push({
+          orderId: order.id,
+          transactionId,
+          previousStatus: "pending",
+          newStatus: "timed_out",
+          message: `Order is ${Math.round(ageMinutes)} minutes old with no payment confirmation.`,
+        });
+        continue;
+      }
+
+      results.push({
+        orderId: order.id,
+        transactionId,
+        previousStatus: "pending",
+        newStatus: "still_pending",
+        message: statusMessage,
+      });
+    } catch (err) {
+      console.error("[Collecto] reconcile:order-error", {
+        orderId: order.id,
+        transactionId,
+        error: err,
+      });
+
+      results.push({
+        orderId: order.id,
+        transactionId,
+        previousStatus: "pending",
+        newStatus: "error",
+        message: err instanceof Error ? err.message : "Unknown error during reconciliation",
+      });
+    }
+  }
+
+  const reconciledCount = results.filter(
+    (r) => r.newStatus === "successful" || r.newStatus === "failed" || r.newStatus === "timed_out",
+  ).length;
+
+  console.info("[Collecto] reconcile:complete", {
+    total: candidates.length,
+    reconciled: reconciledCount,
+    results,
+  });
+
+  return {
+    ok: true,
+    reconciled: reconciledCount,
+    total: candidates.length,
+    results,
+  };
+}
+
+/**
  * POST /payments/collecto/reconcile
- *
- * Finds all orders with paymentMethod = 'mobile_money', paymentStatus = 'pending',
- * and a Collecto transactionId in collectoMeta — created within the last 30 minutes.
- * Polls Collecto for each and transitions orders that have been paid or failed.
  */
 collectoReconcileRouter.post("/payments/collecto/reconcile", async (_req, res, next) => {
   try {
-    const cutoff = new Date(Date.now() - RECONCILE_WINDOW_MINUTES * 60 * 1000);
-
-    const pendingOrders = await db.query.orders.findMany({
-      where: and(
-        eq(orders.paymentMethod, "mobile_money"),
-        eq(orders.paymentStatus, "pending"),
-        gt(orders.createdAt, cutoff),
-        isNull(orders.deletedAt),
-      ),
-      columns: {
-        id: true,
-        orderNumber: true,
-        collectoMeta: true,
-        createdAt: true,
-      },
-      orderBy: (table, { asc }) => [asc(table.createdAt)],
-    });
-
-    // Filter to only orders that have a usable transactionId saved
-    const candidates = pendingOrders.filter((order) => {
-      const txId = order.collectoMeta?.collection?.transactionId;
-      return typeof txId === "string" && txId.trim() !== "" && txId !== "0" && txId !== "null";
-    });
-
-    if (candidates.length === 0) {
-      return res.status(200).json({
-        ok: true,
-        reconciled: 0,
-        results: [],
-        message: "No pending mobile money orders to reconcile.",
-      });
-    }
-
-    const results: ReconcileResult[] = [];
-
-    for (const order of candidates) {
-      const transactionId = order.collectoMeta!.collection!.transactionId!;
-
-      try {
-        const response = await collectoApiFetch(
-          "requestToPayStatus",
-          { transactionId },
-          { timeoutMs: 10000 },
-        );
-
-        const payload = (response.json ?? {}) as Record<string, unknown>;
-        const rawStatus = readCollectoStatus(payload);
-        const normalizedStatus = normalizeCollectoBusinessStatus(rawStatus);
-        const statusMessage = readCollectoMessage(payload);
-
-        if (normalizedStatus === "successful") {
-          await updateCollectoCollectionState({
-            orderId: order.id,
-            transactionId,
-            status: "successful",
-            message: statusMessage,
-          });
-
-          await handlePaidOrderTransition({
-            orderId: order.id,
-            paymentMethod: "mobile_money",
-            includeSellerContext: true,
-          });
-
-          results.push({
-            orderId: order.id,
-            transactionId,
-            previousStatus: "pending",
-            newStatus: "successful",
-            message: statusMessage,
-          });
-          continue;
-        }
-
-        if (normalizedStatus === "failed") {
-          await updateCollectoCollectionState({
-            orderId: order.id,
-            transactionId,
-            status: "failed",
-            message: statusMessage,
-          });
-
-          await handleFailedOrderTransition({
-            orderId: order.id,
-            paymentMethod: "mobile_money",
-          });
-
-          results.push({
-            orderId: order.id,
-            transactionId,
-            previousStatus: "pending",
-            newStatus: "failed",
-            message: statusMessage,
-          });
-          continue;
-        }
-
-        // Still pending — check if it's stale (older than threshold)
-        const ageMinutes = (Date.now() - new Date(order.createdAt).getTime()) / (60 * 1000);
-        if (ageMinutes > STALE_THRESHOLD_MINUTES) {
-          await updateCollectoCollectionState({
-            orderId: order.id,
-            transactionId,
-            status: "failed",
-            message: "Payment timed out — no response received from mobile money within 10 minutes.",
-          });
-
-          await handleFailedOrderTransition({
-            orderId: order.id,
-            paymentMethod: "mobile_money",
-          });
-
-          results.push({
-            orderId: order.id,
-            transactionId,
-            previousStatus: "pending",
-            newStatus: "timed_out",
-            message: `Order is ${Math.round(ageMinutes)} minutes old with no payment confirmation.`,
-          });
-          continue;
-        }
-
-        // Still pending and not stale — leave it
-        results.push({
-          orderId: order.id,
-          transactionId,
-          previousStatus: "pending",
-          newStatus: "still_pending",
-          message: statusMessage,
-        });
-      } catch (err) {
-        console.error("[Collecto] reconcile:order-error", {
-          orderId: order.id,
-          transactionId,
-          error: err,
-        });
-
-        results.push({
-          orderId: order.id,
-          transactionId,
-          previousStatus: "pending",
-          newStatus: "error",
-          message: err instanceof Error ? err.message : "Unknown error during reconciliation",
-        });
-      }
-    }
-
-    const reconciledCount = results.filter(
-      (r) => r.newStatus === "successful" || r.newStatus === "failed" || r.newStatus === "timed_out",
-    ).length;
-
-    console.info("[Collecto] reconcile:complete", {
-      total: candidates.length,
-      reconciled: reconciledCount,
-      results,
-    });
-
-    return res.status(200).json({
-      ok: true,
-      reconciled: reconciledCount,
-      total: candidates.length,
-      results,
-    });
+    const result = await runCollectoReconciliation();
+    return res.status(200).json(result);
   } catch (err) {
     next(err);
   }
