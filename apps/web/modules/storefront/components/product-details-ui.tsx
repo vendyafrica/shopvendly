@@ -4,7 +4,7 @@ import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FavouriteIcon } from "@hugeicons/core-free-icons";
 import { ProductActions } from "./product-actions";
-import { Product, MediaItem } from "@/modules/storefront/models/product";
+import type { Product, MediaItem, ProductVariantOption } from "@/modules/storefront/models/product";
 import { cn } from "@shopvendly/ui/lib/utils";
 import { getColorName } from "@/lib/constants/colors";
 import * as React from "react";
@@ -23,7 +23,7 @@ interface ProductDetailsUIProps {
         hoverRating: number | null;
         mediaItems: MediaItem[];
         safeSelectedIndex: number;
-        selectedOptions: any[];
+        selectedOptions: { name: string; value: string }[];
         FALLBACK_PRODUCT_IMAGE: string;
     };
     actions: {
@@ -90,9 +90,9 @@ export function ProductDetailsUI({ product, storePolicy, state, actions }: Produ
         })}`;
     };
 
-    const variantOptions = (product as any).variants?.enabled ? (product as any).variants.options ?? [] : [];
-    const colorOption = variantOptions.find((option: any) => option.type === "color");
-    const sizeOption = variantOptions.find((option: any) => option.type === "size");
+    const variantOptions: ProductVariantOption[] = product.variants?.enabled ? product.variants.options ?? [] : [];
+    const colorOption = variantOptions.find((option) => option.type === "color");
+    const sizeOption = variantOptions.find((option) => option.type === "size");
     const colorValues = colorOption?.values?.filter(Boolean) ?? [];
     const sizeValues = sizeOption?.values?.filter(Boolean) ?? [];
     const hasColorOptions = colorValues.length > 0;
@@ -349,7 +349,7 @@ export function ProductDetailsUI({ product, storePolicy, state, actions }: Produ
 
                     <div className={`mt-6 ${hasColorOptions || hasSizeOptions ? "" : "border-t border-neutral-100 pt-6"}`}>
                         <div className="mb-6 w-full">
-                            <ProductActions product={product as any} selectedOptions={selectedOptions} />
+                            <ProductActions product={product} selectedOptions={selectedOptions} />
                         </div>
 
                         {product.description && (

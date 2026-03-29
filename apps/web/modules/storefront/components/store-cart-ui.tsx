@@ -6,7 +6,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete02Icon, MinusSignIcon, PlusSignIcon, ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
 import { bricolage as geistSans } from "@/utils/fonts";
-import { CartItem } from "@/modules/storefront/models/cart";
+import type { CartItem, SelectedOption } from "@/modules/storefront/models/cart";
 
 interface StoreCartUIProps {
     storeSlug: string;
@@ -161,7 +161,7 @@ export function StoreCartUI({
                                                 </h3>
                                                 {item.product.selectedOptions?.length ? (
                                                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500">
-                                                        {item.product.selectedOptions.map((option: any) => (
+                                                        {item.product.selectedOptions.map((option: SelectedOption) => (
                                                             <span key={`${option.name}-${option.value}`}>
                                                                 {option.name}: {option.value}
                                                             </span>
