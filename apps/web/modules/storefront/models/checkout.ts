@@ -17,3 +17,27 @@ export interface CheckoutState {
     storeSlug: string;
     timestamp: number;
 }
+
+export interface CheckoutBuyNowSelectedOption {
+  name: string;
+  value: string;
+}
+
+export interface CheckoutBuyNowItem {
+  id: string;
+  quantity: number;
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    currency: string;
+    image?: string | null;
+    slug: string;
+    selectedOptions: CheckoutBuyNowSelectedOption[];
+  };
+  store: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+}
