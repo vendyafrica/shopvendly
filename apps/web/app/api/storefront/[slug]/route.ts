@@ -1,41 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storefrontService } from "@/modules/storefront";
 import type { StorefrontStoreRouteParams } from "@/models/storefront";
-
-const DEFAULT_STORE_LOGO = "/vendly.png";
-
-function toCanonicalUploadThingUrl(rawUrl: string) {
-    try {
-        const parsed = new URL(rawUrl);
-        const fileId = parsed.pathname.split("/").filter(Boolean).pop();
-        if (!fileId) return rawUrl;
-
-        const isUploadThingHost = parsed.hostname.endsWith(".ufs.sh") || parsed.hostname === "utfs.io";
-        if (!isUploadThingHost) return rawUrl;
-
-        const typeParam =
-            parsed.searchParams.get("x-ut-file-type") ||
-            parsed.searchParams.get("file-type");
-
-        const canonicalBase = `https://utfs.io/f/${fileId}`;
-        if (typeParam) {
-            const encodedType = encodeURIComponent(typeParam);
-            return `${canonicalBase}?x-ut-file-type=${encodedType}`;
-        }
-
-        return canonicalBase;
-    } catch {
-        return rawUrl;
-    }
-}
-
-function normalizeMediaUrls(urls: unknown): string[] {
-    if (!Array.isArray(urls)) return [];
-
-    return urls
-        .filter((url): url is string => typeof url === "string" && url.length > 0)
-        .map((url) => toCanonicalUploadThingUrl(url));
-}
+import { DEFAULT_STORE_LOGO } from "@/lib/constants/defaults";
+import { normalizeMediaUrls, toCanonicalUploadThingUrl } from "@/lib/media";
 
 /**
  * GET /api/storefront/[slug]

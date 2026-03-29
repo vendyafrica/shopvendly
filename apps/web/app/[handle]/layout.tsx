@@ -3,8 +3,7 @@ import { Suspense } from "react";
 import MarketplaceLayout from "../m/layout";
 import { StorefrontHeader, HeaderSkeleton } from "@/modules/storefront/components";
 import { storefrontService } from "@/modules/storefront";
-
-const DEFAULT_STORE_LOGO = "/vendly.png";
+import { DEFAULT_STORE_LOGO } from "@/lib/constants/defaults";
 
 interface LayoutProps {
   children: ReactNode;
