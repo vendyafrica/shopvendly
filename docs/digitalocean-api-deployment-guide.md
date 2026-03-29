@@ -30,6 +30,7 @@ It is written to be beginner-friendly and assumes:
       pnpm --filter @shopvendly/api build
       pm2 restart shopvendly-api
       pm2 save
+      pm2 logs shopvendly-api --lines 50
 
       curl http://127.0.0.1:8000/health
 

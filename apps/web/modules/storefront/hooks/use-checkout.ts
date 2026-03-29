@@ -7,9 +7,9 @@ import { useAppSession } from "@/contexts/app-session-context";
 import { getRootUrl } from "@/utils/misc";
 import { CheckoutPaymentMethod, PaymentFlowStatus, PhoneVerificationStatus } from "../models/checkout";
 
-const COLLECTO_POLL_INTERVAL_MS = 5000;
-const COLLECTO_ACTIVE_POLL_WINDOW_MS = 120000;
-const COLLECTO_STALE_HINT_MS = 45000;
+const COLLECTO_POLL_INTERVAL_MS = 3000;
+const COLLECTO_ACTIVE_POLL_WINDOW_MS = 45000;
+const COLLECTO_STALE_HINT_MS = 15000;
 const COLLECTO_INITIATION_TIMEOUT_MS = 14000;
 const COLLECTO_FEE_RATE = 0.03;
 
@@ -255,6 +255,13 @@ export function useCheckout() {
         }
     };
 
+    const getPhaseMessage = (elapsedMs: number): string => {
+        if (elapsedMs < 5000) return "A payment prompt is being sent to your phone...";
+        if (elapsedMs < 15000) return "Check your phone and enter your PIN to approve the payment.";
+        if (elapsedMs < 30000) return "Still waiting for payment confirmation. If you didn\u2019t receive a prompt, you can cancel and try again.";
+        return "Payment is taking longer than expected. You can cancel and retry.";
+    };
+
     const pollCollectoStatus = async (transactionId: string, orderId: string | null = activeOrderId) => {
         const startedAt = paymentFlowStartedAtRef.current ?? Date.now();
         const elapsedMs = Date.now() - startedAt;
@@ -274,7 +281,7 @@ export function useCheckout() {
                     return;
                 }
                 setPaymentFlowStatus("pending");
-                setPaymentStatusMessage("We are still confirming your payment...");
+                setPaymentStatusMessage(getPhaseMessage(elapsedMs));
                 clearPaymentPoll();
                 paymentPollRef.current = setTimeout(() => void pollCollectoStatus(transactionId, orderId), COLLECTO_POLL_INTERVAL_MS);
                 return;
@@ -295,7 +302,7 @@ export function useCheckout() {
                 return;
             }
             setPaymentFlowStatus("pending");
-            setPaymentStatusMessage(elapsedMs >= COLLECTO_STALE_HINT_MS ? "Still waiting..." : "Waiting for confirmation...");
+            setPaymentStatusMessage(getPhaseMessage(elapsedMs));
             clearPaymentPoll();
             paymentPollRef.current = setTimeout(() => void pollCollectoStatus(transactionId, orderId), COLLECTO_POLL_INTERVAL_MS);
         } catch {
@@ -324,14 +331,14 @@ export function useCheckout() {
         clearPaymentPoll();
         setShowPaymentCancelHint(false);
         setPaymentFlowStatus("failed");
-        setPaymentStatusMessage("Payment prompt expired. Please try again.");
+        setPaymentStatusMessage("Payment wasn\u2019t confirmed in time. Tap retry to send a new prompt.");
         setIsSubmitting(false);
         paymentFlowStartedAtRef.current = null;
         if (orderId) {
             void fetch(`${API_BASE}/api/storefront/${store?.slug}/payments/collecto/abandon`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderId, transactionId, reason: "expired_after_120_seconds" }),
+                body: JSON.stringify({ orderId, transactionId, reason: "expired_after_45_seconds" }),
             }).catch(() => undefined);
         }
     };
