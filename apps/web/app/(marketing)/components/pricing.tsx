@@ -2,62 +2,91 @@ import { Button } from '@shopvendly/ui/components/button'
 import { Check } from 'lucide-react'
 import Link from 'next/link'
 
+const freeTierFeatures = [
+    'Up to 20 product listings',
+    'Shareable storefront link',
+    'MTN & Airtel Money payments',
+    'Basic order tracking',
+    'Listed on Vendly marketplace',
+]
+
+const proTierFeatures = [
+    'Unlimited product listings',
+    'Delivery partner integration',
+    'WhatsApp order notifications',
+    'Customer data and history',
+    'Store analytics dashboard',
+    'Custom store logo and branding',
+    'Instagram product sync',
+    'Store policies and refund settings',
+    'Priority support',
+]
+
 export function Pricing() {
     return (
-        <section className="bg-[#faf9f7] py-16 md:py-32">
-            <div className="mx-auto max-w-5xl px-6">
-                <div className="mx-auto max-w-2xl space-y-6 text-center">
-                    <h1 className="text-center text-4xl font-semibold lg:text-5xl">
-                        One plan for serious growth.
-                    </h1>
-                    <p className="text-muted-foreground">
-                        Everything you need to run a professional social storefront, take payments, and scale operations in one paid plan.
+        <section className="bg-[#faf9f7] px-6 py-20 lg:py-28">
+            <div className="mx-auto max-w-5xl">
+                <div className="mx-auto max-w-2xl space-y-4 text-center">
+                    <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">Pricing</p>
+                    <h2 className="text-3xl font-semibold lg:text-5xl">Start free. Upgrade when you grow.</h2>
+                    <p className="text-muted-foreground text-lg">
+                        Simple plans for sellers getting started or ready to grow.
                     </p>
                 </div>
 
-                <div className="mx-auto mt-8 max-w-2xl md:mt-20">
-                    <div className="dark:bg-muted rounded-(--radius) flex h-full flex-col justify-between border p-6 shadow-lg shadow-gray-950/5 lg:p-10 dark:[--color-muted:var(--color-zinc-900)]">
-                        <div className="space-y-4">
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h2 className="font-medium">Pro</h2>
-                                    <span className="text-primary bg-primary/10 rounded-full px-2 py-0.5 text-xs font-medium">
-                                        Best for growing stores
-                                    </span>
-                                </div>
-                                <span className="my-3 block text-2xl font-semibold">UGX 35,000 / mo</span>
-                                <p className="text-muted-foreground text-sm">
-                                    For sellers who want advanced tools, stronger branding, and faster operations.
-                                </p>
-                            </div>
-                            <div className="text-sm font-medium">What&apos;s included:</div>
-                            <ul className="list-outside space-y-3 text-sm">
-                                {[
-                                    'Unlimited product listings',
-                                    'Delivery partner integration',
-                                    'WhatsApp order notifications',
-                                    'Customer data and history',
-                                    'Store analytics dashboard',
-                                    'Custom store logo and branding',
-                                    'Instagram product sync',
-                                    'Store policies and refund settings',
-                                    'Priority support',
-                                ].map((item, index) => (
-                                    <li key={index} className="flex items-center gap-2">
-                                        <Check className="size-3" />
-                                        {item}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
+                <div className="mx-auto mt-12 grid gap-6 md:grid-cols-2">
+                    <div className="rounded-[2rem] border border-border/60 bg-white p-8 shadow-sm lg:p-10">
+                        <h3 className="text-xl font-semibold">Free</h3>
+                        <p className="mt-3 text-3xl font-semibold">UGX 0 / mo</p>
+                        <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                            For new sellers who want to start fast.
+                        </p>
+                        <ul className="mt-6 space-y-3 text-sm text-foreground/90">
+                            {freeTierFeatures.map((item, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                    <Check className="mt-0.5 size-4 text-primary" />
+                                    <span>{item}</span>
+                                </li>
+                            ))}
+                        </ul>
                         <div className="mt-8">
-                            <Button className="w-full">
-                                <Link href="/signup?plan=pro">Start Pro</Link>
+                            <Button className="w-full rounded-full">
+                                <Link href="/account">Start for free</Link>
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="rounded-[2rem] border border-primary/20 bg-primary/5 p-8 shadow-sm lg:p-10">
+                        <div className="inline-flex rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
+                            Most popular
+                        </div>
+                        <h3 className="mt-4 text-xl font-semibold">Pro</h3>
+                        <p className="mt-3 text-3xl font-semibold">UGX 35,000 / mo</p>
+                        <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                            For sellers who want more control and more automation.
+                        </p>
+                        <ul className="mt-6 space-y-3 text-sm text-foreground/90">
+                            {proTierFeatures.map((item, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                    <Check className="mt-0.5 size-4 text-primary" />
+                                    <span>{item}</span>
+                                </li>
+                            ))}
+                        </ul>
+                        <div className="mt-8">
+                            <Button className="w-full rounded-full">
+                                <Link href="/account?plan=pro">Start Pro</Link>
                             </Button>
                         </div>
                     </div>
                 </div>
+
+                <p className="mt-8 text-center text-sm text-muted-foreground">
+                    Need help choosing?{' '}
+                    <Link href="/contact" className="text-primary underline underline-offset-4">
+                        Talk to us on WhatsApp.
+                    </Link>
+                </p>
             </div>
         </section>
     )

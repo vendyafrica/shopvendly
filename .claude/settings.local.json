@@ -4,7 +4,10 @@
       "Read(//c/Users/**)",
       "Bash(find /c/Users/Jeremiah Sentomero/Desktop/shopvendly/apps/api -type f -name *checkout* -o -name *payment* -o -name *collecto*)",
       "Bash(xargs grep:*)",
-      "Bash(find /c/Users/Jeremiah Sentomero/Desktop/shopvendly/apps/api/features/orders -type f -name *.ts)"
+      "Bash(find /c/Users/Jeremiah Sentomero/Desktop/shopvendly/apps/api/features/orders -type f -name *.ts)",
+      "WebFetch(domain:www.shopify.com)",
+      "WebFetch(domain:getbumpa.com)",
+      "WebFetch(domain:web.archive.org)"
     ]
   }
 }

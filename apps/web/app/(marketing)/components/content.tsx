@@ -6,21 +6,21 @@ import { Card, CardContent } from "@shopvendly/ui/components/card";
 const workflowSteps = [
   {
     number: "01",
-    title: "Set up your storefront",
+    title: "Build your store",
     description:
-      "Add your products, pricing, and delivery details once, then share a clean storefront link everywhere you sell.",
+      "Add your products, set your prices, upload your photos. Your store looks like your brand — not a template. Takes less than 10 minutes.",
   },
   {
     number: "02",
-    title: "Collect orders and payments",
+    title: "Share your link",
     description:
-      "Turn incoming DMs and link clicks into organized orders with payment tracking that keeps every sale moving.",
+      "You get one clean link. Drop it in your WhatsApp bio, Instagram, TikTok, wherever your customers already are. They click, they shop.",
   },
   {
     number: "03",
-    title: "Fulfill and grow with clarity",
+    title: "Get paid. Deliver. Repeat.",
     description:
-      "Track delivery progress, follow up less, and use performance insights to keep improving your store.",
+      "Customers pay with mobile money. You get notified. You book delivery straight from your dashboard. That's it. No spreadsheets. No chaos.",
   },
 ];
 
@@ -29,25 +29,43 @@ export function Content() {
     <section className="py-24">
       <div className="mx-auto max-w-4xl px-6 text-center">
 
-        <h2 className="text-4xl font-semibold">
-          ShopVendly gives social sellers a simple way to run a real online store
+        <p className="text-primary text-sm font-medium uppercase tracking-[0.18em]">
+          How it works
+        </p>
+
+        <h2 className="mt-3 text-4xl font-semibold">
+          Live in minutes. Selling by tonight.
         </h2>
 
         <p className="text-muted-foreground mt-4 text-lg">
-          Create your storefront, share your link, collect orders, accept payments,
-          and manage delivery in one place.
+          If you can post on Instagram, you can run a Vendly store.
+          No tech skills. No designer. No nonsense.
         </p>
 
-        <div className="mt-8 flex justify-center gap-4">
+        <div className="mt-16 grid gap-8 text-left sm:grid-cols-3">
+          {workflowSteps.map((step) => (
+            <div key={step.number} className="flex flex-col gap-3">
+              <span className="text-primary text-4xl font-bold leading-none">
+                {step.number}
+              </span>
+              <h3 className="text-lg font-semibold">{step.title}</h3>
+              <p className="text-muted-foreground text-sm leading-6">
+                {step.description}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-12 flex justify-center gap-4">
           <Button className="h-12 px-8 rounded-full">
             <Link href="/account">
-              Create Your Store
+              Start for free
             </Link>
           </Button>
 
           <Button variant="ghost" className="h-12 px-8 rounded-full">
             <Link href="/pricing">
-              See Pricing
+              See pricing
             </Link>
           </Button>
         </div>
