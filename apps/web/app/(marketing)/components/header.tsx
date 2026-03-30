@@ -32,7 +32,7 @@ export function Header() {
       <div className="flex items-center justify-between gap-4 rounded-full border border-white/10 bg-black/20 px-4 py-3 text-white shadow-sm shadow-black/20 backdrop-blur-md sm:px-5">
         <Link
           href="/"
-          className="flex min-w-0 items-center gap-2 text-lg font-bold text-white sm:text-xl"
+          className="flex min-w-0 items-center gap-0 text-lg font-bold text-white sm:text-xl"
           onClick={handleMenuClose}
         >
           <Image
@@ -51,7 +51,7 @@ export function Header() {
             <Link
               key={item.label}
               href={item.href}
-              className="text-white/85 transition hover:text-white"
+              className="text-white/85 transition hover:text-primary"
             >
               {item.label}
             </Link>
@@ -61,7 +61,7 @@ export function Header() {
         <div className="hidden items-center gap-3 md:flex">
           <Button
             variant="ghost"
-            className="h-10 rounded-full border border-white/15 bg-white/10 px-6 text-sm text-white shadow-none hover:bg-white/15"
+            className="h-10 rounded-full border border-white/15 bg-white/10 px-6 text-sm text-white shadow-none hover:bg-white/80"
           >
             <Link href={loginHref}>Login</Link>
           </Button>

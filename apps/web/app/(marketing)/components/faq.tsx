@@ -4,6 +4,8 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@shopvendly/ui/components/accordion"
+import { Card } from "@shopvendly/ui/components/card"
+import Link from "next/link"
 
 const faqs = [
     {
@@ -44,39 +46,44 @@ const faqs = [
     },
 ]
 
-const defaultFaqId = faqs[0]?.id
-
 export function FAQs() {
     return (
-        <section className="bg-[#faf9f7] scroll-py-16 py-16 md:scroll-py-32 md:py-32">
-            <div className="mx-auto max-w-5xl px-6">
-                <div className="grid gap-y-12 px-2 lg:grid-cols-[1fr_auto]">
-                    <div className="text-center lg:text-left">
-                        <h2 className="mb-4 text-3xl font-semibold md:text-4xl">
-                            Questions people ask
-                        </h2>
-                        <p className="text-muted-foreground">
-                            If you still need help, message us on WhatsApp.
-                        </p>
-                    </div>
-
-                    <Accordion
-                        multiple
-                        defaultValue={defaultFaqId ? [defaultFaqId] : undefined}
-                        className="sm:mx-auto sm:max-w-lg lg:mx-0"
-                    >
+        <section className="bg-background @container py-24">
+            <div className="mx-auto max-w-2xl px-6">
+                <div className="text-center">
+                    <h2 className="text-balance text-4xl font-medium">
+                        Frequently Asked Questions
+                    </h2>
+                    <p className="text-muted-foreground mx-auto mt-4 max-w-md text-balance">
+                        Find answers to common questions about our platform.
+                    </p>
+                </div>
+                <Card className="mt-12 overflow-hidden p-0">
+                    <Accordion>
                         {faqs.map((faq) => (
-                            <AccordionItem key={faq.id} value={faq.id} className="py-4">
-                                <AccordionTrigger className="text-base font-medium">
+                            <AccordionItem
+                                key={faq.id}
+                                value={faq.id}
+                                className="border-b px-6 last:border-b-0"
+                            >
+                                <AccordionTrigger className="cursor-pointer py-5 text-sm font-medium hover:no-underline">
                                     {faq.question}
                                 </AccordionTrigger>
-                                <AccordionContent className="text-muted-foreground text-sm">
-                                    <p>{faq.answer}</p>
+                                <AccordionContent>
+                                    <p className="text-muted-foreground pb-5 text-sm">
+                                        {faq.answer}
+                                    </p>
                                 </AccordionContent>
                             </AccordionItem>
                         ))}
                     </Accordion>
-                </div>
+                </Card>
+                <p className="text-muted-foreground mt-6 text-center text-sm">
+                    Still have questions?{' '}
+                    <Link href="/contact" className="text-primary font-medium hover:underline">
+                        Contact support
+                    </Link>
+                </p>
             </div>
         </section>
     )
