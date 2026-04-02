@@ -1,9 +1,17 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export function Hero() {
   return (
     <section className="relative min-h-svh overflow-hidden bg-neutral-950">
-      <div className="absolute inset-0 bg-[url('https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYLZfYTtpq90aBj2MZ7ruxwhyb3WcSHPCzIkU8')] bg-cover bg-center" />
+      <Image
+        src="https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYLZfYTtpq90aBj2MZ7ruxwhyb3WcSHPCzIkU8"
+        alt="Shop background"
+        fill
+        priority
+        className="object-cover object-center"
+        sizes="100vw"
+      />
       <div className="absolute inset-0 bg-black/55" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),transparent_35%)]" />
 
