@@ -8,40 +8,40 @@ import {
 } from "@shopvendly/ui/components/accordion";
 
 export const metadata: Metadata = {
-  title: "ShopVendly FAQs",
+  title: "FAQs | Vendly",
   description:
-    "Read answers to common questions about ShopVendly, including storefronts, payments, delivery, and selling on Instagram and TikTok.",
+    "Get answers about selling online with Vendly—store setup, payments, orders, and social commerce.",
   alternates: { canonical: "/faq" },
 };
 
 const faqs = [
   {
     id: "item-1",
-    question: "Do I need a website to use ShopVendly?",
+    question: "Do I need a website to use Vendly?",
     answer:
-      "No. ShopVendly creates an instant online storefront for you. You can sell from Instagram, TikTok, and other social channels without building a website from scratch.",
+      "No. Vendly creates an instant online storefront for you. You can sell from Instagram, TikTok, and other social channels without building a website from scratch.",
   },
   {
     id: "item-2",
-    question: "How does ShopVendly handle orders from Instagram and TikTok?",
+    question: "How does Vendly handle orders from Instagram and TikTok?",
     answer:
-      "Customers order through your ShopVendly store link. Orders are collected in one admin where you can confirm, track, and manage them easily.",
+      "Customers order through your Vendly store link. Orders are collected in one admin where you can confirm, track, and manage them easily.",
   },
   {
     id: "item-3",
     question: "How do I receive payments?",
     answer:
-      "ShopVendly provides secure checkout links and mobile money payment support so customers can pay easily and your records stay organized.",
+      "Vendly provides secure checkout links and mobile money payment support so customers can pay easily and your records stay organized.",
   },
   {
     id: "item-4",
-    question: "Can I manage delivery with ShopVendly?",
+    question: "Can I manage delivery with Vendly?",
     answer:
       "Yes. Sellers can coordinate delivery from the admin and keep customers updated throughout the order journey.",
   },
   {
     id: "item-5",
-    question: "Is ShopVendly hard to set up?",
+    question: "Is Vendly hard to set up?",
     answer:
       "No. You can create your storefront and start selling in minutes without coding, custom design work, or technical setup.",
   },
@@ -53,7 +53,7 @@ export default function FAQPage() {
       <section className="max-w-2xl space-y-4">
         <p className="text-sm font-medium text-primary">FAQs</p>
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Frequently asked questions about ShopVendly
+          Frequently asked questions about Vendly
         </h1>
         <p className="text-base text-muted-foreground sm:text-lg">
           Find answers about creating a store, managing orders, receiving payments,

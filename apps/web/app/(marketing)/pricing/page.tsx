@@ -2,9 +2,9 @@ import { Pricing as PricingSection } from "../components/pricing";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Pricing",
+  title: "Pricing | Vendly",
   description:
-    "Start free with ShopVendly and upgrade when your store needs more tools, branding, and delivery workflows.",
+    "Start free for 30 days. Upgrade anytime for advanced features and priority support.",
   alternates: { canonical: "/pricing" },
 };
 

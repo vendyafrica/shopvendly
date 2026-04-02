@@ -6,9 +6,9 @@ import { Features } from "./components/features";
 import { Pricing } from "./components/pricing";
 
 export const metadata: Metadata = {
-  title: "ShopVendly | Simpler commerce for African stores",
+  title: "Vendly | Sell online in minutes",
   description:
-    "The simpler, cheaper way to run an African store online. Sell, get paid, book delivery, and get discovered from one place.",
+    "Everything you need to sell online. Accept payments, manage orders, and grow your business—all in one place.",
   alternates: {
     canonical: "/",
   },

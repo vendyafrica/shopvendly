@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { Button } from "@shopvendly/ui/components/button";
 
 export const metadata: Metadata = {
-  title: "Contact ShopVendly",
+  title: "Get Help | Vendly",
   description:
-    "Contact ShopVendly for help with your online store, onboarding, payments, delivery workflows, or general questions about the platform.",
+    "Chat with our team on WhatsApp for questions about setup, pricing, or selling online.",
   alternates: { canonical: "/contact" },
 };
 
@@ -17,11 +17,11 @@ export default function ContactPage() {
       <section className="max-w-2xl space-y-4">
         <p className="text-sm font-medium text-primary">Contact</p>
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Talk to the ShopVendly team
+          Talk to the Vendly team
         </h1>
         <p className="text-base text-muted-foreground sm:text-lg">
           Reach out if you need help getting started, setting up your storefront,
-          understanding pricing, or using ShopVendly to sell online.
+          understanding pricing, or using Vendly to sell online.
         </p>
       </section>
 
@@ -44,7 +44,7 @@ export default function ContactPage() {
           <div className="mt-4 flex flex-col gap-3 text-sm">
             <Link href="/pricing" className="text-primary hover:underline">View pricing</Link>
             <Link href="/faq" className="text-primary hover:underline">Read FAQs</Link>
-            <Link href="/about" className="text-primary hover:underline">Learn about ShopVendly</Link>
+            <Link href="/about" className="text-primary hover:underline">Learn about Vendly</Link>
           </div>
         </div>
       </section>

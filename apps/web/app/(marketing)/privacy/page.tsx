@@ -2,13 +2,13 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy",
-  description: "How ShopVendly collects, uses, and protects your personal data.",
+  title: "Privacy Policy | Vendly",
+  description: "How Vendly collects, uses, and protects your personal data.",
   alternates: { canonical: "/privacy" },
 };
 
 const SUPPORT_EMAIL = "support@shopvendly.store";
-const APP_NAME = "ShopVendly";
+const APP_NAME = "Vendly";
 const JURISDICTION = "Uganda";
 
 export default function PrivacyPage() {

@@ -2,13 +2,13 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service",
-  description: "Terms and conditions for using ShopVendly.",
+  title: "Terms of Service | Vendly",
+  description: "Terms and conditions for using Vendly.",
   alternates: { canonical: "/terms" },
 };
 
 const SUPPORT_EMAIL = "support@shopvendly.store";
-const APP_NAME = "ShopVendly";
+const APP_NAME = "Vendly";
 const JURISDICTION = "Uganda";
 
 export default function TermsPage() {
