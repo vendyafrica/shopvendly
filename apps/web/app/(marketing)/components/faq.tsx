@@ -80,7 +80,7 @@ export function FAQs() {
                 </Card>
                 <p className="text-muted-foreground mt-6 text-center text-sm">
                     Still have questions?{' '}
-                    <Link href="/contact" className="text-primary font-medium hover:underline">
+                    <Link href="https://wa.me/256780808992" target="_blank" rel="noreferrer" className="text-primary font-medium hover:underline">
                         Contact support
                     </Link>
                 </p>

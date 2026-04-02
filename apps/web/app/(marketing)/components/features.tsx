@@ -2,6 +2,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ChartUpIcon,
   PaymentSuccess01Icon,
+  Message01Icon,
 } from "@hugeicons/core-free-icons";
 import Link from "next/link";
 
@@ -21,6 +22,14 @@ const features = [
       "See who buys, what they order, and how often they return. Send targeted offers and campaigns that actually convert.",
     image:
       "https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYhsCF1K8IygxoXmPQzRMEql94cp6JADvHSYGf",
+  },
+  {
+    icon: Message01Icon,
+    title: "24/7 Sales via WhatsApp & Instagram",
+    description:
+      "Connect your store to WhatsApp and Instagram. Let customers browse, order, and pay directly from their favorite apps. Never miss a sale.",
+    image:
+      "https://mplsrodasp.ufs.sh/f/9yFN4ZxbAeCYcLsHpbGmTRtWOauMN4Dpr8UwbdYzxBo39F5S",
   },
 ] as const;
 

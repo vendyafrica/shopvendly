@@ -1,4 +1,3 @@
-import { Button } from "@shopvendly/ui/components/button";
 import { Check } from "lucide-react";
 import Link from "next/link";
 
@@ -22,34 +21,31 @@ export function Pricing() {
           <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">
             Pricing
           </p>
-          <h2 className="text-balance text-3xl font-semibold leading-tight lg:text-5xl">
-            Pricing that scales with your business
+          <h2 className="text-balance text-4xl font-bold leading-tight lg:text-5xl">
+            Simple, transparent pricing
           </h2>
-          <p className="text-muted-foreground mx-auto max-w-xl text-balance text-lg leading-7">
-            Choose the perfect plan for your needs and start optimizing your
-            workflow today.
+          <p className="text-muted-foreground mx-auto max-w-xl text-balance text-base leading-7">
+            Start free for 30 days. Upgrade when you&apos;re ready. No hidden fees.
           </p>
         </div>
 
         <div className="mx-auto mt-12 overflow-hidden rounded-[2rem] border border-border/60 bg-white shadow-sm">
           <div className="grid gap-0 md:grid-cols-[1fr_1.2fr]">
-            <div className="flex flex-col justify-between p-8 text-center md:border-r md:border-border/60 lg:p-12">
+            <div className="flex flex-col justify-between bg-gradient-to-b from-gray-50 to-transparent p-8 text-center md:border-r md:border-border/60 lg:p-12">
               <div>
                 <div className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
                   Free to start
                 </div>
-                <h3 className="mt-6 text-2xl font-semibold text-foreground">
-                  1-month trial period
+                <h3 className="mt-6 text-2xl font-bold text-foreground">
+                  30-day free trial
                 </h3>
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                  Get your store live, test the flow, and see how Vendly
-                  fits your business.
+                  Get your store live, test everything, and see if Vendly works for your business.
                 </p>
               </div>
 
               <p className="mt-8 text-xs leading-5 text-muted-foreground">
-                Includes store setup, payments, and everything you need to
-                launch.
+                Includes store setup, payments, and everything you need to launch.
               </p>
             </div>
 
@@ -65,20 +61,22 @@ export function Pricing() {
                 ))}
               </div>
 
-              <p className="mt-8 max-w-xl text-sm leading-6 text-muted-foreground">
-                Upgrade to Pro when you want more automation, more control, and
-                a stronger brand presence.
+              <p className="mt-8 text-sm leading-6 text-muted-foreground">
+                Upgrade to Pro anytime for advanced automation, full control, and premium support.
               </p>
 
-              <div className="mt-8 flex flex-wrap items-center gap-4">
-                <Button className="h-11 rounded-full px-11 font-bold text-white">
-                  <Link href="/account?plan=pro">Start Pro</Link>
-                </Button>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Link
-                  href="/contact"
-                  className="text-sm font-medium text-primary underline underline-offset-4"
+                  href="/account?plan=pro"
+                  className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-semibold text-white transition-transform duration-150 ease-out hover:bg-primary/90 active:scale-[0.97]"
                 >
-                  Talk to us on WhatsApp
+                  Start Pro
+                </Link>
+                <Link
+                  href="https://wa.me/256780808992"
+                  className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                >
+                  Chat on WhatsApp →
                 </Link>
               </div>
             </div>

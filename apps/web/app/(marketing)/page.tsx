@@ -19,21 +19,21 @@ export default function LandingPage() {
     <div className="scroll-smooth">
       <Hero />
       <Features />
-      <section className="bg-background px-6 py-20 lg:py-28 text">
-        <div className="mx-auto flex max-w-5xl flex-col items-center rounded-[2rem] bg-primary/10 px-6 py-14 text-center text-zinc-900 sm:px-10 lg:px-16">
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-900">
+      <section className="bg-background px-6 py-20 lg:py-28">
+        <div className="mx-auto flex max-w-3xl flex-col items-center rounded-[2rem] bg-primary/5 px-6 py-16 text-center sm:px-10 lg:px-16">
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">
             Ready to start?
           </p>
-          <h2 className="mt-4 text-3xl font-semibold sm:text-4xl lg:text-5xl">
+          <h2 className="mt-4 text-3xl font-bold text-zinc-900 sm:text-4xl lg:text-5xl">
             Open your store in minutes.
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-700 sm:text-lg">
-            One link. Payments and delivery included.
+            One link. Everything you need to sell online.
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               href="/account"
-              className="inline-flex h-12 items-center justify-center rounded-md bg-white px-8 text-sm font-semibold text-zinc-900 transition-colors hover:bg-white/90"
+              className="inline-flex h-12 items-center justify-center rounded-md bg-primary px-8 text-sm font-semibold text-white transition-transform duration-150 ease-out hover:bg-primary/90 active:scale-[0.97]"
             >
               Start selling
             </Link>
@@ -48,27 +48,6 @@ export default function LandingPage() {
       </section>
       <Pricing />
       <FAQs />
-      <section className="bg-background px-6 py-20 lg:py-28">
-        <div className="mx-auto max-w-5xl rounded-[2rem] border border-border/60 bg-white px-6 py-12 shadow-sm sm:px-10 lg:px-14 lg:py-16">
-          <h2 className="text-balance text-3xl font-semibold leading-tight text-foreground sm:text-4xl">
-            Need help getting started?
-          </h2>
-          <p className="mt-4 max-w-lg text-base leading-7 text-muted-foreground">
-            Message us on WhatsApp and we’ll help you set up your store,
-            answer questions, or talk through the best plan for you.
-          </p>
-          <div className="mt-8">
-            <Link
-              href="https://wa.me/256780808992"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              Chat on WhatsApp
-            </Link>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

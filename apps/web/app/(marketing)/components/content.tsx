@@ -1,7 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { Button } from "@shopvendly/ui/components/button";
-import { Card, CardContent } from "@shopvendly/ui/components/card";
 
 const workflowSteps = [
   {
