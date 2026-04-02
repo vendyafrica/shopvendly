@@ -34,7 +34,7 @@ export function Footer() {
         >
           <Image
             src="/vendly.png"
-            alt="ShopVendly icon"
+            alt="Vendly icon"
             width={36}
             height={36}
             className="mr-2"

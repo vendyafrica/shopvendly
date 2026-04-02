@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/modules/cart/context/cart-context";
 import { useAppSession } from "@/contexts/app-session-context";
 import { getRootUrl } from "@/utils/misc";
-import { CheckoutPaymentMethod, PaymentFlowStatus, PhoneVerificationStatus } from "../models/checkout";
+import type { CheckoutBuyNowItem, CheckoutBuyNowSelectedOption, CheckoutPaymentMethod, PaymentFlowStatus, PhoneVerificationStatus } from "../models/checkout";
 
 const COLLECTO_POLL_INTERVAL_MS = 3000;
 const COLLECTO_ACTIVE_POLL_WINDOW_MS = 45000;
@@ -114,7 +114,7 @@ export function useCheckout() {
         }
     }, [session]);
 
-    const [buyNowItem, setBuyNowItem] = useState<any>(null);
+    const [buyNowItem, setBuyNowItem] = useState<CheckoutBuyNowItem | null>(null);
 
     useEffect(() => {
         if (!buyNowProductId || !storeSlug) return;
@@ -123,10 +123,12 @@ export function useCheckout() {
             .then(res => res.json())
             .then(data => {
                 if (!cancelled && data.id) {
-                    let selectedOptions = [];
+                    let selectedOptions: CheckoutBuyNowSelectedOption[] = [];
                     try {
                         if (buyNowOptionsRaw) selectedOptions = JSON.parse(buyNowOptionsRaw);
-                    } catch (e) {}
+                    } catch {
+                        selectedOptions = [];
+                    }
                     
                     setBuyNowItem({
                         id: `buynow-${data.id}`,

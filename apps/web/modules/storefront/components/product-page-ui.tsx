@@ -2,15 +2,7 @@ import { Suspense } from "react";
 import { ProductDetails } from "./product-details";
 import { ProductGridReveal } from "./product-grid-reveal";
 import { StorefrontFooter } from "./footer";
-
-interface ProductPageUIProps {
-    productWithStore: any;
-    products: any[];
-    store: any;
-    storeCategories: any[];
-    productJsonLd: any;
-    breadcrumbJsonLd: any;
-}
+import type { ProductPageProps } from "@/modules/storefront/models/page";
 
 export function ProductPageUI({
     productWithStore,
@@ -19,7 +11,7 @@ export function ProductPageUI({
     storeCategories,
     productJsonLd,
     breadcrumbJsonLd,
-}: ProductPageUIProps) {
+}: ProductPageProps) {
     return (
         <main className="bg-white min-h-screen">
             <script

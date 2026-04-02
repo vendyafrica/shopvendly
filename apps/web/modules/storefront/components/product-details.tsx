@@ -2,9 +2,10 @@
 
 import { useProductDetails } from "@/modules/storefront/hooks/use-product-details";
 import { ProductDetailsUI } from "./product-details-ui";
+import type { Product } from "@/modules/storefront/models/product";
 
 interface ProductDetailsProps {
-    product: any;
+    product: Product;
     storeCategories?: string[];
     storePolicy?: string | null;
 }

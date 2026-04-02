@@ -4,8 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cartService } from "@/modules/cart";
 import { instagramRepo } from "@/repo/instagram-repo";
 import { type CartItemWithRelations, addItemToCartSchema } from "@/models";
-
-const DEFAULT_STORE_LOGO = "/vendly.png";
+import { DEFAULT_STORE_LOGO } from "@/lib/constants/defaults";
 
 
 /**

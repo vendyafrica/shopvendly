@@ -8,9 +8,11 @@ export default function MarketingLayout({
   children: ReactNode;
 }) {
   return (
-    <div className="bg-[#faf9f7] min-h-screen">
-      <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
-        <Header />
+    <div className="relative bg-[#faf9f7] min-h-screen">
+      <div className="absolute inset-x-0 top-0 z-50 px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <Header />
+        </div>
       </div>
       {children}
       <Footer />

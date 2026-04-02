@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
-import { trackStorefrontEvents } from "../lib/storefront-tracking";
+import { trackStorefrontEvents } from "@/modules/storefront/lib/storefront-tracking";
 import { signInWithOneTap } from "@shopvendly/auth/react";
 import { useAppSession } from "@/contexts/app-session-context";
 import { isLikelyVideoMedia } from "@/utils/misc";
-import { Product } from "../models/product";
+import type { Product, ProductVariantOption, MediaItem } from "../models/product";
 
 interface UseProductDetailsProps {
     product: Product;
@@ -52,8 +52,8 @@ export function useProductDetails({ product }: UseProductDetailsProps) {
     // Selection state
     const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
     const variantOptions = product.variants?.enabled ? product.variants.options ?? [] : [];
-    const colorOption = variantOptions.find((option: any) => option.type === "color");
-    const sizeOption = variantOptions.find((option: any) => option.type === "size");
+    const colorOption = variantOptions.find((option: ProductVariantOption) => option.type === "color");
+    const sizeOption = variantOptions.find((option: ProductVariantOption) => option.type === "size");
     
     const [selectedColor, setSelectedColor] = useState<string | null>(colorOption?.values?.[0] ?? null);
     const [selectedSize, setSelectedSize] = useState<string | null>(sizeOption?.values?.[0] ?? null);
@@ -152,8 +152,8 @@ export function useProductDetails({ product }: UseProductDetailsProps) {
     const mediaItems = useMemo(() => {
         const items = (product.mediaItems?.length
             ? product.mediaItems
-            : product.images?.map((url: string) => ({ url, contentType: null }))
-        )?.filter((m) => !!m?.url) ?? [];
+            : product.images?.map((url: string): MediaItem => ({ url, contentType: null }))
+        )?.filter((m): m is MediaItem => Boolean(m?.url)) ?? [];
 
         if (items.length === 0) return [{ url: FALLBACK_PRODUCT_IMAGE, contentType: "image/jpeg" }];
 

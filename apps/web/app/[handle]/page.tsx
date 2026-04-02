@@ -1,5 +1,6 @@
-import { StorefrontUI } from "@/modules/storefront/components";
+import { StorefrontDefaultTemplate } from "@/modules/storefront/templates/default/storefront-default-template";
 import { storefrontService } from "@/modules/storefront";
+import type { StoreCollection, StoreDetails, StorefrontProduct } from "@/modules/storefront/models/store";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -75,11 +76,11 @@ export default async function StorefrontHomePage({ params, searchParams }: Store
   const hasSaleTab = saleProducts.length > 0;
 
   return (
-    <StorefrontUI
+    <StorefrontDefaultTemplate
       handle={handle}
-      store={store as any}
-      products={products as any}
-      collections={collections as any}
+      store={store as StoreDetails}
+      products={products as StorefrontProduct[]}
+      collections={collections as StoreCollection[]}
       activeCollectionSlug={activeCollectionSlug}
       activeSection={activeSection}
       hasSaleTab={hasSaleTab}

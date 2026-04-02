@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { Button } from "@shopvendly/ui/components/button";
 
 export const metadata: Metadata = {
-  title: "About ShopVendly",
+  title: "About Vendly",
   description:
-    "Learn how ShopVendly helps Instagram and TikTok sellers create online stores, manage orders, accept payments, and grow their business.",
+    "Vendly helps sellers turn social traffic into a real online store. Simple, fast, and built for African commerce.",
   alternates: { canonical: "/about" },
 };
 
@@ -13,7 +13,7 @@ const pillars = [
   {
     title: "Built for social sellers",
     description:
-      "ShopVendly helps creators, boutiques, and small businesses turn Instagram and TikTok traffic into a real online store.",
+      "Vendly helps creators, boutiques, and small businesses turn Instagram and TikTok traffic into a real online store.",
   },
   {
     title: "Everything in one place",
@@ -31,12 +31,12 @@ export default function AboutPage() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
       <section className="max-w-3xl space-y-5">
-        <p className="text-sm font-medium text-primary">About ShopVendly</p>
+        <p className="text-sm font-medium text-primary">About Vendly</p>
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           Online commerce for sellers who grow on social media
         </h1>
         <p className="text-base text-muted-foreground sm:text-lg">
-          ShopVendly is a social commerce platform that helps sellers create online
+          Vendly is a social commerce platform that helps sellers create online
           stores for Instagram and TikTok, manage orders, accept payments, and
           deliver a more professional shopping experience.
         </p>
@@ -54,9 +54,9 @@ export default function AboutPage() {
       </section>
 
       <section className="mt-14 max-w-3xl space-y-4">
-        <h2 className="text-xl font-semibold sm:text-2xl">What sellers use ShopVendly for</h2>
+        <h2 className="text-xl font-semibold sm:text-2xl">What sellers use Vendly for</h2>
         <p className="text-muted-foreground">
-          Sellers use ShopVendly to organize products, share storefront links,
+          Sellers use Vendly to organize products, share storefront links,
           collect orders from social traffic, receive mobile money payments, and
           get discovered through the marketplace.
         </p>
