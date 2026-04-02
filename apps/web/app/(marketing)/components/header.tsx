@@ -3,15 +3,15 @@
 import { useState } from "react";
 import { Button } from "@/src/components/button";
 import { Menu, X } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
 
 const navItems = [
   { label: "About", href: "/about" },
   { label: "Pricing", href: "/pricing" },
   { label: "FAQ", href: "/faq" },
   { label: "Contact", href: "/contact" },
-  // { label: "Marketplace", href: "/m" },
+  { label: "Marketplace", href: "/m" },
 ];
 
 const loginHref = "/account";
@@ -29,24 +29,16 @@ export function Header() {
 
   return (
     <header className="relative z-40">
-      <div className="flex items-center justify-between gap-4 rounded-full border border-white/10 bg-black/20 px-4 py-3 text-white shadow-sm shadow-black/20 backdrop-blur-md sm:px-5">
-        <Link
-          href="/"
-          className="flex min-w-0 items-center gap-0 text-lg font-bold text-white sm:text-xl"
-          onClick={handleMenuClose}
-        >
-          <Image
-            src="/vendly.png"
-            alt="ShopVendly icon"
-            width={28}
-            height={28}
-            className="shrink-0"
-          />
-          <span className="truncate text-white/90">vend</span>
-          <span className="shrink-0 text-primary/90">ly</span>
-        </Link>
-
+      <div className="flex items-center justify-between gap-4 rounded-full px-4 py-3 text-white sm:px-5">
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
+          <Link href="/" aria-label="Go to homepage" className="inline-flex shrink-0">
+            <Image
+              src="/vendly.png"
+              alt="vendly logo"
+              width={28}
+              height={28}
+            />
+          </Link>
           {navItems.map((item) => (
             <Link
               key={item.label}
@@ -61,7 +53,7 @@ export function Header() {
         <div className="hidden items-center gap-3 md:flex">
           <Button
             variant="ghost"
-            className="h-10 rounded-full border border-white/15 bg-white/10 px-6 text-sm text-white shadow-none hover:bg-white/80"
+            className="h-10 rounded-md border cursor-pointer border-white/15 bg-primary px-6 hover:text-white text-sm text-white font-bold shadow-none hover:bg-primary/90"
           >
             <Link href={loginHref}>Login</Link>
           </Button>
@@ -96,7 +88,7 @@ export function Header() {
           <div className="mt-3">
             <Button
               variant="ghost"
-              className="w-full rounded-full border border-white/20 bg-white/10 px-7 text-white hover:bg-white/15"
+              className="w-full rounded-md border border-white/20 bg-primary px-7 text-white hover:bg-white/15"
             >
               <Link href={loginHref} onClick={handleMenuClose}>
                 Login

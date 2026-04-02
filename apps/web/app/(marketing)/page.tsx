@@ -33,13 +33,13 @@ export default function LandingPage() {
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link
               href="/account"
-              className="inline-flex h-12 items-center justify-center rounded-full bg-white px-8 text-sm font-semibold text-zinc-900 transition-colors hover:bg-white/90"
+              className="inline-flex h-12 items-center justify-center rounded-md bg-white px-8 text-sm font-semibold text-zinc-900 transition-colors hover:bg-white/90"
             >
               Start selling
             </Link>
             <Link
               href="/pricing"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-zinc-300 px-8 text-sm font-semibold text-zinc-900 transition-colors hover:bg-black/5"
+              className="inline-flex h-12 items-center justify-center rounded-md border border-zinc-300 px-8 text-sm font-semibold text-zinc-900 transition-colors hover:bg-black/5"
             >
               See pricing
             </Link>

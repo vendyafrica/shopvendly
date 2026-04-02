@@ -55,7 +55,7 @@ export function Features() {
                   {feature.description}
                 </p>
                 <div className={`mt-8 flex gap-3 ${index % 2 === 1 ? 'justify-end' : 'justify-start'}`}>
-                  <Link href="/account" className="inline-flex h-11 items-center justify-center rounded-full bg-white px-6 text-sm font-semibold text-black transition-transform duration-150 ease-out hover:bg-white/90 active:scale-[0.97]">
+                  <Link href="/account" className="inline-flex h-11 items-center justify-center rounded-md bg-white px-6 text-sm font-semibold text-black transition-transform duration-150 ease-out hover:bg-white/90 active:scale-[0.97]">
                     Start selling
                   </Link>
                 </div>

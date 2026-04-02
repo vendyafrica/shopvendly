@@ -63,7 +63,7 @@ export function Content() {
             </Link>
           </Button>
 
-          <Button variant="ghost" className="h-12 px-8 rounded-full">
+          <Button variant="outline" className="h-12 px-8 text-primary rounded-full">
             <Link href="/pricing">
               See pricing
             </Link>
