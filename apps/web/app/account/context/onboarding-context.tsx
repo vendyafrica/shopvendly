@@ -7,7 +7,7 @@ import type { PersonalInfo, StoreInfo, BusinessInfo, OnboardingData } from "../l
 // Re-export for convenience so consumers don't need a separate import
 export type { PersonalInfo, StoreInfo, BusinessInfo, OnboardingData };
 
-export type OnboardingStep = "step0" | "step1" | "step2" | "step3" | "complete";
+export type OnboardingStep = "step0" | "step1" | "complete";
 
 interface OnboardingState {
     currentStep: OnboardingStep;
@@ -97,8 +97,6 @@ export function useOnboarding() {
 const STEP_ROUTES: Record<Exclude<OnboardingStep, "complete">, string> & { complete: string } = {
     step0: "/account?step=0",
     step1: "/account?step=1",
-    step2: "/account?step=2",
-    step3: "/account?step=3",
     complete: "/admin",
 };
 
@@ -204,8 +202,6 @@ export function OnboardingProvider({ children }: ProviderProps) {
                 const map: Record<string, OnboardingStep> = {
                     "0": "step0",
                     "1": "step1",
-                    "2": "step2",
-                    "3": "step3",
                 };
                 const stepFromParam = stepParam ? map[stepParam] : undefined;
                 const currentStep = stepFromParam ?? storedStep;
@@ -321,7 +317,7 @@ export function OnboardingProvider({ children }: ProviderProps) {
                     data: {},
                 }));
 
-                router.push("/account/success");
+                router.push(`/admin/${result.storeSlug}`);
                 return true;
             }
 
@@ -341,7 +337,7 @@ export function OnboardingProvider({ children }: ProviderProps) {
 
     const goBack = useCallback(() => {
         setState(prev => {
-            const order: OnboardingStep[] = ["step0", "step1", "step2", "step3", "complete"];
+            const order: OnboardingStep[] = ["step0", "step1", "complete"];
             const currentIdx = order.indexOf(prev.currentStep);
             const previousIndex = currentIdx > 0 ? currentIdx - 1 : 0;
             const previousStep = order[previousIndex] ?? "step0";

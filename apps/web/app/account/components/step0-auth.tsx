@@ -1,41 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@shopvendly/ui/components/button";
-import { Field, FieldGroup, FieldLabel } from "@shopvendly/ui/components/field";
-import { Input } from "@shopvendly/ui/components/input";
 import { signInWithGoogle } from "@shopvendly/auth/react";
 import { Google } from "@shopvendly/ui/components/svgs/google";
 import { getRootUrl } from "@/utils/misc";
 
 export function Step0Auth() {
-  const [email, setEmail] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
 
-  useEffect(() => {
-    // Check for claim token params from store assignment email
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const claimToken = params.get("claimToken");
-      const claimEmail = params.get("claimEmail");
-      const claimRedirect = params.get("claimRedirect");
-
-      if (claimToken && claimEmail) {
-        // Store claim params in localStorage to survive OAuth redirect
-        localStorage.setItem("vendly_claim_token", claimToken);
-        localStorage.setItem("vendly_claim_email", claimEmail);
-        if (claimRedirect) {
-          localStorage.setItem("vendly_claim_redirect", claimRedirect);
-        }
-        // Pre-fill email field
-        setEmail(claimEmail);
-      }
-    }
-  }, []);
-
-  const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleGoogleSignIn = async () => {
     setAuthLoading(true);
     try {
       const res = await signInWithGoogle({
@@ -51,75 +27,78 @@ export function Step0Auth() {
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-sm mx-auto">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="w-full max-w-sm mx-auto"
+    >
+      {/* Headline */}
+      <div className="text-center mb-8">
+        <motion.h1
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05, duration: 0.4 }}
+          className="text-2xl font-semibold tracking-tight text-foreground"
+        >
+          Start selling today
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.4 }}
+          className="mt-2 text-sm text-muted-foreground"
+        >
+          Create your store in under 2 minutes
+        </motion.p>
+      </div>
+
+      {/* Google Sign-in */}
       <motion.div
-        initial={{ opacity: 0, y: -10 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        transition={{ delay: 0.15, duration: 0.4 }}
       >
-        <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            <div className="flex flex-col items-center gap-2 text-center mb-6">
-              <div className="flex flex-col items-center gap-2 font-medium"></div>
-              <h1 className="text-xl font-bold">Welcome to ShopVendly</h1>
-              <p className="text-sm text-muted-foreground">
-                Get started with your store today
-              </p>
-            </div>
-
-            <Field>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={authLoading}
-                required
-              />
-            </Field>
-
-            <Field className="mt-2">
-              <Button type="submit" disabled={authLoading} className="w-full">
-                {authLoading ? "Continuing..." : "Continue"}
-              </Button>
-            </Field>
-
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border/50" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or</span>
-              </div>
-            </div>
-
-            <Field className="grid gap-4">
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => handleSubmit()}
-                disabled={authLoading}
-              >
-                <Google />
-                Continue with Google
-              </Button>
-            </Field>
-          </FieldGroup>
-        </form>
-        <p className="px-6 text-center text-xs text-muted-foreground mt-6">
-          By clicking continue, you agree to our{" "}
-          <a href="#" className="underline hover:text-primary">
-            Terms of Service
-          </a>{" "}
-          and{" "}
-          <a href="#" className="underline hover:text-primary">
-            Privacy Policy
-          </a>
-          .
-        </p>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleGoogleSignIn}
+          disabled={authLoading}
+          className="w-full h-11 text-sm font-medium border-border/70 hover:border-border hover:bg-muted/40 transition-all duration-200 gap-3"
+        >
+          {authLoading ? (
+            <span className="flex items-center gap-2">
+              <svg className="h-4 w-4 animate-spin text-muted-foreground" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Connecting…
+            </span>
+          ) : (
+            <>
+              <Google />
+              Continue with Google
+            </>
+          )}
+        </Button>
       </motion.div>
-    </div>
+
+      {/* Legal */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.25, duration: 0.4 }}
+        className="mt-6 text-center text-[11px] text-muted-foreground/70 leading-relaxed"
+      >
+        By continuing, you agree to our{" "}
+        <Link href="/terms" className="underline underline-offset-2 hover:text-foreground transition-colors">
+          Terms of Service
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground transition-colors">
+          Privacy Policy
+        </Link>
+      </motion.p>
+    </motion.div>
   );
 }

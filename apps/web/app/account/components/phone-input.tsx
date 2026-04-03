@@ -32,7 +32,7 @@ export function PhoneInput({
   const selected = COUNTRY_OPTIONS.find((o) => o.code === countryCode);
 
   return (
-    <div className="flex h-10 rounded-md border border-input bg-background text-sm focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary/20 overflow-hidden transition-all">
+    <div className="flex h-11 rounded-md border border-input bg-background text-sm focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary/20 overflow-hidden transition-all">
       <Select
         value={countryCode}
         onValueChange={(value) => {
@@ -40,10 +40,11 @@ export function PhoneInput({
         }}
         disabled={disabled}
       >
-        <SelectTrigger className="h-10 min-w-[88px] shrink-0 rounded-md border-0 border-r border-input/60 bg-transparent px-2.5 text-sm font-medium text-foreground shadow-none focus-visible:ring-0">
+        <SelectTrigger className="h-11 min-w-[90px] shrink-0 rounded-none border-0 border-r border-input/60 bg-transparent px-3 text-sm font-medium text-foreground shadow-none focus-visible:ring-0 gap-1.5">
           <SelectValue>
-            <span className="flex items-center gap-1">
-              <span className="text-xs text-muted-foreground">+{selected?.code}</span>
+            <span className="flex items-center gap-1.5">
+              <span className="text-base leading-none">{selected?.flag}</span>
+              <span className="text-xs font-medium text-foreground">+{selected?.code}</span>
             </span>
           </SelectValue>
         </SelectTrigger>
@@ -66,7 +67,7 @@ export function PhoneInput({
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
         disabled={disabled}
-        className="h-full flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 px-3 text-sm"
+        className="h-full flex-1 !w-auto min-w-0 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 px-3 text-sm"
       />
     </div>
   );

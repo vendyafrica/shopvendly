@@ -8,6 +8,9 @@
       "WebFetch(domain:www.shopify.com)",
       "WebFetch(domain:getbumpa.com)",
       "WebFetch(domain:web.archive.org)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
     ]
   }
 }

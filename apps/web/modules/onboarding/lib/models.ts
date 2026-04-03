@@ -90,7 +90,6 @@ export function isValidBusinessInfo(data: unknown): data is BusinessInfoDto {
     const d = data as Record<string, unknown>;
     return (
         Array.isArray(d.categories) &&
-        d.categories.length > 0 &&
         d.categories.every((c: unknown) => typeof c === "string")
     );
 }

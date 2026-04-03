@@ -20,6 +20,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@shopvendly/ui/components/badge";
 import { cn } from "@shopvendly/ui/lib/utils";
+import { DashboardBannerWrapper } from "@/modules/admin/components/dashboard-banner-wrapper";
 
 function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat("en-US", {
@@ -91,6 +92,7 @@ export default async function AdminPage({
 
   return (
     <div className="space-y-6">
+      <DashboardBannerWrapper />
       {/* Mobile View */}
       <div className="flex md:hidden flex-col gap-6">
         <MobileStoreHeader

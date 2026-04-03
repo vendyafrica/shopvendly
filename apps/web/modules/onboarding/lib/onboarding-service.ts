@@ -21,20 +21,22 @@ class OnboardingService {
         if (!data.store || !isValidStoreInfo(data.store)) {
             throw new Error("Store info incomplete");
         }
-        if (!data.business || !isValidBusinessInfo(data.business)) {
-            throw new Error("Business info incomplete");
-        }
+
+        // Business info is optional — default to empty categories if not provided
+        const business = data.business ?? { categories: [] };
+
+        const payloadData: OnboardingData = { ...data, business };
 
         const result = options?.useExistingClaimedTenant
             ? await onboardingRepository.completeClaimedTenant(
                 userId,
                 email,
-                data as Required<OnboardingData>
+                payloadData as Required<OnboardingData>
             )
             : await onboardingRepository.createTenantWithStore(
                 userId,
                 email,
-                data as Required<OnboardingData>
+                payloadData as Required<OnboardingData>
             );
 
         return {

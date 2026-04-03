@@ -86,6 +86,13 @@ async function TenantAdminLayoutInner({
   const canWrite = Boolean(writeAccess.isAuthorized);
   const isDemoViewer = isDemoStore && !canWrite;
 
+  // Compute profile completion status
+  const profileComplete = Boolean(
+    store.description?.trim() &&
+    store.storeAddress?.trim() &&
+    (store.categories?.length ?? 0) > 0
+  );
+
   return (
     <Providers>
       <AppSessionProvider session={appSession}>
@@ -101,6 +108,7 @@ async function TenantAdminLayoutInner({
             collectoPayoutMode: store.collectoPayoutMode ?? "automatic_per_order",
             isDemoViewer,
             canWrite,
+            profileComplete,
           }}
         >
           <SidebarProvider

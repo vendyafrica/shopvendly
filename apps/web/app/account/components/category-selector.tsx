@@ -13,9 +13,7 @@ export type Category = {
 
 const STEP_LABELS: Record<import("../context/onboarding-context").OnboardingStep, string> = {
   step0: "Sign in",
-  step1: "Personal",
-  step2: "Store",
-  step3: "Categories",
+  step1: "Store Setup",
   complete: "Done",
 };
 
@@ -27,58 +25,79 @@ export function StepIndicator() {
     setMounted(true);
   }, []);
 
-  const steps: import("../context/onboarding-context").OnboardingStep[] = ["step0", "step1", "step2", "step3", "complete"];
+  const steps: import("../context/onboarding-context").OnboardingStep[] = ["step0", "step1", "complete"];
 
   const currentIndex = steps.indexOf(currentStep);
   const canAnimate = mounted && isHydrated;
   const showProgress = canAnimate && currentIndex >= 0;
 
   return (
-    <div className="w-full overflow-x-auto md:overflow-visible">
-      <div className="flex items-center gap-3 text-[11px] md:text-xs font-medium text-muted-foreground min-w-max pr-2">
-        {steps.map((step, idx) => {
-          const isActive = showProgress && idx === currentIndex;
-          const isComplete = showProgress && idx < currentIndex;
-          return (
-            <div key={step} className="flex items-center gap-2">
+    <div className="flex items-center gap-0">
+      {steps.map((step, idx) => {
+        const isActive = showProgress && idx === currentIndex;
+        const isComplete = showProgress && idx < currentIndex;
+        const isPast = canAnimate && isComplete;
+
+        return (
+          <div key={step} className="flex items-center">
+            {/* Node */}
+            <div className="flex flex-col items-center gap-1.5">
               <motion.div
                 initial={false}
                 animate={{
-                  scale: canAnimate && isActive ? 1.2 : 1,
-                  backgroundColor:
-                    canAnimate && (isActive || isComplete)
-                      ? "var(--primary)"
-                      : canAnimate
-                        ? "transparent"
-                        : "var(--muted)"
+                  scale: canAnimate && isActive ? 1.1 : 1,
                 }}
-
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
                 className={cn(
-                  "h-2.5 w-2.5 rounded-full border",
-                  isActive || isComplete ? "border-primary" : "border-border"
+                  "relative flex items-center justify-center h-6 w-6 rounded-full border-2 transition-colors duration-300",
+                  isPast
+                    ? "bg-primary border-primary"
+                    : isActive
+                      ? "bg-white border-primary shadow-[0_0_0_3px_rgba(124,58,237,0.15)]"
+                      : "bg-white border-border"
                 )}
-              />
+              >
+                {isPast ? (
+                  <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 12 12">
+                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  <motion.div
+                    animate={{ scale: isActive && canAnimate ? 1 : 0 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                    className="h-2 w-2 rounded-full bg-primary"
+                  />
+                )}
+              </motion.div>
               <span
                 className={cn(
-                  isActive && canAnimate ? "text-foreground font-semibold" : "",
-                  !canAnimate && "text-muted-foreground"
+                  "text-[10px] font-medium whitespace-nowrap transition-colors duration-300",
+                  isActive && canAnimate
+                    ? "text-foreground font-semibold"
+                    : isPast
+                      ? "text-primary"
+                      : "text-muted-foreground/60"
                 )}
               >
                 {STEP_LABELS[step]}
               </span>
-              {idx < steps.length - 1 && (
-                <div
-                  className={cn(
-                    "h-px w-6",
-                    canAnimate ? "bg-border/50" : "bg-border"
-                  )}
-                />
-              )}
-
             </div>
-          );
-        })}
-      </div>
+
+            {/* Connector line */}
+            {idx < steps.length - 1 && (
+              <div className="relative mx-2 mb-5 h-px w-12 md:w-16 bg-border overflow-hidden">
+                <motion.div
+                  initial={false}
+                  animate={{ scaleX: isPast ? 1 : 0 }}
+                  transition={{ duration: 0.4, ease: "easeInOut" }}
+                  style={{ transformOrigin: "left" }}
+                  className="absolute inset-0 bg-primary"
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -8,7 +8,7 @@
         "dev": "tsup --watch",
         "generate": "drizzle-kit generate",
         "push": "drizzle-kit push",
-        "reset": "npx tsx src/reset.ts && drizzle-kit push && tsx src/seed.ts",
+        "reset": "npx tsx src/reset.ts && drizzle-kit push",
         "seed": "tsx src/seed.ts"
     },
     "dependencies": {

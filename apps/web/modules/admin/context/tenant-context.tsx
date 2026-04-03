@@ -17,6 +17,7 @@ export type TenantBootstrap = {
   collectoPayoutMode?: "automatic_per_order" | "manual_batch";
   isDemoViewer?: boolean;
   canWrite?: boolean;
+  profileComplete?: boolean;
 };
 
 type TenantContextValue = {
