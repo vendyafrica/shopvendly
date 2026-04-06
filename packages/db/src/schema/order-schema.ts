@@ -138,7 +138,6 @@ export const orderItems = pgTable(
         quantity: integer("quantity").notNull().default(1),
         unitPrice: integer("unit_price").notNull(),
         totalPrice: integer("total_price").notNull(),
-        currency: text("currency").notNull().default("UGX"),
 
         createdAt: timestamp("created_at").defaultNow().notNull(),
     },

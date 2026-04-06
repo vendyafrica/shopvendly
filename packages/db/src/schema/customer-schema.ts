@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgTable, uuid, text, timestamp, integer, numeric, index, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer, numeric, index } from "drizzle-orm/pg-core";
 import { tenants } from "./tenant-schema";
 import { stores } from "./storefront-schema";
 import { users } from "./auth-schema";
@@ -24,9 +24,6 @@ export const customers = pgTable(
         totalOrders: integer("total_orders").default(0).notNull(),
         totalSpend: numeric("total_spend", { precision: 12, scale: 2 }).default("0").notNull(),
         lastOrderAt: timestamp("last_order_at"),
-
-        productsViewed: jsonb("products_viewed").default([]),
-        actionsLog: jsonb("actions_log").default([]),
 
         createdAt: timestamp("created_at").defaultNow().notNull(),
         updatedAt: timestamp("updated_at")
