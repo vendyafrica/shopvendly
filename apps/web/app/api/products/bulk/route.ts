@@ -7,7 +7,7 @@ import { jsonSuccess, jsonError, HttpError } from "@/lib/api/response-utils";
 const bulkUpdateSchema = z.object({
     storeId: z.string().uuid(),
     ids: z.array(z.string(), { message: "ids must be strings" }),
-    action: z.enum(["publish", "archive", "delete"]),
+    action: z.enum(["publish", "delete"]),
 });
 
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

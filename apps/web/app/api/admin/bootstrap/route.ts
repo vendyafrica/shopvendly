@@ -1,20 +1,20 @@
-import { NextRequest } from "next/server";
 import { resolveTenantAdminAccess } from "@/modules/admin/services/access-service";
 import { storeRepo } from "@/repo/store-repo";
-import { jsonSuccess, jsonError, isDemoStore, getOptionalSession } from "@/lib/api/response-utils";
+import { tenantRepo } from "@/repo/tenant-repo";
+import { withApi } from "@/lib/api/with-api";
+import { jsonSuccess, HttpError, isDemoStore } from "@/lib/api/response-utils";
 
-export async function GET(request: NextRequest) {
-    const session = await getOptionalSession(request);
-    const { searchParams } = new URL(request.url);
+export const GET = withApi({ auth: false }, async ({ req, session }) => {
+    const { searchParams } = new URL(req.url);
     const storeSlug = searchParams.get("storeSlug");
 
-    if (!storeSlug) return jsonError("Missing storeSlug", 400);
-    const store = await storeRepo.findAdminBySlug(storeSlug);
+    if (!storeSlug) throw new HttpError("Missing storeSlug", 400);
 
-    if (!store) return jsonError("Store not found", 404);
+    const store = await storeRepo.findAdminBySlug(storeSlug);
+    if (!store) throw new HttpError("Store not found", 404);
 
     if (!session?.user) {
-        if (!isDemoStore(storeSlug)) return jsonError("Unauthorized", 401);
+        if (!isDemoStore(storeSlug)) throw new HttpError("Unauthorized", 401);
 
         return jsonSuccess({
             tenantId: store.tenantId,
@@ -37,9 +37,8 @@ export async function GET(request: NextRequest) {
         resolveTenantAdminAccess(session.user.id, storeSlug, "write"),
     ]);
 
-    if (!access.isAuthorized) return jsonError("Forbidden", 403);
+    if (!access.isAuthorized) throw new HttpError("Forbidden", 403);
 
-    const { tenantRepo } = await import("@/repo/tenant-repo");
     const tenant = await tenantRepo.findSlugById(store.tenantId);
 
     return jsonSuccess({
@@ -56,4 +55,4 @@ export async function GET(request: NextRequest) {
         isDemoViewer: isDemoStore(storeSlug) && !writeAccess.isAuthorized,
         canWrite: writeAccess.isAuthorized,
     });
-}
+});
