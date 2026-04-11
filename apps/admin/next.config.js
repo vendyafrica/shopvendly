@@ -5,9 +5,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  turbopack: {
-    root: path.resolve(__dirname, "../.."),
-  },
+  transpilePackages: ["@shopvendly/ui", "@shopvendly/auth"],
+  outputFileTracingRoot: path.resolve(__dirname, "../..")
 };
 
 export default nextConfig;

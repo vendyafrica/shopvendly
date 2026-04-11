@@ -4,12 +4,6 @@ import Link from "next/link";
 import { Button } from "@shopvendly/ui/components/button";
 import type { MarketplaceStore } from "@/modules/marketplace";
 import { StoreCard } from "@/modules/marketplace/components/store-card";
-import { Bricolage_Grotesque } from "next/font/google";
-
-const bricolageGrotesque = Bricolage_Grotesque({
-  variable: "--font-bricolage-grotesque",
-  subsets: ["latin"],
-});
 
 interface StoreShelfProps {
     title: string;
@@ -35,7 +29,7 @@ export function StoreShelf({ title, stores, categorySlug }: StoreShelfProps) {
             <div className="container mx-auto px-5 sm:px-6">
                 {/* Header */}
                 <div className="flex items-center justify-between gap-2 mb-6">
-                    <h3 className={`text-xl font-bold tracking-tight ${bricolageGrotesque.className}`}>{capitalizeFirstLetter(title)}</h3>
+                    <h3 className="text-xl font-bold tracking-tight">{capitalizeFirstLetter(title)}</h3>
                 </div>
 
                 {/* Grid - 2 columns on mobile, 5 on desktop */}
