@@ -1,12 +1,8 @@
-import { NextResponse } from "next/server";
+import { jsonError } from "@/lib/api/response-utils";
 
-export async function POST(request: Request): Promise<NextResponse> {
-    void request;
-    return NextResponse.json(
-        {
-            error: "Legacy Vercel Blob upload endpoint is disabled. Use /api/uploadthing instead.",
-        },
-        { status: 410 }
+export async function POST() {
+    return jsonError(
+        "Legacy Vercel Blob upload endpoint is disabled. Use /api/uploadthing instead.",
+        410,
     );
 }
-

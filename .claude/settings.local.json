@@ -7,7 +7,13 @@
       "Bash(find /c/Users/Jeremiah Sentomero/Desktop/shopvendly/apps/api/features/orders -type f -name *.ts)",
       "WebFetch(domain:www.shopify.com)",
       "WebFetch(domain:getbumpa.com)",
-      "WebFetch(domain:web.archive.org)"
+      "WebFetch(domain:web.archive.org)",
+      "Bash(npx tsc:*)",
+      "Bash(ls \"c:\\\\Users\\\\Jeremiah Sentomero\\\\Desktop\\\\shopvendly\\\\apps\\\\web\\\\proxy\"*)",
+      "Bash(ls \"c:\\\\Users\\\\Jeremiah Sentomero\\\\Desktop\\\\shopvendly\\\\apps\\\\web/\"*proxy*)",
+      "Bash(grep -rn \"proxy\" \"c:\\\\Users\\\\Jeremiah Sentomero\\\\Desktop\\\\shopvendly\\\\apps\\\\web\\\\next.config\"*)",
+      "Bash(grep -rn \"proxy\\\\|middleware\" \"c:\\\\Users\\\\Jeremiah Sentomero\\\\Desktop\\\\shopvendly\\\\apps\\\\web\\\\instrumentation\"*)",
+      "Bash(ls \"c:\\\\Users\\\\Jeremiah Sentomero\\\\Desktop\\\\shopvendly\\\\apps\\\\web\\\\instrumentation\"*)"
     ],
     "additionalDirectories": [
       "\\tmp"

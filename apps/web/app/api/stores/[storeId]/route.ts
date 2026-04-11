@@ -1,12 +1,10 @@
-import { auth } from "@shopvendly/auth";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { z } from "zod";
 import { storeRepo } from "@/repo/store-repo";
 import { productsAdminRepo } from "@/repo/products-admin-repo";
-import { z } from "zod";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-
-import { type StoreRouteParams as RouteParams } from "@/models";
+import { withApi } from "@/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/lib/api/response-utils";
 
 const updateStoreSchema = z.object({
     name: z.string().min(1).max(255).optional(),
@@ -16,7 +14,6 @@ const updateStoreSchema = z.object({
     storeAddress: z.string().optional(),
     logoUrl: z.string().url().optional().or(z.literal("")),
     categories: z.array(z.string()).optional(),
-    // DB schema stores status as boolean (active flag). Align validation accordingly.
     status: z.boolean().optional(),
     defaultCurrency: z.enum(["UGX", "KES", "USD"]).optional(),
     collectoPassTransactionFeeToCustomer: z.boolean().optional(),
@@ -27,122 +24,46 @@ const updateStoreSchema = z.object({
  * GET /api/stores/[storeId]
  * Get a single store by ID
  */
-export async function GET(request: NextRequest, { params }: RouteParams) {
-    try {
-        const session = await auth.api.getSession({
-            headers: await headers()
-        });
-
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const { storeId } = await params;
-        const store = await storeRepo.findById(storeId);
-
-        if (!store) {
-            return NextResponse.json({ error: "Store not found" }, { status: 404 });
-        }
-
-        return NextResponse.json(store);
-    } catch (error) {
-        console.error("Error fetching store:", error);
-        return NextResponse.json({ error: "Failed to fetch store" }, { status: 500 });
-    }
-}
+export const GET = withApi<undefined, { storeId: string }>({}, async ({ params }) => {
+    const store = await storeRepo.findById(params.storeId);
+    if (!store) throw new HttpError("Store not found", 404);
+    return jsonSuccess(store);
+});
 
 /**
  * PATCH /api/stores/[storeId]
  * Update a store
  */
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
-    try {
-        const session = await auth.api.getSession({
-            headers: await headers()
-        });
+export const PATCH = withApi<z.infer<typeof updateStoreSchema>, { storeId: string }>({ schema: updateStoreSchema }, async ({ session, params, body }) => {
+    const access = await resolveTenantAdminAccessByStoreId(session.user.id, params.storeId, "write");
+    if (!access.store) throw new HttpError("Store not found", 404);
+    if (!access.isAuthorized) throw new HttpError("Forbidden", 403);
 
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+    const input = {
+        ...body,
+        storePolicy: body.storePolicy === "" ? null : body.storePolicy,
+        logoUrl: body.logoUrl === "" ? null : body.logoUrl,
+    };
 
-        const { storeId } = await params;
-        const store = await storeRepo.findById(storeId);
-        if (!store) {
-            return NextResponse.json({ error: "Store not found" }, { status: 404 });
-        }
+    const updated = await storeRepo.update(params.storeId, access.store.tenantId, input);
+    if (!updated) throw new HttpError("Store not found", 404);
 
-        const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "write");
-
-        if (!access.isAuthorized) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-        }
-        const accessStore = access.store;
-
-        if (!accessStore) {
-            return NextResponse.json({ error: "Store not found" }, { status: 404 });
-        }
-
-        const body = await request.json();
-        const parsed = updateStoreSchema.parse(body);
-        const input = {
-            ...parsed,
-            storePolicy: parsed.storePolicy === "" ? null : parsed.storePolicy,
-            logoUrl: parsed.logoUrl === "" ? null : parsed.logoUrl,
-        };
-
-        const updated = await storeRepo.update(storeId, accessStore.tenantId, input);
-
-        if (!updated) {
-            return NextResponse.json({ error: "Store not found" }, { status: 404 });
-        }
-
-        if (input.defaultCurrency) {
-            await productsAdminRepo.updateCurrencyByStore(storeId, accessStore.tenantId, input.defaultCurrency);
-        }
-
-        return NextResponse.json(updated);
-    } catch (error) {
-        console.error("Error updating store:", error);
-        return NextResponse.json({ error: "Failed to update store" }, { status: 500 });
+    if (input.defaultCurrency) {
+        await productsAdminRepo.updateCurrencyByStore(params.storeId, access.store.tenantId, input.defaultCurrency);
     }
-}
+
+    return jsonSuccess(updated);
+});
 
 /**
  * DELETE /api/stores/[storeId]
  * Delete a store
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-    try {
-        const session = await auth.api.getSession({
-            headers: await headers()
-        });
+export const DELETE = withApi<undefined, { storeId: string }>({}, async ({ session, params }) => {
+    const access = await resolveTenantAdminAccessByStoreId(session.user.id, params.storeId, "write");
+    if (!access.store) throw new HttpError("Store not found", 404);
+    if (!access.isAuthorized) throw new HttpError("Forbidden", 403);
 
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const { storeId } = await params;
-        const store = await storeRepo.findById(storeId);
-        if (!store) {
-            return NextResponse.json({ error: "Store not found" }, { status: 404 });
-        }
-
-        const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "write");
-
-        if (!access.isAuthorized) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-        }
-        const accessStore = access.store;
-
-        if (!accessStore) {
-            return NextResponse.json({ error: "Store not found" }, { status: 404 });
-        }
-
-        await storeRepo.delete(storeId, accessStore.tenantId);
-
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        console.error("Error deleting store:", error);
-        return NextResponse.json({ error: "Failed to delete store" }, { status: 500 });
-    }
-}
+    await storeRepo.delete(params.storeId, access.store.tenantId);
+    return jsonSuccess({ success: true });
+});

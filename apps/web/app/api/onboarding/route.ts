@@ -1,54 +1,42 @@
+import { NextRequest } from "next/server";
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
 import { onboardingService } from "@/modules/onboarding/lib/onboarding-service";
 import { onboardingRepository } from "@/modules/onboarding/lib/onboarding-repository";
 import type { OnboardingData } from "@/modules/onboarding/lib/models";
 import { onboardingRepo } from "@/repo/onboarding-repo";
 import { sendWelcomeEmail } from "@shopvendly/transactional";
+import { jsonSuccess, jsonError } from "@/lib/api/response-utils";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
         const configuredWebUrl =
             process.env.WEB_URL ||
             process.env.NEXT_PUBLIC_WEB_URL ||
             process.env.NEXT_PUBLIC_APP_URL;
         const origin = req.headers.get("origin")?.trim();
-        const fallbackProdUrl = "https://shopvendly.store";
-
-        const webBaseUrl = (configuredWebUrl || origin)?.replace(/\/$/, "") || fallbackProdUrl;
-
-        const normalizedWebBaseUrl = webBaseUrl.includes("localhost")
-            ? webBaseUrl
-            : webBaseUrl.startsWith("http")
+        const webBaseUrl = ((configuredWebUrl || origin)?.replace(/\/$/, "") || "https://shopvendly.store");
+        const normalizedWebBaseUrl = webBaseUrl.includes("localhost") || webBaseUrl.startsWith("http")
             ? webBaseUrl
             : `https://${webBaseUrl}`;
 
-        const session = await auth.api.getSession({
-            headers: await headers()
-        });
-
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session?.user) return jsonError("Unauthorized", 401);
 
         const body = await req.json();
         const { data } = body as { data: OnboardingData };
-
-        if (!data) {
-            return NextResponse.json({ error: "Missing onboarding data" }, { status: 400 });
-        }
+        if (!data) return jsonError("Missing onboarding data", 400);
 
         const membershipBundle = await onboardingRepository.getMembershipWithTenantStore(session.user.id);
 
         if (membershipBundle) {
             const isFullyOnboarded =
-                membershipBundle.tenant.status === "active"
-                && membershipBundle.tenant.onboardingStep === "complete";
+                membershipBundle.tenant.status === "active" &&
+                membershipBundle.tenant.onboardingStep === "complete";
 
             if (isFullyOnboarded) {
                 const storefrontUrl = `${normalizedWebBaseUrl}/${membershipBundle.store.slug}`;
-                return NextResponse.json({
+                return jsonSuccess({
                     success: true,
                     tenantId: membershipBundle.tenant.id,
                     storeId: membershipBundle.store.id,
@@ -66,18 +54,13 @@ export async function POST(req: Request) {
             useExistingClaimedTenant: Boolean(membershipBundle),
         });
 
-        // Generate a single-use verification token for the welcome email (24h expiry)
         const { token } = await onboardingRepo.createVerificationToken(session.user.email);
-
-        // Build URLs with embedded verification token
         const storeSlug = result.storeSlug;
         const verifyBase = `${normalizedWebBaseUrl}/api/auth/verify-seller?token=${token}&email=${encodeURIComponent(session.user.email)}`;
-
         const adminUrl = `${verifyBase}&redirect=${encodeURIComponent(`/admin/${storeSlug}`)}`;
         const connectInstagramUrl = `${verifyBase}&redirect=${encodeURIComponent(`/admin/${storeSlug}/integrations`)}`;
         const storefrontUrl = `${normalizedWebBaseUrl}/${storeSlug}`;
 
-        // Send seller welcome email
         let emailSent = false;
         let emailError: string | null = null;
         try {
@@ -94,12 +77,9 @@ export async function POST(req: Request) {
             console.error("Failed to send welcome email:", err);
         }
 
-        return NextResponse.json({ ...result, storefrontUrl, emailSent, emailError });
+        return jsonSuccess({ ...result, storefrontUrl, emailSent, emailError });
     } catch (error) {
         console.error("Onboarding error:", error);
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : "Failed to complete onboarding" },
-            { status: 500 }
-        );
+        return jsonError(error instanceof Error ? error.message : "Failed to complete onboarding", 500);
     }
 }

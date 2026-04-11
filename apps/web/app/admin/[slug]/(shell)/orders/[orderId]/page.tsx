@@ -35,8 +35,8 @@ export default function OrderDetailPage() {
       try {
         const res = await fetch(`/api/orders/${orderId}`);
         if (!res.ok) throw new Error("Order not found");
-        const data = await res.json();
-        setOrder(data);
+        const result = await res.json();
+        setOrder(result.data ?? result);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load order");
       } finally {

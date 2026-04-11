@@ -98,7 +98,7 @@ export default function StorefrontHeaderClient({
       }
       try {
         const res = await fetch(`/api/storefront/${slug}`);
-        if (res.ok) setStore(await res.json());
+        if (res.ok) { const json = await res.json(); setStore(json.data ?? json); }
       } catch (error) {
         console.error("Failed to fetch store data:", error);
       } finally {

@@ -51,8 +51,8 @@ export function StorefrontSearchModal({ storeSlug, isOpen, onClose }: SearchModa
       try {
         const res = await fetch(`/api/storefront/${storeSlug}/products?q=${encodeURIComponent(query.trim())}`);
         if (res.ok) {
-          const data = await res.json();
-          setResults(data);
+          const json = await res.json();
+          setResults(json.data ?? json);
         }
       } catch (error) {
         console.error("Search failed:", error);

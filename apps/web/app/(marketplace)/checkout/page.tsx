@@ -102,7 +102,8 @@ function CheckoutContent() {
 
             if (!res.ok) throw new Error("Checkout failed");
 
-            const data = await res.json();
+            const envelope = await res.json();
+            const data = envelope.data ?? envelope;
             const orderId = "order" in data ? data.order?.id : data.id;
             if (!orderId) throw new Error("Missing order ID");
 

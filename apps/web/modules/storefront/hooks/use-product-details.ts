@@ -122,7 +122,8 @@ export function useProductDetails({ product }: UseProductDetailsProps) {
                 return;
             }
 
-            const data = await res.json();
+            const result = await res.json();
+            const data = result.data ?? result;
             setAverageRating(typeof data.rating === "number" ? data.rating : value);
             setRatingCount(typeof data.ratingCount === "number" ? data.ratingCount : ratingCount);
             setUserRating(value);

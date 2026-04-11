@@ -121,7 +121,8 @@ export function useCheckout() {
         let cancelled = false;
         fetch(`/api/storefront/${storeSlug}/products/${buyNowProductId}`)
             .then(res => res.json())
-            .then(data => {
+            .then(result => {
+                const data = result.data ?? result;
                 if (!cancelled && data.id) {
                     let selectedOptions: CheckoutBuyNowSelectedOption[] = [];
                     try {
@@ -182,7 +183,8 @@ export function useCheckout() {
             try {
                 const res = await fetch(`/api/storefront/${resolvedSlug}`);
                 if (!res.ok) return;
-                const data = (await res.json()) as {
+                const result = await res.json();
+                const data = (result.data ?? result) as {
                     storePolicy?: string | null;
                     collectoPassTransactionFeeToCustomer?: boolean;
                     collectoPayoutMode?: "automatic_per_order" | "manual_batch";

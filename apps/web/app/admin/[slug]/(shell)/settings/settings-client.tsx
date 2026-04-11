@@ -132,7 +132,8 @@ export function SettingsClient({ store }: { store: SettingsStore }) {
       setIsCollectoLoading(true);
       try {
         const res = await fetch(`/api/stores/${encodeURIComponent(storeId)}/collecto/available-balance`, { cache: "no-store" });
-        const json = (await res.json().catch(() => null)) as CollectoBalanceSummary & { error?: string } | null;
+        const raw = (await res.json().catch(() => null)) as { data?: CollectoBalanceSummary } & CollectoBalanceSummary & { error?: string } | null;
+        const json = raw?.data ?? raw;
 
         if (!cancelled && res.ok && json) {
           setCollectoBalance({

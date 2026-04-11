@@ -1,208 +1,149 @@
-import { auth } from "@shopvendly/auth";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { productService } from "@/modules/products";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
 import { updateProductSchema } from "@/modules/products/lib/product-models";
 import { productRepo } from "@/repo/product-repo";
 import { storeRepo } from "@/repo/store-repo";
+import { withApi } from "@/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/lib/api/response-utils";
 
-import { type CartItemRouteParams as RouteParams } from "@/models";
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+type ProductRouteParams = { productId: string };
 
 /**
  * GET /api/products/[productId]
  * Get a single product by ID
  */
-export async function GET(request: NextRequest, { params }: RouteParams) {
-    try {
-        const session = await auth.api.getSession({
-            headers: await headers()
-        });
+export const GET = withApi<undefined, ProductRouteParams>(
+  {},
+  async ({ session, params }) => {
+    const { productId } = params;
+    if (!UUID_REGEX.test(productId))
+      throw new HttpError("Invalid product id", 400);
 
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+    const scope = await productRepo.findScopeById(productId);
+    if (!scope) throw new HttpError("Product not found", 404);
 
-        const { productId } = await params;
+    const access = await resolveTenantAdminAccessByStoreId(
+      session.user.id,
+      scope.storeId,
+      "read",
+    );
+    if (!access.store) throw new HttpError("Store not found", 404);
+    if (!access.isAuthorized) throw new HttpError("Forbidden", 403);
 
-        if (!UUID_REGEX.test(productId)) {
-            return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
-        }
-
-        const scope = await productRepo.findScopeById(productId);
-        if (!scope) {
-            return NextResponse.json({ error: "Product not found" }, { status: 404 });
-        }
-
-        const store = await storeRepo.findById(scope.storeId);
-        if (!store) {
-            return NextResponse.json({ error: "Store not found" }, { status: 404 });
-        }
-
-        if (!session?.user) {
-            if (store.slug !== "vendly") {
-                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-            }
-
-            const product = await productService.getProductWithMedia(productId, scope.tenantId);
-            return NextResponse.json(product);
-        }
-
-        const access = await resolveTenantAdminAccessByStoreId(session.user.id, scope.storeId, "read");
-        if (!access.store) {
-            return NextResponse.json({ error: "Store not found" }, { status: 404 });
-        }
-
-        if (!access.isAuthorized) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-        }
-
-        const product = await productService.getProductWithMedia(productId, scope.tenantId);
-
-        return NextResponse.json(product);
-    } catch (error) {
-        console.error("Error fetching product:", error);
-
-        if (error instanceof Error && error.message === "Product not found") {
-            return NextResponse.json({ error: "Product not found" }, { status: 404 });
-        }
-
-        return NextResponse.json({ error: "Failed to fetch product" }, { status: 500 });
-    }
-}
+    const product = await productService.getProductWithMedia(
+      productId,
+      scope.tenantId,
+    );
+    return jsonSuccess(product);
+  },
+);
 
 /**
  * PATCH /api/products/[productId]
  * Update a product
  */
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
-    try {
-        const session = await auth.api.getSession({
-            headers: await headers()
-        });
+export const PATCH = withApi<undefined, ProductRouteParams>(
+  {},
+  async ({ req, session, params }) => {
+    const { productId } = params;
+    if (!UUID_REGEX.test(productId))
+      throw new HttpError("Invalid product id", 400);
 
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+    const scope = await productRepo.findScopeById(productId);
+    if (!scope) throw new HttpError("Product not found", 404);
 
-        const { productId } = await params;
+    const access = await resolveTenantAdminAccessByStoreId(
+      session.user.id,
+      scope.storeId,
+      "write",
+    );
+    if (!access.store) throw new HttpError("Store not found", 404);
+    if (!access.isAuthorized) throw new HttpError("Forbidden", 403);
 
-        if (!UUID_REGEX.test(productId)) {
-            return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
-        }
+    const body: unknown = await req.json();
+    const input = updateProductSchema.parse(body);
+    const mediaInput = (body as Record<string, unknown>).media ?? undefined;
 
-        const scope = await productRepo.findScopeById(productId);
-        if (!scope) {
-            return NextResponse.json({ error: "Product not found" }, { status: 404 });
-        }
+    const updated = await productService.updateProduct(
+      productId,
+      scope.tenantId,
+      {
+        ...input,
+        media: mediaInput as Parameters<
+          typeof productService.updateProduct
+        >[2]["media"],
+      },
+    );
 
-        const access = await resolveTenantAdminAccessByStoreId(session.user.id, scope.storeId, "write");
-        if (!access.store) {
-            return NextResponse.json({ error: "Store not found" }, { status: 404 });
-        }
-
-        if (!access.isAuthorized) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-        }
-
-        const body = await request.json();
-        console.log(`[PATCH /api/products/${productId}] Incoming body:`, JSON.stringify(body, null, 2));
-
-        const input = updateProductSchema.parse(body);
-        console.log(`[PATCH /api/products/${productId}] Parsed input:`, JSON.stringify(input, null, 2));
-
-        // Check for media updates (not part of updateProductSchema currently)
-        const mediaInput = body.media ? body.media : undefined;
-
-        // Update product method should be enhanced to handle media syncing
-        // For now, we manually handle it here or update the service.
-        // Let's update the service to handle optional "media" in updateProduct.
-        // But first let's pass it.
-        const updated = await productService.updateProduct(productId, scope.tenantId, { ...input, media: mediaInput });
-
-        const store = await storeRepo.findByIdAndTenant(scope.storeId, scope.tenantId);
-
-        if (store?.slug) {
-            revalidateTag(`storefront:store:${store.slug}`, "default");
-            revalidateTag(`storefront:store:${store.slug}:products`, "default");
-            revalidatePath(`/${store.slug}`, "page");
-            if (updated.slug) {
-                revalidateTag(`storefront:store:${store.slug}:product:${updated.slug}`, "default");
-                revalidatePath(`/${store.slug}/${updated.slug}`, "page");
-            }
-        }
-
-        return NextResponse.json(updated);
-    } catch (error) {
-        console.error("Error updating product:", error);
-
-        if (error instanceof Error && error.message === "Product not found") {
-            return NextResponse.json({ error: "Product not found" }, { status: 404 });
-        }
-
-        return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
+    const store = await storeRepo.findByIdAndTenant(
+      scope.storeId,
+      scope.tenantId,
+    );
+    if (store?.slug) {
+      revalidateTag(`storefront:store:${store.slug}`, "default");
+      revalidateTag(`storefront:store:${store.slug}:products`, "default");
+      revalidatePath(`/${store.slug}`, "page");
+      if (updated.slug) {
+        revalidateTag(
+          `storefront:store:${store.slug}:product:${updated.slug}`,
+          "default",
+        );
+        revalidatePath(`/${store.slug}/${updated.slug}`, "page");
+      }
     }
-}
+
+    return jsonSuccess(updated);
+  },
+);
 
 /**
  * DELETE /api/products/[productId]
  * Delete a product
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-    try {
-        const session = await auth.api.getSession({
-            headers: await headers()
-        });
+export const DELETE = withApi<undefined, ProductRouteParams>(
+  {},
+  async ({ session, params }) => {
+    const { productId } = params;
+    if (!UUID_REGEX.test(productId))
+      throw new HttpError("Invalid product id", 400);
 
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+    const scope = await productRepo.findScopeById(productId);
+    if (!scope) throw new HttpError("Product not found", 404);
 
-        const { productId } = await params;
+    const access = await resolveTenantAdminAccessByStoreId(
+      session.user.id,
+      scope.storeId,
+      "write",
+    );
+    if (!access.store) throw new HttpError("Store not found", 404);
+    if (!access.isAuthorized) throw new HttpError("Forbidden", 403);
 
-        if (!UUID_REGEX.test(productId)) {
-            return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
-        }
+    const deleted = await productService.deleteProduct(
+      productId,
+      scope.tenantId,
+    );
 
-        const scope = await productRepo.findScopeById(productId);
-        if (!scope) {
-            return NextResponse.json({ error: "Product not found" }, { status: 404 });
-        }
-
-        const access = await resolveTenantAdminAccessByStoreId(session.user.id, scope.storeId, "write");
-        if (!access.store) {
-            return NextResponse.json({ error: "Store not found" }, { status: 404 });
-        }
-
-        if (!access.isAuthorized) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-        }
-
-        const deleted = await productService.deleteProduct(productId, scope.tenantId);
-
-        const store = await storeRepo.findByIdAndTenant(scope.storeId, scope.tenantId);
-
-        if (store?.slug) {
-            revalidateTag(`storefront:store:${store.slug}`, "default");
-            revalidateTag(`storefront:store:${store.slug}:products`, "default");
-            revalidatePath(`/${store.slug}`, "page");
-            if (deleted?.slug) {
-                revalidateTag(`storefront:store:${store.slug}:product:${deleted.slug}`, "default");
-                revalidatePath(`/${store.slug}/${deleted.slug}`, "page");
-            }
-        }
-
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        console.error("Error deleting product:", error);
-
-        if (error instanceof Error && error.message === "Product not found") {
-            return NextResponse.json({ error: "Product not found" }, { status: 404 });
-        }
-
-        return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });
+    const store = await storeRepo.findByIdAndTenant(
+      scope.storeId,
+      scope.tenantId,
+    );
+    if (store?.slug) {
+      revalidateTag(`storefront:store:${store.slug}`, "default");
+      revalidateTag(`storefront:store:${store.slug}:products`, "default");
+      revalidatePath(`/${store.slug}`, "page");
+      if (deleted?.slug) {
+        revalidateTag(
+          `storefront:store:${store.slug}:product:${deleted.slug}`,
+          "default",
+        );
+        revalidatePath(`/${store.slug}/${deleted.slug}`, "page");
+      }
     }
-}
+
+    return jsonSuccess({ success: true });
+  },
+);

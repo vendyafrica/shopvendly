@@ -1,75 +1,44 @@
-import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createOrderSchema } from "@/modules/orders/lib/order-models";
-import type { StorefrontOrderRouteParams } from "@/models/storefront";
+import { withApi } from "@/lib/api/with-api";
+import { jsonError, jsonProxy, HttpError } from "@/lib/api/response-utils";
 
 /**
  * POST /api/storefront/[slug]/orders
- * Create a new order from storefront checkout (public endpoint)
+ * Create a new order from storefront checkout — proxies to Express API (public)
  */
-export async function POST(request: NextRequest, { params }: StorefrontOrderRouteParams) {
-    try {
-        const { slug } = await params;
-        const body = await request.json();
-
-        // Validate input early (reuse shared schema)
-        const input = createOrderSchema.parse(body);
-
-        const apiBaseFromEnv = process.env.NEXT_PUBLIC_API_URL;
-        const apiBase =
-            apiBaseFromEnv ??
-            (process.env.NODE_ENV === "development" ? "http://127.0.0.1:8000" : undefined);
-        const apiBaseCandidates = Array.from(
-            new Set([
-                apiBase,
-                ...(apiBase?.includes("localhost") ? [apiBase.replace("localhost", "127.0.0.1")] : []),
-            ])
-        ).filter((value): value is string => Boolean(value));
+export const POST = withApi<z.infer<typeof createOrderSchema>, { slug: string }>(
+    { auth: false, schema: createOrderSchema },
+    async ({ params, body }) => {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL
+            ?? (process.env.NODE_ENV === "development" ? "http://127.0.0.1:8000" : undefined);
 
         if (!apiBase) {
-            return NextResponse.json(
-                { error: "Missing NEXT_PUBLIC_API_URL; cannot reach Express API for order creation." },
-                { status: 500 }
-            );
+            throw new HttpError("Missing NEXT_PUBLIC_API_URL; cannot reach Express API for order creation.", 500);
         }
 
-        console.log("[Web->API Proxy] Forwarding order create to Express API", {
-            apiBase,
-            apiBaseCandidates,
-            slug,
-        });
+        const apiBaseCandidates = Array.from(
+            new Set([apiBase, ...(apiBase.includes("localhost") ? [apiBase.replace("localhost", "127.0.0.1")] : [])])
+        ).filter(Boolean) as string[];
 
         let res: Response | null = null;
         for (const baseUrl of apiBaseCandidates) {
             try {
-                res = await fetch(`${baseUrl}/api/storefront/${slug}/orders`, {
+                res = await fetch(`${baseUrl}/api/storefront/${params.slug}/orders`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(input),
+                    body: JSON.stringify(body),
                 });
                 break;
             } catch (err) {
-                console.error("[Web->API Proxy] Failed to reach Express API", { baseUrl, slug, err });
+                console.error("[Web->API Proxy] Failed to reach Express API", { baseUrl, err });
             }
         }
 
         if (!res) {
-            return NextResponse.json(
-                {
-                    error: "Could not reach API server. Start apps/api (port 8000) or set NEXT_PUBLIC_API_URL to the correct base URL.",
-                    tried: apiBaseCandidates,
-                },
-                { status: 502 }
-            );
+            return jsonError("Could not reach API server.", 502, { tried: apiBaseCandidates });
         }
 
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok) {
-            return NextResponse.json(json || { error: "Failed to create order" }, { status: res.status });
-        }
-
-        return NextResponse.json(json, { status: 201 });
-    } catch (error) {
-        console.error("Error proxying order create to Express API:", error);
-        return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
-    }
-}
+        return jsonProxy(res);
+    },
+);

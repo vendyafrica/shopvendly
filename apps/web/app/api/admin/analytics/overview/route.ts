@@ -1,7 +1,7 @@
-import { auth } from "@shopvendly/auth";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { resolveTenantAdminAccess } from "@/modules/admin/services/access-service";
+import { withApi } from "@/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/lib/api/response-utils";
 
 function parseDate(value: string | null, fallback: Date) {
   if (!value) return fallback;
@@ -9,61 +9,40 @@ function parseDate(value: string | null, fallback: Date) {
   return Number.isNaN(d.getTime()) ? fallback : d;
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({ headers: await headers() });
+export const GET = withApi({}, async ({ req, session }) => {
+  const { searchParams } = new URL(req.url);
+  const storeSlug = searchParams.get("storeSlug");
 
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!storeSlug) throw new HttpError("Missing storeSlug", 400);
 
-    const { searchParams } = new URL(request.url);
-    const storeSlug = searchParams.get("storeSlug");
+  const access = await resolveTenantAdminAccess(session.user.id, storeSlug);
+  const store = access.store;
 
-    if (!storeSlug) {
-      return NextResponse.json({ error: "Missing storeSlug" }, { status: 400 });
-    }
+  if (!store) throw new HttpError("Store not found", 404);
+  if (!access.isAuthorized) throw new HttpError("Forbidden", 403);
 
-    const access = await resolveTenantAdminAccess(session.user.id, storeSlug);
-    const store = access.store;
+  const now = new Date();
+  const from = parseDate(searchParams.get("from"), new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
+  const to = parseDate(searchParams.get("to"), now);
 
-    if (!store) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
-    }
+  const { analyticsRepo } = await import("@/repo/analytics-repo");
 
-    if (!access.isAuthorized) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+  const [kpis, timeseries, trafficTotals, visitsTimeseries, topViewed, topAddToCart] = await Promise.all([
+    analyticsRepo.getKpiTotals(store, { from, to }),
+    analyticsRepo.getRevenueTimeseries(store, { from, to }),
+    analyticsRepo.getTrafficTotals(store, { from, to }),
+    analyticsRepo.getTrafficTimeseries(store, { from, to }),
+    analyticsRepo.getTopProducts(store, { from, to, eventType: "product_view", limit: 5 }),
+    analyticsRepo.getTopProducts(store, { from, to, eventType: "add_to_cart", limit: 5 }),
+  ]);
 
-    const now = new Date();
-    const from = parseDate(searchParams.get("from"), new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
-    const to = parseDate(searchParams.get("to"), now);
-
-    const { analyticsRepo } = await import("@/repo/analytics-repo");
-
-    const [kpis, timeseries, trafficTotals, visitsTimeseries, topViewed, topAddToCart] = await Promise.all([
-      analyticsRepo.getKpiTotals(store, { from, to }),
-      analyticsRepo.getRevenueTimeseries(store, { from, to }),
-      analyticsRepo.getTrafficTotals(store, { from, to }),
-      analyticsRepo.getTrafficTimeseries(store, { from, to }),
-      analyticsRepo.getTopProducts(store, { from, to, eventType: "product_view", limit: 5 }),
-      analyticsRepo.getTopProducts(store, { from, to, eventType: "add_to_cart", limit: 5 }),
-    ]);
-
-    return NextResponse.json({
-      range: { from: from.toISOString(), to: to.toISOString() },
-      currency: store.defaultCurrency || "USD",
-      kpis,
-      timeseries,
-      traffic: {
-        ...trafficTotals,
-        timeseries: visitsTimeseries,
-      },
-      topViewed,
-      topAddToCart,
-    });
-  } catch (error) {
-    console.error("Error fetching analytics overview:", error);
-    return NextResponse.json({ error: "Failed to fetch analytics" }, { status: 500 });
-  }
-}
+  return jsonSuccess({
+    range: { from: from.toISOString(), to: to.toISOString() },
+    currency: store.defaultCurrency || "USD",
+    kpis,
+    timeseries,
+    traffic: { ...trafficTotals, timeseries: visitsTimeseries },
+    topViewed,
+    topAddToCart,
+  });
+});

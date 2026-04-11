@@ -174,7 +174,8 @@ async function syncItemsWithLatestProducts(cartItems: CartItem[]): Promise<CartI
 
             if (!response.ok) return;
 
-            const products = await response.json() as Array<{
+            const productsResult = await response.json();
+            const products = (productsResult.data ?? productsResult) as Array<{
                 id: string;
                 price: number;
                 originalPrice?: number | null;
@@ -230,7 +231,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                         headers: { "x-user-id": session.user.id }
                     });
                     if (res.ok) {
-                        const serverItems = sanitizeCartItems(await res.json());
+                        const resJson = await res.json();
+                        const serverItems = sanitizeCartItems(resJson.data ?? resJson);
                         setItems(await syncItemsWithLatestProducts(serverItems));
                     } else {
                         setItems([]);
@@ -290,7 +292,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 const serverRes = await fetch(`${API_BASE}/api/cart`, {
                     headers: { "x-user-id": userId }
                 });
-                const serverItems: CartItem[] = serverRes.ok ? sanitizeCartItems(await serverRes.json()) : [];
+                const serverResJson = serverRes.ok ? await serverRes.json() : null;
+                const serverItems: CartItem[] = serverResJson ? sanitizeCartItems(serverResJson.data ?? serverResJson) : [];
 
                 const mergedItems = mergeCartItems(serverItems, guestItems);
 

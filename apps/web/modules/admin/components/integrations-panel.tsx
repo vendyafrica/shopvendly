@@ -49,7 +49,8 @@ export function IntegrationsPanel({
     if (!storeId) return;
     fetch(`/api/integrations/instagram/status?storeId=${storeId}`)
       .then((res) => res.json())
-      .then((data) => {
+      .then((result) => {
+        const data = result.data ?? result;
         if (data.connected) setIsConnectedFromApi(true);
         if (data.imported) setSyncPostsSuccess(true);
       })
@@ -78,7 +79,8 @@ export function IntegrationsPanel({
         }
 
         const statusRes = await fetch(`/api/integrations/instagram/status?storeId=${storeId}`);
-        const statusJson = await statusRes.json().catch(() => ({} as { imported?: boolean }));
+        const statusResult = await statusRes.json().catch(() => ({} as { data?: { imported?: boolean } }));
+        const statusJson = statusResult.data ?? statusResult;
         const alreadyImported = Boolean(statusJson?.imported);
 
         if (!alreadyImported) {

@@ -10,7 +10,7 @@ async function fetchCustomers(storeId: string): Promise<CustomerRow[]> {
     const text = await res.text();
     throw new Error(text || "Failed to load customers");
   }
-  return res.json();
+  return (await res.json()).data;
 }
 
 export function useCustomers(storeId: string | undefined) {

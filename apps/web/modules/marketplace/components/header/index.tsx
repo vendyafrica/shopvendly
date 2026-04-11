@@ -50,8 +50,8 @@ export default function Header({
         const fetchStatus = async () => {
             try {
                 const res = await fetch("/api/user/status");
-                const data = await res.json();
-                if (!cancelled) setTenantStatus(data);
+                const json = await res.json();
+                if (!cancelled) setTenantStatus(json.data ?? json);
             } catch {
                 if (!cancelled) setTenantStatus({ hasTenant: false });
             }

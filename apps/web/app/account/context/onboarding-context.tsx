@@ -73,13 +73,13 @@ async function apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
         },
     });
 
-    const data = await res.json();
+    const envelope = await res.json();
 
     if (!res.ok) {
-        throw new Error(data.error || data.message || "API request failed");
+        throw new Error(envelope.error || envelope.message || "API request failed");
     }
 
-    return data;
+    return envelope.data ?? envelope;
 }
 
 // ── Context & hook ──────────────────────────────────────────────────
@@ -140,7 +140,8 @@ export function OnboardingProvider({ children }: ProviderProps) {
                         body: JSON.stringify({ token: claimToken, email: claimEmail }),
                     });
 
-                    const result = await res.json();
+                    const rawResult = await res.json();
+                    const result = rawResult.data ?? rawResult;
 
                     if (res.ok && result.success) {
                         // Store the claimed store info

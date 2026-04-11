@@ -63,7 +63,8 @@ export default function ActivityPage() {
     try {
       const res = await fetch(`/api/admin/activity?storeId=${bootstrap.storeId}`);
       if (!res.ok) throw new Error("Failed to load activity");
-      const data = await res.json();
+      const result = await res.json();
+      const data = result.data ?? result;
       setEvents(data.events || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load activity");

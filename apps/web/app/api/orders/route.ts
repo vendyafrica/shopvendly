@@ -1,49 +1,32 @@
-import { auth } from "@shopvendly/auth";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { orderService } from "@/modules/orders";
 import { orderQuerySchema } from "@/modules/orders/lib/order-models";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
 import { storeRepo } from "@/repo/store-repo";
+import { jsonSuccess, jsonError, isDemoStore, getOptionalSession } from "@/lib/api/response-utils";
 
 /**
  * GET /api/orders
- * List orders for the authenticated seller's tenant
+ * List orders for the authenticated seller's tenant (or demo store)
  */
 export async function GET(request: NextRequest) {
     try {
-        const session = await auth.api.getSession({
-            headers: await headers()
-        });
-
+        const session = await getOptionalSession(request);
         const { searchParams } = new URL(request.url);
         const storeId = searchParams.get("storeId") || undefined;
 
-        if (!storeId) {
-            return NextResponse.json({ error: "Missing storeId" }, { status: 400 });
-        }
+        if (!storeId) return jsonError("Missing storeId", 400);
 
         const store = await storeRepo.findById(storeId);
+        if (!store) return jsonError("Store not found", 404);
 
-        if (!store) {
-            return NextResponse.json({ error: "Store not found" }, { status: 404 });
-        }
-
-        const isDemoStore = store.slug === "vendly";
-
-        if (!session?.user && !isDemoStore) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+        if (!session?.user && !isDemoStore(store.slug)) return jsonError("Unauthorized", 401);
 
         let tenantId: string;
         if (session?.user) {
             const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
-            if (!access.store) {
-                return NextResponse.json({ error: "Store not found" }, { status: 404 });
-            }
-            if (!access.isAuthorized) {
-                return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-            }
+            if (!access.store) return jsonError("Store not found", 404);
+            if (!access.isAuthorized) return jsonError("Forbidden", 403);
             tenantId = access.store.tenantId;
         } else {
             tenantId = store.tenantId;
@@ -58,10 +41,9 @@ export async function GET(request: NextRequest) {
         });
 
         const result = await orderService.listOrders(tenantId, filters);
-        return NextResponse.json(result);
+        return jsonSuccess(result);
     } catch (error) {
         console.error("Error listing orders:", error);
-        return NextResponse.json({ error: "Failed to list orders" }, { status: 500 });
+        return jsonError("Failed to list orders", 500);
     }
 }
-

@@ -1,13 +1,11 @@
-import { auth } from "@shopvendly/auth";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
 import { productsAdminRepo } from "@/repo/products-admin-repo";
-import { z } from "zod";
+import { withApi } from "@/lib/api/with-api";
+import { jsonSuccess, jsonError, HttpError } from "@/lib/api/response-utils";
 
 const bulkUpdateSchema = z.object({
     storeId: z.string().uuid(),
-    // Allow strings, then filter to UUIDs to be lenient with temporary client IDs
     ids: z.array(z.string(), { message: "ids must be strings" }),
     action: z.enum(["publish", "archive", "delete"]),
 });
@@ -15,53 +13,25 @@ const bulkUpdateSchema = z.object({
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const isUuid = (value: string) => uuidRegex.test(value);
 
-export async function POST(request: NextRequest) {
-    try {
-        const session = await auth.api.getSession({
-            headers: await headers()
-        });
+export const POST = withApi({ schema: bulkUpdateSchema }, async ({ session, body }) => {
+    const { storeId, ids, action } = body;
 
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+    const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "write");
+    if (!access.store) throw new HttpError("Store not found", 404);
+    if (!access.isAuthorized) throw new HttpError("Forbidden", 403);
 
-        const body = await request.json();
-        const { storeId, ids, action } = bulkUpdateSchema.parse(body);
+    if (ids.length === 0) return jsonSuccess({ count: 0 });
 
-        const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "write");
-        if (!access.store) {
-            return NextResponse.json({ error: "Store not found" }, { status: 404 });
-        }
+    const validIds = ids.filter(isUuid);
+    if (validIds.length === 0) return jsonSuccess({ count: 0, skipped: ids.length });
 
-        if (!access.isAuthorized) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-        }
-
-        const validIds = ids.filter(isUuid);
-        if (validIds.length === 0) {
-            return NextResponse.json({ count: 0, skipped: ids.length });
-        }
-
-        if (ids.length === 0) {
-            return NextResponse.json({ count: 0 });
-        }
-
-        if (action === "publish") {
-            await productsAdminRepo.bulkUpdateStatus(storeId, access.store.tenantId, validIds, "active");
-        } else if (action === "archive") {
-            // Assuming we have an archive status? Or draft? Schema says: "draft", "ready", "active", "sold-out"
-            // Let's use "draft" for now as archive equivalent or "sold-out" if specifically requested.
-            // But typical "archive" usually means "draft" or soft delete.
-            // Let's assume publish -> active.
-            // For now only publish is requested.
-            return NextResponse.json({ error: "Action not implemented" }, { status: 400 });
-        } else if (action === "delete") {
-            await productsAdminRepo.bulkUpdateStatus(storeId, access.store.tenantId, validIds, "deleted");
-        }
-
-        return NextResponse.json({ success: true, count: validIds.length, skipped: ids.length - validIds.length });
-    } catch (error) {
-        console.error("Bulk update failed:", error);
-        return NextResponse.json({ error: "Bulk update failed" }, { status: 500 });
+    if (action === "publish") {
+        await productsAdminRepo.bulkUpdateStatus(storeId, access.store.tenantId, validIds, "active");
+    } else if (action === "delete") {
+        await productsAdminRepo.bulkUpdateStatus(storeId, access.store.tenantId, validIds, "deleted");
+    } else {
+        return jsonError("Action not implemented", 400);
     }
-}
+
+    return jsonSuccess({ success: true, count: validIds.length, skipped: ids.length - validIds.length });
+});
