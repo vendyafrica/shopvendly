@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Link01Icon, Share01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@shopvendly/ui/lib/utils";
-import { StoreAvatar } from "@/components/store-avatar";
+import { StoreAvatar } from "@/shared/components/store-avatar";
 
 interface MobileStoreHeaderProps {
   storeName: string;

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -27,9 +27,9 @@ import { useTenant } from "@/modules/admin/context/tenant-context";
 import type { ProductApiRow, ProductTableRow } from "@/modules/products/hooks/use-products";
 import { useUpload } from "@/modules/media/hooks/use-upload";
 import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-keys";
+import { queryKeys } from "@/shared/lib/query-keys";
 import { HexPicker } from "./hex-picker";
-import { COLOR_MAP, getColorName } from "@/lib/constants/colors";
+import { COLOR_MAP, getColorName } from "@/shared/lib/constants/colors";
 
 interface ProductFormProps {
     initialData?: Partial<ProductApiRow>;
@@ -181,7 +181,8 @@ export function ProductForm({
                 const params = new URLSearchParams({ storeId });
                 const res = await fetch(`/api/store-collections?${params.toString()}`, { cache: "no-store" });
                 if (!res.ok) return;
-                const data = (await res.json()) as StoreCollection[];
+                const result = await res.json();
+                const data = (result.data ?? result) as StoreCollection[];
                 if (active) setCollections(data);
             } catch {
                 if (active) setCollections([]);
@@ -357,7 +358,8 @@ export function ProductForm({
                 throw new Error(errorData.error || `Failed to ${isEditing ? "update" : "create"} product`);
             }
 
-            const result = (await response.json()) as ProductApiRow;
+            const responseEnvelope = await response.json();
+            const result = (responseEnvelope.data ?? responseEnvelope) as ProductApiRow;
 
             // Optimistic update for the products list
             if (!isEditing) {

@@ -17,6 +17,7 @@ export type TenantBootstrap = {
   collectoPayoutMode?: "automatic_per_order" | "manual_batch";
   isDemoViewer?: boolean;
   canWrite?: boolean;
+  profileComplete?: boolean;
 };
 
 type TenantContextValue = {
@@ -38,7 +39,7 @@ async function fetchTenantBootstrap(storeSlug: string): Promise<TenantBootstrap>
     throw new Error(text || `Failed to load tenant bootstrap (${res.status})`);
   }
 
-  return res.json();
+  return (await res.json()).data;
 }
 
 export function TenantProvider({

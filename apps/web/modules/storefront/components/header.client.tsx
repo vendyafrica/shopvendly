@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 
@@ -14,9 +14,9 @@ import {
 import { HeaderSkeleton } from "./skeletons";
 import { StorefrontSearchModal } from "./search-modal.client";
 import { useCart } from "@/modules/cart/context/cart-context";
-import { useWishlist } from "@/hooks/use-wishlist";
-import { bricolage } from "@/utils/fonts";
-import { getRootUrl } from "@/utils/misc";
+import { useWishlist } from "@/shared/hooks/use-wishlist";
+import { bricolage } from "@/shared/utils/fonts";
+import { getRootUrl } from "@/shared/utils/misc";
 import { Button } from "@shopvendly/ui/components/button";
 
 export interface StoreData {
@@ -98,7 +98,7 @@ export default function StorefrontHeaderClient({
       }
       try {
         const res = await fetch(`/api/storefront/${slug}`);
-        if (res.ok) setStore(await res.json());
+        if (res.ok) { const json = await res.json(); setStore(json.data ?? json); }
       } catch (error) {
         console.error("Failed to fetch store data:", error);
       } finally {

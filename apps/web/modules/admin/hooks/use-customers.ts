@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-keys";
+import { queryKeys } from "@/shared/lib/query-keys";
 import { type CustomerRow } from "@/modules/admin/models";
 
 async function fetchCustomers(storeId: string): Promise<CustomerRow[]> {
@@ -10,7 +10,7 @@ async function fetchCustomers(storeId: string): Promise<CustomerRow[]> {
     const text = await res.text();
     throw new Error(text || "Failed to load customers");
   }
-  return res.json();
+  return (await res.json()).data;
 }
 
 export function useCustomers(storeId: string | undefined) {

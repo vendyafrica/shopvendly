@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Link from "next/link";
-import { StoreAvatar } from "@/components/store-avatar";
+import { StoreAvatar } from "@/shared/components/store-avatar";
 import { type TenantBootstrap } from "@/modules/admin/context";
 import { type OrderSummaryRow } from "@/modules/admin/models";
 import { HugeiconsIcon } from "@hugeicons/react";

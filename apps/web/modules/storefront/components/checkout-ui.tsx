@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -11,7 +11,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
-import { bricolage as geistSans } from "@/utils/fonts";
+import { bricolage as geistSans } from "@/shared/utils/fonts";
 import { CheckoutPaymentMethod, PaymentFlowStatus } from "@/modules/storefront/models/checkout";
 
 type CheckoutStoreItem = {
@@ -80,10 +80,10 @@ const getCheckoutLoadingCopy = (
     if (paymentMethod === "mobile_money") {
         if (paymentFlowStatus === "initiating") return "Sending a mobile money prompt to your phone.";
         if (paymentFlowStatus === "pending") return "Approve the payment prompt on your phone.";
-        if (paymentFlowStatus === "awaiting_confirmation") return "We’re confirming your payment now.";
-        return `We’re preparing your checkout with ${storeName}.`;
+        if (paymentFlowStatus === "awaiting_confirmation") return "Weâ€™re confirming your payment now.";
+        return `Weâ€™re preparing your checkout with ${storeName}.`;
     }
-    return `We’re placing your order with ${storeName} and preparing the next steps.`;
+    return `Weâ€™re placing your order with ${storeName} and preparing the next steps.`;
 };
 
 const getCheckoutLoadingLabel = (
@@ -212,7 +212,7 @@ export function CheckoutUI({ state, actions }: CheckoutUIProps) {
                                                 {item.product.name}
                                             </p>
                                             <p className="text-[13px] text-neutral-500">
-                                                Qty: {item.quantity} <span className="mx-0.5 text-neutral-300">×</span> {currency} {item.product.price.toLocaleString()}
+                                                Qty: {item.quantity} <span className="mx-0.5 text-neutral-300">Ã—</span> {currency} {item.product.price.toLocaleString()}
                                             </p>
                                         </div>
                                     </div>

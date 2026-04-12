@@ -66,7 +66,8 @@ function useIntegrationStatus(storeId?: string) {
           `/api/integrations/instagram/status?storeId=${storeId}`,
         );
         if (!cancelled) {
-          const ig = await igRes.json();
+          const igJson = await igRes.json();
+          const ig = igJson.data ?? igJson;
           setIgConnected(Boolean(ig?.connected));
         }
       } catch (e) {

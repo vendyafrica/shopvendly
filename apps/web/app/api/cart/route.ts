@@ -1,132 +1,88 @@
-import { auth } from "@shopvendly/auth";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest } from "next/server";
 import { cartService } from "@/modules/cart";
-import { instagramRepo } from "@/repo/instagram-repo";
-import { type CartItemWithRelations, addItemToCartSchema } from "@/models";
-import { DEFAULT_STORE_LOGO } from "@/lib/constants/defaults";
-
+import { instagramRepo } from "@/modules/instagram/repo/instagram-repo";
+import { type CartItemWithRelations, addItemToCartSchema } from "@/modules/cart/types";
+import { DEFAULT_STORE_LOGO } from "@/shared/lib/constants/defaults";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess } from "@/shared/lib/api/response-utils";
 
 /**
  * GET /api/cart
  * Fetch the current user's cart
  */
-export async function GET() {
-    try {
-        const session = await auth.api.getSession({
-            headers: await headers()
-        });
+export const GET = withApi({}, async ({ session }) => {
+    const { items } = await cartService.getUserCart(session.user.id);
 
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+    // Batch Instagram profile pic lookups to avoid N+1
+    const tenantIds = Array.from(new Set(
+        items
+            .map((item: CartItemWithRelations) => item.product.store?.tenantId)
+            .filter((id): id is string => typeof id === "string" && id.length > 0)
+    ));
 
-        const { items } = await cartService.getUserCart(session.user.id);
+    const igAccounts = await Promise.all(
+        tenantIds.map((id) => instagramRepo.findActiveByTenantId(id))
+    );
 
-        // Fetch Instagram profile pictures for involved tenants
-        const tenantIds = Array.from(new Set(
-            items
-                .map((item: CartItemWithRelations) => item.product.store?.tenantId)
-                .filter((id): id is string => typeof id === "string" && id.length > 0)
-        ));
+    const igMap = new Map<string, string>();
+    tenantIds.forEach((id, i) => {
+        const pic = igAccounts[i]?.profilePictureUrl;
+        if (pic) igMap.set(id, pic);
+    });
 
-        const igMap = new Map<string, string>();
-        for (const tenantId of tenantIds) {
-            const igAccount = await instagramRepo.findActiveByTenantId(tenantId);
+    const formattedItems = items.map((item: CartItemWithRelations) => {
+        const storeTenantId = item.product.store?.tenantId;
 
-            if (igAccount?.profilePictureUrl) {
-                igMap.set(tenantId, igAccount.profilePictureUrl);
-            }
-        }
+        return {
+            id: item.id,
+            quantity: item.quantity,
+            product: {
+                id: item.product.id,
+                name: item.product.productName,
+                price: item.product.priceAmount,
+                originalPrice: (item.product as { originalPriceAmount?: number | null }).originalPriceAmount ?? null,
+                currency: item.product.currency,
+                image: item.product.media?.[0]?.media?.blobUrl ?? null,
+                contentType: item.product.media?.[0]?.media?.contentType ?? null,
+                slug: (item.product as { slug?: string })?.slug
+                    ?? item.product.productName.toLowerCase().replace(/\s+/g, "-"),
+                availableQuantity: (item.product as { quantity?: number })?.quantity ?? null,
+                selectedOptions: Array.isArray(item.selectedOptions)
+                    ? item.selectedOptions
+                        .filter((option): option is { name: string; value: string } => Boolean(option?.name && option?.value))
+                        .map((option) => ({ name: option.name, value: option.value }))
+                    : [],
+            },
+            store: {
+                id: item.product.store?.id,
+                name: item.product.store?.name,
+                slug: item.product.store?.slug,
+                logoUrl: storeTenantId
+                    ? item.product.store?.logoUrl ?? igMap.get(storeTenantId) ?? DEFAULT_STORE_LOGO
+                    : item.product.store?.logoUrl ?? DEFAULT_STORE_LOGO,
+            },
+        };
+    });
 
-        // Format for frontend
-        const formattedItems = items.map((item: CartItemWithRelations) => {
-            const storeTenantId = item.product.store?.tenantId;
-
-            return {
-                id: item.id,
-                quantity: item.quantity,
-                product: {
-                    id: item.product.id,
-                    name: item.product.productName,
-                    price: item.product.priceAmount,
-                    originalPrice: (item.product as { originalPriceAmount?: number | null }).originalPriceAmount ?? null,
-                    currency: item.product.currency,
-                    image: item.product.media?.[0]?.media?.blobUrl ?? null,
-                    contentType: item.product.media?.[0]?.media?.contentType ?? null,
-                    slug: (item.product as { slug?: string })?.slug
-                        ?? item.product.productName.toLowerCase().replace(/\s+/g, "-"),
-                    availableQuantity: (item.product as { quantity?: number })?.quantity ?? null,
-                    selectedOptions: Array.isArray(item.selectedOptions)
-                        ? item.selectedOptions
-                            .filter((option): option is { name: string; value: string } => Boolean(option?.name && option?.value))
-                            .map((option) => ({ name: option.name, value: option.value }))
-                        : [],
-                },
-                store: {
-                    id: item.product.store?.id,
-                    name: item.product.store?.name,
-                    slug: item.product.store?.slug,
-                    logoUrl: storeTenantId
-                        ? item.product.store?.logoUrl ?? igMap.get(storeTenantId) ?? DEFAULT_STORE_LOGO
-                        : item.product.store?.logoUrl ?? DEFAULT_STORE_LOGO,
-                },
-            };
-        });
-
-        return NextResponse.json(formattedItems);
-    } catch (error) {
-        console.error("Error fetching cart:", error);
-        return NextResponse.json({ error: "Failed to fetch cart" }, { status: 500 });
-    }
-}
+    return jsonSuccess(formattedItems);
+});
 
 /**
  * POST /api/cart
  * Add or update an item in the cart
  */
-export async function POST(request: NextRequest) {
-    try {
-        const session = await auth.api.getSession({
-            headers: await headers()
-        });
-
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const body = await request.json();
-        const { productId, storeId, quantity, selectedOptions } = addItemToCartSchema.parse(body);
-
-        await cartService.upsertItem(session.user.id, productId, storeId, quantity, selectedOptions ?? undefined);
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        console.error("Error updating cart:", error);
-        return NextResponse.json({ error: "Failed to update cart" }, { status: 500 });
-    }
-}
+export const POST = withApi({ schema: addItemToCartSchema }, async ({ session, body }) => {
+    const { productId, storeId, quantity, selectedOptions } = body;
+    await cartService.upsertItem(session.user.id, productId, storeId, quantity, selectedOptions ?? undefined);
+    return jsonSuccess({ success: true });
+});
 
 /**
  * DELETE /api/cart
  * Clear the cart (optionally for a specific store)
  */
-export async function DELETE(request: NextRequest) {
-    try {
-        const session = await auth.api.getSession({
-            headers: await headers()
-        });
-
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const { searchParams } = new URL(request.url);
-        const storeId = searchParams.get("storeId") ?? undefined;
-
-        await cartService.clearCart(session.user.id, storeId);
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        console.error("Error clearing cart:", error);
-        return NextResponse.json({ error: "Failed to clear cart" }, { status: 500 });
-    }
-}
+export const DELETE = withApi({}, async ({ req, session }) => {
+    const storeId = new URL(req.url).searchParams.get("storeId") ?? undefined;
+    await cartService.clearCart(session.user.id, storeId);
+    return jsonSuccess({ success: true });
+});

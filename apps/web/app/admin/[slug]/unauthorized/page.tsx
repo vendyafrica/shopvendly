@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getStorefrontUrl } from "@/utils/misc";
+import { getStorefrontUrl } from "@/shared/utils/misc";
 
 export default function TenantUnauthorizedPage() {
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function TenantUnauthorizedPage() {
           You don&apos;t have permission to access this admin page.
         </p>
         <p className="mt-4 text-xs text-muted-foreground">
-          Redirecting you back to the storefront…
+          Redirecting you back to the storefrontâ€¦
         </p>
       </div>
     </div>

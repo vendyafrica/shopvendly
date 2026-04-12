@@ -1,35 +1,22 @@
-import { auth } from "@shopvendly/auth";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
-import { resolveTenantAdminAccess } from "@/modules/admin/services/access-service";
-import { storeRepo } from "@/repo/store-repo";
+﻿import { resolveTenantAdminAccess } from "@/modules/admin/services/access-service";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { tenantRepo } from "@/modules/admin/repo/tenant-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError, isDemoStore } from "@/shared/lib/api/response-utils";
 
-export async function GET(request: NextRequest) {
-    const headerList = await headers();
-    const session = await auth.api.getSession({
-        headers: headerList,
-    });
-
-    const { searchParams } = new URL(request.url);
+export const GET = withApi({ auth: false }, async ({ req, session }) => {
+    const { searchParams } = new URL(req.url);
     const storeSlug = searchParams.get("storeSlug");
 
-    if (!storeSlug) {
-        return NextResponse.json({ error: "Missing storeSlug" }, { status: 400 });
-    }
+    if (!storeSlug) throw new HttpError("Missing storeSlug", 400);
 
-    const isDemoStore = storeSlug === "vendly";
     const store = await storeRepo.findAdminBySlug(storeSlug);
-
-    if (!store) {
-        return NextResponse.json({ error: "Store not found" }, { status: 404 });
-    }
+    if (!store) throw new HttpError("Store not found", 404);
 
     if (!session?.user) {
-        if (!isDemoStore) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+        if (!isDemoStore(storeSlug)) throw new HttpError("Unauthorized", 401);
 
-        return NextResponse.json({
+        return jsonSuccess({
             tenantId: store.tenantId,
             tenantSlug: undefined,
             storeId: store.id,
@@ -45,21 +32,16 @@ export async function GET(request: NextRequest) {
         });
     }
 
-    const access = await resolveTenantAdminAccess(session.user.id, storeSlug);
-    const writeAccess = await resolveTenantAdminAccess(session.user.id, storeSlug, "write");
+    const [access, writeAccess] = await Promise.all([
+        resolveTenantAdminAccess(session.user.id, storeSlug),
+        resolveTenantAdminAccess(session.user.id, storeSlug, "write"),
+    ]);
 
-    if (!store) {
-        return NextResponse.json({ error: "Store not found" }, { status: 404 });
-    }
+    if (!access.isAuthorized) throw new HttpError("Forbidden", 403);
 
-    if (!access.isAuthorized) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const { tenantRepo } = await import("@/repo/tenant-repo");
     const tenant = await tenantRepo.findSlugById(store.tenantId);
 
-    return NextResponse.json({
+    return jsonSuccess({
         tenantId: store.tenantId,
         tenantSlug: tenant?.slug,
         storeId: store.id,
@@ -70,7 +52,7 @@ export async function GET(request: NextRequest) {
         defaultCurrency: store.defaultCurrency,
         collectoPassTransactionFeeToCustomer: store.collectoPassTransactionFeeToCustomer ?? false,
         collectoPayoutMode: store.collectoPayoutMode ?? "automatic_per_order",
-        isDemoViewer: isDemoStore && !writeAccess.isAuthorized,
+        isDemoViewer: isDemoStore(storeSlug) && !writeAccess.isAuthorized,
         canWrite: writeAccess.isAuthorized,
     });
-}
+});

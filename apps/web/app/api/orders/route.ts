@@ -1,67 +1,43 @@
-import { auth } from "@shopvendly/auth";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
-import { orderService } from "@/modules/orders";
-import { orderQuerySchema } from "@/modules/orders/lib/order-models";
+﻿import { orderService } from "@/modules/orders";
+import { orderQuerySchema } from "@/modules/orders/services/order-models";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { storeRepo } from "@/repo/store-repo";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError, isDemoStore } from "@/shared/lib/api/response-utils";
 
 /**
  * GET /api/orders
- * List orders for the authenticated seller's tenant
+ * List orders for the authenticated seller's tenant (or demo store)
  */
-export async function GET(request: NextRequest) {
-    try {
-        const session = await auth.api.getSession({
-            headers: await headers()
-        });
+export const GET = withApi({ auth: false }, async ({ req, session }) => {
+    const { searchParams } = new URL(req.url);
+    const storeId = searchParams.get("storeId") || undefined;
 
-        const { searchParams } = new URL(request.url);
-        const storeId = searchParams.get("storeId") || undefined;
+    if (!storeId) throw new HttpError("Missing storeId", 400);
 
-        if (!storeId) {
-            return NextResponse.json({ error: "Missing storeId" }, { status: 400 });
-        }
+    const store = await storeRepo.findById(storeId);
+    if (!store) throw new HttpError("Store not found", 404);
 
-        const store = await storeRepo.findById(storeId);
+    if (!session?.user && !isDemoStore(store.slug)) throw new HttpError("Unauthorized", 401);
 
-        if (!store) {
-            return NextResponse.json({ error: "Store not found" }, { status: 404 });
-        }
-
-        const isDemoStore = store.slug === "vendly";
-
-        if (!session?.user && !isDemoStore) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        let tenantId: string;
-        if (session?.user) {
-            const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
-            if (!access.store) {
-                return NextResponse.json({ error: "Store not found" }, { status: 404 });
-            }
-            if (!access.isAuthorized) {
-                return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-            }
-            tenantId = access.store.tenantId;
-        } else {
-            tenantId = store.tenantId;
-        }
-
-        const filters = orderQuerySchema.parse({
-            status: searchParams.get("status") || undefined,
-            paymentStatus: searchParams.get("paymentStatus") || undefined,
-            page: searchParams.get("page") || 1,
-            limit: searchParams.get("limit") || 20,
-            search: searchParams.get("search") || undefined,
-        });
-
-        const result = await orderService.listOrders(tenantId, filters);
-        return NextResponse.json(result);
-    } catch (error) {
-        console.error("Error listing orders:", error);
-        return NextResponse.json({ error: "Failed to list orders" }, { status: 500 });
+    let tenantId: string;
+    if (session?.user) {
+        const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
+        if (!access.store) throw new HttpError("Store not found", 404);
+        if (!access.isAuthorized) throw new HttpError("Forbidden", 403);
+        tenantId = access.store.tenantId;
+    } else {
+        tenantId = store.tenantId;
     }
-}
 
+    const filters = orderQuerySchema.parse({
+        status: searchParams.get("status") || undefined,
+        paymentStatus: searchParams.get("paymentStatus") || undefined,
+        page: searchParams.get("page") || 1,
+        limit: searchParams.get("limit") || 20,
+        search: searchParams.get("search") || undefined,
+    });
+
+    const result = await orderService.listOrders(tenantId, filters);
+    return jsonSuccess(result);
+});

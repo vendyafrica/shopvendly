@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { Footer } from "./components/footer";
-import { Header } from "./components/header";
+import { Footer } from "@/modules/marketing/components/footer";
+import { Header } from "@/modules/marketing/components/header";
 
 export default function MarketingLayout({
   children,

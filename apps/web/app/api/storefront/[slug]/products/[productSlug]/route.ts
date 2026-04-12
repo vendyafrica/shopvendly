@@ -1,60 +1,32 @@
+﻿import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
-import { auth } from "@shopvendly/auth";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { storefrontService } from "@/modules/storefront";
-import { productRatingsRepo } from "@/repo/product-ratings-repo";
-import type { StorefrontProductRouteParams } from "@/models/storefront";
-
-
+import { productRatingsRepo } from "@/modules/products/repo/product-ratings-repo";
+import { jsonSuccess, jsonError } from "@/shared/lib/api/response-utils";
 
 /**
-
  * GET /api/storefront/[slug]/products/[productSlug]
-
- * Returns a single product by slug
-
+ * Returns a single product by slug (public, but optionally enriched with user rating)
  */
-
-export async function GET(request: NextRequest, { params }: StorefrontProductRouteParams) {
-
+export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string; productSlug: string }> }) {
     try {
-
         const { slug, productSlug } = await params;
+        const session = await auth.api.getSession({ headers: await headers() });
 
         const store = await storefrontService.findStoreBySlug(slug);
-
-        const headerList = await headers();
-        const session = await auth.api.getSession({ headers: headerList });
-
-
-        if (!store) {
-
-            return NextResponse.json({ error: "Store not found" }, { status: 404 });
-
-        }
-
-
+        if (!store) return jsonError("Store not found", 404);
 
         const product = await storefrontService.getStoreProductBySlug(store.id, productSlug);
-
-
-
-        if (!product) {
-
-            return NextResponse.json({ error: "Product not found" }, { status: 404 });
-
-        }
-
+        if (!product) return jsonError("Product not found", 404);
 
         let userRating: number | null = null;
-
         if (session?.user?.id) {
             const existing = await productRatingsRepo.findByProductAndUser(product.id, session.user.id);
             userRating = existing?.rating ?? null;
         }
 
-
-        return NextResponse.json({
+        return jsonSuccess({
             id: product.id,
             slug: product.slug || product.name.toLowerCase().replace(/\s+/g, "-"),
             name: product.name,
@@ -69,20 +41,10 @@ export async function GET(request: NextRequest, { params }: StorefrontProductRou
             rating: product.averageRating ?? 0,
             ratingCount: product.ratingCount ?? 0,
             userRating,
-            store: {
-                id: store.id,
-                name: store.name,
-                slug: store.slug,
-            },
+            store: { id: store.id, name: store.name, slug: store.slug },
         });
-
     } catch (error) {
-
         console.error("Error fetching product:", error);
-
-        return NextResponse.json({ error: "Failed to fetch product" }, { status: 500 });
-
+        return jsonError("Failed to fetch product", 500);
     }
-
 }
-

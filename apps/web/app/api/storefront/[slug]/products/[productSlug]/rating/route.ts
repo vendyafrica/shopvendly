@@ -1,52 +1,31 @@
-import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@shopvendly/auth";
+﻿import { z } from "zod";
 import { storefrontService } from "@/modules/storefront";
-import { productRatingsRepo } from "@/repo/product-ratings-repo";
+import { productRatingsRepo } from "@/modules/products/repo/product-ratings-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
-import { type ProductRatingRouteParams as RouteParams, type RatingBody } from "@/models";
+const ratingSchema = z.object({
+    rating: z.number().int().min(1).max(5),
+});
 
-export async function POST(request: NextRequest, { params }: RouteParams) {
-    try {
-        const { slug, productSlug } = await params;
-        const headerList = await headers();
-        const session = await auth.api.getSession({ headers: headerList });
+export const POST = withApi({ schema: ratingSchema }, async ({ session, params, body }) => {
+    const { slug, productSlug } = params as { slug: string; productSlug: string };
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+    const store = await storefrontService.findStoreBySlug(slug);
+    if (!store) throw new HttpError("Store not found", 404);
 
-        const body = (await request.json()) as RatingBody;
-        const value = Number(body.rating);
+    const product = await storefrontService.getStoreProductBySlug(store.id, productSlug);
+    if (!product) throw new HttpError("Product not found", 404);
 
-        if (!Number.isFinite(value) || value < 1 || value > 5) {
-            return NextResponse.json({ error: "Rating must be between 1 and 5" }, { status: 400 });
-        }
+    await productRatingsRepo.upsertProductRating(product.id, session.user.id, body.rating);
 
-        const store = await storefrontService.findStoreBySlug(slug);
-        if (!store) {
-            return NextResponse.json({ error: "Store not found" }, { status: 404 });
-        }
+    const aggregates = await productRatingsRepo.getProductRatingAggregate(product.id);
+    await productRatingsRepo.syncProductRatingSnapshot(product.id, aggregates.rating, aggregates.ratingCount);
 
-        const product = await storefrontService.getStoreProductBySlug(store.id, productSlug);
-        if (!product) {
-            return NextResponse.json({ error: "Product not found" }, { status: 404 });
-        }
-
-        // Upsert user rating
-        await productRatingsRepo.upsertProductRating(product.id, session.user.id, value);
-
-        const aggregates = await productRatingsRepo.getProductRatingAggregate(product.id);
-        await productRatingsRepo.syncProductRatingSnapshot(product.id, aggregates.rating, aggregates.ratingCount);
-
-        return NextResponse.json({
-            success: true,
-            rating: aggregates.rating || 0,
-            ratingCount: aggregates.ratingCount || 0,
-            userRating: value,
-        });
-    } catch (error) {
-        console.error("Error saving rating:", error);
-        return NextResponse.json({ error: "Failed to save rating" }, { status: 500 });
-    }
-}
+    return jsonSuccess({
+        success: true,
+        rating: aggregates.rating || 0,
+        ratingCount: aggregates.ratingCount || 0,
+        userRating: body.rating,
+    });
+});

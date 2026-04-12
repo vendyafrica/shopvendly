@@ -96,7 +96,8 @@ export default function CollectionsPage() {
       const params = new URLSearchParams({ storeId });
       const res = await fetch(`/api/store-collections?${params.toString()}`, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load collections");
-      const data = (await res.json()) as CollectionRow[];
+      const result = await res.json();
+      const data = (result.data ?? result) as CollectionRow[];
       setCollections(data);
     } finally {
       setLoading(false);
@@ -120,7 +121,8 @@ export default function CollectionsPage() {
         throw new Error(text || "Failed to load products");
       }
 
-      const json = (await res.json()) as {
+      const jsonResult = await res.json();
+      const json = (jsonResult.data ?? jsonResult) as {
         products: Array<{
           id: string;
           productName: string;
@@ -196,7 +198,8 @@ export default function CollectionsPage() {
       setSelectedProductIds(new Set());
       return;
     }
-    const data = (await res.json()) as { productIds: string[] };
+    const collResult = await res.json();
+    const data = (collResult.data ?? collResult) as { productIds: string[] };
     setSelectedProductIds(new Set(data.productIds || []));
   };
 

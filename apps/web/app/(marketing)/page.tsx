@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FAQs } from "./components/faq";
-import { Hero } from "./components/hero";
-import { Features } from "./components/features";
-import { Pricing } from "./components/pricing";
+import { FAQs } from "@/modules/marketing/components/faq";
+import { Hero } from "@/modules/marketing/components/hero";
+import { Features } from "@/modules/marketing/components/features";
+import { Pricing } from "@/modules/marketing/components/pricing";
 
 export const metadata: Metadata = {
   title: "Vendly | Sell online in minutes",

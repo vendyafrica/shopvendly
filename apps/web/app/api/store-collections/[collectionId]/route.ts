@@ -1,98 +1,59 @@
-import { auth } from "@shopvendly/auth";
-import { headers } from "next/headers";
+﻿import { z } from "zod";
 import { revalidateTag } from "next/cache";
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { storeCollectionsRepo } from "@/repo/store-collections-repo";
-import type { StoreCollectionRouteParams } from "@/models/storefront";
+import { storeCollectionsRepo } from "@/modules/storefront/repo/store-collections-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
 const updateCollectionSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   image: z.string().url().optional().nullable(),
 });
 
-export async function PATCH(request: NextRequest, { params }: StoreCollectionRouteParams) {
-  try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export const PATCH = withApi<z.infer<typeof updateCollectionSchema>, { collectionId: string }>({ schema: updateCollectionSchema }, async ({ session, params, body }) => {
+  const { collectionId } = params;
+  const collection = await storeCollectionsRepo.findBasicById(collectionId);
+  if (!collection) throw new HttpError("Collection not found", 404);
 
-    const { collectionId } = await params;
-    const payload = updateCollectionSchema.parse(await request.json());
+  const access = await resolveTenantAdminAccessByStoreId(session.user.id, collection.storeId, "write");
+  if (!access.store) throw new HttpError("Store not found", 404);
+  if (!access.isAuthorized) throw new HttpError("Forbidden", 403);
 
-    const collection = await storeCollectionsRepo.findBasicById(collectionId);
+  const name = body.name?.trim();
+  const slug = name
+    ? await storeCollectionsRepo.generateUniqueSlug(collection.storeId, name, collectionId)
+    : undefined;
 
-    if (!collection) {
-      return NextResponse.json({ error: "Collection not found" }, { status: 404 });
-    }
+  const updated = await storeCollectionsRepo.updateCollection(collectionId, {
+    ...(name ? { name, slug } : {}),
+    ...(body.image !== undefined ? { image: body.image } : {}),
+  });
 
-    const access = await resolveTenantAdminAccessByStoreId(session.user.id, collection.storeId, "write");
-    if (!access.store) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
-    }
-    if (!access.isAuthorized) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const name = payload.name?.trim();
-    const slug = name ? await storeCollectionsRepo.generateUniqueSlug(collection.storeId, name, collectionId) : undefined;
-
-    const updated = await storeCollectionsRepo.updateCollection(collectionId, {
-      ...(name ? { name, slug } : {}),
-      ...(payload.image !== undefined ? { image: payload.image } : {}),
-    });
-
-    const store = await storeCollectionsRepo.findStoreSlugByStoreId(collection.storeId);
-
-    if (store?.slug) {
-      revalidateTag(`storefront:store:${store.slug}:collections`, "default");
-      revalidateTag(`storefront:store:${store.slug}:products`, "default");
-    }
-
-    return NextResponse.json(updated);
-  } catch (error) {
-    console.error("Error updating collection:", error);
-    return NextResponse.json({ error: "Failed to update collection" }, { status: 500 });
+  const store = await storeCollectionsRepo.findStoreSlugByStoreId(collection.storeId);
+  if (store?.slug) {
+    revalidateTag(`storefront:store:${store.slug}:collections`, "default");
+    revalidateTag(`storefront:store:${store.slug}:products`, "default");
   }
-}
 
-export async function DELETE(_request: NextRequest, { params }: StoreCollectionRouteParams) {
-  try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return jsonSuccess(updated);
+});
 
-    const { collectionId } = await params;
+export const DELETE = withApi<undefined, { collectionId: string }>({}, async ({ session, params }) => {
+  const { collectionId } = params;
+  const collection = await storeCollectionsRepo.findBasicById(collectionId);
+  if (!collection) throw new HttpError("Collection not found", 404);
 
-    const collection = await storeCollectionsRepo.findBasicById(collectionId);
+  const access = await resolveTenantAdminAccessByStoreId(session.user.id, collection.storeId, "write");
+  if (!access.store) throw new HttpError("Store not found", 404);
+  if (!access.isAuthorized) throw new HttpError("Forbidden", 403);
 
-    if (!collection) {
-      return NextResponse.json({ error: "Collection not found" }, { status: 404 });
-    }
+  await storeCollectionsRepo.deleteCollection(collectionId);
 
-    const access = await resolveTenantAdminAccessByStoreId(session.user.id, collection.storeId, "write");
-    if (!access.store) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
-    }
-    if (!access.isAuthorized) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    await storeCollectionsRepo.deleteCollection(collectionId);
-
-    const store = await storeCollectionsRepo.findStoreSlugByStoreId(collection.storeId);
-
-    if (store?.slug) {
-      revalidateTag(`storefront:store:${store.slug}:collections`, "default");
-      revalidateTag(`storefront:store:${store.slug}:products`, "default");
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting collection:", error);
-    return NextResponse.json({ error: "Failed to delete collection" }, { status: 500 });
+  const store = await storeCollectionsRepo.findStoreSlugByStoreId(collection.storeId);
+  if (store?.slug) {
+    revalidateTag(`storefront:store:${store.slug}:collections`, "default");
+    revalidateTag(`storefront:store:${store.slug}:products`, "default");
   }
-}
+
+  return jsonSuccess({ success: true });
+});

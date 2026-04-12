@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useAppSession } from "@/contexts/app-session-context";
+import { useAppSession } from "@/shared/lib/app-session-context";
 import { useParams } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@shopvendly/ui/components/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
@@ -24,7 +24,7 @@ export default function ProfilePage() {
     ? "March 2026"
     : (user?.createdAt
       ? new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(new Date(user.createdAt))
-      : "—");
+      : "â€”");
   
   const email = isVendly ? "jane.smith@example.com" : user?.email;
 

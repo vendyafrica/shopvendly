@@ -1,21 +1,11 @@
-import { NextResponse } from "next/server";
+﻿import { jsonError } from "@/shared/lib/api/response-utils";
 
-import { type OrderRouteParams as RouteParams } from "@/models";
-
-// POST /api/storefront/orders/[orderId]/pay
-export async function POST(request: Request, { params }: RouteParams) {
-  try {
-    void request;
+// POST /api/storefront/orders/[orderId]/pay â€” disabled
+export async function POST(_request: Request, { params }: { params: Promise<{ orderId: string }> }) {
     const { orderId } = await params;
-    return NextResponse.json(
-      {
-        error: "Payment routes are disabled. Orders currently run on manual delivery and cash collection.",
-        orderId,
-      },
-      { status: 410 }
+    return jsonError(
+        "Payment routes are disabled. Orders currently run on manual delivery and cash collection.",
+        410,
+        { orderId },
     );
-  } catch (error) {
-    console.error("Error handling disabled payment route:", error);
-    return NextResponse.json({ error: "Payment routes are disabled." }, { status: 500 });
-  }
 }

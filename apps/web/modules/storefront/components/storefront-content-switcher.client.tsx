@@ -34,6 +34,9 @@ interface StorefrontContentSwitcherProps {
   collections?: StoreCollection[];
   initialQuery?: string;
   products: StorefrontProduct[];
+  activeCollectionSlug?: string;
+  activeSection?: string;
+  hasSaleTab?: boolean;
 }
 
 export function StorefrontContentSwitcher({
@@ -93,7 +96,8 @@ export function StorefrontContentSwitcher({
         throw new Error("Failed to fetch products");
       }
 
-      const nextProducts = (await response.json()) as StorefrontProduct[];
+      const result = await response.json();
+      const nextProducts = (result.data ?? result) as StorefrontProduct[];
       setDisplayProducts(nextProducts);
     } catch (error) {
       console.error("Failed to refresh storefront products:", error);

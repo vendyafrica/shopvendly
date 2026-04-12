@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -6,7 +6,7 @@ import { buttonVariants } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { WhatsappBusinessIcon, InstagramIcon } from "@hugeicons/core-free-icons";
 import { Bricolage_Grotesque } from "next/font/google";
-import { cn } from "@/utils/misc";
+import { cn } from "@/shared/utils/misc";
 
 const geistSans = Bricolage_Grotesque({
   variable: "--font-bricolage-grotesque",
@@ -114,7 +114,7 @@ export default function Footer() {
           </p>
 
           <p className={`${geistSans.className} text-sm text-muted-foreground text-center md:justify-self-end`}>
-           Built with 💓
+           Built with ðŸ’“
           </p>
         </div>
       </div>

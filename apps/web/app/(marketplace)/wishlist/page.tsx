@@ -1,16 +1,16 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowLeft01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
-import { useWishlist } from "@/hooks/use-wishlist";
+import { useWishlist } from "@/shared/hooks/use-wishlist";
 
 const FALLBACK_PRODUCT_IMAGE = "https://cdn.cosmos.so/25e7ef9d-3d95-486d-b7db-f0d19c1992d7?format=jpeg";
 
 const formatPrice = (amount: number | undefined, currency: string | undefined) => {
-    if (amount === undefined || amount === null || Number.isNaN(amount)) return "—";
+    if (amount === undefined || amount === null || Number.isNaN(amount)) return "â€”";
     const c = currency || "";
     const showDecimals = c === "USD";
     return `${c} ${amount.toLocaleString(undefined, {

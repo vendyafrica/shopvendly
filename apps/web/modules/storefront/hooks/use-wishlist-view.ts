@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useWishlist } from "@/hooks/use-wishlist";
+import { useWishlist } from "@/shared/hooks/use-wishlist";
 
 export function useWishlistView() {
     const params = useParams();

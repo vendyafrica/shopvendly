@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef } from "react";
 import { signInWithOneTap } from "@shopvendly/auth/react";
-import { useAppSession } from "@/contexts/app-session-context";
-import { trackStorefrontEvents } from "@/modules/storefront/lib/storefront-tracking";
+import { useAppSession } from "@/shared/lib/app-session-context";
+import { trackStorefrontEvents } from "@/modules/storefront/services/storefront-tracking";
 
 export function OneTapLogin({ storeSlug }: { storeSlug?: string }) {
   const { session } = useAppSession();

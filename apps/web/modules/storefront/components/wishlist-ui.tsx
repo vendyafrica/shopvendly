@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowLeft01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
-import { bricolage as geistSans } from "@/utils/fonts";
+import { bricolage as geistSans } from "@/shared/utils/fonts";
 import type { WishlistItem } from "@/modules/storefront/models/wishlist";
 
 interface WishlistUIProps {
@@ -23,7 +23,7 @@ const formatPrice = (
   currency: string | undefined,
 ) => {
   if (amount === undefined || amount === null || Number.isNaN(amount))
-    return "—";
+    return "â€”";
   const c = currency || "";
   return `${c} ${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`.trim();
 };
@@ -211,7 +211,7 @@ export function WishlistUI({
                             ),
                             storeItems[0]?.currency,
                           )
-                        : "—"}
+                        : "â€”"}
                     </span>
                   </div>
                 </div>

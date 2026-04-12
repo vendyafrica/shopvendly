@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete02Icon, MinusSignIcon, PlusSignIcon, ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
-import { bricolage as geistSans } from "@/utils/fonts";
+import { bricolage as geistSans } from "@/shared/utils/fonts";
 import type { CartItem, SelectedOption } from "@/modules/storefront/models/cart";
 
 interface StoreCartUIProps {

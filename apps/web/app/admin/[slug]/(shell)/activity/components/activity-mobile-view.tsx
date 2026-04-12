@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Link from "next/link";
-import { StoreAvatar } from "@/components/store-avatar";
+import { StoreAvatar } from "@/shared/components/store-avatar";
 import { type TenantBootstrap } from "@/modules/admin/context";
 import { type ActivityEvent, type ActivityEventType } from "@/modules/admin/models/activity";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -16,7 +16,6 @@ import {
     ArrowRight01Icon,
     Share01Icon
 } from "@hugeicons/core-free-icons";
-import { Button } from "@shopvendly/ui/components/button";
 import { useRouter } from "next/navigation";
 import { cn } from "@shopvendly/ui/lib/utils";
 

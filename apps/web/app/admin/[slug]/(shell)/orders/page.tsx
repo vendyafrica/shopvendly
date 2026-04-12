@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { useTenant } from "@/modules/admin/context/tenant-context";
@@ -13,7 +13,7 @@ import {
   FilterIcon
 } from "@hugeicons/core-free-icons";
 import { OrdersTable } from "@/modules/admin/components/orders-table";
-import { OrdersPageSkeleton } from "@/components/ui/page-skeletons";
+import { OrdersPageSkeleton } from "@/shared/components/ui/page-skeletons";
 import { OrdersMobileView } from "./components/orders-mobile-view";
 import { cn } from "@shopvendly/ui/lib/utils";
 import { useRouter } from "next/navigation";
@@ -175,19 +175,19 @@ export default function OrdersPage() {
                     {[
                         { 
                             label: "Total Volume", 
-                            value: stats ? new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(stats.totalRevenue) : "—" 
+                            value: stats ? new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(stats.totalRevenue) : "â€”" 
                         },
                         { 
                             label: "Total Orders", 
-                            value: stats ? stats.orderCount.toLocaleString() : "—" 
+                            value: stats ? stats.orderCount.toLocaleString() : "â€”" 
                         },
                         { 
                             label: "Pending", 
-                            value: stats ? stats.pendingCount.toLocaleString() : "—" 
+                            value: stats ? stats.pendingCount.toLocaleString() : "â€”" 
                         },
                         { 
                             label: "Refunded", 
-                            value: stats ? new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(stats.refundedAmount) : "—" 
+                            value: stats ? new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(stats.refundedAmount) : "â€”" 
                         }
                     ].map((stat, i) => (
                         <div key={i} className="flex flex-col gap-1 rounded-2xl border border-border/60 bg-white px-6 py-4 shadow-sm">

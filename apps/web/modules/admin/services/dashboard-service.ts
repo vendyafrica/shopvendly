@@ -1,6 +1,6 @@
-import { analyticsRepo } from "@/repo/analytics-repo";
-import { ordersRepo } from "@/repo/orders-repo";
-import { storeRepo } from "@/repo/store-repo";
+﻿import { analyticsRepo } from "@/modules/admin/repo/analytics-repo";
+import { ordersRepo } from "@/modules/orders/repo/orders-repo";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
 import { products, db, count, and, eq, isNull } from "@shopvendly/db";
 
 function toChartDateLabel(date: string) {
@@ -184,7 +184,7 @@ export const adminDashboardService = {
           ? o.items[0]?.productName
           : o.items?.length
             ? `${o.items.length} items`
-            : "—";
+            : "â€”";
 
       const status =
         o.paymentStatus === "paid"
@@ -196,8 +196,8 @@ export const adminDashboardService = {
       return {
         id: o.orderNumber,
         actualId: o.id,
-        customer: maskedCustomerName || "—",
-        product: itemLabel || "—",
+        customer: maskedCustomerName || "â€”",
+        product: itemLabel || "â€”",
         amount: formatCurrency(o.totalAmount, o.currency || currency),
         status: status as "Completed" | "Failed" | "Pending",
         paymentMethod: o.paymentMethod,

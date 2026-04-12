@@ -1,42 +1,26 @@
-import { auth } from "@shopvendly/auth";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest } from "next/server";
 import { db, orders, and, eq, isNull, sql, desc } from "@shopvendly/db";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { storeRepo } from "@/repo/store-repo";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { jsonSuccess, jsonError, isDemoStore, getOptionalSession } from "@/shared/lib/api/response-utils";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
+    const session = await getOptionalSession(request);
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get("storeId");
 
-    if (!storeId) {
-      return NextResponse.json({ error: "Store ID is required" }, { status: 400 });
-    }
+    if (!storeId) return jsonError("Store ID is required", 400);
 
     const store = await storeRepo.findById(storeId);
+    if (!store) return jsonError("Store not found", 404);
 
-    if (!store) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
-    }
-
-    const isDemoStore = store.slug === "vendly";
-
-    if (!session?.user && !isDemoStore) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!session?.user && !isDemoStore(store.slug)) return jsonError("Unauthorized", 401);
 
     let tenantId = store.tenantId;
-
     if (session?.user) {
       const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
-      if (!access.store || !access.isAuthorized) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-      }
+      if (!access.store || !access.isAuthorized) return jsonError("Forbidden", 403);
       tenantId = access.store.tenantId;
     }
 
@@ -54,20 +38,12 @@ export async function GET(request: NextRequest) {
         firstOrderAt: sql<Date>`MIN(${orders.createdAt})`,
       })
       .from(orders)
-      .where(
-        and(
-          eq(orders.tenantId, tenantId),
-          eq(orders.storeId, storeId),
-          isNull(orders.deletedAt)
-        )
-      )
+      .where(and(eq(orders.tenantId, tenantId), eq(orders.storeId, storeId), isNull(orders.deletedAt)))
       .groupBy(orders.customerEmail)
       .orderBy(desc(sql`MAX(${orders.createdAt})`));
 
     const currency = store.defaultCurrency || "USD";
-
-    const isVendly = store.slug === "vendly";
-
+    const isVendly = isDemoStore(store.slug);
     let demoCustomerIndex = 0;
 
     const customers = rowsAgg.map((r) => {
@@ -75,37 +51,25 @@ export async function GET(request: NextRequest) {
       const first = r.firstOrderAt ? new Date(r.firstOrderAt) : null;
 
       const status =
-        r.orders > 1
-          ? "Returning"
-          : first && first >= newThreshold
-            ? "New"
-            : last && last < churnThreshold
-              ? "Churn Risk"
-              : "Active";
+        r.orders > 1 ? "Returning"
+        : first && first >= newThreshold ? "New"
+        : last && last < churnThreshold ? "Churn Risk"
+        : "Active";
 
-      let name = r.name || "—";
-      let email = r.email || "—";
-
+      let name = r.name || "â€”";
+      let email = r.email || "â€”";
       if (isVendly) {
         demoCustomerIndex += 1;
         name = `Customer ${demoCustomerIndex}`;
         email = `customer${demoCustomerIndex}@example.com`;
       }
 
-      return {
-        name,
-        email,
-        orders: r.orders,
-        totalSpend: Number(r.totalSpend || 0),
-        currency,
-        lastOrder: (last ?? new Date(0)).toISOString(),
-        status,
-      };
+      return { name, email, orders: r.orders, totalSpend: Number(r.totalSpend || 0), currency, lastOrder: (last ?? new Date(0)).toISOString(), status };
     });
 
-    return NextResponse.json(customers);
+    return jsonSuccess(customers);
   } catch (error) {
     console.error("Error fetching customers:", error);
-    return NextResponse.json({ error: "Failed to fetch customers" }, { status: 500 });
+    return jsonError("Failed to fetch customers", 500);
   }
 }

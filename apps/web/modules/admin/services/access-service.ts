@@ -1,5 +1,5 @@
-import { adminRepo } from "@/repo/admin-repo";
-import { storeRepo } from "@/repo/store-repo";
+﻿import { adminRepo } from "@/modules/admin/repo/admin-repo";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
 import { tenantMemberships, tenants } from "@shopvendly/db/schema";
 
 const TENANT_ADMIN_READ_ROLES = ["owner", "admin", "support", "staff"] as const;
@@ -50,6 +50,8 @@ export type TenantAdminAccess = {
     slug: string;
     collectoPassTransactionFeeToCustomer?: boolean;
     collectoPayoutMode?: "automatic_per_order" | "manual_batch";
+    storeAddress?: string | null;
+    categories?: string[] | null;
   } | null;
   membership: {
     tenantId: string;
@@ -70,6 +72,8 @@ type StoreAccessContext = {
   slug: string;
   collectoPassTransactionFeeToCustomer?: boolean;
   collectoPayoutMode?: "automatic_per_order" | "manual_batch";
+  storeAddress?: string | null;
+  categories?: string[] | null;
 };
 
 function toUnauthorizedAccess(): TenantAdminAccess {

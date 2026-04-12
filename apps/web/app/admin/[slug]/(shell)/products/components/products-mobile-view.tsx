@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Image from "next/image";
@@ -13,9 +13,9 @@ import {
 } from "@hugeicons/core-free-icons";
 import type { ProductTableRow } from "@/modules/products/hooks/use-products";
 import { type TenantBootstrap } from "@/modules/admin/context";
-import { isLikelyVideoMedia } from "@/utils/misc";
+import { isLikelyVideoMedia } from "@/shared/utils/misc";
 import { useRouter } from "next/navigation";
-import { StoreAvatar } from "@/components/store-avatar";
+import { StoreAvatar } from "@/shared/components/store-avatar";
 import { cn } from "@shopvendly/ui/lib/utils";
 
 function formatMoney(amount: number, currency: string) {
@@ -90,7 +90,7 @@ function ProductThumbnail({
   );
 }
 
-// ─── Mobile skeleton ────────────────────────────────────────────────────────
+// â”€â”€â”€ Mobile skeleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ProductsMobileSkeleton() {
   return (
     <div className="flex flex-col pb-20 w-full max-w-full overflow-hidden sm:hidden bg-slate-50/50 min-h-screen font-sans">

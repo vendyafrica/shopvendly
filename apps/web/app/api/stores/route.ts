@@ -1,11 +1,10 @@
-import { auth } from "@shopvendly/auth";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
-import { storeRepo } from "@/repo/store-repo";
-import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
-import { superAdminRepo } from "@/repo/super-admin-repo";
+﻿import { z } from "zod";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { tenantMembershipRepo } from "@/modules/admin/repo/tenant-membership-repo";
+import { superAdminRepo } from "@/modules/admin/repo/super-admin-repo";
 import { sendNewStoreAlertEmail } from "@shopvendly/transactional";
-import { z } from "zod";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, jsonError, HttpError } from "@/shared/lib/api/response-utils";
 
 const createStoreSchema = z.object({
     name: z.string().min(1).max(255),
@@ -20,96 +19,44 @@ const createStoreSchema = z.object({
  * GET /api/stores
  * List stores for the authenticated seller
  */
-export async function GET() {
-    try {
-        const session = await auth.api.getSession({
-            headers: await headers()
-        });
-
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const membership = await tenantMembershipRepo.findByUserId(session.user.id);
-
-        if (!membership) {
-            return NextResponse.json({ error: "No tenant found" }, { status: 404 });
-        }
-
-        const storeList = await storeRepo.findByTenantId(membership.tenantId);
-        return NextResponse.json(storeList);
-    } catch (error) {
-        console.error("Error listing stores:", error);
-        return NextResponse.json({ error: "Failed to list stores" }, { status: 500 });
-    }
-}
+export const GET = withApi({}, async ({ session }) => {
+    const membership = await tenantMembershipRepo.findByUserId(session.user.id);
+    if (!membership) throw new HttpError("No tenant found", 404);
+    const storeList = await storeRepo.findByTenantId(membership.tenantId);
+    return jsonSuccess(storeList);
+});
 
 /**
  * POST /api/stores
  * Create a new store
  */
-export async function POST(request: NextRequest) {
-    try {
-        const session = await auth.api.getSession({
-            headers: await headers()
-        });
+export const POST = withApi({ schema: createStoreSchema }, async ({ session, body }) => {
+    const membership = await tenantMembershipRepo.findByUserId(session.user.id);
+    if (!membership) throw new HttpError("No tenant found", 404);
 
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+    const existing = await storeRepo.findBySlug(body.slug);
+    if (existing) return jsonError("Store slug already exists", 400);
 
-        const membership = await tenantMembershipRepo.findByUserId(session.user.id);
+    const store = await storeRepo.create({ tenantId: membership.tenantId, status: true, ...body });
+    if (!store) throw new HttpError("Failed to create store", 500);
 
-        if (!membership) {
-            return NextResponse.json({ error: "No tenant found" }, { status: 404 });
-        }
+    // Notify super admins asynchronously â€” fire and forget
+    superAdminRepo.listNotificationRecipients().then((adminRecords) => {
+        if (adminRecords.length === 0) return;
+        const adminStoreUrl = process.env.NEXT_PUBLIC_ADMIN_URL ?? "https://admin.shopvendly.store";
+        Promise.allSettled(
+            adminRecords.map((admin) =>
+                sendNewStoreAlertEmail({
+                    to: admin.email,
+                    storeName: store.name,
+                    storeSlug: store.slug,
+                    sellerName: session.user.name || "A Seller",
+                    sellerEmail: session.user.email,
+                    adminStoreUrl,
+                }),
+            ),
+        ).catch((err) => console.error("Failed to send new store alert emails:", err));
+    }).catch((err) => console.error("Failed to fetch super admins:", err));
 
-        const body = await request.json();
-        const input = createStoreSchema.parse(body);
-
-        // Check if slug is unique
-        const existing = await storeRepo.findBySlug(input.slug);
-        if (existing) {
-            return NextResponse.json({ error: "Store slug already exists" }, { status: 400 });
-        }
-
-        const store = await storeRepo.create({
-            tenantId: membership.tenantId,
-            status: true,
-            ...input,
-        });
-
-        if (!store) {
-            return NextResponse.json({ error: "Failed to create store" }, { status: 500 });
-        }
-
-        // Notify super admins asynchronously
-        try {
-            const adminRecords = await superAdminRepo.listNotificationRecipients();
-
-            if (adminRecords.length > 0) {
-                const adminStoreUrl = process.env.NEXT_PUBLIC_ADMIN_URL
-                    ? `${process.env.NEXT_PUBLIC_ADMIN_URL}`
-                    : `https://admin.shopvendly.store`;
-
-                Promise.allSettled(adminRecords.map(admin =>
-                    sendNewStoreAlertEmail({
-                        to: admin.email,
-                        storeName: store.name,
-                        storeSlug: store.slug,
-                        sellerName: session.user.name || "A Seller",
-                        sellerEmail: session.user.email,
-                        adminStoreUrl
-                    })
-                )).catch(err => console.error("Error in promise all settled for emails:", err));
-            }
-        } catch (emailError) {
-            console.error("Failed to fetch super admins or send emails:", emailError);
-        }
-
-        return NextResponse.json(store, { status: 201 });
-    } catch (error) {
-        console.error("Error creating store:", error);
-        return NextResponse.json({ error: "Failed to create store" }, { status: 500 });
-    }
-}
+    return jsonSuccess(store, { status: 201 });
+});

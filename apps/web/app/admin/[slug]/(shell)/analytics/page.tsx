@@ -54,8 +54,8 @@ export default function AnalyticsPage() {
         throw new Error(text || `Failed to fetch analytics (${res.status})`);
       }
 
-      const json = (await res.json()) as OverviewResponse;
-      setData(json);
+      const envelope = await res.json();
+      setData((envelope.data ?? envelope) as OverviewResponse);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load analytics");
     } finally {

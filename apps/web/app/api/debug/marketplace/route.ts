@@ -1,27 +1,23 @@
-import { marketplaceService } from "@/modules/marketplace/lib/marketplace-service";
-import { NextResponse } from "next/server";
+﻿import { marketplaceService } from "@/modules/marketplace/services/marketplace-service";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-    try {
-        const data = await marketplaceService.getHomePageData();
-        return NextResponse.json({
-            success: true,
-            storeCount: data.stores.length,
-            stores: data.stores.map(s => ({
-                id: s.id,
-                name: s.name,
-                heroMedia: s.heroMedia,
-                images: s.images,
-                logoUrl: s.logoUrl
-            }))
-        });
-    } catch (error: any) {
-        return NextResponse.json({
-            success: false,
-            error: error.message,
-            stack: error.stack
-        }, { status: 500 });
+export const GET = withApi({ auth: false }, async () => {
+    if (process.env.NEXT_PUBLIC_DEBUG_ENABLED !== "true") {
+        throw new HttpError("Not found", 404);
     }
-}
+
+    const data = await marketplaceService.getHomePageData();
+    return jsonSuccess({
+        storeCount: data.stores.length,
+        stores: data.stores.map((s) => ({
+            id: s.id,
+            name: s.name,
+            heroMedia: s.heroMedia,
+            images: s.images,
+            logoUrl: s.logoUrl,
+        })),
+    });
+});

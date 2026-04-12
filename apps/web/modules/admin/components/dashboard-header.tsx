@@ -1,13 +1,13 @@
-"use client";
+﻿"use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@shopvendly/ui/components/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@shopvendly/ui/components/dropdown-menu";
-import { useAppSession } from "@/contexts/app-session-context";
+import { useAppSession } from "@/shared/lib/app-session-context";
 import { signOut } from "@shopvendly/auth/react";
 import { useRouter } from "next/navigation";
 import { useTenant } from "@/modules/admin/context/tenant-context";
 import { useHeaderActions } from "@/modules/admin/context/header-actions-context";
-import { getStorefrontUrl } from "@/utils/misc";
+import { getStorefrontUrl } from "@/shared/utils/misc";
 
 export function AdminHeader({
     tenantName,

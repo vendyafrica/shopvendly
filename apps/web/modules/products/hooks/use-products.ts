@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-keys";
-import type { ProductVariantsInput } from "@/modules/products/lib/product-models";
+import { queryKeys } from "@/shared/lib/query-keys";
+import type { ProductVariantsInput } from "@/modules/products/services/product-models";
 
 // Types
 type ProductMediaItem = {
@@ -58,7 +58,8 @@ async function fetchProducts(storeId: string): Promise<ProductTableRow[]> {
         throw new Error(text || "Failed to load products");
     }
 
-    const data = (await res.json()) as { products: ProductApiRow[] };
+    const result = (await res.json()) as { data: { products: ProductApiRow[] } };
+    const data = result.data;
     return (data.products || []).map((p) => ({
         id: p.id,
         name: p.productName,
@@ -81,7 +82,7 @@ async function fetchProductDetail(id: string): Promise<ProductApiRow> {
     if (!res.ok) {
         throw new Error("Failed to load product");
     }
-    return res.json();
+    return (await res.json()).data;
 }
 
 async function deleteProduct(id: string): Promise<void> {
@@ -103,7 +104,7 @@ async function updateProduct(
     if (!res.ok) {
         throw new Error("Failed to update product");
     }
-    return res.json();
+    return (await res.json()).data;
 }
 
 // Hooks

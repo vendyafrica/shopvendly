@@ -1,50 +1,25 @@
-import { auth } from "@shopvendly/auth";
-import { headers } from "next/headers";
-import { NextResponse } from "next/server";
-import { storeRepo } from "@/repo/store-repo";
-import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
+﻿import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { tenantMembershipRepo } from "@/modules/admin/repo/tenant-membership-repo";
+import { getApiBaseUrl } from "@/shared/lib/api-utils";
+import { withApi } from "@/shared/lib/api/with-api";
+import { HttpError, jsonProxy } from "@/shared/lib/api/response-utils";
 
-import { type StoreRouteParams as RouteParams } from "@/models";
+export const GET = withApi<undefined, { storeId: string }>({}, async ({ session, params }) => {
+  const { storeId } = params;
+  const store = await storeRepo.findById(storeId);
+  if (!store) throw new HttpError("Store not found", 404);
 
-import { getApiBaseUrl } from "@/lib/api-utils";
+  const membership = await tenantMembershipRepo.findByUserAndTenant(session.user.id, store.tenantId);
+  if (!membership) throw new HttpError("Forbidden", 403);
 
-export async function GET(_request: Request, { params }: RouteParams) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+  const apiBase = getApiBaseUrl();
+  if (!apiBase) throw new HttpError("Missing NEXT_PUBLIC_API_URL; cannot reach Express API for Collecto balance.", 500);
 
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  const response = await fetch(`${apiBase}/api/stores/${encodeURIComponent(storeId)}/collecto/available-balance`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+  });
 
-    const { storeId } = await params;
-    const store = await storeRepo.findById(storeId);
-    if (!store) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
-    }
-
-    const membership = await tenantMembershipRepo.findByUserAndTenant(session.user.id, store.tenantId);
-
-    if (!membership) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-
-    const apiBase = getApiBaseUrl();
-    if (!apiBase) {
-      return NextResponse.json({ error: "Missing NEXT_PUBLIC_API_URL; cannot reach Express API for Collecto balance." }, { status: 500 });
-    }
-
-    const response = await fetch(`${apiBase}/api/stores/${encodeURIComponent(storeId)}/collecto/available-balance`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      cache: "no-store",
-    });
-
-    const data = await response.json().catch(() => ({ error: "Failed to read API response" }));
-    return NextResponse.json(data, { status: response.status });
-  } catch (error) {
-    console.error("Error proxying Collecto available balance:", error);
-    return NextResponse.json({ error: "Failed to fetch Collecto available balance" }, { status: 500 });
-  }
-}
+  return jsonProxy(response);
+});

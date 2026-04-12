@@ -78,8 +78,8 @@ export function MarketplaceSearchModal({ isOpen, onClose }: MarketplaceSearchMod
       try {
         const res = await fetch(`/api/marketplace/search?q=${encodeURIComponent(query.trim())}&storeLimit=5&productLimit=10`);
         if (res.ok) {
-          const data = await res.json();
-          setResults(data);
+          const json = await res.json();
+          setResults(json.data ?? json);
         }
       } catch (error) {
         console.error("Search failed:", error);

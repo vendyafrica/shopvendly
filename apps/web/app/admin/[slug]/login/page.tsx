@@ -1,8 +1,8 @@
-import { SellerLoginForm } from "./seller-login-form";
+﻿import { SellerLoginForm } from "./seller-login-form";
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getRootUrl } from "@/utils/misc";
+import { getRootUrl } from "@/shared/utils/misc";
 import { resolveTenantAdminAccess } from "@/modules/admin/services/access-service";
 
 export default async function TenantAdminLoginPage({

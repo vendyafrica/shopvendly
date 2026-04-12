@@ -1,9 +1,9 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import { Suspense } from "react";
 import MarketplaceLayout from "../m/layout";
 import { StorefrontHeader, HeaderSkeleton } from "@/modules/storefront/components";
 import { storefrontService } from "@/modules/storefront";
-import { DEFAULT_STORE_LOGO } from "@/lib/constants/defaults";
+import { DEFAULT_STORE_LOGO } from "@/shared/lib/constants/defaults";
 
 interface LayoutProps {
   children: ReactNode;

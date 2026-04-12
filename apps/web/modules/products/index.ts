@@ -1,2 +1,2 @@
-export { productService } from "@/modules/products/lib/product-service";
+export { productService } from "@/modules/products/services/product-service";
 

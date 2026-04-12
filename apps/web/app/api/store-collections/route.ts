@@ -1,11 +1,10 @@
-import { auth } from "@shopvendly/auth";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+﻿import { z } from "zod";
 import { revalidateTag } from "next/cache";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { storeCollectionsRepo } from "@/repo/store-collections-repo";
-import { storeRepo } from "@/repo/store-repo";
+import { storeCollectionsRepo } from "@/modules/storefront/repo/store-collections-repo";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError, isDemoStore } from "@/shared/lib/api/response-utils";
 
 const createCollectionSchema = z.object({
   storeId: z.string().uuid(),
@@ -13,88 +12,50 @@ const createCollectionSchema = z.object({
   image: z.string().url().optional().nullable(),
 });
 
-export async function GET(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({ headers: await headers() });
+export const GET = withApi({ auth: false }, async ({ req, session }) => {
+  const { searchParams } = new URL(req.url);
+  const storeId = searchParams.get("storeId") || "";
+  const q = (searchParams.get("q") || "").trim();
 
-    const { searchParams } = new URL(request.url);
-    const storeId = searchParams.get("storeId") || "";
-    const q = (searchParams.get("q") || "").trim();
+  if (!storeId) throw new HttpError("storeId is required", 400);
 
-    if (!storeId) {
-      return NextResponse.json({ error: "storeId is required" }, { status: 400 });
-    }
+  const store = await storeRepo.findById(storeId);
+  if (!store) throw new HttpError("Store not found", 404);
 
-    const store = await storeRepo.findById(storeId);
+  if (!session?.user && !isDemoStore(store.slug)) throw new HttpError("Unauthorized", 401);
 
-    if (!store) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
-    }
-
-    const isDemoStore = store.slug === "vendly";
-
-    if (!session?.user && !isDemoStore) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (session?.user) {
-      const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
-      if (!access.store) {
-        return NextResponse.json({ error: "Store not found" }, { status: 404 });
-      }
-      if (!access.isAuthorized) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-    }
-
-    const collections = await storeCollectionsRepo.listByStore(storeId, q);
-
-    return NextResponse.json(collections);
-  } catch (error) {
-    console.error("Error listing store collections:", error);
-    return NextResponse.json({ error: "Failed to list collections" }, { status: 500 });
+  if (session?.user) {
+    const access = await resolveTenantAdminAccessByStoreId(session.user.id, storeId, "read");
+    if (!access.store) throw new HttpError("Store not found", 404);
+    if (!access.isAuthorized) throw new HttpError("Forbidden", 403);
   }
-}
 
-export async function POST(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  const collections = await storeCollectionsRepo.listByStore(storeId, q);
+  return jsonSuccess(collections);
+});
 
-    const payload = createCollectionSchema.parse(await request.json());
+export const POST = withApi({ schema: createCollectionSchema }, async ({ session, body }) => {
+  const access = await resolveTenantAdminAccessByStoreId(session.user.id, body.storeId, "write");
+  if (!access.store) throw new HttpError("Store not found", 404);
+  if (!access.isAuthorized) throw new HttpError("Forbidden", 403);
 
-    const access = await resolveTenantAdminAccessByStoreId(session.user.id, payload.storeId, "write");
-    if (!access.store) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
-    }
-    if (!access.isAuthorized) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+  const slug = await storeCollectionsRepo.generateUniqueSlugForCreate(body.storeId, body.name);
+  const nextSortOrder = await storeCollectionsRepo.getNextSortOrder(body.storeId);
 
-    const slug = await storeCollectionsRepo.generateUniqueSlugForCreate(payload.storeId, payload.name);
-    const nextSortOrder = await storeCollectionsRepo.getNextSortOrder(payload.storeId);
+  const created = await storeCollectionsRepo.createCollection({
+    tenantId: access.store.tenantId,
+    storeId: body.storeId,
+    name: body.name.trim(),
+    slug,
+    image: body.image ?? null,
+    sortOrder: nextSortOrder,
+  });
 
-    const created = await storeCollectionsRepo.createCollection({
-      tenantId: access.store.tenantId,
-      storeId: payload.storeId,
-      name: payload.name.trim(),
-      slug,
-      image: payload.image ?? null,
-      sortOrder: nextSortOrder,
-    });
-
-    const store = await storeCollectionsRepo.findStoreSlugByStoreId(payload.storeId);
-
-    if (store?.slug) {
-      revalidateTag(`storefront:store:${store.slug}:collections`, "default");
-      revalidateTag(`storefront:store:${store.slug}:products`, "default");
-    }
-
-    return NextResponse.json({ ...created, productCount: 0 }, { status: 201 });
-  } catch (error) {
-    console.error("Error creating store collection:", error);
-    return NextResponse.json({ error: "Failed to create collection" }, { status: 500 });
+  const store = await storeCollectionsRepo.findStoreSlugByStoreId(body.storeId);
+  if (store?.slug) {
+    revalidateTag(`storefront:store:${store.slug}:collections`, "default");
+    revalidateTag(`storefront:store:${store.slug}:products`, "default");
   }
-}
+
+  return jsonSuccess({ ...created, productCount: 0 }, { status: 201 });
+});

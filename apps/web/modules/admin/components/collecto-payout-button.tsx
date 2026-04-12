@@ -31,8 +31,8 @@ export function CollectoPayoutButton({ className }: { className?: string }) {
         cache: "no-store",
       });
       if (res.ok) {
-        const data = await res.json();
-        setBalance(data);
+        const json = await res.json();
+        setBalance(json.data ?? json);
       }
     } catch (err) {
       console.error("Failed to fetch balance:", err);

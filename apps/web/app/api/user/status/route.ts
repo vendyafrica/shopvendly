@@ -1,33 +1,35 @@
+﻿import { NextRequest } from "next/server";
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
 import { getTenantMembership } from "@/modules/admin";
-import { storeRepo } from "@/repo/store-repo";
-import { superAdminRepo } from "@/repo/super-admin-repo";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { superAdminRepo } from "@/modules/admin/repo/super-admin-repo";
+import { jsonSuccess } from "@/shared/lib/api/response-utils";
 
-export const GET = async () => {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
+// This route intentionally handles unauthenticated users (returns { hasTenant: false })
+// so it cannot use withApi({ auth: true })
+export const GET = async (_req: NextRequest) => {
+    const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session?.user) {
-        return NextResponse.json({ hasTenant: false });
+        return jsonSuccess({ hasTenant: false });
     }
 
     const membership = await getTenantMembership(session.user.id, { includeTenant: true });
-
     const hasTenant = !!membership;
 
     if (!membership) {
-        return NextResponse.json({ hasTenant });
+        return jsonSuccess({ hasTenant });
     }
 
-    const store = await storeRepo.findActiveByTenantId(membership.tenantId);
-    const superAdmin = await superAdminRepo.findByUserId(session.user.id);
+    const [store, superAdmin] = await Promise.all([
+        storeRepo.findActiveByTenantId(membership.tenantId),
+        superAdminRepo.findByUserId(session.user.id),
+    ]);
 
     const isTenantAdmin = ["owner", "admin"].includes(membership.role) || !!superAdmin;
 
-    return NextResponse.json({
+    return jsonSuccess({
         hasTenant,
         isTenantAdmin,
         adminStoreSlug: store?.slug ?? null,

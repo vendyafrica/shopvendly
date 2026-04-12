@@ -1,29 +1,11 @@
-import { auth } from "@shopvendly/auth";
-import { headers } from "next/headers";
-import { NextResponse } from "next/server";
-import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
-import { instagramRepo } from "@/repo/instagram-repo";
+﻿import { tenantMembershipRepo } from "@/modules/admin/repo/tenant-membership-repo";
+import { instagramRepo } from "@/modules/instagram/repo/instagram-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
-export async function DELETE() {
-  try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Ensure user is linked to a tenant
-    const membership = await tenantMembershipRepo.findByUserId(session.user.id);
-
-    if (!membership) {
-      return NextResponse.json({ error: "No tenant found" }, { status: 404 });
-    }
-
-    // Delete Instagram-imported products for this tenant (product_media cascades via FK)
-    await instagramRepo.clearInstagramDataForTenant(session.user.id, membership.tenantId);
-
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    console.error("Instagram delete error:", error);
-    return NextResponse.json({ error: "Failed to delete Instagram data" }, { status: 500 });
-  }
-}
+export const DELETE = withApi({}, async ({ session }) => {
+  const membership = await tenantMembershipRepo.findByUserId(session.user.id);
+  if (!membership) throw new HttpError("No tenant found", 404);
+  await instagramRepo.clearInstagramDataForTenant(session.user.id, membership.tenantId);
+  return jsonSuccess({ ok: true });
+});

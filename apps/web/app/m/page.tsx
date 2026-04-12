@@ -1,9 +1,9 @@
-import Header from "@/modules/marketplace/components/header";
+﻿import Header from "@/modules/marketplace/components/header";
 import Footer from "@/modules/marketplace/components/footer";
 import { Button } from "@shopvendly/ui/components/button";
 import Link from "next/link";
 import { marketplaceService, type MarketplaceStore } from "@/modules/marketplace";
-import type { StoreWithCategory } from "@/modules/marketplace/lib/marketplace-service";
+import type { StoreWithCategory } from "@/modules/marketplace/services/marketplace-service";
 import { HeroSection } from "@/modules/marketplace/components/home/hero-section";
 import { CollectionsRail } from "@/modules/marketplace/components/home/collections-rail";
 import { StoreShelf } from "@/modules/marketplace/components/home/store-shelf";

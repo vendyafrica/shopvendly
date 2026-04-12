@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTenant } from "@/modules/admin/context/tenant-context";
-import { type OrderWithItems } from "@/modules/orders/lib/order-models";
+import { type OrderWithItems } from "@/modules/orders/services/order-models";
 import { Button } from "@shopvendly/ui/components/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -35,8 +35,8 @@ export default function OrderDetailPage() {
       try {
         const res = await fetch(`/api/orders/${orderId}`);
         if (!res.ok) throw new Error("Order not found");
-        const data = await res.json();
-        setOrder(data);
+        const result = await res.json();
+        setOrder(result.data ?? result);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load order");
       } finally {
@@ -185,7 +185,7 @@ export default function OrderDetailPage() {
                  </div>
                  <div>
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 px-0.5">Phone</p>
-                    <p className="text-sm font-medium bg-muted/20 px-3 py-2 rounded-xl border border-border/40">{order.customerPhone || "—"}</p>
+                    <p className="text-sm font-medium bg-muted/20 px-3 py-2 rounded-xl border border-border/40">{order.customerPhone || "â€”"}</p>
                  </div>
               </div>
            </div>

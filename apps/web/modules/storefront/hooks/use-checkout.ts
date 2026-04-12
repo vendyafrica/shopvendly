@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/modules/cart/context/cart-context";
-import { useAppSession } from "@/contexts/app-session-context";
-import { getRootUrl } from "@/utils/misc";
+import { useAppSession } from "@/shared/lib/app-session-context";
+import { getRootUrl } from "@/shared/utils/misc";
 import type { CheckoutBuyNowItem, CheckoutBuyNowSelectedOption, CheckoutPaymentMethod, PaymentFlowStatus, PhoneVerificationStatus } from "../models/checkout";
 
 const COLLECTO_POLL_INTERVAL_MS = 3000;
@@ -121,7 +121,8 @@ export function useCheckout() {
         let cancelled = false;
         fetch(`/api/storefront/${storeSlug}/products/${buyNowProductId}`)
             .then(res => res.json())
-            .then(data => {
+            .then(result => {
+                const data = result.data ?? result;
                 if (!cancelled && data.id) {
                     let selectedOptions: CheckoutBuyNowSelectedOption[] = [];
                     try {
@@ -182,7 +183,8 @@ export function useCheckout() {
             try {
                 const res = await fetch(`/api/storefront/${resolvedSlug}`);
                 if (!res.ok) return;
-                const data = (await res.json()) as {
+                const result = await res.json();
+                const data = (result.data ?? result) as {
                     storePolicy?: string | null;
                     collectoPassTransactionFeeToCustomer?: boolean;
                     collectoPayoutMode?: "automatic_per_order" | "manual_batch";

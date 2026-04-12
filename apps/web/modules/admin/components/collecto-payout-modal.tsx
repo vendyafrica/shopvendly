@@ -34,12 +34,14 @@ export function CollectoPayoutModal() {
   React.useEffect(() => {
     if (!storageKey) return;
     if (typeof window === "undefined") return;
+    // Don't interrupt new users — wait until they've completed their store profile
+    if (!bootstrap?.profileComplete) return;
 
     const seen = window.localStorage.getItem(storageKey) === "1";
     if (!seen) {
       setOpen(true);
     }
-  }, [storageKey]);
+  }, [storageKey, bootstrap?.profileComplete]);
 
   React.useEffect(() => {
     if (bootstrap) {

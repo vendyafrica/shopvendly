@@ -1,10 +1,13 @@
 import "@shopvendly/ui/globals.css";
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Public_Sans } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import { ThirdParty } from "./third-party";
 
-const publicSans = Public_Sans({subsets:['latin'],variable:'--font-sans'});
+const inter = Inter({
+  variable: "--font-sans",
+  subsets: ["latin"],
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -160,7 +163,7 @@ export default async function RootLayout({
   children: ReactNode;
 }) {
   return (
-    <html lang="en" className={`${publicSans.variable} h-full`}>
+    <html lang="en" className={`${inter.variable} h-full`}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen h-full bg-background`}
       >

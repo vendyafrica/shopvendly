@@ -82,11 +82,6 @@ export const storefrontEvents = pgTable(
     amount: integer("amount"),
     currency: text("currency"),
 
-    referrer: text("referrer"),
-    utmSource: text("utm_source"),
-    utmMedium: text("utm_medium"),
-    utmCampaign: text("utm_campaign"),
-
     userAgent: text("user_agent"),
     ipHash: text("ip_hash"),
 

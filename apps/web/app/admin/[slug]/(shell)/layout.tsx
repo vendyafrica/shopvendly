@@ -1,4 +1,4 @@
-import { AdminPageSkeleton } from "@/components/ui/page-skeletons";
+﻿import { AdminPageSkeleton } from "@/shared/components/ui/page-skeletons";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@shopvendly/auth";
@@ -8,7 +8,7 @@ import { SidebarInset, SidebarProvider } from "@shopvendly/ui/components/sidebar
 import { Providers } from "../../../providers";
 import { HeaderActionsProvider } from "@/modules/admin/context/header-actions-context";
 import { TenantProvider } from "@/modules/admin/context/tenant-context";
-import { AppSessionProvider, type AppSession } from "@/contexts/app-session-context";
+import { AppSessionProvider, type AppSession } from "@/shared/lib/app-session-context";
 import { AppSidebar } from "@/modules/admin/components/app-sidebar";
 import { AdminMobileDock } from "@/modules/admin/components/admin-mobile-dock";
 import { CollectoPayoutModal } from "@/modules/admin/components/collecto-payout-modal";
@@ -86,6 +86,13 @@ async function TenantAdminLayoutInner({
   const canWrite = Boolean(writeAccess.isAuthorized);
   const isDemoViewer = isDemoStore && !canWrite;
 
+  // Compute profile completion status
+  const profileComplete = Boolean(
+    store.description?.trim() &&
+    store.storeAddress?.trim() &&
+    (store.categories?.length ?? 0) > 0
+  );
+
   return (
     <Providers>
       <AppSessionProvider session={appSession}>
@@ -101,6 +108,7 @@ async function TenantAdminLayoutInner({
             collectoPayoutMode: store.collectoPayoutMode ?? "automatic_per_order",
             isDemoViewer,
             canWrite,
+            profileComplete,
           }}
         >
           <SidebarProvider

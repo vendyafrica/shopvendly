@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
+import { useRecentlyViewed } from "@/shared/hooks/use-recently-viewed";
 import { ProductCard } from "@/modules/storefront/components";
 
 export default function RecentlyViewed() {
@@ -10,7 +10,7 @@ export default function RecentlyViewed() {
   if (recentItems.length === 0) return null;
 
   const formatPrice = (amount: number | undefined, currency: string | undefined) => {
-    if (amount === undefined || amount === null || Number.isNaN(amount)) return "—";
+    if (amount === undefined || amount === null || Number.isNaN(amount)) return "â€”";
     const c = currency || "";
     const showDecimals = c === "USD";
     return `${c} ${amount.toLocaleString(undefined, {

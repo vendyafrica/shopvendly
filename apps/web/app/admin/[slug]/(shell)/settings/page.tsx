@@ -1,4 +1,4 @@
-import { storeRepo } from "@/repo/store-repo";
+﻿import { storeRepo } from "@/modules/storefront/repo/store-repo";
 import { SettingsClient } from "./settings-client";
 
 export default async function SettingsPage({
