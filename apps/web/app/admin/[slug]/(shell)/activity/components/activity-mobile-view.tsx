@@ -16,7 +16,6 @@ import {
     ArrowRight01Icon,
     Share01Icon
 } from "@hugeicons/core-free-icons";
-import { Button } from "@shopvendly/ui/components/button";
 import { useRouter } from "next/navigation";
 import { cn } from "@shopvendly/ui/lib/utils";
 
