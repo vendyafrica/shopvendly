@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Button } from "@shopvendly/ui/components/button";
 import { useState, useEffect } from "react";
@@ -11,9 +11,9 @@ import {
 import { signOut } from "@shopvendly/auth/react";
 import { useRouter } from "next/navigation";
 import { LoginOverlay } from "@/app/(auth)/login/page";
-import { useAppSession } from "@/contexts/app-session-context";
+import { useAppSession } from "@/shared/lib/app-session-context";
 import { useCart } from "@/modules/cart/context/cart-context";
-import { Portal } from "@/components/portal";
+import { Portal } from "@/shared/components/portal";
 import { Logo } from "./Logo";
 import { WishlistButton } from "./WishlistButton";
 import { CartButton } from "./CartButton";

@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getStorefrontUrl } from "@/utils/misc";
-import { isLikelyVideoMedia } from "@/utils/misc";
+import { getStorefrontUrl } from "@/shared/utils/misc";
+import { isLikelyVideoMedia } from "@/shared/utils/misc";
 
 interface ProductCardProps {
   title: string;

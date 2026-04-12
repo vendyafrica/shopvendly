@@ -24,5 +24,11 @@ export interface StoreDetails {
     policy?: string | null;
     storePolicy?: string | null;
     collectoPassTransactionFeeToCustomer?: boolean;
-    collectoPayoutMode?: "automatic_per_order" | "manual_batch";
+    collectoPayoutMode?: string | null;
+    heroMedia?: string[] | null;
+    rating?: number;
+    ratingCount?: number;
+    categories?: string[] | null;
+    storeAddress?: string | null;
+    status?: boolean;
 }

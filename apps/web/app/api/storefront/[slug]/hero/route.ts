@@ -1,7 +1,7 @@
-import { storeRepo } from "@/repo/store-repo";
-import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError } from "@/lib/api/response-utils";
+﻿import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { tenantMembershipRepo } from "@/modules/admin/repo/tenant-membership-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
 export const PUT = withApi<undefined, { slug: string }>({}, async ({ req, session, params }) => {
     const { slug } = params;

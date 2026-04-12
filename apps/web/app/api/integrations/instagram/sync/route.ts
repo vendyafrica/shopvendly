@@ -1,7 +1,7 @@
-import { getApiBaseUrl } from "@/lib/api-utils";
-import { instagramSyncSchema } from "@/models";
-import { withApi } from "@/lib/api/with-api";
-import { HttpError, jsonProxy } from "@/lib/api/response-utils";
+﻿import { getApiBaseUrl } from "@/shared/lib/api-utils";
+import { instagramSyncSchema } from "@/modules/instagram/types";
+import { withApi } from "@/shared/lib/api/with-api";
+import { HttpError, jsonProxy } from "@/shared/lib/api/response-utils";
 
 export const POST = withApi({ schema: instagramSyncSchema }, async ({ session, body }) => {
   const { storeId, limit } = body;

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import Color from "color";
@@ -10,13 +10,13 @@ import {
   ColorPickerHue,
   ColorPickerOutput,
   ColorPickerSelection,
-} from "@/components/kibo-ui/color-picker";
+} from "@/shared/components/kibo-ui/color-picker";
 import { Button } from "@shopvendly/ui/components/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@shopvendly/ui/components/popover";
 import { cn } from "@shopvendly/ui/lib/utils";
 import { buttonVariants } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
-import { getColorName } from "@/lib/constants/colors";
+import { getColorName } from "@/shared/lib/constants/colors";
 
 interface HexPickerProps {
     onColorSelect: (hex: string) => void;

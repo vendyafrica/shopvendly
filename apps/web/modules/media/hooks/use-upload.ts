@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from "react";
-import { useUploadThing } from "@/utils/uploadthing";
+﻿import { useCallback, useRef, useState } from "react";
+import { useUploadThing } from "@/shared/utils/uploadthing";
 
 type UploadEndpoint = "productMedia" | "storeHeroMedia";
 
@@ -113,7 +113,7 @@ async function compressVideoClientSide(file: File): Promise<File> {
 }
 
 
-// ─── Image compression ─────────────────────────────────────────────────────
+// â”€â”€â”€ Image compression â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const IMAGE_COMPRESS_MAX_PX = 1600; // max dimension (width or height)
 const IMAGE_COMPRESS_QUALITY = 0.82; // JPEG/WebP quality
 const IMAGE_COMPRESS_THRESHOLD_BYTES = 300 * 1024; // only compress if > 300 KB

@@ -1,7 +1,7 @@
-import { storefrontService } from "@/modules/storefront";
-import type { StorefrontProductVariantSummary } from "@/models/storefront";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError } from "@/lib/api/response-utils";
+﻿import { storefrontService } from "@/modules/storefront";
+import type { StorefrontProductVariantSummary } from "@/modules/storefront/types";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
 /**
  * GET /api/storefront/[slug]/products

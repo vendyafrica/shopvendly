@@ -1,6 +1,6 @@
-import { cartService } from "@/modules/cart";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess } from "@/lib/api/response-utils";
+﻿import { cartService } from "@/modules/cart";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess } from "@/shared/lib/api/response-utils";
 
 /**
  * DELETE /api/cart/items/[productId]

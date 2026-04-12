@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -45,13 +45,13 @@ import {
 import { cn } from "@shopvendly/ui/lib/utils";
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
-import { StoreAvatarSimple } from "@/components/store-avatar";
+import { StoreAvatarSimple } from "@/shared/components/store-avatar";
 
 import { useTenant } from "@/modules/admin/context/tenant-context";
-import { useAppSession } from "@/contexts/app-session-context";
+import { useAppSession } from "@/shared/lib/app-session-context";
 import { signOut } from "@shopvendly/auth/react";
 import { useRouter } from "next/navigation";
-import { getStorefrontUrl } from "@/utils/misc";
+import { getStorefrontUrl } from "@/shared/utils/misc";
 
 type SidebarNavSubItem = {
   title: string;

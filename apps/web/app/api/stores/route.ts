@@ -1,10 +1,10 @@
-import { z } from "zod";
-import { storeRepo } from "@/repo/store-repo";
-import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
-import { superAdminRepo } from "@/repo/super-admin-repo";
+﻿import { z } from "zod";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { tenantMembershipRepo } from "@/modules/admin/repo/tenant-membership-repo";
+import { superAdminRepo } from "@/modules/admin/repo/super-admin-repo";
 import { sendNewStoreAlertEmail } from "@shopvendly/transactional";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, jsonError, HttpError } from "@/lib/api/response-utils";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, jsonError, HttpError } from "@/shared/lib/api/response-utils";
 
 const createStoreSchema = z.object({
     name: z.string().min(1).max(255),
@@ -40,7 +40,7 @@ export const POST = withApi({ schema: createStoreSchema }, async ({ session, bod
     const store = await storeRepo.create({ tenantId: membership.tenantId, status: true, ...body });
     if (!store) throw new HttpError("Failed to create store", 500);
 
-    // Notify super admins asynchronously — fire and forget
+    // Notify super admins asynchronously â€” fire and forget
     superAdminRepo.listNotificationRecipients().then((adminRecords) => {
         if (adminRecords.length === 0) return;
         const adminStoreUrl = process.env.NEXT_PUBLIC_ADMIN_URL ?? "https://admin.shopvendly.store";

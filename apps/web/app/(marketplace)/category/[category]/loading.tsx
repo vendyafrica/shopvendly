@@ -1,4 +1,4 @@
-import { SkeletonBuilder } from "@/components/ui/skeleton-builder";
+﻿import { SkeletonBuilder } from "@/shared/components/ui/skeleton-builder";
 
 export default function CategoryLoading() {
   return (

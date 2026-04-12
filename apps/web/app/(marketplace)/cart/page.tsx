@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -6,12 +6,12 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete02Icon, MinusSignIcon, PlusSignIcon, ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@shopvendly/ui/components/button";
 import { useCart } from "@/modules/cart/context/cart-context";
-import { StoreAvatar } from "@/components/store-avatar";
+import { StoreAvatar } from "@/shared/components/store-avatar";
 import Header from "@/modules/marketplace/components/header";
 import Footer from "@/modules/marketplace/components/footer";
 import RecentlyViewed from "@/modules/marketplace/components/recently-viewed";
 import { Bricolage_Grotesque } from "next/font/google";
-import { getStorefrontUrl } from "@/utils/misc";
+import { getStorefrontUrl } from "@/shared/utils/misc";
 
 const geistSans = Bricolage_Grotesque({
     variable: "--font-bricolage-grotesque",

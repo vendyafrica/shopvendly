@@ -1,9 +1,9 @@
-import { auth } from "@shopvendly/auth";
+﻿import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { NextRequest } from "next/server";
 import { storefrontService } from "@/modules/storefront";
-import { productRatingsRepo } from "@/repo/product-ratings-repo";
-import { jsonSuccess, jsonError } from "@/lib/api/response-utils";
+import { productRatingsRepo } from "@/modules/products/repo/product-ratings-repo";
+import { jsonSuccess, jsonError } from "@/shared/lib/api/response-utils";
 
 /**
  * GET /api/storefront/[slug]/products/[productSlug]

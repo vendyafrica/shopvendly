@@ -1,6 +1,6 @@
-import { storefrontService } from "@/modules/storefront";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError } from "@/lib/api/response-utils";
+﻿import { storefrontService } from "@/modules/storefront";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
 export const GET = withApi<undefined, { slug: string }>({ auth: false }, async ({ req, params }) => {
   const q = (new URL(req.url).searchParams.get("q") || "").trim();

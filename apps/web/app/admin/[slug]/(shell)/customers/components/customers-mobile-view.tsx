@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Link from "next/link";
-import { StoreAvatar } from "@/components/store-avatar";
+import { StoreAvatar } from "@/shared/components/store-avatar";
 import { Avatar, AvatarFallback } from "@shopvendly/ui/components/avatar";
 import {
     Sheet,
@@ -158,7 +158,7 @@ export function CustomersMobileView({
                     </div>
                 ) : (
                     filteredCustomers.map((c, i) => {
-                        const initials = c.name !== "—" ? c.name.substring(0, 2).toUpperCase() : "?";
+                        const initials = c.name !== "â€”" ? c.name.substring(0, 2).toUpperCase() : "?";
 
                         return (
                             <button
@@ -218,7 +218,7 @@ export function CustomersMobileView({
                             <div className="flex flex-col items-center justify-center text-center gap-3">
                                 <Avatar className="size-16 border-2 border-border shadow-sm">
                                     <AvatarFallback className="text-xl font-bold bg-muted text-muted-foreground">
-                                        {selectedCustomer.name !== "—" ? selectedCustomer.name.substring(0, 2).toUpperCase() : "?"}
+                                        {selectedCustomer.name !== "â€”" ? selectedCustomer.name.substring(0, 2).toUpperCase() : "?"}
                                     </AvatarFallback>
                                 </Avatar>
                                 <div className="space-y-1">

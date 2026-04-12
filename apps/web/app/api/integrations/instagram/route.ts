@@ -1,7 +1,7 @@
-import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
-import { instagramRepo } from "@/repo/instagram-repo";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError } from "@/lib/api/response-utils";
+﻿import { tenantMembershipRepo } from "@/modules/admin/repo/tenant-membership-repo";
+import { instagramRepo } from "@/modules/instagram/repo/instagram-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
 export const DELETE = withApi({}, async ({ session }) => {
   const membership = await tenantMembershipRepo.findByUserId(session.user.id);

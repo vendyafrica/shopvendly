@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { type ReactNode } from "react";
 import { RevenueAreaChartCard, TotalSalesBreakdownCard } from "@/modules/admin/components/dynamic-charts";
 import { RecentOrdersTableSection } from "@/modules/admin/components/recent-orders-table-section";
@@ -7,7 +7,7 @@ import { MobileStoreHeader } from "@/modules/admin/components/mobile-store-heade
 import { DashboardFilter } from "@/modules/admin/components/dashboard-filter";
 import { adminDashboardService, type DashboardRange } from "@/modules/admin";
 import { type OrderSummaryRow } from "@/modules/admin/models";
-import { getStorefrontUrl } from "@/utils/misc";
+import { getStorefrontUrl } from "@/shared/utils/misc";
 import {
   Add01Icon,
   ShoppingBag01Icon,

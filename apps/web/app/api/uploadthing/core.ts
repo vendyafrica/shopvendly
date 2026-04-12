@@ -1,9 +1,9 @@
-import { auth } from "@shopvendly/auth";
+﻿import { auth } from "@shopvendly/auth";
 import { z } from "zod";
 import { UploadThingError } from "uploadthing/server";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { getTenantMembership } from "@/modules/admin";
-import { superAdminRepo } from "@/repo/super-admin-repo";
+import { superAdminRepo } from "@/modules/admin/repo/super-admin-repo";
 
 const f = createUploadthing();
 

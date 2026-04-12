@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { useTenant } from "@/modules/admin/context/tenant-context";
@@ -16,7 +16,7 @@ import {
 import { CustomersTable } from "./CustomersTable";
 import { CustomersMobileView } from "./components/customers-mobile-view";
 import { useCustomers } from "@/modules/admin/hooks/use-customers";
-import { CustomersPageSkeleton } from "@/components/ui/page-skeletons";
+import { CustomersPageSkeleton } from "@/shared/components/ui/page-skeletons";
 import { cn } from "@shopvendly/ui/lib/utils";
 
 export default function CustomersPage() {

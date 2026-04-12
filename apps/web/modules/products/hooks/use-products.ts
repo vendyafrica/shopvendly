@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-keys";
-import type { ProductVariantsInput } from "@/modules/products/lib/product-models";
+import { queryKeys } from "@/shared/lib/query-keys";
+import type { ProductVariantsInput } from "@/modules/products/services/product-models";
 
 // Types
 type ProductMediaItem = {

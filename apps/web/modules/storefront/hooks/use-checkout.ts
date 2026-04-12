@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/modules/cart/context/cart-context";
-import { useAppSession } from "@/contexts/app-session-context";
-import { getRootUrl } from "@/utils/misc";
+import { useAppSession } from "@/shared/lib/app-session-context";
+import { getRootUrl } from "@/shared/utils/misc";
 import type { CheckoutBuyNowItem, CheckoutBuyNowSelectedOption, CheckoutPaymentMethod, PaymentFlowStatus, PhoneVerificationStatus } from "../models/checkout";
 
 const COLLECTO_POLL_INTERVAL_MS = 3000;

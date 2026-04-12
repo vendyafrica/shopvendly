@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -6,7 +6,7 @@ import { FavouriteIcon } from "@hugeicons/core-free-icons";
 import { ProductActions } from "./product-actions";
 import type { Product, MediaItem, ProductVariantOption } from "@/modules/storefront/models/product";
 import { cn } from "@shopvendly/ui/lib/utils";
-import { getColorName } from "@/lib/constants/colors";
+import { getColorName } from "@/shared/lib/constants/colors";
 import * as React from "react";
 
 interface ProductDetailsUIProps {

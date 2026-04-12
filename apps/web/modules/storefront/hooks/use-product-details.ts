@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
-import { trackStorefrontEvents } from "@/modules/storefront/lib/storefront-tracking";
+import { useRecentlyViewed } from "@/shared/hooks/use-recently-viewed";
+import { trackStorefrontEvents } from "@/modules/storefront/services/storefront-tracking";
 import { signInWithOneTap } from "@shopvendly/auth/react";
-import { useAppSession } from "@/contexts/app-session-context";
-import { isLikelyVideoMedia } from "@/utils/misc";
+import { useAppSession } from "@/shared/lib/app-session-context";
+import { isLikelyVideoMedia } from "@/shared/utils/misc";
 import type { Product, ProductVariantOption, MediaItem } from "../models/product";
 
 interface UseProductDetailsProps {

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 
@@ -14,9 +14,9 @@ import {
 import { HeaderSkeleton } from "./skeletons";
 import { StorefrontSearchModal } from "./search-modal.client";
 import { useCart } from "@/modules/cart/context/cart-context";
-import { useWishlist } from "@/hooks/use-wishlist";
-import { bricolage } from "@/utils/fonts";
-import { getRootUrl } from "@/utils/misc";
+import { useWishlist } from "@/shared/hooks/use-wishlist";
+import { bricolage } from "@/shared/utils/fonts";
+import { getRootUrl } from "@/shared/utils/misc";
 import { Button } from "@shopvendly/ui/components/button";
 
 export interface StoreData {

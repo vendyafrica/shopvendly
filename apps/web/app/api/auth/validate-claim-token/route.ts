@@ -1,8 +1,8 @@
-import { z } from "zod";
-import { authRepo } from "@/repo/auth-repo";
-import { verificationRepo } from "@/repo/verification-repo";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, jsonError, HttpError } from "@/lib/api/response-utils";
+﻿import { z } from "zod";
+import { authRepo } from "@/modules/auth/repo/auth-repo";
+import { verificationRepo } from "@/modules/auth/repo/verification-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, jsonError, HttpError } from "@/shared/lib/api/response-utils";
 
 const claimTokenSchema = z.object({
     token: z.string().min(1),

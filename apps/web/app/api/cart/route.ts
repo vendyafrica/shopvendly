@@ -1,10 +1,10 @@
-import { NextRequest } from "next/server";
+﻿import { NextRequest } from "next/server";
 import { cartService } from "@/modules/cart";
-import { instagramRepo } from "@/repo/instagram-repo";
-import { type CartItemWithRelations, addItemToCartSchema } from "@/models";
-import { DEFAULT_STORE_LOGO } from "@/lib/constants/defaults";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess } from "@/lib/api/response-utils";
+import { instagramRepo } from "@/modules/instagram/repo/instagram-repo";
+import { type CartItemWithRelations, addItemToCartSchema } from "@/modules/cart/types";
+import { DEFAULT_STORE_LOGO } from "@/shared/lib/constants/defaults";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess } from "@/shared/lib/api/response-utils";
 
 /**
  * GET /api/cart

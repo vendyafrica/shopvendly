@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { DataTable } from "@/modules/admin/components/data-table";
@@ -37,8 +37,8 @@ import {
   useUpdateProduct,
   type ProductTableRow,
 } from "@/modules/products/hooks/use-products";
-import { ProductsPageSkeleton } from "@/components/ui/page-skeletons";
-import { isLikelyVideoMedia } from "@/utils/misc";
+import { ProductsPageSkeleton } from "@/shared/components/ui/page-skeletons";
+import { isLikelyVideoMedia } from "@/shared/utils/misc";
 import { cn } from "@shopvendly/ui/lib/utils";
 
 // function formatMoney(amount: number, currency: string) {
@@ -327,7 +327,7 @@ export default function ProductsPage() {
       size: 140,
       cell: ({ row }) => (
         <span className="text-sm font-medium text-muted-foreground truncate max-w-[120px] block">
-          {row.original.category || "—"}
+          {row.original.category || "â€”"}
         </span>
       ),
     },

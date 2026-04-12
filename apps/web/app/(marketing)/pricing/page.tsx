@@ -1,4 +1,4 @@
-import { Pricing as PricingSection } from "../components/pricing";
+import { Pricing as PricingSection } from "@/modules/marketing/components/pricing";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

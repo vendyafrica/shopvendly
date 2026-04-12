@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
@@ -13,8 +13,8 @@ import {
 import { Button } from "@shopvendly/ui/components/button";
 import { Input } from "@shopvendly/ui/components/input";
 import { useCart } from "@/modules/cart/context/cart-context";
-import { useAppSession } from "@/contexts/app-session-context";
-import { getStorefrontUrl } from "@/utils/misc";
+import { useAppSession } from "@/shared/lib/app-session-context";
+import { getStorefrontUrl } from "@/shared/utils/misc";
 
 const API_BASE = ""; // Force relative for same-origin internal API
 
@@ -147,7 +147,7 @@ function CheckoutContent() {
     return (
         <div className="min-h-screen">
             <div className="grid lg:grid-cols-2 min-h-screen">
-                {/* LEFT — FORM */}
+                {/* LEFT â€” FORM */}
                 <div className="flex justify-center items-start p-6 lg:p-12 order-2 lg:order-1">
                     <form
                         onSubmit={handleSubmit}
@@ -207,7 +207,7 @@ function CheckoutContent() {
                                         icon={Loading03Icon}
                                         className="mr-2 h-5 w-5 animate-spin"
                                     />
-                                    Processing…
+                                    Processingâ€¦
                                 </>
                             ) : (
                                 <span>Place Order</span>
@@ -216,7 +216,7 @@ function CheckoutContent() {
                     </form>
                 </div>
 
-                {/* RIGHT — SUMMARY (SCROLLABLE) */}
+                {/* RIGHT â€” SUMMARY (SCROLLABLE) */}
                 <div className="bg-neutral-50 lg:border-l overflow-y-auto order-1 lg:order-2">
                     <div className="flex justify-center items-start p-6 lg:p-12">
                         <div className="w-full max-w-md space-y-6">

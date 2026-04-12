@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -17,7 +17,7 @@ import {
     AvatarFallback,
     AvatarImage,
 } from "@shopvendly/ui/components/avatar";
-import { Portal } from "@/components/portal";
+import { Portal } from "@/shared/components/portal";
 import { MenuItem } from "./MenuItem";
 
 interface MobileMenuProps {

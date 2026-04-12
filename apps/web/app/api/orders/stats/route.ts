@@ -1,9 +1,9 @@
-import { NextRequest } from "next/server";
+﻿import { NextRequest } from "next/server";
 import { orderService } from "@/modules/orders";
-import { ordersRepo } from "@/repo/orders-repo";
+import { ordersRepo } from "@/modules/orders/repo/orders-repo";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError } from "@/lib/api/response-utils";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
 /**
  * GET /api/orders/stats

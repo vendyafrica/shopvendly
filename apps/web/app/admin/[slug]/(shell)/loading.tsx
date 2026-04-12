@@ -1,4 +1,4 @@
-import { AdminPageSkeleton } from "@/components/ui/page-skeletons";
+﻿import { AdminPageSkeleton } from "@/shared/components/ui/page-skeletons";
 
 export default function Loading() {
     return <AdminPageSkeleton />;

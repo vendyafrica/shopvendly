@@ -1,9 +1,9 @@
-import { NextRequest } from "next/server";
+﻿import { NextRequest } from "next/server";
 import { storefrontService } from "@/modules/storefront";
-import { DEFAULT_STORE_LOGO } from "@/lib/constants/defaults";
-import { normalizeMediaUrls, toCanonicalUploadThingUrl } from "@/lib/media";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError } from "@/lib/api/response-utils";
+import { DEFAULT_STORE_LOGO } from "@/shared/lib/constants/defaults";
+import { normalizeMediaUrls, toCanonicalUploadThingUrl } from "@/modules/media/services";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
 /**
  * GET /api/storefront/[slug]

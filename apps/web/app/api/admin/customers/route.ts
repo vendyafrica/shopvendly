@@ -1,8 +1,8 @@
-import { NextRequest } from "next/server";
+﻿import { NextRequest } from "next/server";
 import { db, orders, and, eq, isNull, sql, desc } from "@shopvendly/db";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { storeRepo } from "@/repo/store-repo";
-import { jsonSuccess, jsonError, isDemoStore, getOptionalSession } from "@/lib/api/response-utils";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { jsonSuccess, jsonError, isDemoStore, getOptionalSession } from "@/shared/lib/api/response-utils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -56,8 +56,8 @@ export async function GET(request: NextRequest) {
         : last && last < churnThreshold ? "Churn Risk"
         : "Active";
 
-      let name = r.name || "—";
-      let email = r.email || "—";
+      let name = r.name || "â€”";
+      let email = r.email || "â€”";
       if (isVendly) {
         demoCustomerIndex += 1;
         name = `Customer ${demoCustomerIndex}`;

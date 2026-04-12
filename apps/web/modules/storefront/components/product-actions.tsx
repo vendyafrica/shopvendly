@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { Button } from "@shopvendly/ui/components/button";
@@ -10,7 +10,7 @@ import {
   FavouriteIcon,
 } from "@hugeicons/core-free-icons";
 import { useCart } from "@/modules/cart/context/cart-context";
-import { useWishlist } from "@/hooks/use-wishlist";
+import { useWishlist } from "@/shared/hooks/use-wishlist";
 
 interface ProductActionsProduct {
   id: string;

@@ -1,12 +1,12 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import { Suspense } from "react";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { auth } from "@shopvendly/auth";
 
-import { OnboardingProvider } from "./context/onboarding-context";
-import { AppSessionProvider } from "@/contexts/app-session-context";
-import { StepIndicator } from "./components/category-selector";
+import { OnboardingProvider } from "@/modules/onboarding/context/onboarding-context";
+import { AppSessionProvider } from "@/shared/lib/app-session-context";
+import { StepIndicator } from "@/modules/onboarding/components/category-selector";
 import Image from "next/image";
 
 export default async function OnboardingLayout({ children }: { children: ReactNode }) {

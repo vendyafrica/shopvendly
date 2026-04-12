@@ -1,12 +1,12 @@
-import { NextRequest } from "next/server";
+﻿import { NextRequest } from "next/server";
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
-import { onboardingService } from "@/modules/onboarding/lib/onboarding-service";
-import { onboardingRepository } from "@/modules/onboarding/lib/onboarding-repository";
-import type { OnboardingData } from "@/modules/onboarding/lib/models";
-import { onboardingRepo } from "@/repo/onboarding-repo";
+import { onboardingService } from "@/modules/onboarding/services/onboarding-service";
+import { onboardingRepository } from "@/modules/onboarding/services/onboarding-repository";
+import type { OnboardingData } from "@/modules/onboarding/services/models";
+import { onboardingRepo } from "@/modules/onboarding/repo/onboarding-repo";
 import { sendWelcomeEmail } from "@shopvendly/transactional";
-import { jsonSuccess, jsonError } from "@/lib/api/response-utils";
+import { jsonSuccess, jsonError } from "@/shared/lib/api/response-utils";
 
 export async function POST(req: NextRequest) {
     try {

@@ -1,6 +1,6 @@
-import { marketplaceService } from "@/modules/marketplace";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess } from "@/lib/api/response-utils";
+﻿import { marketplaceService } from "@/modules/marketplace";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess } from "@/shared/lib/api/response-utils";
 
 /**
  * GET /api/marketplace/categories/[slug]/stores

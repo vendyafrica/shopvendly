@@ -1,7 +1,7 @@
-import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { instagramRepo } from "@/repo/instagram-repo";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, jsonError } from "@/lib/api/response-utils";
+﻿import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
+import { instagramRepo } from "@/modules/instagram/repo/instagram-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, jsonError } from "@/shared/lib/api/response-utils";
 
 export const GET = withApi({}, async ({ req, session }) => {
   const storeId = new URL(req.url).searchParams.get("storeId");

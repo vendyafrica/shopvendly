@@ -1,4 +1,4 @@
-import { jsonError } from "@/lib/api/response-utils";
+﻿import { jsonError } from "@/shared/lib/api/response-utils";
 
 export async function POST() {
     return jsonError(

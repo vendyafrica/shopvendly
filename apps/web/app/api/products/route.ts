@@ -1,12 +1,12 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { productService } from "@/modules/products";
 import { getTenantMembership, resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { productQuerySchema, createProductSchema } from "@/modules/products/lib/product-models";
-import { tenantRepo } from "@/repo/tenant-repo";
-import { storeRepo } from "@/repo/store-repo";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError, isDemoStore } from "@/lib/api/response-utils";
+import { productQuerySchema, createProductSchema } from "@/modules/products/services/product-models";
+import { tenantRepo } from "@/modules/admin/repo/tenant-repo";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError, isDemoStore } from "@/shared/lib/api/response-utils";
 
 /**
  * GET /api/products

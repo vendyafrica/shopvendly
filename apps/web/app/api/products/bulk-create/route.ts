@@ -1,11 +1,11 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { productService } from "@/modules/products";
 import { getTenantMembership, resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { tenantRepo } from "@/repo/tenant-repo";
-import { storeRepo } from "@/repo/store-repo";
-import { withApi } from "@/lib/api/with-api";
-import { HttpError, jsonSuccess } from "@/lib/api/response-utils";
+import { tenantRepo } from "@/modules/admin/repo/tenant-repo";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { HttpError, jsonSuccess } from "@/shared/lib/api/response-utils";
 
 const bulkCreateSchema = z.object({
     storeId: z.string(),

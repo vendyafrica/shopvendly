@@ -1,7 +1,7 @@
-import { z } from "zod";
-import { onboardingRepository } from "@/modules/onboarding/lib/onboarding-repository";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, jsonError, HttpError } from "@/lib/api/response-utils";
+﻿import { z } from "zod";
+import { onboardingRepository } from "@/modules/onboarding/services/onboarding-repository";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, jsonError, HttpError } from "@/shared/lib/api/response-utils";
 
 const checkSchema = z.object({
     type: z.enum(["phone", "storeName"]),

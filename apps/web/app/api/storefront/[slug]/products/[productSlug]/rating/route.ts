@@ -1,8 +1,8 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { storefrontService } from "@/modules/storefront";
-import { productRatingsRepo } from "@/repo/product-ratings-repo";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError } from "@/lib/api/response-utils";
+import { productRatingsRepo } from "@/modules/products/repo/product-ratings-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
 const ratingSchema = z.object({
     rating: z.number().int().min(1).max(5),

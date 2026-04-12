@@ -1,11 +1,11 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   InstagramIcon,
   WhatsappIcon,
 } from "@hugeicons/core-free-icons";
-import { bricolage } from "@/utils/fonts";
-import { getRootUrl } from "@/utils/misc";
+import { bricolage } from "@/shared/utils/fonts";
+import { getRootUrl } from "@/shared/utils/misc";
 import { Button } from "@shopvendly/ui/components/button";
 
 interface StorefrontFooterProps {

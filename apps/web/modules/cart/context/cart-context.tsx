@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
-import { useAppSession } from "@/contexts/app-session-context";
-import { trackStorefrontEvents } from "@/modules/storefront/lib/storefront-tracking";
+import { useAppSession } from "@/shared/lib/app-session-context";
+import { trackStorefrontEvents } from "@/modules/storefront/services/storefront-tracking";
 
 const API_BASE = "";
 const CART_STORAGE_KEY = "vendly_cart";

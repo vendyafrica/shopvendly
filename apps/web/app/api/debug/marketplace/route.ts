@@ -1,6 +1,6 @@
-import { marketplaceService } from "@/modules/marketplace/lib/marketplace-service";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError } from "@/lib/api/response-utils";
+﻿import { marketplaceService } from "@/modules/marketplace/services/marketplace-service";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
 export const dynamic = "force-dynamic";
 

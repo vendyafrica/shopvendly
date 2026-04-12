@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { useParams } from "next/navigation";
@@ -8,7 +8,7 @@ import { useProductDetail } from "@/modules/products/hooks/use-products";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 
-import { ProductFormSkeleton } from "@/components/ui/page-skeletons";
+import { ProductFormSkeleton } from "@/shared/components/ui/page-skeletons";
 
 export default function EditProductPage() {
     const params = useParams();

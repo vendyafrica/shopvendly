@@ -1,11 +1,11 @@
-import { z } from "zod";
-import { createOrderSchema } from "@/modules/orders/lib/order-models";
-import { withApi } from "@/lib/api/with-api";
-import { jsonError, jsonProxy, HttpError } from "@/lib/api/response-utils";
+﻿import { z } from "zod";
+import { createOrderSchema } from "@/modules/orders/services/order-models";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonError, jsonProxy, HttpError } from "@/shared/lib/api/response-utils";
 
 /**
  * POST /api/storefront/[slug]/orders
- * Create a new order from storefront checkout — proxies to Express API (public)
+ * Create a new order from storefront checkout â€” proxies to Express API (public)
  */
 export const POST = withApi<z.infer<typeof createOrderSchema>, { slug: string }>(
     { auth: false, schema: createOrderSchema },

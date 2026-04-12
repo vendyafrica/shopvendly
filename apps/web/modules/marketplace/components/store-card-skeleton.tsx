@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { StoreImageSkeleton, StoreInfoSkeleton } from "@/components/ui/skeleton-parts";
+import { StoreImageSkeleton, StoreInfoSkeleton } from "@/shared/components/ui/skeleton-parts";
 
 export function StoreCardSkeleton() {
   return (

@@ -34,6 +34,9 @@ interface StorefrontContentSwitcherProps {
   collections?: StoreCollection[];
   initialQuery?: string;
   products: StorefrontProduct[];
+  activeCollectionSlug?: string;
+  activeSection?: string;
+  hasSaleTab?: boolean;
 }
 
 export function StorefrontContentSwitcher({

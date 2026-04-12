@@ -1,9 +1,9 @@
-import { NextRequest } from "next/server";
+﻿import { NextRequest } from "next/server";
 import { db, orders, products, and, eq, isNull, desc, lt } from "@shopvendly/db";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
 import { type ActivityEvent } from "@/modules/admin/models/activity";
-import { storeRepo } from "@/repo/store-repo";
-import { jsonSuccess, jsonError, isDemoStore, getOptionalSession } from "@/lib/api/response-utils";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { jsonSuccess, jsonError, isDemoStore, getOptionalSession } from "@/shared/lib/api/response-utils";
 
 export async function GET(request: NextRequest) {
   try {

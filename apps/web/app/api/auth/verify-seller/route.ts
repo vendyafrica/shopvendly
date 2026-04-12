@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { authRepo } from "@/repo/auth-repo";
-import { verificationRepo } from "@/repo/verification-repo";
+import { authRepo } from "@/modules/auth/repo/auth-repo";
+import { verificationRepo } from "@/modules/auth/repo/verification-repo";
 
 /**
  * GET /api/auth/verify-seller?token=xxx&email=xxx&redirect=/a/store-slug

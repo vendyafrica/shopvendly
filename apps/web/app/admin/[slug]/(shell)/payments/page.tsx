@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Invoice01Icon, Payment02Icon } from "@hugeicons/core-free-icons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shopvendly/ui/components/card";
@@ -7,7 +7,7 @@ import { adminDashboardService } from "@/modules/admin";
 import { CollectoPayoutCard } from "@/modules/admin/components/collecto-payout-card";
 import { TotalSalesBreakdownCard } from "@/modules/admin/components/dynamic-charts";
 import { RecentOrdersTableSection } from "@/modules/admin/components/recent-orders-table-section";
-import { getStorefrontUrl } from "@/utils/misc";
+import { getStorefrontUrl } from "@/shared/utils/misc";
 import { PaymentsMobileView } from "./components/payments-mobile-view";
 
 
@@ -146,7 +146,7 @@ export default async function PaymentsPage({
               </div>
               <div className="space-y-1">
                 <p className="font-medium text-foreground">In Wallet</p>
-                <p>Funds collected but not yet transferred to Bulk. These need a wallet→bulk transfer before payout.</p>
+                <p>Funds collected but not yet transferred to Bulk. These need a walletâ†’bulk transfer before payout.</p>
               </div>
               <div className="space-y-1">
                 <p className="font-medium text-foreground">In Bulk</p>

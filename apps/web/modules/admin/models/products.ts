@@ -1,4 +1,4 @@
-import type { ProductVariantsInput } from "@/modules/products/lib/product-models";
+﻿import type { ProductVariantsInput } from "@/modules/products/services/product-models";
 
 export type EditableField = "name" | "priceAmount" | "quantity";
 export type DraftMap = Record<string, Partial<Record<EditableField, string>>>;

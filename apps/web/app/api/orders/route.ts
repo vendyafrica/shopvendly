@@ -1,9 +1,9 @@
-import { orderService } from "@/modules/orders";
-import { orderQuerySchema } from "@/modules/orders/lib/order-models";
+﻿import { orderService } from "@/modules/orders";
+import { orderQuerySchema } from "@/modules/orders/services/order-models";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { storeRepo } from "@/repo/store-repo";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError, isDemoStore } from "@/lib/api/response-utils";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError, isDemoStore } from "@/shared/lib/api/response-utils";
 
 /**
  * GET /api/orders

@@ -1,8 +1,8 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { productsAdminRepo } from "@/repo/products-admin-repo";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, jsonError, HttpError } from "@/lib/api/response-utils";
+import { productsAdminRepo } from "@/modules/admin/repo/products-admin-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, jsonError, HttpError } from "@/shared/lib/api/response-utils";
 
 const bulkUpdateSchema = z.object({
     storeId: z.string().uuid(),

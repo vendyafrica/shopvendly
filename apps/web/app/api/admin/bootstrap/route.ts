@@ -1,8 +1,8 @@
-import { resolveTenantAdminAccess } from "@/modules/admin/services/access-service";
-import { storeRepo } from "@/repo/store-repo";
-import { tenantRepo } from "@/repo/tenant-repo";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError, isDemoStore } from "@/lib/api/response-utils";
+﻿import { resolveTenantAdminAccess } from "@/modules/admin/services/access-service";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { tenantRepo } from "@/modules/admin/repo/tenant-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError, isDemoStore } from "@/shared/lib/api/response-utils";
 
 export const GET = withApi({ auth: false }, async ({ req, session }) => {
     const { searchParams } = new URL(req.url);

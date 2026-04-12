@@ -1,10 +1,10 @@
-import { NextRequest } from "next/server";
+﻿import { NextRequest } from "next/server";
 import { z } from "zod";
-import { storeRepo } from "@/repo/store-repo";
-import { productsAdminRepo } from "@/repo/products-admin-repo";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { productsAdminRepo } from "@/modules/admin/repo/products-admin-repo";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError } from "@/lib/api/response-utils";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
 const updateStoreSchema = z.object({
     name: z.string().min(1).max(255).optional(),

@@ -1,10 +1,10 @@
-import { NextRequest } from "next/server";
+﻿import { NextRequest } from "next/server";
 import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { getTenantMembership } from "@/modules/admin";
-import { storeRepo } from "@/repo/store-repo";
-import { superAdminRepo } from "@/repo/super-admin-repo";
-import { jsonSuccess } from "@/lib/api/response-utils";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { superAdminRepo } from "@/modules/admin/repo/super-admin-repo";
+import { jsonSuccess } from "@/shared/lib/api/response-utils";
 
 // This route intentionally handles unauthenticated users (returns { hasTenant: false })
 // so it cannot use withApi({ auth: true })

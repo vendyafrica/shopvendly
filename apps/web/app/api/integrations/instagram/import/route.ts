@@ -1,10 +1,10 @@
-import { parseInstagramCaption } from "@/lib/instagram/parse-caption";
-import { instagramRepo } from "@/repo/instagram-repo";
-import { MAX_INSTAGRAM_IMPORT_ITEMS } from "@/lib/constants/instagram";
-import { type InstagramMediaItem, instagramImportSchema } from "@/models";
-import { slugify, copyToBlob } from "@/lib/instagram/instagram-service";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError } from "@/lib/api/response-utils";
+﻿import { parseInstagramCaption } from "@/modules/instagram/services/parse-caption";
+import { instagramRepo } from "@/modules/instagram/repo/instagram-repo";
+import { MAX_INSTAGRAM_IMPORT_ITEMS } from "@/shared/lib/constants/instagram";
+import { type InstagramMediaItem, instagramImportSchema } from "@/modules/instagram/types";
+import { slugify, copyToBlob } from "@/modules/instagram/services/instagram-service";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
 export const POST = withApi({ schema: instagramImportSchema }, async ({ session, body }) => {
   const { storeId } = body;

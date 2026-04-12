@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-keys";
+import { queryKeys } from "@/shared/lib/query-keys";
 import { type CustomerRow } from "@/modules/admin/models";
 
 async function fetchCustomers(storeId: string): Promise<CustomerRow[]> {

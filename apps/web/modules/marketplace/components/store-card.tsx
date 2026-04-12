@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { MarketplaceStore } from "@/modules/marketplace";
-import { getStorefrontUrl } from "@/utils/misc";
+import { getStorefrontUrl } from "@/shared/utils/misc";
 import {
   Carousel,
   CarouselContent,
@@ -11,7 +11,7 @@ import {
   CarouselPrevious,
   CarouselNext,
 } from "@shopvendly/ui/components/carousel";
-import { StoreAvatarSimple } from "@/components/store-avatar";
+import { StoreAvatarSimple } from "@/shared/components/store-avatar";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { StarIcon } from "@hugeicons/core-free-icons";
 import { Bricolage_Grotesque } from "next/font/google";

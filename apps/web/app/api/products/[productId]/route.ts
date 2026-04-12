@@ -1,11 +1,11 @@
-import { revalidatePath, revalidateTag } from "next/cache";
+﻿import { revalidatePath, revalidateTag } from "next/cache";
 import { productService } from "@/modules/products";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { updateProductSchema } from "@/modules/products/lib/product-models";
-import { productRepo } from "@/repo/product-repo";
-import { storeRepo } from "@/repo/store-repo";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError } from "@/lib/api/response-utils";
+import { updateProductSchema } from "@/modules/products/services/product-models";
+import { productRepo } from "@/modules/products/repo/product-repo";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

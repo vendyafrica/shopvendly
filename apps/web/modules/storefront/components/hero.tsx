@@ -11,7 +11,7 @@ interface HeroProps {
     description: string | null;
     slug?: string;
     logoUrl?: string | null;
-    heroMedia?: string[];
+    heroMedia?: string[] | null;
   };
 }
 

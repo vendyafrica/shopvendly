@@ -1,8 +1,8 @@
-import { auth } from "@shopvendly/auth";
+﻿import { auth } from "@shopvendly/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { adminRepo } from "@/repo/admin-repo";
-import { storeRepo } from "@/repo/store-repo";
+import { adminRepo } from "@/modules/admin/repo/admin-repo";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
 
 export default async function AdminCallbackPage() {
   const headerList = await headers();

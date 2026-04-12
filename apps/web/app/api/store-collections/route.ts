@@ -1,10 +1,10 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { revalidateTag } from "next/cache";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { storeCollectionsRepo } from "@/repo/store-collections-repo";
-import { storeRepo } from "@/repo/store-repo";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError, isDemoStore } from "@/lib/api/response-utils";
+import { storeCollectionsRepo } from "@/modules/storefront/repo/store-collections-repo";
+import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError, isDemoStore } from "@/shared/lib/api/response-utils";
 
 const createCollectionSchema = z.object({
   storeId: z.string().uuid(),

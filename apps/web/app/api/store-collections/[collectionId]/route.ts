@@ -1,9 +1,9 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { revalidateTag } from "next/cache";
 import { resolveTenantAdminAccessByStoreId } from "@/modules/admin";
-import { storeCollectionsRepo } from "@/repo/store-collections-repo";
-import { withApi } from "@/lib/api/with-api";
-import { jsonSuccess, HttpError } from "@/lib/api/response-utils";
+import { storeCollectionsRepo } from "@/modules/storefront/repo/store-collections-repo";
+import { withApi } from "@/shared/lib/api/with-api";
+import { jsonSuccess, HttpError } from "@/shared/lib/api/response-utils";
 
 const updateCollectionSchema = z.object({
   name: z.string().min(1).max(120).optional(),

@@ -1,7 +1,7 @@
-import { NextRequest } from "next/server";
-import { storefrontTrackingRepo } from "@/repo/storefront-tracking-repo";
-import type { StorefrontTrackRequestBody } from "@/models/storefront";
-import { jsonSuccess, jsonError } from "@/lib/api/response-utils";
+﻿import { NextRequest } from "next/server";
+import { storefrontTrackingRepo } from "@/modules/storefront/repo/storefront-tracking-repo";
+import type { StorefrontTrackRequestBody } from "@/modules/storefront/types";
+import { jsonSuccess, jsonError } from "@/shared/lib/api/response-utils";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {

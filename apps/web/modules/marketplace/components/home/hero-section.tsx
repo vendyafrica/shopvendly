@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
@@ -10,10 +10,10 @@ const geistSans = Bricolage_Grotesque({
   subsets: ["latin"],
 });
 
-import { heroCopy, type HeroMode } from "@/lib/constants/hero-copy";
+import { heroCopy, type HeroMode } from "@/shared/lib/constants/hero-copy";
 
 const Typewriter = dynamic(
-  () => import("@/components/ui/typewriter").then((m) => m.Typewriter),
+  () => import("@/shared/components/ui/typewriter").then((m) => m.Typewriter),
   { ssr: false }
 );
 

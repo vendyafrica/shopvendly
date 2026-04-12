@@ -1,8 +1,8 @@
-import { storeRepo } from "@/repo/store-repo";
-import { tenantMembershipRepo } from "@/repo/tenant-membership-repo";
-import { getApiBaseUrl } from "@/lib/api-utils";
-import { withApi } from "@/lib/api/with-api";
-import { HttpError, jsonProxy } from "@/lib/api/response-utils";
+﻿import { storeRepo } from "@/modules/storefront/repo/store-repo";
+import { tenantMembershipRepo } from "@/modules/admin/repo/tenant-membership-repo";
+import { getApiBaseUrl } from "@/shared/lib/api-utils";
+import { withApi } from "@/shared/lib/api/with-api";
+import { HttpError, jsonProxy } from "@/shared/lib/api/response-utils";
 
 export const GET = withApi<undefined, { storeId: string }>({}, async ({ session, params }) => {
   const { storeId } = params;
